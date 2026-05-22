@@ -1,0 +1,113 @@
+---
+- name: Check whether k3s is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Build k3s disable flags
+  ansible.builtin.set_fact:
+    k3s_disable_flags: "{{ k3s_disable_components | map('regex_replace', '^(.*)$', '--disable \\1') | join(' ') }}"
+
+- name: Install k3s server
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="{{ k3s_version }}" sh -s - server \
+      {{ k3s_disable_flags }} \
+      --write-kubeconfig-mode 0640 \
+      --node-ip "{{ public_ipv4 | default(ansible_host) }}" \
+      --tls-san "{{ public_ipv4 | default(ansible_host) }}" \
+      --kube-proxy-arg "nodeport-addresses=127.0.0.0/8"
+  args:
+    executable: /bin/bash
+  when: not k3s_binary.stat.exists
+
+- name: Ensure k3s service is enabled and running
+  ansible.builtin.service:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for Kubernetes API
+  ansible.builtin.command: k3s kubectl get nodes
+  register: k3s_nodes
+  retries: 20
+  delay: 6
+  changed_when: false
+  until: k3s_nodes.rc == 0
+
+- name: Create kubeconfig directory for admin user
+  ansible.builtin.file:
+    path: "/home/{{ admin_user }}/.kube"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0700"
+
+- name: Write admin kubeconfig with public server address
+  ansible.builtin.shell: |
+    set -euo pipefail
+    sed "s/127.0.0.1/{{ public_ipv4 | default(ansible_host) }}/g" /etc/rancher/k3s/k3s.yaml > "/home/{{ admin_user }}/.kube/config"
+    chown "{{ admin_user }}:{{ admin_user }}" "/home/{{ admin_user }}/.kube/config"
+    chmod 0600 "/home/{{ admin_user }}/.kube/config"
+  args:
+    executable: /bin/bash
+  changed_when: true
+
+- name: Install public port guard script
+  ansible.builtin.copy:
+    dest: /usr/local/sbin/playsay-public-port-guard.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      public_iface="${PLAYSAY_PUBLIC_IFACE:-$(ip route get 1.1.1.1 | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") { print $(i + 1); exit }}')}"
+      if [[ -z "$public_iface" ]]; then
+        echo "Could not detect public interface" >&2
+        exit 1
+      fi
+
+      drop_tcp() {
+        local port="$1"
+        iptables -C INPUT -i "$public_iface" -p tcp --dport "$port" -j DROP 2>/dev/null \
+          || iptables -I INPUT -i "$public_iface" -p tcp --dport "$port" -j DROP
+      }
+
+      drop_udp() {
+        local port="$1"
+        iptables -C INPUT -i "$public_iface" -p udp --dport "$port" -j DROP 2>/dev/null \
+          || iptables -I INPUT -i "$public_iface" -p udp --dport "$port" -j DROP
+      }
+
+      drop_tcp 6443
+      drop_tcp 10250
+      drop_udp 8472
+
+- name: Install public port guard service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/playsay-public-port-guard.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Play&Say public k3s port guard
+      After=network-online.target k3s.service
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/local/sbin/playsay-public-port-guard.sh
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable public port guard
+  ansible.builtin.systemd_service:
+    name: playsay-public-port-guard
+    enabled: true
+    state: started
+    daemon_reload: true

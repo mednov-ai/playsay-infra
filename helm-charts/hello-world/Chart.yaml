@@ -1,0 +1,7 @@
+apiVersion: v2
+name: hello-world
+description: Play&Say Sprint 0 hello-world application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+

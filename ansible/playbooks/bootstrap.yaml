@@ -1,0 +1,10 @@
+---
+- name: Bootstrap Play&Say dev server
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - common
+    - docker
+    - k3s-server
+    - monitoring-agent

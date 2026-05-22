@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.env.local
+ansible/inventories/*/hosts.yaml
+*.retry
+*.log
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+kubeconfig*

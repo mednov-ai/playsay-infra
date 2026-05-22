@@ -1,0 +1,32 @@
+---
+- name: Install node exporter
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+  when: node_exporter_enabled | bool
+
+- name: Bind node exporter to localhost
+  ansible.builtin.copy:
+    dest: /etc/default/prometheus-node-exporter
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      ARGS="--web.listen-address=127.0.0.1:9100"
+  register: node_exporter_defaults
+  when: node_exporter_enabled | bool
+
+- name: Restart node exporter after config change
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    state: restarted
+  when:
+    - node_exporter_enabled | bool
+    - node_exporter_defaults.changed
+
+- name: Enable node exporter
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    enabled: true
+    state: started
+  when: node_exporter_enabled | bool
