@@ -4,4 +4,5 @@ image:
 imagePullSecrets:
   - name: ghcr-pull-secret
 ingress:
+  enabled: false
   host: hello.dev.example.com
