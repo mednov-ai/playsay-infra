@@ -88,7 +88,43 @@ The existing `play-and-say.ru` site server block is not overwritten.
 TLS mode defaults to `auto`: if `/etc/letsencrypt/live/ops.play-and-say.ru/` exists, nginx uses that certificate; otherwise the script creates a self-signed certificate under `/etc/nginx/playsay-ops/`. Browsers will warn on self-signed certificates, but traffic is encrypted. After DNS is ready, replace it with a Let's Encrypt certificate and rerun the script:
 
 ```bash
-certbot --nginx -d ops.play-and-say.ru
+mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+cat >/etc/nginx/conf.d/playsay-ops-acme.conf <<'EOF'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ops.play-and-say.ru;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type "text/plain";
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host:18443$request_uri;
+    }
+}
+EOF
+nginx -t && systemctl reload nginx
+
+certbot certonly \
+  --webroot \
+  -w /var/www/letsencrypt \
+  -d ops.play-and-say.ru \
+  --non-interactive \
+  --agree-tos \
+  --email admin@play-and-say.ru
+
+mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+cat >/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+nginx -t
+systemctl reload nginx
+EOF
+chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+
 ./scripts/bootstrap-dev.sh \
   --ip 146.103.126.15 \
   --domain play-and-say.ru \
@@ -229,6 +265,22 @@ Create credentials in Jenkins UI:
 Do not store the token in `playsay-infra` or `playsay-platform`.
 
 If you prefer CLI later, pass secrets only through a local untracked file such as `.env.local` or an interactive prompt.
+
+Create the dev image pull secret after the first GHCR token is available:
+
+```bash
+read -r -p "GitHub username: " GITHUB_USERNAME
+read -r -s -p "GitHub token: " GITHUB_TOKEN
+echo
+kubectl create namespace playsay-dev --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n playsay-dev create secret docker-registry ghcr-pull-secret \
+  --docker-server=ghcr.io \
+  --docker-username="$GITHUB_USERNAME" \
+  --docker-password="$GITHUB_TOKEN" \
+  --docker-email=dev@play-and-say.ru \
+  --dry-run=client -o yaml | kubectl apply -f -
+unset GITHUB_TOKEN
+```
 
 
 Recommended GitHub webhook for `playsay-platform`:

@@ -170,6 +170,7 @@ if [[ "$INSTALL_JENKINS" == "true" ]]; then
     --set controller.installPlugins[4]=github-branch-source \
     --set controller.installPlugins[5]=credentials-binding \
     --set controller.installPlugins[6]=configuration-as-code \
+    --set controller.installPlugins[7]=timestamper \
     --set controller.resources.requests.cpu=250m \
     --set controller.resources.requests.memory=768Mi \
     --set controller.resources.limits.cpu=1500m \

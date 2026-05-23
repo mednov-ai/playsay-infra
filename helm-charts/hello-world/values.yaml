@@ -3,6 +3,8 @@ image:
   tag: "0.1.0"
   pullPolicy: IfNotPresent
 
+imagePullSecrets: []
+
 replicaCount: 1
 
 service:
