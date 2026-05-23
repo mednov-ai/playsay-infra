@@ -14,8 +14,8 @@ service:
 ingress:
   enabled: true
   className: nginx
-  host: hello.dev.playsay.local
-  tlsSecretName: hello-world-tls
+  host: api-gateway.dev.playsay.local
+  tlsSecretName: api-gateway-tls
   clusterIssuer: letsencrypt-http01
 
 resources:

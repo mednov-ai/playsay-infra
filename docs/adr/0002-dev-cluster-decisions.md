@@ -18,7 +18,7 @@ Several architecture choices were clarified:
 
 ## Decision
 
-Sprint 0 installs only the infrastructure foundation and hello-world application.
+Sprint 0 installs only the infrastructure foundation and the API Gateway demo backend.
 
 Keycloak, its PostgreSQL database, LiveKit, coturn, Yjs persistence, and AI integration are deferred to their planned sprints.
 
@@ -29,4 +29,3 @@ The dev cluster keeps all runtime services in k3s unless a later WebRTC/network 
 - Sprint 0 stays small enough for the initial 2 vCPU / 4 GB VPS.
 - Keycloak persistence is handled deliberately in Sprint 1.
 - LiveKit ingress/firewall decisions are made in Sprint 3 with real testing.
-

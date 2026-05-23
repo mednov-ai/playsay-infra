@@ -9,7 +9,7 @@ Sprint 0 focuses on the dev environment:
 - ingress-nginx, cert-manager, Sealed Secrets, ArgoCD
 - Headlamp Kubernetes UI for dev cluster inspection
 - Jenkins controller for CI
-- hello-world backend and React SPA deployment through Jenkins, GHCR, and ArgoCD
+- api-gateway backend and React SPA deployment through Jenkins, GHCR, and ArgoCD
 
 Real credentials, provider tokens, kubeconfigs, and sealed secret keys must not be committed.
 

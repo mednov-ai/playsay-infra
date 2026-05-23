@@ -5,4 +5,4 @@ imagePullSecrets:
   - name: ghcr-pull-secret
 ingress:
   enabled: false
-  host: hello.dev.example.com
+  host: api-gateway.dev.example.com

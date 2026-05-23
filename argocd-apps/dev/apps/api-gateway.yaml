@@ -1,14 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: hello-world
+  name: api-gateway
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
     targetRevision: develop
-    path: helm-charts/hello-world
+    path: helm-charts/api-gateway
     helm:
       valueFiles:
         - values-dev.yaml

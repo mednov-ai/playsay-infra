@@ -1,0 +1,6 @@
+apiVersion: v2
+name: api-gateway
+description: Play&Say API Gateway service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

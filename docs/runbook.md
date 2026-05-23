@@ -10,7 +10,7 @@ Create a reproducible dev environment:
 - ArgoCD
 - Headlamp Kubernetes UI
 - Jenkins
-- hello-world backend and React SPA deployed by ArgoCD
+- api-gateway backend and React SPA deployed by ArgoCD
 
 In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not installed by default. The existing host nginx remains the public entry point for the site, ops UI, and product SPA, and proxies k3s services to local Kubernetes NodePorts.
 
@@ -64,7 +64,7 @@ By default the script runs in `coexist` mode:
 
 Use separate subdomains such as `argocd.dev.example.com` and `headlamp.dev.example.com`. Do not pass the existing production site hostname as `--domain`, otherwise nginx server names may overlap.
 
-For ArgoCD to sync the hello-world application, `playsay-infra` must be pushed to the GitHub URL referenced in `argocd-apps/dev/root-app.yaml`.
+For ArgoCD to sync the api-gateway application, `playsay-infra` must be pushed to the GitHub URL referenced in `argocd-apps/dev/root-app.yaml`.
 
 For a server that already has Amnezia VPN and a public nginx site, keep the default `coexist` mode:
 
