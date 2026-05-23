@@ -9,7 +9,7 @@ Sprint 0 focuses on the dev environment:
 - ingress-nginx, cert-manager, Sealed Secrets, ArgoCD
 - Headlamp Kubernetes UI for dev cluster inspection
 - Jenkins controller for CI
-- hello-world deployment through Jenkins, GHCR, and ArgoCD
+- hello-world backend and React SPA deployment through Jenkins, GHCR, and ArgoCD
 
 Real credentials, provider tokens, kubeconfigs, and sealed secret keys must not be committed.
 
@@ -29,12 +29,18 @@ After the VPS is created manually and key-based root SSH works, run:
 By default the script runs in `coexist` mode for servers that already host other
 services. It avoids changing SSH hardening, UFW, Docker, and existing nginx
 server blocks. Kubernetes UIs are exposed through a separate nginx config file.
+The product SPA is exposed through `online.play-and-say.ru` and a local
+Kubernetes NodePort.
 
 Infrastructure UI:
 
 - `https://ops.play-and-say.ru:18443/headlamp/`
 - `https://ops.play-and-say.ru:18443/argocd/`
 - `https://ops.play-and-say.ru:18443/jenkins/`
+
+Product UI:
+
+- `https://online.play-and-say.ru`
 
 ## Manual Lower-Level Steps
 

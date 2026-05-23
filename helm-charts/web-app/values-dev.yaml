@@ -1,0 +1,8 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-web-app
+  tag: "dev"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+service:
+  type: NodePort
+  nodePort: 32083

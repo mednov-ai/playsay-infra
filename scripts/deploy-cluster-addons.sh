@@ -12,6 +12,9 @@ OPS_HOST="${OPS_HOST:-ops.$DOMAIN}"
 OPS_PORT="${OPS_PORT:-18443}"
 OPS_ALLOW_CIDRS="${OPS_ALLOW_CIDRS:-}"
 OPS_TLS_MODE="${OPS_TLS_MODE:-auto}"
+ONLINE_HOST="${ONLINE_HOST:-online.$DOMAIN}"
+ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
+ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
 INSTALL_JENKINS="${INSTALL_JENKINS:-true}"
 JENKINS_NODEPORT_HTTP="${JENKINS_NODEPORT_HTTP:-32082}"
 INSTALL_INGRESS_NGINX="${INSTALL_INGRESS_NGINX:-false}"
@@ -20,6 +23,7 @@ CONFIGURE_HOST_NGINX="${CONFIGURE_HOST_NGINX:-true}"
 ARGOCD_NODEPORT_HTTP="${ARGOCD_NODEPORT_HTTP:-32080}"
 HEADLAMP_NODEPORT_HTTP="${HEADLAMP_NODEPORT_HTTP:-32081}"
 OPS_SCHEME="https"
+ONLINE_SCHEME="https"
 
 usage() {
   cat <<USAGE
@@ -37,6 +41,9 @@ Environment variables:
   OPS_PORT               Shared ops UI public port. Default: 18443
   OPS_ALLOW_CIDRS        Optional comma-separated allowlist CIDRs for ops UI
   OPS_TLS_MODE           auto, self-signed, existing, or off. Default: auto
+  ONLINE_HOST            Product SPA host. Default: online.<PLAYSAY_DOMAIN>
+  ONLINE_NODEPORT_HTTP   Local web-app NodePort. Default: 32083
+  ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
   INSTALL_JENKINS        Install Jenkins controller. Default: true
   JENKINS_NODEPORT_HTTP  Local Jenkins NodePort. Default: 32082
   INSTALL_INGRESS_NGINX  Install ingress-nginx. Default: false
@@ -233,6 +240,90 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
 "
     fi
 
+    ONLINE_HTTP_SERVER=""
+    ONLINE_HTTPS_SERVER=""
+    if [[ "$ONLINE_TLS_MODE" == "off" ]]; then
+      ONLINE_SCHEME="http"
+      ONLINE_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${ONLINE_HOST};
+
+    location / {
+        proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+"
+    else
+      ONLINE_LETSENCRYPT_CERT="/etc/letsencrypt/live/${ONLINE_HOST}/fullchain.pem"
+      ONLINE_LETSENCRYPT_KEY="/etc/letsencrypt/live/${ONLINE_HOST}/privkey.pem"
+      ONLINE_SELF_SIGNED_DIR="/etc/nginx/playsay-online"
+      ONLINE_SELF_SIGNED_CERT="${ONLINE_SELF_SIGNED_DIR}/${ONLINE_HOST}.crt"
+      ONLINE_SELF_SIGNED_KEY="${ONLINE_SELF_SIGNED_DIR}/${ONLINE_HOST}.key"
+
+      if [[ -f "$ONLINE_LETSENCRYPT_CERT" && -f "$ONLINE_LETSENCRYPT_KEY" ]]; then
+        ONLINE_SSL_CERT="$ONLINE_LETSENCRYPT_CERT"
+        ONLINE_SSL_KEY="$ONLINE_LETSENCRYPT_KEY"
+      elif [[ "$ONLINE_TLS_MODE" == "existing" ]]; then
+        echo "ONLINE_TLS_MODE=existing but certificate is missing for ${ONLINE_HOST}" >&2
+        exit 1
+      else
+        mkdir -p "$ONLINE_SELF_SIGNED_DIR"
+        chmod 700 "$ONLINE_SELF_SIGNED_DIR"
+        if [[ ! -f "$ONLINE_SELF_SIGNED_CERT" || ! -f "$ONLINE_SELF_SIGNED_KEY" ]]; then
+          openssl req -x509 -nodes -newkey rsa:2048 \
+            -keyout "$ONLINE_SELF_SIGNED_KEY" \
+            -out "$ONLINE_SELF_SIGNED_CERT" \
+            -days 365 \
+            -subj "/CN=${ONLINE_HOST}" \
+            -addext "subjectAltName=DNS:${ONLINE_HOST}"
+          chmod 600 "$ONLINE_SELF_SIGNED_KEY"
+        fi
+        ONLINE_SSL_CERT="$ONLINE_SELF_SIGNED_CERT"
+        ONLINE_SSL_KEY="$ONLINE_SELF_SIGNED_KEY"
+      fi
+
+      ONLINE_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${ONLINE_HOST};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type \"text/plain\";
+        try_files \$uri =404;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+"
+      ONLINE_HTTPS_SERVER="server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${ONLINE_HOST};
+
+    ssl_certificate ${ONLINE_SSL_CERT};
+    ssl_certificate_key ${ONLINE_SSL_KEY};
+
+    location / {
+        proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+"
+    fi
+
     NGINX_CONF_TARGET="/etc/nginx/conf.d/playsay-k8s-dev.conf"
     NGINX_CONF_BACKUP=""
     if [[ -f "$NGINX_CONF_TARGET" ]]; then
@@ -297,6 +388,9 @@ ${OPS_ALLOW_DIRECTIVES}
         return 301 /jenkins/;
     }
 }
+
+${ONLINE_HTTP_SERVER}
+${ONLINE_HTTPS_SERVER}
 EOF
     if nginx -t; then
       systemctl reload nginx
@@ -322,6 +416,7 @@ kubectl apply -f "$ROOT_DIR/argocd-apps/$ENVIRONMENT/root-app.yaml"
 
 echo "Cluster add-ons installed for $ENVIRONMENT."
 echo "Ops URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT"
+echo "Online URL: ${ONLINE_SCHEME}://$ONLINE_HOST"
 echo "ArgoCD URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/argocd/"
 echo "Headlamp URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/headlamp/"
 if [[ "$INSTALL_JENKINS" == "true" ]]; then

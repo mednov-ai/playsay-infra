@@ -14,6 +14,9 @@ OPS_HOST=""
 OPS_PORT="18443"
 OPS_ALLOW_CIDRS=""
 OPS_TLS_MODE="auto"
+ONLINE_HOST=""
+ONLINE_NODEPORT_HTTP="32083"
+ONLINE_TLS_MODE="auto"
 REMOTE_USER="root"
 REMOTE_BOOTSTRAP_DIR="/tmp/playsay-infra-bootstrap"
 INSTALL_JENKINS="true"
@@ -35,6 +38,9 @@ Options:
   --ops-port <port>         Shared ops UI public port. Default: 18443
   --ops-allow-cidrs <list>  Optional comma-separated allowlist CIDRs for ops UI
   --ops-tls-mode <mode>     auto, self-signed, existing, or off. Default: auto
+  --online-host <host>      Product SPA host. Default: online.<domain>
+  --online-nodeport <port>  Product SPA local NodePort. Default: 32083
+  --online-tls-mode <mode>  auto, self-signed, existing, or off. Default: auto
   --ssh-key <path>          Optional SSH key path. Default: use normal ssh config/agent
   --no-jenkins              Do not install Jenkins controller
   --mode <mode>             coexist or fresh. Default: coexist
@@ -91,6 +97,18 @@ while [[ $# -gt 0 ]]; do
       OPS_TLS_MODE="$2"
       shift 2
       ;;
+    --online-host)
+      ONLINE_HOST="$2"
+      shift 2
+      ;;
+    --online-nodeport)
+      ONLINE_NODEPORT_HTTP="$2"
+      shift 2
+      ;;
+    --online-tls-mode)
+      ONLINE_TLS_MODE="$2"
+      shift 2
+      ;;
     --ssh-key)
       SSH_KEY="${2/#\~/$HOME}"
       shift 2
@@ -138,8 +156,17 @@ if [[ -z "$OPS_HOST" ]]; then
   OPS_HOST="ops.$DOMAIN"
 fi
 
+if [[ -z "$ONLINE_HOST" ]]; then
+  ONLINE_HOST="online.$DOMAIN"
+fi
+
 if [[ "$OPS_TLS_MODE" != "auto" && "$OPS_TLS_MODE" != "self-signed" && "$OPS_TLS_MODE" != "existing" && "$OPS_TLS_MODE" != "off" ]]; then
   echo "--ops-tls-mode must be auto, self-signed, existing, or off" >&2
+  exit 1
+fi
+
+if [[ "$ONLINE_TLS_MODE" != "auto" && "$ONLINE_TLS_MODE" != "self-signed" && "$ONLINE_TLS_MODE" != "existing" && "$ONLINE_TLS_MODE" != "off" ]]; then
+  echo "--online-tls-mode must be auto, self-signed, existing, or off" >&2
   exit 1
 fi
 
@@ -240,7 +267,7 @@ quote() {
   printf "%q" "$1"
 }
 
-REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
+REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") ONLINE_HOST=$(quote "$ONLINE_HOST") ONLINE_NODEPORT_HTTP=$(quote "$ONLINE_NODEPORT_HTTP") ONLINE_TLS_MODE=$(quote "$ONLINE_TLS_MODE") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
 
 echo "Installing Kubernetes add-ons directly on the VPS."
 ssh "${SSH_ARGS[@]}" "$REMOTE_USER@$SERVER_IP" "$REMOTE_CMD"
@@ -269,6 +296,9 @@ Ops UI, if DNS points to this server and the port is open:
   https://$OPS_HOST:$OPS_PORT/argocd/
   https://$OPS_HOST:$OPS_PORT/headlamp/
   https://$OPS_HOST:$OPS_PORT/jenkins/
+
+Online app, after web-app image is built and ArgoCD syncs:
+  https://$ONLINE_HOST
 
 Headlamp dev-admin token:
   ssh root@$SERVER_IP "kubectl -n headlamp get secret headlamp-admin-token -o jsonpath='{.data.token}' | base64 -d"

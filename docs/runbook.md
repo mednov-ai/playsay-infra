@@ -10,9 +10,9 @@ Create a reproducible dev environment:
 - ArgoCD
 - Headlamp Kubernetes UI
 - Jenkins
-- hello-world deployed by ArgoCD
+- hello-world backend and React SPA deployed by ArgoCD
 
-In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not installed by default. The existing host nginx remains the public entry point for the site and proxies ops UI traffic to local Kubernetes NodePorts.
+In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not installed by default. The existing host nginx remains the public entry point for the site, ops UI, and product SPA, and proxies k3s services to local Kubernetes NodePorts.
 
 ## Human-Owned Prerequisites
 
@@ -27,7 +27,7 @@ In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not i
    - `playsay-infra`
 4. Point DNS records to the VPS:
    - `ops.play-and-say.ru`
-   - `online.play-and-say.ru` (reserved for the future app)
+   - `online.play-and-say.ru`
 5. Create GitHub credentials for Jenkins (see below).
 
 ## One-Command Bootstrap
@@ -77,11 +77,12 @@ For a server that already has Amnezia VPN and a public nginx site, keep the defa
   --email admin@example.com
 ```
 
-This creates one nginx server block for infrastructure UI:
+This creates nginx server blocks for infrastructure UI and the product SPA:
 
 - `https://ops.play-and-say.ru:18443/headlamp/`
 - `https://ops.play-and-say.ru:18443/argocd/`
 - `https://ops.play-and-say.ru:18443/jenkins/`
+- `https://online.play-and-say.ru`
 
 The existing `play-and-say.ru` site server block is not overwritten.
 
@@ -134,6 +135,29 @@ chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
   --email admin@example.com
 ```
 
+For `online.play-and-say.ru`, issue a matching Let's Encrypt certificate after the web-app upstream is available:
+
+```bash
+mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+certbot certonly \
+  --webroot \
+  -w /var/www/letsencrypt \
+  -d online.play-and-say.ru \
+  --non-interactive \
+  --agree-tos \
+  --email admin@play-and-say.ru
+
+./scripts/bootstrap-dev.sh \
+  --ip 146.103.126.15 \
+  --domain play-and-say.ru \
+  --ops-host ops.play-and-say.ru \
+  --ops-port 18443 \
+  --ops-tls-mode existing \
+  --online-host online.play-and-say.ru \
+  --online-tls-mode existing \
+  --email admin@example.com
+```
+
 If you know the Amnezia VPN CIDR or a fixed admin IP, restrict the ops UI:
 
 ```bash
@@ -158,15 +182,13 @@ If you want to avoid any nginx changes too:
 
 ## Public Site and Online App Hostnames
 
-Recommended DNS/nginx split:
+Current DNS/nginx split:
 
 - `play-and-say.ru` stays the public marketing/site host.
-- `online.play-and-say.ru` is reserved for the product SPA/API entry point after login.
+- `online.play-and-say.ru` serves the React product SPA from k3s service `web-app`.
 - `ops.play-and-say.ru:18443` is reserved for dev infrastructure UI.
 
-The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs.
-
-Do not create the `online.play-and-say.ru` nginx server block until the online app has a real upstream in Kubernetes or on the host; otherwise nginx will serve a 502 page.
+The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
 
 ## Post-Install Verification
 
@@ -199,6 +221,7 @@ Check ops UI before DNS exists by forcing local resolution:
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/headlamp/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/argocd/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/jenkins/
+curl -k -I --resolve online.play-and-say.ru:443:146.103.126.15 https://online.play-and-say.ru/
 ```
 
 Expected:
@@ -206,6 +229,7 @@ Expected:
 - Headlamp: `200 OK`;
 - ArgoCD: `200 OK`;
 - Jenkins: `403 Forbidden` or login redirect, which means Jenkins is alive and requires authentication.
+- Online SPA: `200 OK`.
 
 Check existing services:
 
