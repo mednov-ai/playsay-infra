@@ -22,3 +22,16 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "web-app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
+
+{{- define "web-app.buildLabels" -}}
+playsay.io/build-name: {{ .Values.build.name | quote }}
+playsay.io/build-number: {{ .Values.build.number | quote }}
+playsay.io/source-branch: {{ .Values.build.branchLabel | quote }}
+playsay.io/source-commit: {{ .Values.build.commitShort | quote }}
+{{- end -}}
+
+{{- define "web-app.buildAnnotations" -}}
+playsay.io/build-name: {{ .Values.build.name | quote }}
+playsay.io/source-branch: {{ .Values.build.branch | quote }}
+playsay.io/source-commit: {{ .Values.build.commit | quote }}
+{{- end -}}

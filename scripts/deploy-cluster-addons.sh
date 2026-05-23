@@ -185,6 +185,10 @@ if [[ "$INSTALL_JENKINS" == "true" ]]; then
     --set controller.resources.limits.memory=1536Mi \
     --set persistence.enabled=true \
     --set persistence.size=8Gi
+
+  kubectl -n jenkins rollout status statefulset/jenkins --timeout=600s
+  JENKINS_NODEPORT_HTTP="$JENKINS_NODEPORT_HTTP" \
+    "$ROOT_DIR/scripts/configure-jenkins-jobs.sh"
 fi
 
 if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then

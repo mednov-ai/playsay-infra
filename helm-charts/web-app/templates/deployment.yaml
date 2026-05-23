@@ -4,6 +4,9 @@ metadata:
   name: {{ include "web-app.fullname" . }}
   labels:
     {{- include "web-app.labels" . | nindent 4 }}
+    {{- include "web-app.buildLabels" . | nindent 4 }}
+  annotations:
+    {{- include "web-app.buildAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -13,6 +16,9 @@ spec:
     metadata:
       labels:
         {{- include "web-app.selectorLabels" . | nindent 8 }}
+        {{- include "web-app.buildLabels" . | nindent 8 }}
+      annotations:
+        {{- include "web-app.buildAnnotations" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

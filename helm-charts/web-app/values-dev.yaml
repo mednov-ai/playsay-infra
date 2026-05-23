@@ -3,6 +3,13 @@ image:
   tag: "e97f4b6a0d5b69daca7b0963588b507a1848d67c"
 imagePullSecrets:
   - name: ghcr-pull-secret
+build:
+  name: dev-10
+  number: "10"
+  branch: develop
+  branchLabel: dev
+  commit: e97f4b6a0d5b69daca7b0963588b507a1848d67c
+  commitShort: e97f4b6a0d5b
 service:
   type: NodePort
   nodePort: 32083

@@ -10,6 +10,7 @@ Sprint 0 focuses on the dev environment:
 - Headlamp Kubernetes UI for dev cluster inspection
 - Jenkins controller for CI
 - api-gateway backend and React SPA deployment through Jenkins, GHCR, and ArgoCD
+- parameterized Jenkins branch builds with readable build labels in Git tags, image tags, and pod metadata
 
 Real credentials, provider tokens, kubeconfigs, and sealed secret keys must not be committed.
 

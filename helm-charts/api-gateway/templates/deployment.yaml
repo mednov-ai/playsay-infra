@@ -4,6 +4,9 @@ metadata:
   name: {{ include "api-gateway.fullname" . }}
   labels:
     {{- include "api-gateway.labels" . | nindent 4 }}
+    {{- include "api-gateway.buildLabels" . | nindent 4 }}
+  annotations:
+    {{- include "api-gateway.buildAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -13,6 +16,9 @@ spec:
     metadata:
       labels:
         {{- include "api-gateway.selectorLabels" . | nindent 8 }}
+        {{- include "api-gateway.buildLabels" . | nindent 8 }}
+      annotations:
+        {{- include "api-gateway.buildAnnotations" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

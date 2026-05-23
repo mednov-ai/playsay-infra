@@ -274,7 +274,7 @@ Create a GitHub token for Jenkins. The simplest MVP option is one fine-grained t
 In Jenkins, create credentials:
 
 - `github-ghcr`: username/password credential. Username is your GitHub username or org bot user; password is the GitHub token with package write access.
-- `github-infra-token`: username/password credential. Username is your GitHub username or org bot user; password is the GitHub token that can push to `playsay-infra`.
+- `github-infra-token`: username/password credential. Username is your GitHub username or org bot user; password is the GitHub token that can push commits and tags to `playsay-infra` and create tags in `playsay-platform`.
 
 You may use one token for both credentials at MVP stage. Later, split them into narrower tokens.
 
@@ -289,6 +289,36 @@ Create credentials in Jenkins UI:
 Do not store the token in `playsay-infra` or `playsay-platform`.
 
 If you prefer CLI later, pass secrets only through a local untracked file such as `.env.local` or an interactive prompt.
+
+## Jenkins Branch Builds and Build Labels
+
+The Jenkins job `playsay-platform-develop` is configured by:
+
+```bash
+./scripts/configure-jenkins-jobs.sh
+```
+
+The bootstrap/add-ons script runs it automatically after Jenkins is installed. The job has a `BRANCH_NAME` parameter:
+
+- `develop` creates build labels such as `dev-11`;
+- `feature/task-1` creates labels such as `f_task-1-12`;
+- `release/1.001.00` creates labels such as `rel_1.001.00-13`;
+- `hotfix/fix-login` creates labels such as `hotfix_fix-login-14`.
+
+The build label is written to:
+
+- Jenkins build display name;
+- GHCR image tags for `playsay-api-gateway` and `playsay-web-app`;
+- Git tags in `playsay-platform` and `playsay-infra`;
+- Helm `values-dev.yaml` build metadata;
+- Kubernetes pod labels and annotations under `playsay.io/*`.
+
+Check what is deployed:
+
+```bash
+kubectl -n playsay-dev get pods --show-labels
+kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.annotations}'
+```
 
 Create the dev image pull secret after the first GHCR token is available:
 

@@ -23,3 +23,15 @@ app.kubernetes.io/name: {{ include "api-gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{- define "api-gateway.buildLabels" -}}
+playsay.io/build-name: {{ .Values.build.name | quote }}
+playsay.io/build-number: {{ .Values.build.number | quote }}
+playsay.io/source-branch: {{ .Values.build.branchLabel | quote }}
+playsay.io/source-commit: {{ .Values.build.commitShort | quote }}
+{{- end -}}
+
+{{- define "api-gateway.buildAnnotations" -}}
+playsay.io/build-name: {{ .Values.build.name | quote }}
+playsay.io/source-branch: {{ .Values.build.branch | quote }}
+playsay.io/source-commit: {{ .Values.build.commit | quote }}
+{{- end -}}

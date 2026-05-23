@@ -5,6 +5,14 @@ image:
 
 imagePullSecrets: []
 
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
 replicaCount: 1
 
 service:
