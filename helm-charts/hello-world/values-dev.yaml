@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "7bbf33093fd9f88d47545e219066bf9f294d09c9"
+  tag: "ce0c24aa125ae477013c5a553d5fc3cff33b1b48"
 imagePullSecrets:
   - name: ghcr-pull-secret
 ingress:
