@@ -1,5 +1,9 @@
 # Play&Say Dev Runbook
 
+## Sprint 0 Status
+
+Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 1.
+
 ## Sprint 0 Goal
 
 Create a reproducible dev environment:
@@ -82,6 +86,7 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 - `https://ops.play-and-say.ru:18443/headlamp/`
 - `https://ops.play-and-say.ru:18443/argocd/`
 - `https://ops.play-and-say.ru:18443/jenkins/`
+- `https://ops.play-and-say.ru:18443/keycloak/` (Sprint 1 auth)
 - `https://online.play-and-say.ru`
 
 The existing `play-and-say.ru` site server block is not overwritten.
@@ -170,6 +175,8 @@ If you know the Amnezia VPN CIDR or a fixed admin IP, restrict the ops UI:
   --email admin@example.com
 ```
 
+Current dev decision for Sprint 1: keep `ops.play-and-say.ru:18443` reachable from the network, but protected by Jenkins/ArgoCD/Headlamp logins. Later, after Keycloak is available, evaluate a shared SSO flow through the Play&Say Keycloak realm for a more convenient ops login.
+
 If you want to avoid any nginx changes too:
 
 ```bash
@@ -187,6 +194,7 @@ Current DNS/nginx split:
 - `play-and-say.ru` stays the public marketing/site host.
 - `online.play-and-say.ru` serves the React product SPA from k3s service `web-app`.
 - `ops.play-and-say.ru:18443` is reserved for dev infrastructure UI.
+- `ops.play-and-say.ru:18443/keycloak/` serves the Sprint 1 Keycloak dev instance.
 
 The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
 
@@ -221,6 +229,7 @@ Check ops UI before DNS exists by forcing local resolution:
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/headlamp/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/argocd/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/jenkins/
+curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/keycloak/
 curl -k -I --resolve online.play-and-say.ru:443:146.103.126.15 https://online.play-and-say.ru/
 ```
 
@@ -229,6 +238,7 @@ Expected:
 - Headlamp: `200 OK`;
 - ArgoCD: `200 OK`;
 - Jenkins: `403 Forbidden` or login redirect, which means Jenkins is alive and requires authentication.
+- Keycloak: `200 OK` or a redirect/login response, which means Keycloak is alive behind nginx.
 - Online SPA: `200 OK`.
 
 Check existing services:
@@ -376,6 +386,49 @@ ssh root@<server-ip> \
 
 This token is cluster-admin for the dev cluster. Keep Headlamp dev-only and do not reuse this pattern for staging/prod without proper OIDC/RBAC.
 
+## Keycloak Dev Instance
+
+Sprint 1 installs Keycloak in minimal mode to avoid upgrading the VPS before the first teacher trial conference:
+
+- ArgoCD app: `keycloak`;
+- namespace: `keycloak`;
+- chart: `bitnami/keycloak` `24.9.0`;
+- Keycloak version: `26.3.2`;
+- URL: `https://ops.play-and-say.ru:18443/keycloak/`;
+- service: NodePort `32084` on localhost through host nginx;
+- PostgreSQL: chart-managed standalone PostgreSQL with a `4Gi` PVC;
+- images: `docker.io/bitnamilegacy/keycloak` and `docker.io/bitnamilegacy/postgresql` because the chart's `docker.io/bitnami/...` tags are not available publicly anymore; replace with supported/private images before staging/prod. Chart `25.x` was avoided because it hit a known `Incomplete line...` startup failure in this dev setup.
+- secrets: `keycloak-admin` and `keycloak-postgresql`, created manually in the cluster and never committed to Git.
+- initial realm: `playsay`;
+- initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
+- initial clients: `playsay-web` and `playsay-api`.
+
+Check status:
+
+```bash
+ssh root@146.103.126.15 "kubectl -n argocd get app keycloak && kubectl -n keycloak get pods,pvc,svc"
+```
+
+Get the admin password only when needed:
+
+```bash
+ssh root@146.103.126.15 \
+  "kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.admin-password}' | base64 -d"
+```
+
+Keep the dev instance single-replica, non-HA, and resource-limited while the VPS stays on `2 vCPU / 4 GB`.
+
+After the first successful install on the current VPS, observed usage was:
+
+- Keycloak pod: about 470 Mi memory after startup;
+- Keycloak PostgreSQL pod: about 40 Mi memory;
+- node memory: about 2992 Mi / 76% by `kubectl top nodes`;
+- host `MemAvailable`: about 768 Mi;
+- swap: about 787 Mi used;
+- disk `/`: about 18 Gi used out of 79 Gi.
+
+This is tight but usable for Sprint 1 development. Re-check metrics after Jenkins builds and before teacher trials.
+
 ## Optional Separate Server Bootstrap
 
 Install Ansible dependencies:
@@ -455,6 +508,24 @@ https://argocd.dev.example.com
 
 ## Upgrade VDSina VPS
 
+Current Sprint 1 decision: do not upgrade immediately. Keep the dev VPS on `2 vCPU / 4 GB RAM / 80 GB` until the first trial conference with teachers or until resource pressure proves that the upgrade is needed.
+
+Baseline metrics captured before Sprint 1:
+
+- CPU: about 5% from `kubectl top nodes`;
+- Kubernetes memory: about 2702 Mi / 69%;
+- host memory: 3.8 Gi total, 2.6 Gi used, 1.3 Gi available;
+- swap: 2.0 Gi total, 754 Mi used;
+- disk `/`: 79 Gi total, 16 Gi used, 61 Gi available;
+- largest local dirs: `/var/lib/rancher` about 7.6 Gi, `/var/log` about 1.3 Gi, `/var/lib/docker` about 108 Mi.
+
+Upgrade triggers:
+
+- Keycloak/PostgreSQL or Jenkins builds start causing OOM kills or pod restarts;
+- `MemAvailable` stays below about 500 Mi during normal idle/dev usage;
+- swap stays above about 1 Gi and the UI/builds become painfully slow;
+- the first teacher trial conference needs a more stable environment.
+
 Use the VDSina panel:
 
 1. Open the server configurator.
@@ -469,14 +540,43 @@ kubectl get nodes
 kubectl get pods -A
 ```
 
+Also run the post-install verification checklist above after the reboot, including the public site, Amnezia Docker containers, nginx syntax, ops UI, and `online.play-and-say.ru`.
+
+## Dev Backup Stub
+
+Sprint 1 keeps backups intentionally simple until real production data exists.
+
+Backup scope:
+
+- Keycloak PostgreSQL database;
+- application PostgreSQL database once the platform database is introduced.
+
+Storage target:
+
+- local directory on the dev VPS, for example `/var/backups/playsay`;
+- files must not be committed to Git or copied into the workspace;
+- external S3/restic storage is deferred until real user data or staging/prod hardening.
+
+Expected backup shape:
+
+```bash
+mkdir -p /var/backups/playsay
+pg_dump "$KEYCLOAK_DATABASE_URL" > "/var/backups/playsay/keycloak-$(date +%F-%H%M%S).sql"
+pg_dump "$PLAYSAY_DATABASE_URL" > "/var/backups/playsay/playsay-$(date +%F-%H%M%S).sql"
+```
+
+Use Kubernetes secrets or pod environment variables to obtain database connection details. Do not paste database passwords into chat, Git commits, shell history snippets, or documentation.
+
 ## Disaster Recovery Drill
 
 1. Create a fresh VPS.
 2. Run `./scripts/bootstrap-dev.sh --ip <new-ip> --domain dev.example.com --email admin@example.com`.
 3. Switch DNS to the new IP.
 4. Let ArgoCD restore Git-defined applications.
+5. Restore Keycloak and application PostgreSQL dumps from `/var/backups/playsay` when those databases exist.
+6. Run the post-install verification checklist above.
 
-Persistent databases are introduced later and must have a separate restore procedure before real data appears.
+Before real student/teacher data appears, replace the local-only backup target with off-server storage and test a full restore.
 
 ## Rollback
 

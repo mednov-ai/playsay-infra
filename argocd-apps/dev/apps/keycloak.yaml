@@ -1,0 +1,83 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: keycloak
+    targetRevision: 24.9.0
+    helm:
+      values: |
+        global:
+          security:
+            allowInsecureImages: true
+
+        replicaCount: 1
+        production: false
+        httpEnabled: true
+        httpRelativePath: /keycloak/
+        proxyHeaders: xforwarded
+        hostnameStrict: false
+
+        image:
+          repository: bitnamilegacy/keycloak
+
+        auth:
+          adminUser: admin
+          existingSecret: keycloak-admin
+          passwordSecretKey: admin-password
+
+        cache:
+          enabled: false
+
+        service:
+          type: NodePort
+          ports:
+            http: 80
+          nodePorts:
+            http: "32084"
+
+        resourcesPreset: none
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 750m
+            memory: 900Mi
+
+        postgresql:
+          enabled: true
+          architecture: standalone
+          image:
+            repository: bitnamilegacy/postgresql
+          auth:
+            username: bn_keycloak
+            database: bitnami_keycloak
+            existingSecret: keycloak-postgresql
+            secretKeys:
+              userPasswordKey: password
+          primary:
+            resourcesPreset: none
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 384Mi
+            persistence:
+              enabled: true
+              size: 4Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

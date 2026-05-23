@@ -15,6 +15,7 @@ OPS_TLS_MODE="${OPS_TLS_MODE:-auto}"
 ONLINE_HOST="${ONLINE_HOST:-online.$DOMAIN}"
 ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
 ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
+KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
 INSTALL_JENKINS="${INSTALL_JENKINS:-true}"
 JENKINS_NODEPORT_HTTP="${JENKINS_NODEPORT_HTTP:-32082}"
 INSTALL_INGRESS_NGINX="${INSTALL_INGRESS_NGINX:-false}"
@@ -44,6 +45,7 @@ Environment variables:
   ONLINE_HOST            Product SPA host. Default: online.<PLAYSAY_DOMAIN>
   ONLINE_NODEPORT_HTTP   Local web-app NodePort. Default: 32083
   ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
+  KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
   INSTALL_JENKINS        Install Jenkins controller. Default: true
   JENKINS_NODEPORT_HTTP  Local Jenkins NodePort. Default: 32082
   INSTALL_INGRESS_NGINX  Install ingress-nginx. Default: false
@@ -390,6 +392,21 @@ ${OPS_ALLOW_DIRECTIVES}
 
     location = /jenkins {
         return 301 /jenkins/;
+    }
+
+    location /keycloak/ {
+        proxy_pass http://127.0.0.1:${KEYCLOAK_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port ${OPS_PORT};
+        proxy_set_header X-Forwarded-Prefix /keycloak;
+    }
+
+    location = /keycloak {
+        return 301 /keycloak/;
     }
 }
 
