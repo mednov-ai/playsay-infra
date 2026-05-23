@@ -1,6 +1,5 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "dev"
-
+  tag: "173c21f904b7577e92762131dde0140b17706197"
 ingress:
   host: hello.dev.example.com
