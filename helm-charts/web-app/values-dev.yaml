@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "ce0c24aa125ae477013c5a553d5fc3cff33b1b48"
+  tag: "e97f4b6a0d5b69daca7b0963588b507a1848d67c"
 imagePullSecrets:
   - name: ghcr-pull-secret
 service:
