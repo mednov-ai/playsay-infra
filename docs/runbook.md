@@ -339,6 +339,8 @@ After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tes
 
 The `OpenAPI contract` stage runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The frontend uses Orval to generate `web-app/src/generated/playsay-api.ts` from that contract before lint/build/test.
 
+The `DB migrate` stage runs after `OpenAPI contract` and before image builds for deployable branches. It uses `liquibase/liquibase:5.0.3`, downloads the pinned PostgreSQL JDBC driver `42.7.8`, and applies `backend/api-gateway/src/main/resources/db/changelog/db.changelog-master.xml` to the dev application PostgreSQL database. The Jenkins agent reads `PLAYSAY_DB_JDBC_URL`, `PLAYSAY_DB_USERNAME`, and `PLAYSAY_DB_PASSWORD` from the Kubernetes secret `playsay-app-db` in the `jenkins` namespace. Keep `api-gateway` startup Liquibase disabled in Helm; migrations are controlled by Jenkins, not by service boot.
+
 Create the dev image pull secret after the first GHCR token is available:
 
 ```bash
@@ -479,7 +481,7 @@ Protected endpoints:
 - `DELETE /users/me/profile` resets editable app-level fields for the current user.
 - `GET /admin/users` lists known app-level user profiles and requires the `ADMIN` role.
 
-Sprint 1 stores UserProfile data in an in-memory dev store inside `api-gateway`. Keycloak remains the source of identity and roles. The app profile store is intentionally temporary and loses data on pod restart; persistent PostgreSQL storage belongs to Sprint 2.
+Sprint 2 moved UserProfile data out of the in-memory dev store into application PostgreSQL. Keycloak remains the source of identity and roles. `api-gateway` now stores the app-level profile fields in `app_user` and refreshes username, email, name, and roles from each JWT access.
 
 Dev runtime configuration is passed through the Helm chart:
 
@@ -487,6 +489,9 @@ Dev runtime configuration is passed through the Helm chart:
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
 ```
 
 The issuer stays public because Keycloak puts that value into tokens. The JWKS URI is internal so `api-gateway` can validate signatures without routing through host nginx.
@@ -566,6 +571,21 @@ kubectl -n playsay-data get svc
 
 CloudNativePG generates database credentials as Kubernetes secrets. Retrieve values only when needed for wiring an application or a manual smoke test; do not paste them into chat, Git, shell history snippets, or documentation.
 
+Because `app-postgres` runs in `playsay-data`, while `api-gateway` runs in `playsay-dev` and Jenkins agents run in `jenkins`, copy the generated application connection secret into those namespaces after the database is healthy:
+
+```bash
+./scripts/sync-app-db-secret.sh
+```
+
+The script copies `playsay-postgres-app` from `playsay-data` into `playsay-app-db` in `playsay-dev` and `jenkins`, using the source secret's `fqdn-jdbc-uri` as the target `jdbc-uri`. It handles secret values through temporary files and does not print them. Re-run it if CloudNativePG rotates the application password or if a namespace is recreated.
+
+`api-gateway` uses this secret through Helm env vars:
+
+- `PLAYSAY_DB_JDBC_URL` from `playsay-app-db` key `jdbc-uri`;
+- `PLAYSAY_DB_USERNAME` from key `username`;
+- `PLAYSAY_DB_PASSWORD` from key `password`;
+- `PLAYSAY_LIQUIBASE_ENABLED=false` in the runtime pod.
+
 Keep the CloudNativePG operator overlay less aggressive than the upstream default: `--max-concurrent-reconciles=2`, `500m/256Mi` limits, and 5-second probe timeouts. The upstream `100m` CPU limit plus 1-second probes repeatedly lost leader election while Jenkins was building `dev-28` on the original 2 vCPU / 4 GB VPS.
 
 Useful connection endpoints inside the cluster:
@@ -574,6 +594,23 @@ Useful connection endpoints inside the cluster:
 - read-only service: `playsay-postgres-ro.playsay-data.svc.cluster.local:5432`;
 - database: `playsay`;
 - app user: `playsay_app`.
+
+Initial Sprint 2 schema is owned by `api-gateway` changelogs:
+
+- changelog root: `backend/api-gateway/src/main/resources/db/changelog/db.changelog-master.xml`;
+- first changeset: `2026-05-24-001-create-sprint2-domain-tables`;
+- tables: `app_user`, `student_profile`, `teacher_profile`, `course`, `lesson_template`, `lesson`, `lesson_participant`, `assignment`, `submission`;
+- `/users/me/profile` persists editable fields in `app_user` instead of memory.
+
+Manual migration smoke path, matching Jenkins network and secrets:
+
+1. Ensure `playsay-app-db` exists in `jenkins` by running `./scripts/sync-app-db-secret.sh`.
+2. Start a temporary pod in `jenkins` with `liquibase/liquibase:5.0.3`.
+3. Copy the `db/changelog` directory into the pod.
+4. Download PostgreSQL JDBC driver `42.7.8`.
+5. Run `liquibase status --verbose` and `liquibase update`.
+
+On 2026-05-24 this path applied one pending changeset successfully and the expected tables appeared in `public`.
 
 After enabling this database, re-check VPS pressure:
 

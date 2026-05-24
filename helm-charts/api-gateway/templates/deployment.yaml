@@ -36,6 +36,25 @@ spec:
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
               value: {{ .Values.auth.jwkSetUri | quote }}
+            {{- if .Values.database.enabled }}
+            - name: PLAYSAY_DB_JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.jdbcUriKey | quote }}
+            - name: PLAYSAY_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.usernameKey | quote }}
+            - name: PLAYSAY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
+            - name: PLAYSAY_LIQUIBASE_ENABLED
+              value: {{ .Values.database.liquibaseEnabled | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

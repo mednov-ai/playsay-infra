@@ -23,6 +23,14 @@ auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
 
+database:
+  enabled: true
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+
 ingress:
   enabled: true
   className: nginx
