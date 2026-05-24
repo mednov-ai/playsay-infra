@@ -166,6 +166,19 @@ EOF
 
 if [[ "$INSTALL_JENKINS" == "true" ]]; then
   kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
+  kubectl -n jenkins apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-agent-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+EOF
+
   helm upgrade --install jenkins jenkins/jenkins \
     --namespace jenkins \
     --set controller.jenkinsUriPrefix=/jenkins \
