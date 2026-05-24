@@ -510,6 +510,75 @@ Current Sprint 1 UI verification points:
 - the admin demo user sees the admin-only known profile list;
 - logout clears local `sessionStorage` auth state and redirects through Keycloak logout.
 
+Final Sprint 1 closure checklist:
+
+```bash
+# ArgoCD apps should be Synced / Healthy on the latest dev revision.
+kubectl -n argocd get applications.argoproj.io playsay-dev-root api-gateway web-app keycloak
+
+# Product pods should be ready and labelled with the latest Jenkins build, for example dev-24.
+kubectl -n playsay-dev get pods --show-labels
+
+# Public entrypoints should answer.
+curl -k -I https://online.play-and-say.ru/
+curl -k -sS https://online.play-and-say.ru/api/hello
+curl -k -I https://ops.play-and-say.ru:18443/keycloak/
+```
+
+Manual auth checks:
+
+- `student-demo` can log in, sees the student workspace, `/api/me` and `/api/users/me/profile` return `200`;
+- `teacher-demo` can log in, sees the teacher workspace, `/api/admin/users` returns `403`;
+- `admin-demo` can log in, sees the admin workspace, `/api/admin/users` returns `200`;
+- logout returns through Keycloak and clears the local browser session.
+
+## Application PostgreSQL
+
+Sprint 2 starts the application database on the same dev VPS without upgrading it yet. Keep this setup intentionally small until the first teacher trial proves that more capacity is needed.
+
+GitOps applications:
+
+- `cloudnative-pg`: CloudNativePG operator `1.29.1`, installed from a local Kustomize overlay pinned to the upstream tag `v1.29.1`;
+- `app-postgres`: Play&Say application PostgreSQL cluster, rendered from `helm-charts/app-postgres`.
+
+Dev shape:
+
+- namespace: `playsay-data`;
+- cluster name: `playsay-postgres`;
+- PostgreSQL image: `ghcr.io/cloudnative-pg/postgresql:17.6-system-trixie`;
+- instances: `1`;
+- storage: `2Gi` PVC;
+- requests/limits: `50m/128Mi` requests, `500m/384Mi` limits;
+- database: `playsay`;
+- owner: `playsay_app`.
+
+Check status:
+
+```bash
+kubectl -n argocd get applications.argoproj.io cloudnative-pg app-postgres
+kubectl -n cnpg-system get pods
+kubectl -n playsay-data get cluster,pods,pvc,secrets
+kubectl -n playsay-data get svc
+```
+
+CloudNativePG generates database credentials as Kubernetes secrets. Retrieve values only when needed for wiring an application or a manual smoke test; do not paste them into chat, Git, shell history snippets, or documentation.
+
+Useful connection endpoints inside the cluster:
+
+- read/write service: `playsay-postgres-rw.playsay-data.svc.cluster.local:5432`;
+- read-only service: `playsay-postgres-ro.playsay-data.svc.cluster.local:5432`;
+- database: `playsay`;
+- app user: `playsay_app`.
+
+After enabling this database, re-check VPS pressure:
+
+```bash
+uptime
+free -m
+kubectl top nodes
+kubectl top pods -A | sort -k3 -h | tail -n 20
+```
+
 ## Optional Separate Server Bootstrap
 
 Install Ansible dependencies:

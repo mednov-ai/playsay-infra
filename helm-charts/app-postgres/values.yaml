@@ -1,0 +1,19 @@
+cluster:
+  name: playsay-postgres
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.6-system-trixie
+  database: playsay
+  owner: playsay_app
+  storage:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+  postgresql:
+    parameters:
+      shared_buffers: 64MB
+      max_connections: "50"
