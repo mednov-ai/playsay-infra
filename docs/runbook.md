@@ -454,6 +454,8 @@ After the first successful install on the current VPS, observed usage was:
 
 This is tight but usable for Sprint 1 development. Re-check metrics after Jenkins builds and before teacher trials.
 
+During Jenkins `dev-22` after adding UserProfile CRUD, the build completed successfully but the current VPS showed clear pressure: load average peaked around `6.6`, host `MemAvailable` dropped to about `411 Mi`, swap was about `809 Mi`, Kubernetes emitted a transient `NodeNotReady` event, and the external nginx path to `/jenkins` briefly returned `502` while Jenkins still answered through the local NodePort. Treat this as a warning signal, not yet a hard failure: no new app pods restarted and the rollout recovered cleanly.
+
 ## API Gateway Auth
 
 `api-gateway` is a Spring Security OAuth2 Resource Server.
@@ -593,6 +595,7 @@ Upgrade triggers:
 - Keycloak/PostgreSQL or Jenkins builds start causing OOM kills or pod restarts;
 - `MemAvailable` stays below about 500 Mi during normal idle/dev usage;
 - swap stays above about 1 Gi and the UI/builds become painfully slow;
+- Jenkins builds repeatedly cause transient `NodeNotReady` or external `/jenkins` `502` errors;
 - the first teacher trial conference needs a more stable environment.
 
 Use the VDSina panel:
