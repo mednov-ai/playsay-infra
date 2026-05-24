@@ -560,7 +560,7 @@ GitOps resources:
 - image: `livekit/livekit-server:v1.11.0`;
 - secret name: `livekit-keys` in namespaces `livekit` and `playsay-dev`.
 
-The dev chart runs one LiveKit pod with `hostNetwork: true` on the current single-node VPS. Host nginx proxies signaling through the product origin:
+The dev chart runs one LiveKit pod with `hostNetwork: true` and `enableServiceLinks: false` on the current single-node VPS. `enableServiceLinks` must stay disabled because Kubernetes service env vars such as `LIVEKIT_PORT=tcp://...` conflict with LiveKit's own numeric `LIVEKIT_PORT` option. Host nginx proxies signaling through the product origin:
 
 - public signaling URL: `wss://online.play-and-say.ru/livekit`;
 - local signaling target: `127.0.0.1:7880`;

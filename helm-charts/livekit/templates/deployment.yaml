@@ -17,6 +17,7 @@ spec:
         {{- include "livekit.selectorLabels" . | nindent 8 }}
     spec:
       hostNetwork: true
+      enableServiceLinks: false
       dnsPolicy: ClusterFirstWithHostNet
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
