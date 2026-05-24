@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "livekit.fullname" . }}
+  labels:
+    {{- include "livekit.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "livekit.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "livekit.selectorLabels" . | nindent 8 }}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: livekit
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              cat >/tmp/livekit.yaml <<EOF
+              port: {{ .Values.signaling.port }}
+              bind_addresses:
+                - ""
+              rtc:
+                tcp_port: {{ .Values.rtc.tcpPort }}
+                port_range_start: {{ .Values.rtc.udpPortRangeStart }}
+                port_range_end: {{ .Values.rtc.udpPortRangeEnd }}
+                use_external_ip: false
+                node_ip: "{{ .Values.rtc.nodeIp }}"
+              keys:
+                "$LIVEKIT_API_KEY": "$LIVEKIT_API_SECRET"
+              EOF
+              exec /livekit-server --config /tmp/livekit.yaml
+          env:
+            - name: LIVEKIT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.existingName | quote }}
+                  key: {{ .Values.secret.apiKeyKey | quote }}
+            - name: LIVEKIT_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.existingName | quote }}
+                  key: {{ .Values.secret.apiSecretKey | quote }}
+          ports:
+            - name: signaling
+              containerPort: {{ .Values.signaling.port }}
+              protocol: TCP
+            - name: rtc-tcp
+              containerPort: {{ .Values.rtc.tcpPort }}
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: signaling
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: signaling
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -482,6 +482,8 @@ Protected endpoints:
 - `PUT /users/me/profile` updates editable app-level fields: `displayName`, `locale`, `timezone`, and `learningGoal`.
 - `DELETE /users/me/profile` resets editable app-level fields for the current user.
 - `GET /admin/users` lists known app-level user profiles and requires the `ADMIN` role.
+- `GET/POST /schedule/lessons`, `GET/PUT/DELETE /schedule/lessons/{lessonId}` manage scheduled lessons.
+- `POST /schedule/lessons/{lessonId}/room-token` returns a short-lived LiveKit join token for a teacher/admin or a student participant.
 
 Sprint 2 moved UserProfile data out of the in-memory dev store into application PostgreSQL. Keycloak remains the source of identity and roles. `api-gateway` now stores the app-level profile fields in `app_user` and refreshes username, email, name, and roles from each JWT access.
 
@@ -494,6 +496,10 @@ auth:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
+livekit:
+  serverUrl: wss://online.play-and-say.ru/livekit
+  existingSecret: livekit-keys
+  tokenTtlSeconds: "3600"
 ```
 
 The issuer stays public because Keycloak puts that value into tokens. The JWKS URI is internal so `api-gateway` can validate signatures without routing through host nginx.
@@ -510,7 +516,7 @@ VITE_AUTH_CLIENT_ID=playsay-web
 VITE_AUTH_REDIRECT_PATH=/auth/callback
 ```
 
-The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me`, `/api/users/me/profile`, and the admin-only `/api/admin/users` through the generated Orval client.
+The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me`, `/api/users/me/profile`, schedule endpoints, and the LiveKit room-token endpoint through the generated Orval client.
 
 Current Sprint 1 UI verification points:
 
@@ -541,6 +547,51 @@ Manual auth checks:
 - `teacher-demo` can log in, sees the teacher workspace, `/api/admin/users` returns `403`;
 - `admin-demo` can log in, sees the admin workspace, `/api/admin/users` returns `200`;
 - logout returns through Keycloak and clears the local browser session.
+
+## LiveKit Dev Video
+
+Sprint 3 video work started early to make the platform demonstrable from the schedule screen.
+
+GitOps resources:
+
+- ArgoCD app: `argocd-apps/dev/apps/livekit.yaml`;
+- Helm chart: `helm-charts/livekit`;
+- namespace: `livekit`;
+- image: `livekit/livekit-server:v1.11.0`;
+- secret name: `livekit-keys` in namespaces `livekit` and `playsay-dev`.
+
+The dev chart runs one LiveKit pod with `hostNetwork: true` on the current single-node VPS. Host nginx proxies signaling through the product origin:
+
+- public signaling URL: `wss://online.play-and-say.ru/livekit`;
+- local signaling target: `127.0.0.1:7880`;
+- LiveKit TCP fallback: `7881`;
+- dev ICE UDP range: `50000-50020`.
+
+The LiveKit API key/secret are generated or synced by:
+
+```bash
+./scripts/sync-livekit-secret.sh
+```
+
+`deploy-cluster-addons.sh` runs the sync script automatically when it exists. Do not commit or print the secret values. If the `livekit` namespace already has `livekit-keys`, the script reuses it and copies it to `playsay-dev` for `api-gateway`.
+
+Host nginx config is generated with a `/livekit/` location under `online.play-and-say.ru`. After changing the script on an existing server, rerun the add-ons script or manually verify the rendered host config:
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+Smoke checks:
+
+```bash
+kubectl -n argocd get applications.argoproj.io livekit api-gateway web-app
+kubectl -n livekit get pods -o wide
+kubectl -n playsay-dev get secret livekit-keys
+curl -k -I https://online.play-and-say.ru/livekit/
+```
+
+For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo` as participant, click "Войти в урок", then log in as that student in another browser profile and click the same button. Browser camera/microphone permissions must be allowed.
 
 ## Application PostgreSQL
 

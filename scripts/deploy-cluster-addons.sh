@@ -16,6 +16,7 @@ ONLINE_HOST="${ONLINE_HOST:-online.$DOMAIN}"
 ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
 ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
 KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
+LIVEKIT_SIGNALING_HOST_PORT="${LIVEKIT_SIGNALING_HOST_PORT:-7880}"
 INSTALL_JENKINS="${INSTALL_JENKINS:-true}"
 JENKINS_NODEPORT_HTTP="${JENKINS_NODEPORT_HTTP:-32082}"
 INSTALL_INGRESS_NGINX="${INSTALL_INGRESS_NGINX:-false}"
@@ -46,6 +47,7 @@ Environment variables:
   ONLINE_NODEPORT_HTTP   Local web-app NodePort. Default: 32083
   ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
   KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
+  LIVEKIT_SIGNALING_HOST_PORT Local LiveKit signaling port for /livekit/. Default: 7880
   INSTALL_JENKINS        Install Jenkins controller. Default: true
   JENKINS_NODEPORT_HTTP  Local Jenkins NodePort. Default: 32082
   INSTALL_INGRESS_NGINX  Install ingress-nginx. Default: false
@@ -83,6 +85,10 @@ require kubectl
 require helm
 
 kubectl cluster-info >/dev/null
+
+if [[ -x "$ROOT_DIR/scripts/sync-livekit-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/sync-livekit-secret.sh"
+fi
 
 if [[ "$INSTALL_INGRESS_NGINX" == "true" ]]; then
   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null
@@ -262,6 +268,23 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
 
     ONLINE_HTTP_SERVER=""
     ONLINE_HTTPS_SERVER=""
+    ONLINE_LIVEKIT_LOCATION="    location /livekit/ {
+        proxy_pass http://127.0.0.1:${LIVEKIT_SIGNALING_HOST_PORT}/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    location = /livekit {
+        return 301 /livekit/;
+    }
+"
     if [[ "$ONLINE_TLS_MODE" == "off" ]]; then
       ONLINE_SCHEME="http"
       ONLINE_HTTP_SERVER="server {
@@ -269,6 +292,7 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
     listen [::]:80;
     server_name ${ONLINE_HOST};
 
+${ONLINE_LIVEKIT_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;
@@ -332,6 +356,7 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
     ssl_certificate ${ONLINE_SSL_CERT};
     ssl_certificate_key ${ONLINE_SSL_KEY};
 
+${ONLINE_LIVEKIT_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;

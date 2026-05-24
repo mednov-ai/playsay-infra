@@ -1,0 +1,34 @@
+image:
+  repository: livekit/livekit-server
+  tag: "v1.11.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+replicaCount: 1
+
+secret:
+  existingName: livekit-keys
+  apiKeyKey: api-key
+  apiSecretKey: api-secret
+
+signaling:
+  port: 7880
+
+rtc:
+  tcpPort: 7881
+  udpPortRangeStart: 50000
+  udpPortRangeEnd: 50020
+  nodeIp: ""
+
+service:
+  enabled: true
+  port: 7880
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi

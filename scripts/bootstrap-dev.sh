@@ -17,6 +17,7 @@ OPS_TLS_MODE="auto"
 ONLINE_HOST=""
 ONLINE_NODEPORT_HTTP="32083"
 ONLINE_TLS_MODE="auto"
+LIVEKIT_SIGNALING_HOST_PORT="7880"
 REMOTE_USER="root"
 REMOTE_BOOTSTRAP_DIR="/tmp/playsay-infra-bootstrap"
 INSTALL_JENKINS="true"
@@ -41,6 +42,7 @@ Options:
   --online-host <host>      Product SPA host. Default: online.<domain>
   --online-nodeport <port>  Product SPA local NodePort. Default: 32083
   --online-tls-mode <mode>  auto, self-signed, existing, or off. Default: auto
+  --livekit-signaling-port <port> Local LiveKit signaling port. Default: 7880
   --ssh-key <path>          Optional SSH key path. Default: use normal ssh config/agent
   --no-jenkins              Do not install Jenkins controller
   --mode <mode>             coexist or fresh. Default: coexist
@@ -107,6 +109,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --online-tls-mode)
       ONLINE_TLS_MODE="$2"
+      shift 2
+      ;;
+    --livekit-signaling-port)
+      LIVEKIT_SIGNALING_HOST_PORT="$2"
       shift 2
       ;;
     --ssh-key)
@@ -267,7 +273,7 @@ quote() {
   printf "%q" "$1"
 }
 
-REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") ONLINE_HOST=$(quote "$ONLINE_HOST") ONLINE_NODEPORT_HTTP=$(quote "$ONLINE_NODEPORT_HTTP") ONLINE_TLS_MODE=$(quote "$ONLINE_TLS_MODE") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
+REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") ONLINE_HOST=$(quote "$ONLINE_HOST") ONLINE_NODEPORT_HTTP=$(quote "$ONLINE_NODEPORT_HTTP") ONLINE_TLS_MODE=$(quote "$ONLINE_TLS_MODE") LIVEKIT_SIGNALING_HOST_PORT=$(quote "$LIVEKIT_SIGNALING_HOST_PORT") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
 
 echo "Installing Kubernetes add-ons directly on the VPS."
 ssh "${SSH_ARGS[@]}" "$REMOTE_USER@$SERVER_IP" "$REMOTE_CMD"

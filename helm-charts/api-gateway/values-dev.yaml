@@ -19,3 +19,8 @@ auth:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
+livekit:
+  enabled: true
+  serverUrl: wss://online.play-and-say.ru/livekit
+  existingSecret: livekit-keys
+  tokenTtlSeconds: "3600"

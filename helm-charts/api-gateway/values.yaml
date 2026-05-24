@@ -31,6 +31,14 @@ database:
   passwordKey: password
   liquibaseEnabled: "false"
 
+livekit:
+  enabled: true
+  serverUrl: wss://online.play-and-say.ru/livekit
+  existingSecret: livekit-keys
+  apiKeyKey: api-key
+  apiSecretKey: api-secret
+  tokenTtlSeconds: "3600"
+
 ingress:
   enabled: true
   className: nginx
