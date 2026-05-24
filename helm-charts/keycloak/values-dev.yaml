@@ -56,9 +56,11 @@ keycloak:
         - sh
         - -ec
         - |
-          mkdir -p /theme/playsay/login/resources/css /theme/playsay/login/resources/img
+          mkdir -p /theme/playsay/login/messages /theme/playsay/login/resources/css /theme/playsay/login/resources/img
           cp /theme-src/theme.properties /theme/playsay/login/theme.properties
           cp /theme-src/template.ftl /theme/playsay/login/template.ftl
+          cp /theme-src/messages_en.properties /theme/playsay/login/messages/messages_en.properties
+          cp /theme-src/messages_ru.properties /theme/playsay/login/messages/messages_ru.properties
           cp /theme-src/playsay-login.css /theme/playsay/login/resources/css/playsay-login.css
           cp /theme-src/logo.jpg /theme/playsay/login/resources/img/logo.jpg
       volumeMounts:

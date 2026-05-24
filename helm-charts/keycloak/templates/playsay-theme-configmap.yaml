@@ -10,6 +10,10 @@ data:
 {{ .Files.Get "themes/playsay/login/theme.properties" | indent 4 }}
   template.ftl: |-
 {{ .Files.Get "themes/playsay/login/template.ftl" | indent 4 }}
+  messages_en.properties: |-
+{{ .Files.Get "themes/playsay/login/messages/messages_en.properties" | indent 4 }}
+  messages_ru.properties: |-
+{{ .Files.Get "themes/playsay/login/messages/messages_ru.properties" | indent 4 }}
   playsay-login.css: |-
 {{ .Files.Get "themes/playsay/login/resources/css/playsay-login.css" | indent 4 }}
 binaryData:
