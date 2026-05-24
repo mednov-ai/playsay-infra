@@ -500,7 +500,15 @@ VITE_AUTH_CLIENT_ID=playsay-web
 VITE_AUTH_REDIRECT_PATH=/auth/callback
 ```
 
-The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me` and `/api/users/me/profile` through the generated Orval client.
+The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me`, `/api/users/me/profile`, and the admin-only `/api/admin/users` through the generated Orval client.
+
+Current Sprint 1 UI verification points:
+
+- login through Keycloak returns to `https://online.play-and-say.ru`;
+- the user panel shows the current Keycloak identity and Play&Say roles;
+- the role workspace changes between student, teacher, and admin demo users;
+- the admin demo user sees the admin-only known profile list;
+- logout clears local `sessionStorage` auth state and redirects through Keycloak logout.
 
 ## Optional Separate Server Bootstrap
 
