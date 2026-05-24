@@ -37,38 +37,36 @@ keycloak:
       cpu: 750m
       memory: 900Mi
 
+  extraEnvVars:
+    - name: KC_SPI_THEME_CACHE_THEMES
+      value: "false"
+    - name: KC_SPI_THEME_CACHE_TEMPLATES
+      value: "false"
+    - name: KC_SPI_THEME_STATIC_MAX_AGE
+      value: "-1"
+
   extraVolumes:
-    - name: playsay-theme-src
+    - name: playsay-theme
       configMap:
         name: keycloak-playsay-theme
-    - name: playsay-theme
-      emptyDir: {}
+        items:
+          - key: theme.properties
+            path: login/theme.properties
+          - key: template.ftl
+            path: login/template.ftl
+          - key: messages_en.properties
+            path: login/messages/messages_en.properties
+          - key: messages_ru.properties
+            path: login/messages/messages_ru.properties
+          - key: playsay-login.css
+            path: login/resources/css/playsay-login.css
+          - key: logo.jpg
+            path: login/resources/img/logo.jpg
 
   extraVolumeMounts:
     - name: playsay-theme
       mountPath: /opt/bitnami/keycloak/themes/playsay
-
-  initContainers:
-    - name: install-playsay-theme
-      image: alpine:3.20
-      imagePullPolicy: IfNotPresent
-      command:
-        - sh
-        - -ec
-        - |
-          mkdir -p /theme/playsay/login/messages /theme/playsay/login/resources/css /theme/playsay/login/resources/img
-          cp /theme-src/theme.properties /theme/playsay/login/theme.properties
-          cp /theme-src/template.ftl /theme/playsay/login/template.ftl
-          cp /theme-src/messages_en.properties /theme/playsay/login/messages/messages_en.properties
-          cp /theme-src/messages_ru.properties /theme/playsay/login/messages/messages_ru.properties
-          cp /theme-src/playsay-login.css /theme/playsay/login/resources/css/playsay-login.css
-          cp /theme-src/logo.jpg /theme/playsay/login/resources/img/logo.jpg
-      volumeMounts:
-        - name: playsay-theme-src
-          mountPath: /theme-src
-          readOnly: true
-        - name: playsay-theme
-          mountPath: /theme/playsay
+      readOnly: true
 
   postgresql:
     enabled: true

@@ -402,7 +402,7 @@ Sprint 1 installs Keycloak in minimal mode to avoid upgrading the VPS before the
 - service: NodePort `32084` on localhost through host nginx;
 - PostgreSQL: chart-managed standalone PostgreSQL with a `4Gi` PVC;
 - images: `docker.io/bitnamilegacy/keycloak` and `docker.io/bitnamilegacy/postgresql` because the chart's `docker.io/bitnami/...` tags are not available publicly anymore; replace with supported/private images before staging/prod. Chart `25.x` was avoided because it hit a known `Incomplete line...` startup failure in this dev setup.
-- login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart. The logo is copied from `play-and-say.ru`. On mobile, the login form is ordered before the brand copy so username/password are visible without scrolling.
+- login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart as a ConfigMap volume. Theme caches are disabled in dev. The logo is copied from `play-and-say.ru`. On mobile, the login form is ordered before the brand copy so username/password are visible without scrolling.
 - secrets: `keycloak-admin` and `keycloak-postgresql`, created manually in the cluster and never committed to Git.
 - initial realm: `playsay`;
 - initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
