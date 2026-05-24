@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "dev-32"
+  tag: "dev-33"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-32
-  number: "32"
+  name: dev-33
+  number: "33"
   branch: develop
   branchLabel: dev
-  commit: f55c49a93a261fa49bbe707c23cceffe2858bc48
-  commitShort: "f55c49a93a26"
+  commit: bcf0b1393408cd7c0e1bad90018e225e46b19d6e
+  commitShort: "bcf0b1393408"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
