@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-playsay-theme
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/part-of: playsay
+data:
+  theme.properties: |-
+{{ .Files.Get "themes/playsay/login/theme.properties" | indent 4 }}
+  template.ftl: |-
+{{ .Files.Get "themes/playsay/login/template.ftl" | indent 4 }}
+  playsay-login.css: |-
+{{ .Files.Get "themes/playsay/login/resources/css/playsay-login.css" | indent 4 }}
+binaryData:
+  logo.jpg: {{ .Files.Get "themes/playsay/login/resources/img/logo.jpg" | b64enc }}

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: playsay-keycloak
+description: Play&Say Keycloak deployment wrapper with the Play&Say login theme.
+type: application
+version: 0.1.0
+appVersion: "26.3.2"
+dependencies:
+  - name: keycloak
+    version: 24.9.0
+    repository: https://charts.bitnami.com/bitnami

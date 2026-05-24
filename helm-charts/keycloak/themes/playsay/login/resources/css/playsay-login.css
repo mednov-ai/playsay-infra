@@ -1,0 +1,362 @@
+:root {
+  --playsay-orange: #ff5a00;
+  --playsay-orange-dark: #e94f00;
+  --playsay-ink: #111111;
+  --playsay-muted: #5f6672;
+  --playsay-line: #ffd9c4;
+  --playsay-cream: #fff8ef;
+  --playsay-mint: #dff4e9;
+  --playsay-yellow: #ffe16a;
+}
+
+body.playsay-login-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 10% 18%, rgba(255, 225, 106, 0.26), transparent 25%),
+    radial-gradient(circle at 88% 78%, rgba(255, 90, 0, 0.12), transparent 22%),
+    linear-gradient(120deg, #fffaf2 0%, #ffffff 48%, #fff6ed 100%);
+  color: var(--playsay-ink);
+  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.playsay-brand {
+  position: absolute;
+  top: 34px;
+  left: calc((100vw - min(1120px, calc(100% - 64px))) / 2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--playsay-orange);
+  font-weight: 800;
+}
+
+.playsay-brand-logo {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(255, 90, 0, 0.13);
+}
+
+.playsay-brand-logo img {
+  display: block;
+  width: 48px;
+  height: auto;
+}
+
+.playsay-page {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(0, 1fr) minmax(400px, 480px);
+  gap: 72px;
+  align-items: center;
+  width: min(1120px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.playsay-copy {
+  padding-top: 74px;
+}
+
+.playsay-eyebrow {
+  margin: 0 0 18px;
+  color: var(--playsay-orange);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.playsay-copy h1 {
+  max-width: 560px;
+  margin: 0;
+  color: var(--playsay-ink);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.playsay-mark {
+  display: inline-block;
+  width: 58px;
+  height: 12px;
+  margin-left: 10px;
+  border-radius: 999px;
+  background: var(--playsay-orange);
+  vertical-align: middle;
+  transform: rotate(-4deg);
+}
+
+.playsay-lead {
+  max-width: 560px;
+  margin: 26px 0 34px;
+  color: #343943;
+  font-size: 19px;
+  line-height: 1.62;
+}
+
+.playsay-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.playsay-chip {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  border: 2px solid rgba(255, 90, 0, 0.17);
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0 18px;
+  font-weight: 800;
+  box-shadow: 0 16px 36px rgba(30, 36, 44, 0.08);
+}
+
+.playsay-chip:nth-child(2) {
+  background: var(--playsay-mint);
+}
+
+.playsay-chip:nth-child(3) {
+  background: var(--playsay-yellow);
+}
+
+.playsay-points {
+  display: grid;
+  max-width: 600px;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+.playsay-point {
+  border: 1px solid rgba(255, 90, 0, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 16px 18px;
+  color: #343943;
+  font-weight: 700;
+}
+
+.playsay-card {
+  position: relative;
+  border: 1px solid rgba(255, 90, 0, 0.18);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 34px;
+  box-shadow: 0 28px 80px rgba(30, 36, 44, 0.12);
+}
+
+.playsay-card::before {
+  position: absolute;
+  top: -24px;
+  right: 34px;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  background: var(--playsay-yellow);
+  content: "";
+  z-index: -1;
+}
+
+.playsay-card::after {
+  position: absolute;
+  right: -18px;
+  bottom: 70px;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  background: var(--playsay-orange);
+  content: "";
+  z-index: -1;
+}
+
+.playsay-card-title {
+  margin: 0 0 12px;
+  color: var(--playsay-ink);
+  font-size: 32px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.playsay-card-text {
+  margin: 0 0 28px;
+  color: var(--playsay-muted);
+  line-height: 1.55;
+}
+
+.playsay-card .form-group {
+  margin-bottom: 16px;
+}
+
+.playsay-card label,
+.playsay-card .pf-c-form__label,
+.playsay-card .pf-c-form__label-text {
+  color: #333842;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.playsay-card input[type="text"],
+.playsay-card input[type="password"],
+.playsay-card .pf-c-form-control {
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--playsay-line);
+  border-radius: 14px;
+  background: #fffaf6;
+  padding: 0 16px;
+  color: var(--playsay-ink);
+  font: inherit;
+  outline: none;
+  box-shadow: none;
+}
+
+.playsay-card input:focus,
+.playsay-card .pf-c-form-control:focus {
+  border-color: var(--playsay-orange);
+  box-shadow: 0 0 0 4px rgba(255, 90, 0, 0.12);
+}
+
+.playsay-card .pf-c-input-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.playsay-card .pf-c-input-group input {
+  border-radius: 14px 0 0 14px;
+}
+
+.playsay-card .pf-c-input-group button {
+  min-width: 52px;
+  border: 1px solid var(--playsay-line);
+  border-left: 0;
+  border-radius: 0 14px 14px 0;
+  background: #fffaf6;
+  color: var(--playsay-muted);
+}
+
+.playsay-card .login-pf-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+  color: var(--playsay-muted);
+  font-size: 13px;
+}
+
+.playsay-card .login-pf-settings label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.playsay-card a {
+  color: var(--playsay-orange);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.playsay-card a:hover {
+  color: var(--playsay-orange-dark);
+  text-decoration: none;
+}
+
+.playsay-card #kc-form-buttons {
+  margin-top: 26px;
+}
+
+.playsay-card .pf-c-button.pf-m-primary,
+.playsay-card input[type="submit"].pf-c-button.pf-m-primary {
+  display: inline-flex;
+  width: 100%;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 14px;
+  background: var(--playsay-orange);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  box-shadow: 0 16px 32px rgba(255, 90, 0, 0.22);
+}
+
+.playsay-card .pf-c-button.pf-m-primary:hover,
+.playsay-card input[type="submit"].pf-c-button.pf-m-primary:hover {
+  background: var(--playsay-orange-dark);
+}
+
+.playsay-help {
+  margin-top: 20px;
+  border-radius: 18px;
+  background: var(--playsay-cream);
+  padding: 16px;
+  color: #424853;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.playsay-return {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  color: var(--playsay-muted);
+  font-size: 13px;
+}
+
+.playsay-card .pf-c-alert {
+  margin-bottom: 18px;
+  border-radius: 14px;
+}
+
+#kc-social-providers {
+  margin-top: 24px;
+}
+
+@media (max-width: 920px) {
+  .playsay-page {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    width: min(100% - 32px, 620px);
+    padding-top: 116px;
+  }
+
+  .playsay-brand {
+    left: 24px;
+  }
+
+  .playsay-copy {
+    padding-top: 0;
+  }
+
+  .playsay-copy h1 {
+    font-size: 44px;
+  }
+
+  .playsay-card {
+    padding: 26px;
+  }
+}
+
+@media (max-width: 560px) {
+  .playsay-copy h1 {
+    font-size: 38px;
+  }
+
+  .playsay-lead {
+    font-size: 16px;
+  }
+
+  .playsay-card .login-pf-settings {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

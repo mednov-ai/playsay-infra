@@ -1,0 +1,93 @@
+keycloak:
+  global:
+    security:
+      allowInsecureImages: true
+
+  replicaCount: 1
+  production: false
+  httpEnabled: true
+  httpRelativePath: /keycloak/
+  proxyHeaders: xforwarded
+  hostnameStrict: false
+
+  image:
+    repository: bitnamilegacy/keycloak
+
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+
+  cache:
+    enabled: false
+
+  service:
+    type: NodePort
+    ports:
+      http: 80
+    nodePorts:
+      http: "32084"
+
+  resourcesPreset: none
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 750m
+      memory: 900Mi
+
+  extraVolumes:
+    - name: playsay-theme-src
+      configMap:
+        name: keycloak-playsay-theme
+    - name: playsay-theme
+      emptyDir: {}
+
+  extraVolumeMounts:
+    - name: playsay-theme
+      mountPath: /opt/bitnami/keycloak/themes/playsay
+
+  initContainers:
+    - name: install-playsay-theme
+      image: alpine:3.20
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -ec
+        - |
+          mkdir -p /theme/playsay/login/resources/css /theme/playsay/login/resources/img
+          cp /theme-src/theme.properties /theme/playsay/login/theme.properties
+          cp /theme-src/template.ftl /theme/playsay/login/template.ftl
+          cp /theme-src/playsay-login.css /theme/playsay/login/resources/css/playsay-login.css
+          cp /theme-src/logo.jpg /theme/playsay/login/resources/img/logo.jpg
+      volumeMounts:
+        - name: playsay-theme-src
+          mountPath: /theme-src
+          readOnly: true
+        - name: playsay-theme
+          mountPath: /theme/playsay
+
+  postgresql:
+    enabled: true
+    architecture: standalone
+    image:
+      repository: bitnamilegacy/postgresql
+    auth:
+      username: bn_keycloak
+      database: bitnami_keycloak
+      existingSecret: keycloak-postgresql
+      secretKeys:
+        userPasswordKey: password
+    primary:
+      resourcesPreset: none
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 384Mi
+      persistence:
+        enabled: true
+        size: 4Gi

@@ -396,12 +396,13 @@ Sprint 1 installs Keycloak in minimal mode to avoid upgrading the VPS before the
 
 - ArgoCD app: `keycloak`;
 - namespace: `keycloak`;
-- chart: `bitnami/keycloak` `24.9.0`;
+- chart: local wrapper `helm-charts/keycloak`, with dependency `bitnami/keycloak` `24.9.0`;
 - Keycloak version: `26.3.2`;
 - URL: `https://ops.play-and-say.ru:18443/keycloak/`;
 - service: NodePort `32084` on localhost through host nginx;
 - PostgreSQL: chart-managed standalone PostgreSQL with a `4Gi` PVC;
 - images: `docker.io/bitnamilegacy/keycloak` and `docker.io/bitnamilegacy/postgresql` because the chart's `docker.io/bitnami/...` tags are not available publicly anymore; replace with supported/private images before staging/prod. Chart `25.x` was avoided because it hit a known `Incomplete line...` startup failure in this dev setup.
+- login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart. The logo is copied from `play-and-say.ru`.
 - secrets: `keycloak-admin` and `keycloak-postgresql`, created manually in the cluster and never committed to Git.
 - initial realm: `playsay`;
 - initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
@@ -416,6 +417,7 @@ Configure or repair the dev realm after Keycloak is healthy:
 The script is idempotent. It creates/updates:
 
 - realm `playsay`;
+- realm login theme `playsay`;
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
 - public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, `http://localhost:5173`, and `http://localhost:4173`;
 - backend client `playsay-api`;
