@@ -2,7 +2,7 @@
 
 ## Sprint 0 Status
 
-Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 1.
+Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
 ## Sprint 0 Goal
 
@@ -24,6 +24,7 @@ In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not i
    - Ubuntu 24.04
    - Amsterdam
    - 2 vCPU / 4 GB RAM / 80 GB NVMe for Sprint 0
+   - current dev shape after the 2026-05-24 upgrade: 4 vCPU / 8 GB RAM / 160 GB NVMe / 32 TB traffic
    - key-based `root` SSH access
 2. Create GitHub organization or user namespace.
 3. Create repositories:
@@ -332,9 +333,9 @@ kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath
 
 Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile` by copying the already-built jar from `api-gateway/build/libs`. Do not add a Gradle build stage back into the backend Dockerfile unless the pipeline is redesigned.
 
-Jenkins agent requests are kept compact so the build pod can schedule on the 4 GB dev VPS while Keycloak and application PostgreSQL are running. Current Jenkinsfile requests are `512Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. Limits are intentionally conservative for this VPS: Gradle `1 CPU / 1536Mi`, Node `750m / 768Mi`, each Kaniko container `1 CPU / 1Gi`. The agent pod mounts the `jenkins-agent-cache` PVC for Gradle and npm caches; `deploy-cluster-addons.sh` creates this `4Gi` PVC before installing Jenkins. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
+Jenkins agent requests are kept compact so the build pod can schedule on the dev VPS while Keycloak and application PostgreSQL are running. Current Jenkinsfile requests are `512Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. Limits remain intentionally conservative after the upgrade to 4 vCPU / 8 GB RAM: Gradle `1 CPU / 1536Mi`, Node `750m / 768Mi`, each Kaniko container `1 CPU / 1Gi`. The agent pod mounts the `jenkins-agent-cache` PVC for Gradle and npm caches; `deploy-cluster-addons.sh` creates this `4Gi` PVC before installing Jenkins. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
 
-After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tests` because Maven Central DNS resolution temporarily failed while the node was overloaded. A retry `dev-26` pushed load above `11` on the 2 vCPU VPS, made the Kubernetes API intermittently time out, and was stopped manually. The first conservative retry `dev-27` proved that `1Gi` is too low for Gradle on `compileKotlin`, so keep Gradle memory at `1536Mi` while limiting CPU and workers. Treat repeated `NodeNotReady`, `/jenkins` 502, DNS failures during dependency downloads, or swap around `1.5Gi+` as evidence that the current VPS is at its practical CI limit. Before upgrading, the current mitigation is the conservative Jenkinsfile mode: Gradle `--max-workers=1`, Kotlin compiler in-process, lower CPU for build containers, and persistent Gradle/npm cache.
+After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tests` because Maven Central DNS resolution temporarily failed while the node was overloaded. A retry `dev-26` pushed load above `11` on the original 2 vCPU VPS, made the Kubernetes API intermittently time out, and was stopped manually. The first conservative retry `dev-27` proved that `1Gi` is too low for Gradle on `compileKotlin`, so keep Gradle memory at `1536Mi` while limiting CPU and workers. Build `dev-28` passed with the conservative Jenkinsfile mode: Gradle `--max-workers=1`, Kotlin compiler in-process, lower CPU for build containers, and persistent Gradle/npm cache. Keep this mode until several builds prove the upgraded VPS has enough headroom.
 
 The `OpenAPI contract` stage runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The frontend uses Orval to generate `web-app/src/generated/playsay-api.ts` from that contract before lint/build/test.
 
@@ -394,7 +395,7 @@ This token is cluster-admin for the dev cluster. Keep Headlamp dev-only and do n
 
 ## Keycloak Dev Instance
 
-Sprint 1 installs Keycloak in minimal mode to avoid upgrading the VPS before the first teacher trial conference:
+Sprint 1 installed Keycloak in minimal mode. It was first deployed before the VPS upgrade and is still intentionally single-replica/non-HA in dev:
 
 - ArgoCD app: `keycloak`;
 - namespace: `keycloak`;
@@ -445,9 +446,9 @@ ssh root@146.103.126.15 \
   "kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.admin-password}' | base64 -d"
 ```
 
-Keep the dev instance single-replica, non-HA, and resource-limited while the VPS stays on `2 vCPU / 4 GB`.
+Keep the dev instance single-replica, non-HA, and resource-limited even after the dev VPS upgrade.
 
-After the first successful install on the current VPS, observed usage was:
+After the first successful install on the original 2 vCPU / 4 GB VPS, observed usage was:
 
 - Keycloak pod: about 470 Mi memory after startup;
 - Keycloak PostgreSQL pod: about 40 Mi memory;
@@ -456,7 +457,7 @@ After the first successful install on the current VPS, observed usage was:
 - swap: about 787 Mi used;
 - disk `/`: about 18 Gi used out of 79 Gi.
 
-This is tight but usable for Sprint 1 development. Re-check metrics after Jenkins builds and before teacher trials.
+This was tight but usable for Sprint 1 development. Re-check metrics after Jenkins builds and before teacher trials.
 
 During Jenkins `dev-22` after adding UserProfile CRUD, the build completed successfully but the current VPS showed clear pressure: load average peaked around `6.6`, host `MemAvailable` dropped to about `411 Mi`, swap was about `809 Mi`, Kubernetes emitted a transient `NodeNotReady` event, and the external nginx path to `/jenkins` briefly returned `502` while Jenkins still answered through the local NodePort. Treat this as a warning signal, not yet a hard failure: no new app pods restarted and the rollout recovered cleanly.
 
@@ -536,7 +537,7 @@ Manual auth checks:
 
 ## Application PostgreSQL
 
-Sprint 2 starts the application database on the same dev VPS without upgrading it yet. Keep this setup intentionally small until the first teacher trial proves that more capacity is needed.
+Sprint 2 starts the application database on the same dev VPS. It was introduced before the later VPS upgrade, and the database setup remains intentionally small until the first teacher trial proves that more capacity is needed.
 
 GitOps applications:
 
@@ -565,7 +566,7 @@ kubectl -n playsay-data get svc
 
 CloudNativePG generates database credentials as Kubernetes secrets. Retrieve values only when needed for wiring an application or a manual smoke test; do not paste them into chat, Git, shell history snippets, or documentation.
 
-On the current 2 vCPU / 4 GB VPS, keep the CloudNativePG operator overlay less aggressive than the upstream default: `--max-concurrent-reconciles=2`, `500m/256Mi` limits, and 5-second probe timeouts. The upstream `100m` CPU limit plus 1-second probes repeatedly lost leader election while Jenkins was building `dev-28`.
+Keep the CloudNativePG operator overlay less aggressive than the upstream default: `--max-concurrent-reconciles=2`, `500m/256Mi` limits, and 5-second probe timeouts. The upstream `100m` CPU limit plus 1-second probes repeatedly lost leader election while Jenkins was building `dev-28` on the original 2 vCPU / 4 GB VPS.
 
 Useful connection endpoints inside the cluster:
 
@@ -662,9 +663,16 @@ https://argocd.dev.example.com
 
 ## Upgrade VDSina VPS
 
-Current Sprint 1 decision: do not upgrade immediately. Keep the dev VPS on `2 vCPU / 4 GB RAM / 80 GB` until the first trial conference with teachers or until resource pressure proves that the upgrade is needed.
+Upgrade completed on 2026-05-24 after Sprint 2 CI pressure. Current dev VPS shape:
 
-Baseline metrics captured before Sprint 1:
+- CPU: 4 vCPU
+- RAM: 8 GB
+- Disk: 160 GB NVMe
+- Traffic: 32 TB
+
+The root disk still needed an in-guest online resize after the provider-side upgrade.
+
+Baseline metrics captured before Sprint 1 on the original 2 vCPU / 4 GB / 80 GB VPS:
 
 - CPU: about 5% from `kubectl top nodes`;
 - Kubernetes memory: about 2702 Mi / 69%;
@@ -673,7 +681,7 @@ Baseline metrics captured before Sprint 1:
 - disk `/`: 79 Gi total, 16 Gi used, 61 Gi available;
 - largest local dirs: `/var/lib/rancher` about 7.6 Gi, `/var/log` about 1.3 Gi, `/var/lib/docker` about 108 Mi.
 
-Upgrade triggers:
+Historical upgrade triggers:
 
 - Keycloak/PostgreSQL or Jenkins builds start causing OOM kills or pod restarts;
 - `MemAvailable` stays below about 500 Mi during normal idle/dev usage;
@@ -681,21 +689,39 @@ Upgrade triggers:
 - Jenkins builds repeatedly cause transient `NodeNotReady` or external `/jenkins` `502` errors;
 - the first teacher trial conference needs a more stable environment.
 
-Use the VDSina panel:
+The VDSina panel flow was:
 
 1. Open the server configurator.
 2. Increase resources:
-   - Sprint 1: 4 vCPU / 8 GB / 100 GB
-   - Sprint 4+: 8 vCPU / 16 GB / 150 GB if needed
+   - actual Sprint 2 upgrade: 4 vCPU / 8 GB / 160 GB
+   - future Sprint 4+: 8 vCPU / 16 GB / 160+ GB if needed
 3. Apply changes and let the server reboot.
-4. Verify:
+4. Expand the root partition and filesystem on the VPS:
+
+```bash
+growpart /dev/vda 1
+resize2fs /dev/vda1
+```
+
+Before the in-guest resize, the provider disk was already `160G`, but `/dev/vda1` and `/` were still about `80G`. After the resize:
+
+- `/dev/vda1`: `160G`
+- `/`: ext4 `158G`, about `23G` used and `129G` available
+
+5. Verify:
 
 ```bash
 kubectl get nodes
 kubectl get pods -A
+df -hT /
+free -h
+systemctl is-active nginx k3s docker
+nginx -t
 ```
 
-Also run the post-install verification checklist above after the reboot, including the public site, Amnezia Docker containers, nginx syntax, ops UI, and `online.play-and-say.ru`.
+After the resize, `nginx`, `k3s`, and `docker` were active, `nginx -t` passed, ArgoCD apps were `Synced / Healthy`, and the deployed `api-gateway` / `web-app` pods were ready on build `dev-28`.
+
+Also run the post-install verification checklist above after any future reboot or resize, including the public site, Amnezia Docker containers, nginx syntax, ops UI, and `online.play-and-say.ru`.
 
 ## Dev Backup Stub
 
