@@ -405,6 +405,27 @@ Sprint 1 installs Keycloak in minimal mode to avoid upgrading the VPS before the
 - initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
 - initial clients: `playsay-web` and `playsay-api`.
 
+Configure or repair the dev realm after Keycloak is healthy:
+
+```bash
+./scripts/configure-keycloak-dev.sh
+```
+
+The script is idempotent. It creates/updates:
+
+- realm `playsay`;
+- realm roles `STUDENT`, `TEACHER`, `ADMIN`;
+- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, `http://localhost:5173`, and `http://localhost:4173`;
+- backend client `playsay-api`;
+- dev users `student-demo`, `teacher-demo`, and `admin-demo`.
+
+Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Do not commit or print those values in shared logs. Retrieve a password only when needed:
+
+```bash
+ssh root@146.103.126.15 \
+  "kubectl -n keycloak get secret keycloak-dev-users -o jsonpath='{.data.student-demo-password}' | base64 -d"
+```
+
 Check status:
 
 ```bash
@@ -454,6 +475,21 @@ auth:
 ```
 
 The issuer stays public because Keycloak puts that value into tokens. The JWKS URI is internal so `api-gateway` can validate signatures without routing through host nginx.
+
+## Web App Auth
+
+`web-app` uses Keycloak Authorization Code + PKCE with the public client `playsay-web`.
+
+Dev defaults:
+
+```text
+VITE_AUTH_ISSUER=https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+VITE_AUTH_CLIENT_ID=playsay-web
+VITE_AUTH_REDIRECT_PATH=/auth/callback
+VITE_API_BASE_URL=/api
+```
+
+The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`.
 
 ## Optional Separate Server Bootstrap
 
