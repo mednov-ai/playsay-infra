@@ -428,9 +428,9 @@ The script is idempotent. It creates/updates:
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
 - public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, `http://localhost:5173`, and `http://localhost:4173`;
 - backend client `playsay-api`;
-- dev users `student-demo`, `teacher-demo`, and `admin-demo`.
+- dev users `student-demo`, `student-demo-2`, `student-demo-3`, `student-demo-4`, `teacher-demo`, and `admin-demo`.
 
-Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Do not commit or print those values in shared logs. Retrieve a password only when needed:
+Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Re-running the script adds any missing password keys without rotating existing ones. Do not commit or print those values in shared logs. Retrieve a password only when needed, replacing the jsonpath key with the needed user:
 
 ```bash
 ssh root@146.103.126.15 \
@@ -544,7 +544,7 @@ curl -k -I https://ops.play-and-say.ru:18443/keycloak/
 
 Manual auth checks:
 
-- `student-demo` can log in, sees the student workspace, `/api/me` and `/api/users/me/profile` return `200`;
+- `student-demo`, `student-demo-2`, `student-demo-3`, and `student-demo-4` can log in, see the student workspace, `/api/me` and `/api/users/me/profile` return `200`;
 - `teacher-demo` can log in, sees the teacher workspace, `/api/admin/users` returns `403`;
 - `admin-demo` can log in, sees the admin workspace, `/api/admin/users` returns `200`;
 - logout returns through Keycloak and clears the local browser session.
@@ -620,7 +620,7 @@ ss -lntup | grep -E ':(3478|7880|7881)\b'
 curl -k -I https://online.play-and-say.ru/livekit/
 ```
 
-For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo` as participant, click "Войти в урок", then log in as that student in another browser profile and click the same button. Browser camera/microphone permissions must be allowed. The classroom URL should become `/lessons/{lessonId}/classroom`, the page should not scroll, and the LiveKit controls should expose microphone/camera only, without screen share.
+For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo`, `student-demo-2`, and `student-demo-3` as participants, click "Войти в урок", then log in as those students in separate browser profiles and click the same button. Browser camera/microphone permissions must be allowed. The classroom URL should become `/lessons/{lessonId}/classroom`, the page should not scroll, and the LiveKit controls should expose microphone/camera only, without screen share.
 
 ## Application PostgreSQL
 

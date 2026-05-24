@@ -44,15 +44,33 @@ generate_password() {
   openssl rand -hex 12
 }
 
-ensure_dev_user_secret() {
-  if kubectl -n "$KEYCLOAK_NAMESPACE" get secret "$KEYCLOAK_DEV_USERS_SECRET" >/dev/null 2>&1; then
+ensure_secret_password() {
+  local key="$1"
+  local encoded
+  local patch
+
+  if kubectl -n "$KEYCLOAK_NAMESPACE" get secret "$KEYCLOAK_DEV_USERS_SECRET" -o json \
+    | jq -e --arg key "$key" '.data[$key] // empty' >/dev/null; then
     return
   fi
 
-  kubectl -n "$KEYCLOAK_NAMESPACE" create secret generic "$KEYCLOAK_DEV_USERS_SECRET" \
-    --from-literal=student-demo-password="$(generate_password)" \
-    --from-literal=teacher-demo-password="$(generate_password)" \
-    --from-literal=admin-demo-password="$(generate_password)" >/dev/null
+  encoded=$(printf "%s" "$(generate_password)" | base64 | tr -d '\n')
+  patch=$(jq -n --arg key "$key" --arg value "$encoded" '{data: {($key): $value}}')
+  kubectl -n "$KEYCLOAK_NAMESPACE" patch secret "$KEYCLOAK_DEV_USERS_SECRET" --type merge -p "$patch" >/dev/null
+}
+
+ensure_dev_user_secret() {
+  if ! kubectl -n "$KEYCLOAK_NAMESPACE" get secret "$KEYCLOAK_DEV_USERS_SECRET" >/dev/null 2>&1; then
+    kubectl -n "$KEYCLOAK_NAMESPACE" create secret generic "$KEYCLOAK_DEV_USERS_SECRET" \
+      --from-literal=created-by=configure-keycloak-dev >/dev/null
+  fi
+
+  ensure_secret_password student-demo-password
+  ensure_secret_password student-demo-2-password
+  ensure_secret_password student-demo-3-password
+  ensure_secret_password student-demo-4-password
+  ensure_secret_password teacher-demo-password
+  ensure_secret_password admin-demo-password
 }
 
 secret_value() {
@@ -251,6 +269,9 @@ main() {
   ensure_role "$token" ADMIN
   ensure_clients "$token"
   ensure_user "$token" student-demo student-demo@play-and-say.ru Student Demo STUDENT student-demo-password
+  ensure_user "$token" student-demo-2 student-demo-2@play-and-say.ru Student "Demo 2" STUDENT student-demo-2-password
+  ensure_user "$token" student-demo-3 student-demo-3@play-and-say.ru Student "Demo 3" STUDENT student-demo-3-password
+  ensure_user "$token" student-demo-4 student-demo-4@play-and-say.ru Student "Demo 4" STUDENT student-demo-4-password
   ensure_user "$token" teacher-demo teacher-demo@play-and-say.ru Teacher Demo TEACHER teacher-demo-password
   ensure_user "$token" admin-demo admin-demo@play-and-say.ru Admin Demo ADMIN admin-demo-password
 
