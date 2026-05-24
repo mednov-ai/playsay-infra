@@ -43,13 +43,13 @@ spec:
                 use_external_ip: false
                 node_ip: "{{ .Values.rtc.nodeIp }}"
               {{- if .Values.turn.enabled }}
-              turn_servers:
+                turn_servers:
                 {{- range .Values.turn.protocols }}
-                - host: "{{ $.Values.turn.host }}"
-                  port: {{ $.Values.turn.port }}
-                  protocol: {{ . | quote }}
-                  secret: "$COTURN_STATIC_AUTH_SECRET"
-                  ttl: {{ $.Values.turn.ttlSeconds }}
+                  - host: "{{ $.Values.turn.host }}"
+                    port: {{ $.Values.turn.port }}
+                    protocol: {{ . | quote }}
+                    secret: "$COTURN_STATIC_AUTH_SECRET"
+                    ttl: {{ $.Values.turn.ttlSeconds }}
                 {{- end }}
               {{- end }}
               keys:
