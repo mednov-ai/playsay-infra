@@ -334,7 +334,7 @@ Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-g
 
 Jenkins agent requests are kept compact so the build pod can schedule on the 4 GB dev VPS while Keycloak is running. Current Jenkinsfile requests are `512Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. Keep memory limits higher than requests for build bursts. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
 
-The `OpenAPI contract` stage runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The frontend uses Orval to generate `web-app/src/generated/playsay-api.ts` from that contract before build/test.
+The `OpenAPI contract` stage runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The frontend uses Orval to generate `web-app/src/generated/playsay-api.ts` from that contract before lint/build/test.
 
 Create the dev image pull secret after the first GHCR token is available:
 
