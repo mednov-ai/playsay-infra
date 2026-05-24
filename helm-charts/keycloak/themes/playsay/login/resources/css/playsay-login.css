@@ -323,36 +323,111 @@ body.playsay-login-body {
 
 @media (max-width: 920px) {
   .playsay-page {
-    grid-template-columns: 1fr;
-    gap: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: auto;
+    gap: 20px;
     width: min(100% - 32px, 620px);
-    padding-top: 116px;
+    padding: 104px 0 28px;
   }
 
   .playsay-brand {
-    left: 24px;
+    top: 22px;
+    left: 16px;
+    gap: 10px;
+  }
+
+  .playsay-brand-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+  }
+
+  .playsay-brand-logo img {
+    width: 42px;
+  }
+
+  .playsay-card {
+    order: 1;
+    width: 100%;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .playsay-card::before {
+    top: -16px;
+    right: 24px;
+    width: 54px;
+    height: 54px;
+  }
+
+  .playsay-card::after {
+    display: none;
+  }
+
+  .playsay-card-title {
+    font-size: 28px;
+  }
+
+  .playsay-card-text {
+    margin-bottom: 18px;
+    font-size: 14px;
   }
 
   .playsay-copy {
+    order: 2;
     padding-top: 0;
   }
 
   .playsay-copy h1 {
-    font-size: 44px;
-  }
-
-  .playsay-card {
-    padding: 26px;
-  }
-}
-
-@media (max-width: 560px) {
-  .playsay-copy h1 {
-    font-size: 38px;
+    max-width: none;
+    font-size: 36px;
   }
 
   .playsay-lead {
+    margin: 14px 0 18px;
     font-size: 16px;
+  }
+
+  .playsay-points {
+    margin-top: 18px;
+  }
+
+}
+
+@media (max-width: 560px) {
+  .playsay-page {
+    width: min(100% - 24px, 620px);
+    padding-top: 92px;
+  }
+
+  .playsay-card {
+    padding: 20px;
+  }
+
+  .playsay-copy h1 {
+    font-size: 30px;
+  }
+
+  .playsay-lead {
+    display: none;
+  }
+
+  .playsay-points {
+    display: none;
+  }
+
+  .playsay-card .playsay-eyebrow {
+    margin-bottom: 10px;
+  }
+
+  .playsay-card-title {
+    font-size: 26px;
+  }
+
+  .playsay-card-text {
+    margin-bottom: 14px;
   }
 
   .playsay-card .login-pf-settings {
