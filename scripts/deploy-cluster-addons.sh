@@ -194,6 +194,7 @@ EOF
     --set controller.installPlugins[6]=configuration-as-code \
     --set controller.installPlugins[7]=timestamper \
     --set controller.installPlugins[8]=pipeline-stage-view \
+    --set controller.overwritePlugins=true \
     --set controller.resources.requests.cpu=250m \
     --set controller.resources.requests.memory=768Mi \
     --set controller.resources.limits.cpu=1500m \
