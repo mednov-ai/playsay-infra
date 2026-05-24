@@ -8,3 +8,10 @@ rtc:
   nodeIp: "146.103.126.15"
   udpPortRangeStart: 50000
   udpPortRangeEnd: 50020
+turn:
+  enabled: true
+  host: online.play-and-say.ru
+  port: 3478
+webhook:
+  enabled: true
+  url: http://api-gateway.playsay-dev.svc.cluster.local/livekit/webhook

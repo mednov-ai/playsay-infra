@@ -14,6 +14,12 @@ ufw_extra_tcp_ports:
   - 80
   - 443
 
+coturn_realm: online.play-and-say.ru
+coturn_external_ip: 146.103.126.15
+coturn_listening_port: 3478
+coturn_min_port: 49160
+coturn_max_port: 49200
+
 k3s_version: stable
 k3s_disable_components:
   - traefik

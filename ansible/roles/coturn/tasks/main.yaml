@@ -1,0 +1,74 @@
+---
+- name: Install coturn package
+  ansible.builtin.apt:
+    name: coturn
+    state: present
+    update_cache: true
+
+- name: Create Play&Say secret directory
+  ansible.builtin.file:
+    path: /etc/playsay
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Check coturn shared secret
+  ansible.builtin.stat:
+    path: /etc/playsay/coturn-auth-secret
+  register: coturn_secret_file
+  no_log: true
+
+- name: Generate coturn shared secret
+  ansible.builtin.shell:
+    cmd: umask 077 && openssl rand -hex 32 > /etc/playsay/coturn-auth-secret
+    creates: /etc/playsay/coturn-auth-secret
+  when: not coturn_secret_file.stat.exists
+  no_log: true
+
+- name: Read coturn shared secret
+  ansible.builtin.slurp:
+    src: /etc/playsay/coturn-auth-secret
+  register: coturn_secret_value
+  no_log: true
+
+- name: Configure coturn
+  ansible.builtin.copy:
+    dest: /etc/turnserver.conf
+    owner: root
+    group: turnserver
+    mode: "0640"
+    content: |
+      listening-port={{ coturn_listening_port | default(3478) }}
+      min-port={{ coturn_min_port | default(49160) }}
+      max-port={{ coturn_max_port | default(49200) }}
+      external-ip={{ coturn_external_ip | default(public_ipv4) }}
+      realm={{ coturn_realm | default('online.play-and-say.ru') }}
+      server-name={{ coturn_realm | default('online.play-and-say.ru') }}
+      fingerprint
+      lt-cred-mech
+      use-auth-secret
+      static-auth-secret={{ coturn_secret_value.content | b64decode | trim }}
+      no-multicast-peers
+      no-cli
+      no-tlsv1
+      no-tlsv1_1
+      syslog
+  notify: Restart coturn
+  no_log: true
+
+- name: Enable coturn daemon
+  ansible.builtin.copy:
+    dest: /etc/default/coturn
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      TURNSERVER_ENABLED=1
+  notify: Restart coturn
+
+- name: Ensure coturn is enabled and started
+  ansible.builtin.service:
+    name: coturn
+    enabled: true
+    state: started

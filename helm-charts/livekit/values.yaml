@@ -21,6 +21,22 @@ rtc:
   udpPortRangeEnd: 50020
   nodeIp: ""
 
+turn:
+  enabled: false
+  host: ""
+  port: 3478
+  protocols:
+    - udp
+    - tcp
+  ttlSeconds: 14400
+  secret:
+    existingName: coturn-auth-secret
+    key: static-auth-secret
+
+webhook:
+  enabled: false
+  url: ""
+
 service:
   enabled: true
   port: 7880

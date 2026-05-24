@@ -7,4 +7,5 @@
     - common
     - docker
     - k3s-server
+    - coturn
     - monitoring-agent

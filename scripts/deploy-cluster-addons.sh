@@ -90,6 +90,10 @@ if [[ -x "$ROOT_DIR/scripts/sync-livekit-secret.sh" ]]; then
   "$ROOT_DIR/scripts/sync-livekit-secret.sh"
 fi
 
+if [[ -x "$ROOT_DIR/scripts/sync-coturn-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/sync-coturn-secret.sh"
+fi
+
 if [[ "$INSTALL_INGRESS_NGINX" == "true" ]]; then
   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null
 fi

@@ -42,8 +42,24 @@ spec:
                 port_range_end: {{ .Values.rtc.udpPortRangeEnd }}
                 use_external_ip: false
                 node_ip: "{{ .Values.rtc.nodeIp }}"
+              {{- if .Values.turn.enabled }}
+              turn_servers:
+                {{- range .Values.turn.protocols }}
+                - host: "{{ $.Values.turn.host }}"
+                  port: {{ $.Values.turn.port }}
+                  protocol: {{ . | quote }}
+                  secret: "$COTURN_STATIC_AUTH_SECRET"
+                  ttl: {{ $.Values.turn.ttlSeconds }}
+                {{- end }}
+              {{- end }}
               keys:
                 "$LIVEKIT_API_KEY": "$LIVEKIT_API_SECRET"
+              {{- if .Values.webhook.enabled }}
+              webhook:
+                api_key: "$LIVEKIT_API_KEY"
+                urls:
+                  - "{{ .Values.webhook.url }}"
+              {{- end }}
               EOF
               exec /livekit-server --config /tmp/livekit.yaml
           env:
@@ -57,6 +73,13 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secret.existingName | quote }}
                   key: {{ .Values.secret.apiSecretKey | quote }}
+            {{- if .Values.turn.enabled }}
+            - name: COTURN_STATIC_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.turn.secret.existingName | quote }}
+                  key: {{ .Values.turn.secret.key | quote }}
+            {{- end }}
           ports:
             - name: signaling
               containerPort: {{ .Values.signaling.port }}
