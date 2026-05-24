@@ -332,6 +332,8 @@ kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath
 
 Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile` by copying the already-built jar from `api-gateway/build/libs`. Do not add a Gradle build stage back into the backend Dockerfile unless the pipeline is redesigned.
 
+Jenkins agent requests are kept compact so the build pod can schedule on the 4 GB dev VPS while Keycloak is running. Current Jenkinsfile requests are `512Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. Keep memory limits higher than requests for build bursts. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
+
 Create the dev image pull secret after the first GHCR token is available:
 
 ```bash
