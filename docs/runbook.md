@@ -565,6 +565,8 @@ kubectl -n playsay-data get svc
 
 CloudNativePG generates database credentials as Kubernetes secrets. Retrieve values only when needed for wiring an application or a manual smoke test; do not paste them into chat, Git, shell history snippets, or documentation.
 
+On the current 2 vCPU / 4 GB VPS, keep the CloudNativePG operator overlay less aggressive than the upstream default: `--max-concurrent-reconciles=2`, `500m/256Mi` limits, and 5-second probe timeouts. The upstream `100m` CPU limit plus 1-second probes repeatedly lost leader election while Jenkins was building `dev-28`.
+
 Useful connection endpoints inside the cluster:
 
 - read/write service: `playsay-postgres-rw.playsay-data.svc.cluster.local:5432`;
