@@ -31,6 +31,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: PLAYSAY_AUTH_ISSUER_URI
+              value: {{ .Values.auth.issuerUri | quote }}
+            - name: PLAYSAY_AUTH_JWK_SET_URI
+              value: {{ .Values.auth.jwkSetUri | quote }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

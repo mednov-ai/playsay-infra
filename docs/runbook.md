@@ -429,6 +429,30 @@ After the first successful install on the current VPS, observed usage was:
 
 This is tight but usable for Sprint 1 development. Re-check metrics after Jenkins builds and before teacher trials.
 
+## API Gateway Auth
+
+`api-gateway` is a Spring Security OAuth2 Resource Server.
+
+Public endpoints:
+
+- `/hello`;
+- `/actuator/health`;
+- `/actuator/health/**`.
+
+Protected endpoint:
+
+- `/me` returns the current JWT profile: subject, username, email, name, and Keycloak realm roles.
+
+Dev runtime configuration is passed through the Helm chart:
+
+```yaml
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+```
+
+The issuer stays public because Keycloak puts that value into tokens. The JWKS URI is internal so `api-gateway` can validate signatures without routing through host nginx.
+
 ## Optional Separate Server Bootstrap
 
 Install Ansible dependencies:

@@ -19,6 +19,10 @@ service:
   port: 80
   targetPort: 8080
 
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
+
 ingress:
   enabled: true
   className: nginx

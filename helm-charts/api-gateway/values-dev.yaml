@@ -13,3 +13,7 @@ build:
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
+
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
