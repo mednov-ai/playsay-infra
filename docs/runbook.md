@@ -464,9 +464,15 @@ Public endpoints:
 - `/actuator/health`;
 - `/actuator/health/**`.
 
-Protected endpoint:
+Protected endpoints:
 
 - `/me` returns the current JWT profile: subject, username, email, name, and Keycloak realm roles.
+- `GET /users/me/profile` returns the current app-level user profile.
+- `PUT /users/me/profile` updates editable app-level fields: `displayName`, `locale`, `timezone`, and `learningGoal`.
+- `DELETE /users/me/profile` resets editable app-level fields for the current user.
+- `GET /admin/users` lists known app-level user profiles and requires the `ADMIN` role.
+
+Sprint 1 stores UserProfile data in an in-memory dev store inside `api-gateway`. Keycloak remains the source of identity and roles. The app profile store is intentionally temporary and loses data on pod restart; persistent PostgreSQL storage belongs to Sprint 2.
 
 Dev runtime configuration is passed through the Helm chart:
 
@@ -490,7 +496,7 @@ VITE_AUTH_CLIENT_ID=playsay-web
 VITE_AUTH_REDIRECT_PATH=/auth/callback
 ```
 
-The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`.
+The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me` and `/api/users/me/profile` through the generated Orval client.
 
 ## Optional Separate Server Bootstrap
 
