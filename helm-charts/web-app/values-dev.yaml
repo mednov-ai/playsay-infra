@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "dev-45"
+  tag: "dev-46"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-45
-  number: "45"
+  name: dev-46
+  number: "46"
   branch: develop
   branchLabel: dev
-  commit: 1f48242ece4d31102d6a12d64bb82ca26627b89e
-  commitShort: "1f48242ece4d"
+  commit: 479e3e86879c85f040720d9347270b1f5f8452a4
+  commitShort: "479e3e86879c"
 service:
   type: NodePort
   nodePort: 32083
