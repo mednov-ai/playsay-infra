@@ -16,6 +16,13 @@ ingress:
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+ai:
+  openai:
+    enabled: true
+    existingSecret: playsay-openai
+    apiKeyKey: api-key
+    modelKey: model
+    baseUrl: https://api.openai.com/v1
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"

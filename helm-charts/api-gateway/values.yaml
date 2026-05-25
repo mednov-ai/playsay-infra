@@ -23,6 +23,14 @@ auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
 
+ai:
+  openai:
+    enabled: false
+    existingSecret: playsay-openai
+    apiKeyKey: api-key
+    modelKey: model
+    baseUrl: https://api.openai.com/v1
+
 database:
   enabled: true
   existingSecret: playsay-app-db

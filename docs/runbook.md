@@ -494,6 +494,13 @@ Dev runtime configuration is passed through the Helm chart:
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+ai:
+  openai:
+    enabled: true
+    existingSecret: playsay-openai
+    apiKeyKey: api-key
+    modelKey: model
+    baseUrl: https://api.openai.com/v1
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
@@ -504,6 +511,54 @@ livekit:
 ```
 
 The issuer stays public because Keycloak puts that value into tokens. The JWKS URI is internal so `api-gateway` can validate signatures without routing through host nginx.
+
+## OpenAI Material Drafts
+
+Sprint 4 material authoring can run in two modes:
+
+- `PLAYSAY_AI_PROVIDER=stub`: deterministic local draft generator, no external API call.
+- `PLAYSAY_AI_PROVIDER=openai`: `api-gateway` calls the OpenAI Responses API and requests JSON Schema / Structured Outputs for the Play&Say material draft.
+
+The dev Helm values enable OpenAI through Kubernetes secret `playsay-openai` in namespace `playsay-dev`. The secret must contain exactly these data keys:
+
+- `api-key`: OpenAI Platform API key.
+- `model`: default material draft model, currently `gpt-5.4-mini`.
+
+Create or update the secret from a local terminal without printing the key:
+
+```bash
+ssh -tt root@146.103.126.15 'bash -lc '"'"'
+set -euo pipefail
+
+read -rsp "OpenAI API key: " OPENAI_API_KEY
+echo
+
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev create secret generic playsay-openai \
+  --from-literal=api-key="$OPENAI_API_KEY" \
+  --from-literal=model="gpt-5.4-mini" \
+  --dry-run=client -o yaml | KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f -
+
+unset OPENAI_API_KEY
+
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai
+'"'"''
+```
+
+Expected verification output is `playsay-openai` with `DATA` equal to `2`. Do not decode or paste the secret values into chat, Git, logs, or docs. To verify only key names without decoding values:
+
+```bash
+ssh root@146.103.126.15 \
+  'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai -o jsonpath="{.data}"'
+```
+
+After deploying the chart, verify that the pod references the secret without printing values:
+
+```bash
+ssh root@146.103.126.15 \
+  'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get deploy api-gateway -o jsonpath="{.spec.template.spec.containers[0].env[?(@.name==\"PLAYSAY_AI_PROVIDER\")].value}"'
+```
+
+Expected value for dev with real generation enabled: `openai`.
 
 ## Web App Auth
 

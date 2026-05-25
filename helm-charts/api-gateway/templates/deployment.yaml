@@ -36,6 +36,25 @@ spec:
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
               value: {{ .Values.auth.jwkSetUri | quote }}
+            {{- if .Values.ai.openai.enabled }}
+            - name: PLAYSAY_AI_PROVIDER
+              value: "openai"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ai.openai.existingSecret | quote }}
+                  key: {{ .Values.ai.openai.apiKeyKey | quote }}
+            - name: OPENAI_MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ai.openai.existingSecret | quote }}
+                  key: {{ .Values.ai.openai.modelKey | quote }}
+            - name: OPENAI_BASE_URL
+              value: {{ .Values.ai.openai.baseUrl | quote }}
+            {{- else }}
+            - name: PLAYSAY_AI_PROVIDER
+              value: "stub"
+            {{- end }}
             {{- if .Values.database.enabled }}
             - name: PLAYSAY_DB_JDBC_URL
               valueFrom:
