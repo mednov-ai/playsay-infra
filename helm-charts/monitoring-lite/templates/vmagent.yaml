@@ -6,6 +6,10 @@ metadata:
     {{- include "monitoring-lite.componentLabels" (dict "root" . "component" "vmagent") | nindent 4 }}
 spec:
   replicas: 1
+  {{- if .Values.vmagent.hostNetwork }}
+  strategy:
+    type: Recreate
+  {{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
