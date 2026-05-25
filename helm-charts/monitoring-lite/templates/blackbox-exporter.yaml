@@ -50,6 +50,8 @@ spec:
       app.kubernetes.io/component: blackbox-exporter
   template:
     metadata:
+      annotations:
+        checksum/config: {{ toYaml .Values.blackboxExporter | sha256sum }}
       labels:
         app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}

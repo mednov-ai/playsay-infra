@@ -13,6 +13,8 @@ spec:
       app.kubernetes.io/component: vmalert
   template:
     metadata:
+      annotations:
+        checksum/rules: {{ toYaml .Values.alerts | sha256sum }}
       labels:
         app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}

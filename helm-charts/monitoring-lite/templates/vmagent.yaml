@@ -13,6 +13,8 @@ spec:
       app.kubernetes.io/component: vmagent
   template:
     metadata:
+      annotations:
+        checksum/config: {{ printf "%s:%s:%s" (toYaml .Values.vmagent) (toYaml .Values.blackboxExporter.targets) (toYaml .Values.alerts.livekit) | sha256sum }}
       labels:
         app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
