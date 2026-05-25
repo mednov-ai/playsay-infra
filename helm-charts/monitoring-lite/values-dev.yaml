@@ -1,0 +1,19 @@
+victoriaMetrics:
+  retentionPeriod: 3d
+  storage:
+    size: 5Gi
+
+vmagent:
+  scrapeInterval: 30s
+  evaluationInterval: 30s
+
+blackboxExporter:
+  targets:
+    - https://online.play-and-say.ru/
+    - https://ops.play-and-say.ru:18443/argocd/
+    - https://ops.play-and-say.ru:18443/jenkins/
+
+alertmanager:
+  telegram:
+    enabled: true
+    existingSecret: playsay-telegram-alerts

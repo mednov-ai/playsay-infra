@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-lite
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: develop
+    path: helm-charts/monitoring-lite
+    helm:
+      releaseName: monitoring-lite
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "monitoring-lite.fullname" . }}-vmagent
+  labels:
+    {{- include "monitoring-lite.componentLabels" (dict "root" . "component" "vmagent") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: vmagent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: vmagent
+    spec:
+      serviceAccountName: {{ include "monitoring-lite.fullname" . }}-vmagent
+      hostNetwork: {{ .Values.vmagent.hostNetwork }}
+      dnsPolicy: ClusterFirstWithHostNet
+      enableServiceLinks: false
+      containers:
+        - name: vmagent
+          image: "{{ .Values.vmagent.image.repository }}:{{ .Values.vmagent.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          args:
+            - -promscrape.config=/config/scrape.yaml
+            - -remoteWrite.url={{ include "monitoring-lite.vmUrl" . }}/api/v1/write
+            - -httpListenAddr=127.0.0.1:8429
+          resources:
+            {{- toYaml .Values.vmagent.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "monitoring-lite.fullname" . }}-vmagent

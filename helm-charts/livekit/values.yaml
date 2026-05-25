@@ -37,6 +37,10 @@ webhook:
   enabled: false
   url: ""
 
+metrics:
+  enabled: false
+  port: 6789
+
 service:
   enabled: true
   port: 7880

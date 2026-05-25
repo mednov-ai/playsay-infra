@@ -34,6 +34,9 @@ spec:
             - |
               cat >/tmp/livekit.yaml <<EOF
               port: {{ .Values.signaling.port }}
+              {{- if .Values.metrics.enabled }}
+              prometheus_port: {{ .Values.metrics.port }}
+              {{- end }}
               bind_addresses:
                 - ""
               rtc:
@@ -84,6 +87,11 @@ spec:
             - name: signaling
               containerPort: {{ .Values.signaling.port }}
               protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+            {{- end }}
             - name: rtc-tcp
               containerPort: {{ .Values.rtc.tcpPort }}
               protocol: TCP

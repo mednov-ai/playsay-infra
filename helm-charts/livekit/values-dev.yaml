@@ -15,3 +15,6 @@ turn:
 webhook:
   enabled: true
   url: http://api-gateway.playsay-dev.svc.cluster.local/livekit/webhook
+metrics:
+  enabled: true
+  port: 6789

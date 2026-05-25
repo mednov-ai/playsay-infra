@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "monitoring-lite.fullname" . }}-vmalert-rules
+  labels:
+    {{- include "monitoring-lite.componentLabels" (dict "root" . "component" "vmalert") | nindent 4 }}
+data:
+  alerts.yaml: |
+    groups:
+      - name: playsay-node
+        rules:
+          - alert: PlaySayNodeMemoryLow
+            expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < {{ .Values.alerts.node.memoryAvailableRatio }}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say dev VPS: мало свободной RAM"
+              description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryAvailableRatio 100.0 }}% больше 10 минут."
+
+          - alert: PlaySayNodeSwapHigh
+            expr: node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes > {{ .Values.alerts.node.swapUsedBytes }}
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say dev VPS: активно используется swap"
+              description: "Использование swap выше 512Mi больше 10 минут."
+
+          - alert: PlaySayRootDiskLow
+            expr: node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < {{ .Values.alerts.node.rootDiskAvailableRatio }}
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say dev VPS: мало места на /"
+              description: "На корневом разделе осталось меньше {{ mulf .Values.alerts.node.rootDiskAvailableRatio 100.0 }}%."
+
+      - name: playsay-kubernetes
+        rules:
+          - alert: PlaySayPodRestarted
+            expr: increase(kube_pod_container_status_restarts_total{namespace=~"playsay-dev|livekit|keycloak|jenkins|playsay-data"}[10m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say: pod перезапускался"
+              description: "За последние 10 минут был restart container в namespace {{ "{{" }} $labels.namespace {{ "}}" }}."
+
+          - alert: PlaySayPodNotReady
+            expr: kube_pod_status_ready{namespace=~"playsay-dev|livekit|keycloak|jenkins|playsay-data",condition="true"} == 0
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say: pod не готов"
+              description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} в namespace {{ "{{" }} $labels.namespace {{ "}}" }} не Ready больше 10 минут."
+
+      {{- if .Values.alerts.blackbox.enabled }}
+      - name: playsay-endpoints
+        rules:
+          - alert: PlaySayEndpointDown
+            expr: probe_success{job="blackbox-http"} == 0
+            for: 3m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Play&Say endpoint недоступен"
+              description: "{{ "{{" }} $labels.instance {{ "}}" }} не проходит HTTP probe больше 3 минут."
+      {{- end }}
+
+      {{- if .Values.alerts.livekit.enabled }}
+      - name: playsay-livekit
+        rules:
+          - alert: PlaySayLiveKitMetricsDown
+            expr: up{job="livekit"} == 0
+            for: 3m
+            labels:
+              severity: critical
+            annotations:
+              summary: "LiveKit metrics недоступны"
+              description: "vmagent не может читать LiveKit Prometheus endpoint больше 3 минут."
+      {{- end }}

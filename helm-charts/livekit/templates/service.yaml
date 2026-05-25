@@ -12,6 +12,12 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: signaling
       protocol: TCP
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+    {{- end }}
   selector:
     {{- include "livekit.selectorLabels" . | nindent 4 }}
 {{- end }}

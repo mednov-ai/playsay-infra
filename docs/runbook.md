@@ -199,6 +199,64 @@ Current DNS/nginx split:
 
 The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
 
+## Lightweight Monitoring
+
+Dev monitoring uses a lightweight VictoriaMetrics GitOps app instead of full `kube-prometheus-stack`, because the current dev VPS has `4 vCPU / 8 GB RAM` and Jenkins + Keycloak + PostgreSQL + LiveKit already consume a meaningful baseline. The ArgoCD app is `monitoring-lite`, deployed to namespace `monitoring` from `helm-charts/monitoring-lite`.
+
+Components:
+
+- `victoria-metrics`: single-node time series storage, retention `3d`, PVC `5Gi`;
+- `vmagent`: Prometheus-compatible scraper and remote writer to VictoriaMetrics;
+- `kube-state-metrics`: pod/deployment/restart/readiness metadata;
+- `blackbox-exporter`: HTTP probes for public Play&Say endpoints;
+- `vmalert`: evaluates alert rules against VictoriaMetrics;
+- `alertmanager`: routes alerts to Telegram if Telegram secret exists.
+
+The Ansible-managed host `prometheus-node-exporter` remains bound to `127.0.0.1:9100`. Do not deploy a second node-exporter DaemonSet on the dev VPS. `vmagent` runs with `hostNetwork: true` and scrapes the existing host exporter through localhost. Its own HTTP listener is bound to `127.0.0.1` inside host networking and is not exposed publicly.
+
+LiveKit metrics are enabled in the `livekit` chart with `prometheus_port: 6789`; vmagent scrapes `livekit.livekit.svc.cluster.local:6789`.
+
+Expected extra steady-state footprint is roughly `300-600Mi` RAM, depending on series count and scrape load. If memory pressure appears during Jenkins builds or group video tests, first reduce `monitoring-lite` retention/scrape targets before increasing VPS size.
+
+Telegram alerts are optional at boot. Alertmanager starts with a null receiver when the secret is missing, so ArgoCD remains healthy. To enable Telegram notifications, create the secret manually without printing values:
+
+```bash
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+read -rsp "Telegram bot token: " TELEGRAM_BOT_TOKEN; echo
+read -rp "Telegram chat id: " TELEGRAM_CHAT_ID
+kubectl -n monitoring create secret generic playsay-telegram-alerts \
+  --from-literal=bot-token="$TELEGRAM_BOT_TOKEN" \
+  --from-literal=chat-id="$TELEGRAM_CHAT_ID" \
+  --dry-run=client -o yaml | kubectl apply -f -
+unset TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID
+kubectl -n monitoring rollout restart deployment/monitoring-lite-alertmanager
+```
+
+Check monitoring state:
+
+```bash
+kubectl -n argocd get application monitoring-lite
+kubectl -n monitoring get pods
+kubectl -n monitoring top pods
+```
+
+Access VictoriaMetrics UI locally:
+
+```bash
+kubectl -n monitoring port-forward svc/monitoring-lite-victoria-metrics 8428:8428
+```
+
+Then open `http://127.0.0.1:8428/vmui/`.
+
+Useful smoke queries in VMUI:
+
+```text
+up
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+probe_success
+kube_pod_container_status_restarts_total
+```
+
 ## Post-Install Verification
 
 Check the public site still works:

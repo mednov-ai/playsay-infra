@@ -1,0 +1,116 @@
+global:
+  imagePullPolicy: IfNotPresent
+
+victoriaMetrics:
+  image:
+    repository: victoriametrics/victoria-metrics
+    tag: v1.123.0
+  retentionPeriod: 3d
+  service:
+    port: 8428
+  storage:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+
+vmagent:
+  image:
+    repository: victoriametrics/vmagent
+    tag: v1.123.0
+  scrapeInterval: 30s
+  evaluationInterval: 30s
+  hostNetwork: true
+  hostNodeExporter:
+    enabled: true
+    target: 127.0.0.1:9100
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+kubeStateMetrics:
+  enabled: true
+  image:
+    repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+    tag: v2.16.0
+  service:
+    port: 8080
+  resources:
+    requests:
+      cpu: 25m
+      memory: 48Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+
+blackboxExporter:
+  enabled: true
+  image:
+    repository: prom/blackbox-exporter
+    tag: v0.27.0
+  service:
+    port: 9115
+  targets:
+    - https://online.play-and-say.ru/
+    - https://ops.play-and-say.ru:18443/argocd/
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      cpu: 100m
+      memory: 96Mi
+
+vmalert:
+  image:
+    repository: victoriametrics/vmalert
+    tag: v1.123.0
+  evaluationInterval: 30s
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+
+alertmanager:
+  image:
+    repository: prom/alertmanager
+    tag: v0.28.1
+  configInitImage:
+    repository: busybox
+    tag: 1.37.0
+  service:
+    port: 9093
+  telegram:
+    enabled: true
+    existingSecret: playsay-telegram-alerts
+    botTokenKey: bot-token
+    chatIdKey: chat-id
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+alerts:
+  node:
+    memoryAvailableRatio: 0.15
+    rootDiskAvailableRatio: 0.15
+    swapUsedBytes: 536870912
+  livekit:
+    enabled: true
+  blackbox:
+    enabled: true
