@@ -88,6 +88,7 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 - `https://ops.play-and-say.ru:18443/argocd/`
 - `https://ops.play-and-say.ru:18443/jenkins/`
 - `https://ops.play-and-say.ru:18443/keycloak/` (Sprint 1 auth)
+- `https://ops.play-and-say.ru:18443/victoria-metrics/vmui/` (dev monitoring)
 - `https://online.play-and-say.ru`
 
 The existing `play-and-say.ru` site server block is not overwritten.
@@ -240,13 +241,23 @@ kubectl -n monitoring get pods
 kubectl -n monitoring top pods
 ```
 
-Access VictoriaMetrics UI locally:
+Access VictoriaMetrics UI through the ops host:
+
+```bash
+curl -k -I https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
+```
+
+Then open `https://ops.play-and-say.ru:18443/victoria-metrics/vmui/`.
+
+The short `/vmui/` path redirects to `/victoria-metrics/vmui/`. The upstream is the localhost-only NodePort `127.0.0.1:32085`, backed by service `monitoring-lite-victoria-metrics`; direct public NodePort access must stay blocked by the k3s/host nginx coexist setup. Host nginx denies VictoriaMetrics admin/service endpoints under `/victoria-metrics/api/v1/admin`, `/debug`, `/flags`, and `/metrics`. Before staging/prod, protect VMUI with VPN/allowlist or shared ops auth.
+
+Local port-forward remains useful if host nginx is being repaired:
 
 ```bash
 kubectl -n monitoring port-forward svc/monitoring-lite-victoria-metrics 8428:8428
 ```
 
-Then open `http://127.0.0.1:8428/vmui/`.
+Then open `http://127.0.0.1:8428/victoria-metrics/vmui/`.
 
 Useful smoke queries in VMUI:
 
@@ -289,6 +300,7 @@ curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-a
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/argocd/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/jenkins/
 curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/keycloak/
+curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
 curl -k -I --resolve online.play-and-say.ru:443:146.103.126.15 https://online.play-and-say.ru/
 ```
 
@@ -298,6 +310,7 @@ Expected:
 - ArgoCD: `200 OK`;
 - Jenkins: `403 Forbidden` or login redirect, which means Jenkins is alive and requires authentication.
 - Keycloak: `200 OK` or a redirect/login response, which means Keycloak is alive behind nginx.
+- VictoriaMetrics VMUI: `200 OK`.
 - Online SPA: `200 OK`.
 
 Check existing services:

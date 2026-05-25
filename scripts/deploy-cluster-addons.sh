@@ -17,6 +17,7 @@ ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
 ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
 KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
 LIVEKIT_SIGNALING_HOST_PORT="${LIVEKIT_SIGNALING_HOST_PORT:-7880}"
+VICTORIA_METRICS_NODEPORT_HTTP="${VICTORIA_METRICS_NODEPORT_HTTP:-32085}"
 INSTALL_JENKINS="${INSTALL_JENKINS:-true}"
 JENKINS_NODEPORT_HTTP="${JENKINS_NODEPORT_HTTP:-32082}"
 INSTALL_INGRESS_NGINX="${INSTALL_INGRESS_NGINX:-false}"
@@ -48,6 +49,7 @@ Environment variables:
   ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
   KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
   LIVEKIT_SIGNALING_HOST_PORT Local LiveKit signaling port for /livekit/. Default: 7880
+  VICTORIA_METRICS_NODEPORT_HTTP Local VictoriaMetrics NodePort for /victoria-metrics/. Default: 32085
   INSTALL_JENKINS        Install Jenkins controller. Default: true
   JENKINS_NODEPORT_HTTP  Local Jenkins NodePort. Default: 32082
   INSTALL_INGRESS_NGINX  Install ingress-nginx. Default: false
@@ -455,6 +457,32 @@ ${OPS_ALLOW_DIRECTIVES}
     location = /keycloak {
         return 301 /keycloak/;
     }
+
+    location ~ ^/victoria-metrics/(api/v1/admin|debug|flags|metrics) {
+        return 403;
+    }
+
+    location /victoria-metrics/ {
+        proxy_pass http://127.0.0.1:${VICTORIA_METRICS_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Prefix /victoria-metrics;
+    }
+
+    location = /victoria-metrics {
+        return 301 /victoria-metrics/vmui/;
+    }
+
+    location = /vmui {
+        return 301 /victoria-metrics/vmui/;
+    }
+
+    location /vmui/ {
+        return 301 /victoria-metrics/vmui/;
+    }
 }
 
 ${ONLINE_HTTP_SERVER}
@@ -487,6 +515,7 @@ echo "Ops URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT"
 echo "Online URL: ${ONLINE_SCHEME}://$ONLINE_HOST"
 echo "ArgoCD URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/argocd/"
 echo "Headlamp URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/headlamp/"
+echo "VictoriaMetrics URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/victoria-metrics/vmui/"
 if [[ "$INSTALL_JENKINS" == "true" ]]; then
   echo "Jenkins URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/jenkins/"
   echo "Jenkins admin password command:"

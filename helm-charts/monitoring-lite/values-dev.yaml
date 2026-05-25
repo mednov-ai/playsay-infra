@@ -1,5 +1,9 @@
 victoriaMetrics:
+  httpPathPrefix: /victoria-metrics
   retentionPeriod: 3d
+  service:
+    type: NodePort
+    nodePort: 32085
   storage:
     size: 5Gi
 
@@ -10,6 +14,7 @@ vmagent:
 blackboxExporter:
   targets:
     - https://online.play-and-say.ru/
+    - https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
     - https://ops.play-and-say.ru:18443/argocd/
     - https://ops.play-and-say.ru:18443/jenkins/
 

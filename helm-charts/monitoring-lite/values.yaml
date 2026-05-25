@@ -6,8 +6,11 @@ victoriaMetrics:
     repository: victoriametrics/victoria-metrics
     tag: v1.123.0
   retentionPeriod: 3d
+  httpPathPrefix: ""
   service:
+    type: ClusterIP
     port: 8428
+    nodePort: null
   storage:
     enabled: true
     size: 5Gi

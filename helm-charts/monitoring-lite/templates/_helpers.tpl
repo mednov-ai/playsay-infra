@@ -24,7 +24,7 @@ app.kubernetes.io/component: {{ .component }}
 {{- end -}}
 
 {{- define "monitoring-lite.vmUrl" -}}
-http://{{ include "monitoring-lite.fullname" . }}-victoria-metrics:{{ .Values.victoriaMetrics.service.port }}
+http://{{ include "monitoring-lite.fullname" . }}-victoria-metrics:{{ .Values.victoriaMetrics.service.port }}{{ .Values.victoriaMetrics.httpPathPrefix }}
 {{- end -}}
 
 {{- define "monitoring-lite.alertmanagerUrl" -}}

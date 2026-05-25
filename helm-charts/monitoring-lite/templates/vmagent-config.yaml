@@ -67,6 +67,7 @@ data:
       {{- end }}
 
       - job_name: victoria-metrics
+        metrics_path: {{ .Values.victoriaMetrics.httpPathPrefix }}/metrics
         static_configs:
           - targets:
               - {{ include "monitoring-lite.fullname" . }}-victoria-metrics:{{ .Values.victoriaMetrics.service.port }}
