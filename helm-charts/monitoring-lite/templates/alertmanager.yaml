@@ -66,13 +66,13 @@ spec:
               else
                 cat <<EOF | sed 's/^              //' >/config/alertmanager.yml
               route:
-                receiver: null
+                receiver: noop
                 group_by: ['alertname', 'job', 'instance']
                 group_wait: 30s
                 group_interval: 5m
                 repeat_interval: 4h
               receivers:
-                - name: null
+                - name: noop
               EOF
               fi
           env:

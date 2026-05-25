@@ -8,7 +8,6 @@ data:
   scrape.yaml: |
     global:
       scrape_interval: {{ .Values.vmagent.scrapeInterval }}
-      evaluation_interval: {{ .Values.vmagent.evaluationInterval }}
 
     scrape_configs:
       {{- if .Values.vmagent.hostNodeExporter.enabled }}
