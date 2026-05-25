@@ -572,7 +572,7 @@ VITE_AUTH_CLIENT_ID=playsay-web
 VITE_AUTH_REDIRECT_PATH=/auth/callback
 ```
 
-The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The frontend calls `/api/me`, `/api/users/me/profile`, schedule endpoints, and the LiveKit room-token endpoint through the generated Orval client.
+The production container serves the SPA through nginx. Requests to `/api/*` are proxied inside the `playsay-dev` namespace to `http://api-gateway/*`, so the browser calls the backend through the same origin `https://online.play-and-say.ru`. The same path also carries WebSocket classroom sync at `/api/ws/lessons`; both the host nginx `online.play-and-say.ru` location and the web-app container nginx must pass `Upgrade` and `Connection` headers. The frontend calls `/api/me`, `/api/users/me/profile`, schedule endpoints, the LiveKit room-token endpoint, and `/api/ws/lessons` through this same-origin route.
 
 Current Sprint 1 UI verification points:
 
@@ -656,7 +656,7 @@ http://api-gateway.playsay-dev.svc.cluster.local/livekit/webhook
 
 `api-gateway` handles `participant_joined` and `participant_left` by updating `lesson_participant.joined_at`, `left_at`, `attendance_status`, and setting the lesson to `IN_PROGRESS` on first join. The endpoint is hidden from the public OpenAPI contract and must not be called manually without a valid LiveKit webhook signature.
 
-Host nginx config is generated with a `/livekit/` location under `online.play-and-say.ru`. After changing the script on an existing server, rerun the add-ons script or manually verify the rendered host config:
+Host nginx config is generated with a `/livekit/` location under `online.play-and-say.ru`, and the main `location /` must also pass WebSocket upgrade headers so `/api/ws/lessons` can reach the web-app container and then `api-gateway`. After changing the script on an existing server, rerun the add-ons script or manually verify the rendered host config:
 
 ```bash
 nginx -t
