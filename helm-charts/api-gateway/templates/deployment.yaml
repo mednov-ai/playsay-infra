@@ -90,6 +90,30 @@ spec:
             - name: PLAYSAY_LIVEKIT_TOKEN_TTL_SECONDS
               value: {{ .Values.livekit.tokenTtlSeconds | quote }}
             {{- end }}
+            - name: PLAYSAY_STORAGE_PROVIDER
+              value: {{ .Values.storage.provider | quote }}
+            {{- if eq .Values.storage.provider "s3" }}
+            - name: PLAYSAY_S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            - name: PLAYSAY_S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            - name: PLAYSAY_S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: PLAYSAY_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.accessKeyKey | quote }}
+            - name: PLAYSAY_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.secretKeyKey | quote }}
+            - name: PLAYSAY_S3_PATH_STYLE_ACCESS
+              value: {{ .Values.storage.s3.pathStyleAccess | quote }}
+            - name: PLAYSAY_S3_CREATE_BUCKET
+              value: {{ .Values.storage.s3.createBucket | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

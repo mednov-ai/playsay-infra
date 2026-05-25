@@ -1,0 +1,26 @@
+image:
+  repository: quay.io/minio/minio
+  tag: RELEASE.2025-04-22T22-12-26Z
+  pullPolicy: IfNotPresent
+
+auth:
+  existingSecret: playsay-object-storage
+  accessKeyKey: access-key
+  secretKeyKey: secret-key
+
+service:
+  type: ClusterIP
+  apiPort: 9000
+  consolePort: 9001
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

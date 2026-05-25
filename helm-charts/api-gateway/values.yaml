@@ -47,6 +47,18 @@ livekit:
   apiSecretKey: api-secret
   tokenTtlSeconds: "3600"
 
+storage:
+  provider: memory
+  s3:
+    endpoint: ""
+    region: us-east-1
+    bucket: playsay-material-assets
+    existingSecret: playsay-object-storage
+    accessKeyKey: access-key
+    secretKeyKey: secret-key
+    pathStyleAccess: "true"
+    createBucket: "false"
+
 ingress:
   enabled: true
   className: nginx

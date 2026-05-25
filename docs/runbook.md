@@ -200,6 +200,44 @@ Current DNS/nginx split:
 
 The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
 
+## Object Storage
+
+Dev material assets use S3-compatible object storage. The ArgoCD app is `minio`, deployed to namespace `storage` from `helm-charts/minio`.
+
+Current dev shape:
+
+- service: `minio.storage.svc.cluster.local:9000`;
+- bucket used by `api-gateway`: `playsay-material-assets`;
+- credentials secret: `playsay-object-storage`, copied into namespaces `storage` and `playsay-dev`;
+- MinIO is not exposed through host nginx or a public NodePort.
+
+Create or refresh the object-storage secret without printing values:
+
+```bash
+./scripts/sync-object-storage-secret.sh
+```
+
+The script creates `playsay-object-storage` in namespace `storage` if missing, then copies it to `playsay-dev`. For staging/prod or managed S3-compatible storage, keep the backend contract and change only Helm values/secret values:
+
+- `PLAYSAY_STORAGE_PROVIDER=s3`
+- `PLAYSAY_S3_ENDPOINT`
+- `PLAYSAY_S3_REGION`
+- `PLAYSAY_S3_BUCKET`
+- `PLAYSAY_S3_ACCESS_KEY`
+- `PLAYSAY_S3_SECRET_KEY`
+- `PLAYSAY_S3_PATH_STYLE_ACCESS`
+- `PLAYSAY_S3_CREATE_BUCKET`
+
+`api-gateway` streams private material assets through `/api/materials/{materialId}/assets/{assetId}/content`; browsers never need direct MinIO access. Legacy `data:image` material assets are intentionally not supported after the MinIO migration.
+
+Check object storage state:
+
+```bash
+kubectl -n argocd get application minio
+kubectl -n storage get pods,pvc,svc
+kubectl -n playsay-dev get secret playsay-object-storage
+```
+
 ## Lightweight Monitoring
 
 Dev monitoring uses a lightweight VictoriaMetrics GitOps app instead of full `kube-prometheus-stack`, because the current dev VPS has `4 vCPU / 8 GB RAM` and Jenkins + Keycloak + PostgreSQL + LiveKit already consume a meaningful baseline. The ArgoCD app is `monitoring-lite`, deployed to namespace `monitoring` from `helm-charts/monitoring-lite`.
@@ -981,7 +1019,7 @@ Storage target:
 
 - local directory on the dev VPS, for example `/var/backups/playsay`;
 - files must not be committed to Git or copied into the workspace;
-- external S3/restic storage is deferred until real user data or staging/prod hardening.
+- external S3/restic storage for database dumps is deferred until real user data or staging/prod hardening; material assets already live in dev MinIO and must be included in the real backup plan before production data.
 
 Expected backup shape:
 
