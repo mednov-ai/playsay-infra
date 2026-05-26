@@ -218,6 +218,24 @@ EOF
     --set persistence.enabled=true \
     --set persistence.size=8Gi
 
+  JENKINS_APPLY_CONFIG_TMP="$(mktemp)"
+  kubectl -n jenkins get configmap jenkins -o jsonpath='{.data.apply_config\.sh}' > "$JENKINS_APPLY_CONFIG_TMP"
+  if grep -q 'yes n | cp -i /usr/share/jenkins/ref/plugins/\* /var/jenkins_plugins/;' "$JENKINS_APPLY_CONFIG_TMP"; then
+    sed -i 's#yes n | cp -i /usr/share/jenkins/ref/plugins/\* /var/jenkins_plugins/;#cp -f /usr/share/jenkins/ref/plugins/* /var/jenkins_plugins/;#' "$JENKINS_APPLY_CONFIG_TMP"
+    JENKINS_PATCH_TMP="$(mktemp)"
+    {
+      printf 'data:\n  apply_config.sh: |\n'
+      sed 's/^/    /' "$JENKINS_APPLY_CONFIG_TMP"
+    } > "$JENKINS_PATCH_TMP"
+    kubectl -n jenkins patch configmap jenkins --type merge --patch-file "$JENKINS_PATCH_TMP"
+    rm -f "$JENKINS_PATCH_TMP"
+  fi
+  rm -f "$JENKINS_APPLY_CONFIG_TMP"
+
+  if kubectl -n jenkins get pod jenkins-0 -o jsonpath='{range .status.initContainerStatuses[*]}{.state.waiting.reason}{"\n"}{end}' 2>/dev/null | grep -q '^CrashLoopBackOff$'; then
+    kubectl -n jenkins delete pod jenkins-0 --wait=false
+  fi
+
   kubectl -n jenkins rollout status statefulset/jenkins --timeout=600s
   JENKINS_NODEPORT_HTTP="$JENKINS_NODEPORT_HTTP" \
     "$ROOT_DIR/scripts/configure-jenkins-jobs.sh"
