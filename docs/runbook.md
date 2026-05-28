@@ -425,6 +425,8 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `release/1.001.00` creates labels such as `rel_1.001.00-13`;
 - `hotfix/fix-login` creates labels such as `hotfix_fix-login-14`.
 
+The job is intentionally not triggered by GitHub push webhooks while it remains a single parameterized pipeline. A generic GitHub push trigger does not pass the pushed branch into `BRANCH_NAME`; Jenkins then uses the default `develop` value and can unexpectedly deploy `dev-*` over a feature build. Trigger dev builds manually or through the Jenkins API with an explicit `BRANCH_NAME`. Re-enable automatic push builds only after replacing this job with a multibranch pipeline or a webhook trigger that extracts and validates the branch name.
+
 The build label is written to:
 
 - Jenkins build display name;
@@ -475,7 +477,7 @@ Current GitHub webhook for `playsay-platform`:
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
-- Status: configured on 2026-05-28 after the hook was found missing; GitHub ping delivery returned `200 OK`.
+- Status: configured on 2026-05-28 after the hook was found missing; GitHub ping delivery returned `200 OK`. The `playsay-platform-develop` Jenkins job no longer has a `GitHubPushTrigger`, so this hook must not start dev deploys until branch-aware CI is introduced.
 - Secret: not configured yet. Before production use, generate a random shared secret and configure the same secret in Jenkins GitHub settings.
 
 Jenkins first login:

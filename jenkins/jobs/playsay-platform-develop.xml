@@ -16,13 +16,6 @@
     <com.coravy.hudson.plugins.github.GithubProjectProperty>
       <projectUrl>https://github.com/mednov-ai/playsay-platform/</projectUrl>
     </com.coravy.hudson.plugins.github.GithubProjectProperty>
-    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
-      <triggers>
-        <com.cloudbees.jenkins.GitHubPushTrigger>
-          <spec></spec>
-        </com.cloudbees.jenkins.GitHubPushTrigger>
-      </triggers>
-    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
     <jenkins.model.BuildDiscarderProperty>
       <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>-1</daysToKeep>
