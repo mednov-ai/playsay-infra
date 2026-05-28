@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "codex_jenkins-codex-deploy-108"
+  tag: "dev-109"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_jenkins-codex-deploy-108
-  number: "108"
-  branch: codex/jenkins-codex-deploy
-  branchLabel: codex_jenkins-codex-deploy
-  commit: 533841db57b1d1f12cdf2cff5cf8577e75881283
-  commitShort: "533841db57b1"
+  name: dev-109
+  number: "109"
+  branch: develop
+  branchLabel: dev
+  commit: 03d55e0b6853968c17b0d974a0fda6296eabc64f
+  commitShort: "03d55e0b6853"
 service:
   type: NodePort
   nodePort: 32083
