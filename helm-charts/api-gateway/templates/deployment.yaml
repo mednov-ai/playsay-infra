@@ -120,11 +120,20 @@ spec:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 2
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: http
             initialDelaySeconds: 30
             periodSeconds: 20
+            timeoutSeconds: 2
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 24
+            periodSeconds: 10
+            timeoutSeconds: 2
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
