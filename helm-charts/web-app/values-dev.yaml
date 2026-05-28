@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "f_frontend-i18n-refactor-103"
+  tag: "f_backend-error-i18n-106"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: f_frontend-i18n-refactor-103
-  number: "103"
-  branch: feature/frontend-i18n-refactor
-  branchLabel: f_frontend-i18n-refactor
-  commit: 1616b184906da042a5742bedad0976612fa4302e
-  commitShort: "1616b184906d"
+  name: f_backend-error-i18n-106
+  number: "106"
+  branch: feature/backend-error-i18n
+  branchLabel: f_backend-error-i18n
+  commit: 6290ed8cebece96aa5131e5f9100ca33a20376c8
+  commitShort: "6290ed8cebec"
 service:
   type: NodePort
   nodePort: 32083
