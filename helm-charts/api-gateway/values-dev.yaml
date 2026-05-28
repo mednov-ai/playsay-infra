@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "f_backend-error-i18n-107"
+  tag: "codex_jenkins-codex-deploy-108"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: f_backend-error-i18n-107
-  number: "107"
-  branch: feature/backend-error-i18n
-  branchLabel: f_backend-error-i18n
-  commit: e0d2f3f03ace12033af0eaac7aea2f44d119a964
-  commitShort: "e0d2f3f03ace"
+  name: codex_jenkins-codex-deploy-108
+  number: "108"
+  branch: codex/jenkins-codex-deploy
+  branchLabel: codex_jenkins-codex-deploy
+  commit: 533841db57b1d1f12cdf2cff5cf8577e75881283
+  commitShort: "533841db57b1"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
