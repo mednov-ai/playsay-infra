@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "f_backend-layer-refactor-93"
+  tag: "f_frontend-layer-refactor-94"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: f_backend-layer-refactor-93
-  number: "93"
-  branch: feature/backend-layer-refactor
-  branchLabel: f_backend-layer-refactor
-  commit: b98b1d2cf47966ad00d53313ed94b5f124708f44
-  commitShort: "b98b1d2cf479"
+  name: f_frontend-layer-refactor-94
+  number: "94"
+  branch: feature/frontend-layer-refactor
+  branchLabel: f_frontend-layer-refactor
+  commit: ee5c812499641048a2764b221056e6dbc15ad5cf
+  commitShort: "ee5c81249964"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
