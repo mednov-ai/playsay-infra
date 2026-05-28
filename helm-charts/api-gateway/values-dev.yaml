@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "codex_backend-sql-repo-refactor-112"
+  tag: "dev-113"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_backend-sql-repo-refactor-112
-  number: "112"
-  branch: codex/backend-sql-repo-refactor
-  branchLabel: codex_backend-sql-repo-refactor
-  commit: a2824590568b791f9bfe5413093d36b3b9fc0e0c
-  commitShort: "a2824590568b"
+  name: dev-113
+  number: "113"
+  branch: develop
+  branchLabel: dev
+  commit: 2338401e37ab468e87d560219fe91d8e6388b240
+  commitShort: "2338401e37ab"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
