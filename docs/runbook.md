@@ -469,12 +469,14 @@ unset GITHUB_TOKEN
 ```
 
 
-Recommended GitHub webhook for `playsay-platform`:
+Current GitHub webhook for `playsay-platform`:
 
 - Payload URL: `https://ops.play-and-say.ru:18443/jenkins/github-webhook/`
 - Content type: `application/json`
-- Events: push and pull request
-- Secret: generate a random value and configure the same secret in Jenkins GitHub settings.
+- Events: push
+- GitHub hook id: `632315512`
+- Status: configured on 2026-05-28 after the hook was found missing; GitHub ping delivery returned `200 OK`.
+- Secret: not configured yet. Before production use, generate a random shared secret and configure the same secret in Jenkins GitHub settings.
 
 Jenkins first login:
 
