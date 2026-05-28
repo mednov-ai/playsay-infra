@@ -1,13 +1,13 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job">
-  <description>Play&amp;Say platform pipeline. Use BRANCH_NAME to build develop, feature/*, release/*, or hotfix/*.</description>
+  <description>Play&amp;Say platform pipeline. Use BRANCH_NAME to build develop, codex/*, feature/*, release/*, or hotfix/*.</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
           <name>BRANCH_NAME</name>
-          <description>Git branch to build and deploy to dev, for example develop, feature/task-1, release/1.001.00</description>
+          <description>Git branch to build and deploy to dev, for example develop, codex/task-1, feature/task-1, release/1.001.00</description>
           <defaultValue>develop</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>

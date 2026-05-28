@@ -421,11 +421,14 @@ The Jenkins job `playsay-platform-develop` is configured by:
 The bootstrap/add-ons script runs it automatically after Jenkins is installed. The job has a `BRANCH_NAME` parameter:
 
 - `develop` creates build labels such as `dev-11`;
+- `codex/task-1` creates labels such as `codex_task-1-12`;
 - `feature/task-1` creates labels such as `f_task-1-12`;
 - `release/1.001.00` creates labels such as `rel_1.001.00-13`;
 - `hotfix/fix-login` creates labels such as `hotfix_fix-login-14`.
 
-The job is intentionally not triggered by GitHub push webhooks while it remains a single parameterized pipeline. A generic GitHub push trigger does not pass the pushed branch into `BRANCH_NAME`; Jenkins then uses the default `develop` value and can unexpectedly deploy `dev-*` over a feature build. Trigger dev builds manually or through the Jenkins API with an explicit `BRANCH_NAME`. Re-enable automatic push builds only after replacing this job with a multibranch pipeline or a webhook trigger that extracts and validates the branch name.
+Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
+
+The job is intentionally not triggered by GitHub push webhooks while it remains a single parameterized pipeline. A generic GitHub push trigger does not pass the pushed branch into `BRANCH_NAME`; Jenkins then uses the default `develop` value and can unexpectedly deploy `dev-*` over a feature or codex build. Trigger dev builds manually or through the Jenkins API with an explicit `BRANCH_NAME`. Re-enable automatic push builds only after replacing this job with a multibranch pipeline or a webhook trigger that extracts and validates the branch name.
 
 The build label is written to:
 
