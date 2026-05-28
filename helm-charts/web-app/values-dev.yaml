@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "f_frontend-layer-refactor-97"
+  tag: "f_frontend-layer-refactor-98"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: f_frontend-layer-refactor-97
-  number: "97"
+  name: f_frontend-layer-refactor-98
+  number: "98"
   branch: feature/frontend-layer-refactor
   branchLabel: f_frontend-layer-refactor
-  commit: 340336af0e9dbf6f21eadf6ef7281ba73ce9f987
-  commitShort: "340336af0e9d"
+  commit: bd238b1475b301bd893005410d5c16740bf43c02
+  commitShort: "bd238b1475b3"
 service:
   type: NodePort
   nodePort: 32083
