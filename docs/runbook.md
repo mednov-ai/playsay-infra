@@ -428,7 +428,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 
 Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
 
-The job is intentionally not triggered by GitHub push webhooks while it remains a single parameterized pipeline. A generic GitHub push trigger does not pass the pushed branch into `BRANCH_NAME`; Jenkins then uses the default `develop` value and can unexpectedly deploy `dev-*` over a feature or codex build. Trigger dev builds manually or through the Jenkins API with an explicit `BRANCH_NAME`. Re-enable automatic push builds only after replacing this job with a multibranch pipeline or a webhook trigger that extracts and validates the branch name.
+The job uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. The trigger extracts `ref` into `BRANCH_NAME`, strips the `refs/heads/` prefix, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. This keeps Jenkins Git tags from recursively starting new builds while allowing merge commits into `develop` and `release/*` to build automatically. Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` when a dev deploy of that branch is needed.
 
 The build label is written to:
 
@@ -476,12 +476,12 @@ unset GITHUB_TOKEN
 
 Current GitHub webhook for `playsay-platform`:
 
-- Payload URL: `https://ops.play-and-say.ru:18443/jenkins/github-webhook/`
+- Payload URL: `https://ops.play-and-say.ru:18443/jenkins/generic-webhook-trigger/invoke?token=playsay-platform-develop`
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
-- Status: configured on 2026-05-28 after the hook was found missing; GitHub ping delivery returned `200 OK`. The `playsay-platform-develop` Jenkins job no longer has a `GitHubPushTrigger`, so this hook must not start dev deploys until branch-aware CI is introduced.
-- Secret: not configured yet. Before production use, generate a random shared secret and configure the same secret in Jenkins GitHub settings.
+- Status: branch-aware auto-build for `develop` and `release/*` is configured through Generic Webhook Trigger. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
+- Secret: the current dev hook uses the Generic Webhook Trigger token in the URL. Before production use, replace it with a generated secret credential and configure the same secret/token in GitHub and Jenkins.
 
 Jenkins first login:
 
