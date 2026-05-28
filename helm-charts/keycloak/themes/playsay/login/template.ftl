@@ -130,6 +130,44 @@
                         </div>
                     </div>
                 </div>
+                <script>
+                    (function () {
+                        var supportedLanguages = { ru: true, en: true, de: true, fr: true };
+                        var links = document.querySelectorAll("#language-switch1 a[href]");
+
+                        function loginLanguageFromHref(href) {
+                            try {
+                                var url = new URL(href, window.location.href);
+                                return url.searchParams.get("kc_locale") || url.searchParams.get("ui_locales");
+                            } catch (caught) {
+                                var match = href.match(/[?&](?:kc_locale|ui_locales)=([^&]+)/);
+                                return match ? decodeURIComponent(match[1]) : null;
+                            }
+                        }
+
+                        function rememberLoginLanguage(locale) {
+                            var language = String(locale || "").toLowerCase().split(/[-_]/)[0];
+                            if (!supportedLanguages[language]) {
+                                return;
+                            }
+
+                            var cookie = "playsay.pendingLoginLanguage=" + encodeURIComponent(language) + "; Path=/; Max-Age=600; SameSite=Lax";
+                            if (window.location.protocol === "https:") {
+                                cookie += "; Secure";
+                            }
+                            if (window.location.hostname === "play-and-say.ru" || window.location.hostname.endsWith(".play-and-say.ru")) {
+                                cookie += "; Domain=.play-and-say.ru";
+                            }
+                            document.cookie = cookie;
+                        }
+
+                        links.forEach(function (link) {
+                            link.addEventListener("click", function () {
+                                rememberLoginLanguage(loginLanguageFromHref(link.href));
+                            });
+                        });
+                    })();
+                </script>
             </#if>
 
             <p class="playsay-eyebrow">Добро пожаловать</p>
