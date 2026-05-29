@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "codex_fix-matching-classroom-shuffle-117"
+  tag: "dev-118"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_fix-matching-classroom-shuffle-117
-  number: "117"
-  branch: codex/fix-matching-classroom-shuffle
-  branchLabel: codex_fix-matching-classroom-shuffle
-  commit: 549d49fe4e9850d2ea94fb1af1e8e2169fe51cb3
-  commitShort: "549d49fe4e98"
+  name: dev-118
+  number: "118"
+  branch: develop
+  branchLabel: dev
+  commit: 4d625772fa564718c207d4e50e74a1e9013b462d
+  commitShort: "4d625772fa56"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
