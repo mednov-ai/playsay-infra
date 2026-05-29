@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "f_ai-answer-suggestions-120"
+  tag: "dev-121"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: f_ai-answer-suggestions-120
-  number: "120"
-  branch: feature/ai-answer-suggestions
-  branchLabel: f_ai-answer-suggestions
-  commit: 38e73f3186323039f286881833454763edff2627
-  commitShort: "38e73f318632"
+  name: dev-121
+  number: "121"
+  branch: develop
+  branchLabel: dev
+  commit: 3900ec4bd0d310653379914bc7a28dbb3524fa04
+  commitShort: "3900ec4bd0d3"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
