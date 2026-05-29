@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "dev-116"
+  tag: "codex_fix-matching-classroom-shuffle-117"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-116
-  number: "116"
-  branch: develop
-  branchLabel: dev
-  commit: 552834bf76f433d1bab0db48716a67e06843969e
-  commitShort: "552834bf76f4"
+  name: codex_fix-matching-classroom-shuffle-117
+  number: "117"
+  branch: codex/fix-matching-classroom-shuffle
+  branchLabel: codex_fix-matching-classroom-shuffle
+  commit: 549d49fe4e9850d2ea94fb1af1e8e2169fe51cb3
+  commitShort: "549d49fe4e98"
 service:
   type: NodePort
   nodePort: 32083
