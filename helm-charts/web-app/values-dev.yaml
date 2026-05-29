@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "codex_fill-gap-editor-polish-122"
+  tag: "codex_fill-gap-editor-polish-123"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_fill-gap-editor-polish-122
-  number: "122"
+  name: codex_fill-gap-editor-polish-123
+  number: "123"
   branch: codex/fill-gap-editor-polish
   branchLabel: codex_fill-gap-editor-polish
-  commit: a5a16fc3a5e61a82d2608b710f891d8d865e66b1
-  commitShort: "a5a16fc3a5e6"
+  commit: e1305501663cc39f60a18fad21dec7c8bf899fb7
+  commitShort: "e1305501663c"
 service:
   type: NodePort
   nodePort: 32083
