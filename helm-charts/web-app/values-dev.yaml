@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "dev-118"
+  tag: "f_ai-answer-suggestions-119"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-118
-  number: "118"
-  branch: develop
-  branchLabel: dev
-  commit: 4d625772fa564718c207d4e50e74a1e9013b462d
-  commitShort: "4d625772fa56"
+  name: f_ai-answer-suggestions-119
+  number: "119"
+  branch: feature/ai-answer-suggestions
+  branchLabel: f_ai-answer-suggestions
+  commit: 4cd75a6e58ce75771fe19cff9f64a474a1c2e8af
+  commitShort: "4cd75a6e58ce"
 service:
   type: NodePort
   nodePort: 32083
