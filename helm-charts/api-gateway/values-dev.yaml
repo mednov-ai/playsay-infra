@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "dev-113"
+  tag: "codex_keycloak-login-i18n-114"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-113
-  number: "113"
-  branch: develop
-  branchLabel: dev
-  commit: 2338401e37ab468e87d560219fe91d8e6388b240
-  commitShort: "2338401e37ab"
+  name: codex_keycloak-login-i18n-114
+  number: "114"
+  branch: codex/keycloak-login-i18n
+  branchLabel: codex_keycloak-login-i18n
+  commit: d609ea769e19eb2562cf6ad56672b88973ca54c3
+  commitShort: "d609ea769e19"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
