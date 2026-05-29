@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "codex_keycloak-login-i18n-114"
+  tag: "codex_keycloak-login-i18n-115"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_keycloak-login-i18n-114
-  number: "114"
+  name: codex_keycloak-login-i18n-115
+  number: "115"
   branch: codex/keycloak-login-i18n
   branchLabel: codex_keycloak-login-i18n
-  commit: d609ea769e19eb2562cf6ad56672b88973ca54c3
-  commitShort: "d609ea769e19"
+  commit: ecd351671379725a65bc101ede28b24203fc903c
+  commitShort: "ecd351671379"
 service:
   type: NodePort
   nodePort: 32083
