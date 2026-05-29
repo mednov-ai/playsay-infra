@@ -525,7 +525,8 @@ Sprint 1 installed Keycloak in minimal mode. It was first deployed before the VP
 - service: NodePort `32084` on localhost through host nginx;
 - PostgreSQL: chart-managed standalone PostgreSQL with a `4Gi` PVC;
 - images: `docker.io/bitnamilegacy/keycloak` and `docker.io/bitnamilegacy/postgresql` because the chart's `docker.io/bitnami/...` tags are not available publicly anymore; replace with supported/private images before staging/prod. Chart `25.x` was avoided because it hit a known `Incomplete line...` startup failure in this dev setup.
-- login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart as a ConfigMap volume. Theme caches are disabled in dev. The logo is copied from `play-and-say.ru`. On mobile, the login form is ordered before the brand copy so username/password are visible without scrolling.
+- login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart as a ConfigMap volume. Theme caches are disabled in dev. The logo is copied from `play-and-say.ru`. On mobile, the login form is ordered before the brand copy so username/password are visible without scrolling. All custom visible theme texts live in Keycloak message bundles for `ru`, `en`, `de`, and `fr`; frontend `ui_locales` and the Keycloak language dropdown must change both `<html lang>` and the visible copy.
+- theme rollout: `values-dev.yaml` carries `keycloak.podAnnotations.checksum/playsay-theme` in the Keycloak pod template. Update this checksum whenever files under `helm-charts/keycloak/themes/playsay/login` or the theme ConfigMap template change; ArgoCD then rolls the Keycloak pod without a manual `rollout restart`.
 - secrets: `keycloak-admin` and `keycloak-postgresql`, created manually in the cluster and never committed to Git.
 - initial realm: `playsay`;
 - initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
@@ -541,6 +542,7 @@ The script is idempotent. It creates/updates:
 
 - realm `playsay`;
 - realm login theme `playsay`;
+- realm i18n: `internationalizationEnabled=true`, supported locales `ru`, `en`, `de`, `fr`, and default locale `ru`;
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
 - public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, `http://localhost:5173`, and `http://localhost:4173`;
 - backend client `playsay-api`;

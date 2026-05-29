@@ -89,7 +89,15 @@ ensure_realm() {
     return
   fi
 
-  jq -n --arg realm "$REALM" '{realm:$realm, enabled:true, displayName:"Play&Say", loginTheme:"playsay"}' \
+  jq -n --arg realm "$REALM" '{
+      realm: $realm,
+      enabled: true,
+      displayName: "Play&Say",
+      loginTheme: "playsay",
+      internationalizationEnabled: true,
+      supportedLocales: ["ru", "en", "de", "fr"],
+      defaultLocale: "ru"
+    }' \
     | kc_curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
       -d @- "$KEYCLOAK_URL/admin/realms" >/dev/null
 }
@@ -97,7 +105,13 @@ ensure_realm() {
 ensure_realm_theme() {
   local token="$1"
   kc_curl -H "Authorization: Bearer $token" "$KEYCLOAK_URL/admin/realms/$REALM" \
-    | jq '. + {displayName:"Play&Say", loginTheme:"playsay"}' \
+    | jq '. + {
+        displayName: "Play&Say",
+        loginTheme: "playsay",
+        internationalizationEnabled: true,
+        supportedLocales: ["ru", "en", "de", "fr"],
+        defaultLocale: "ru"
+      }' \
     | kc_curl -X PUT -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
       -d @- "$KEYCLOAK_URL/admin/realms/$REALM" >/dev/null
 }

@@ -37,6 +37,9 @@ keycloak:
       cpu: 750m
       memory: 900Mi
 
+  podAnnotations:
+    checksum/playsay-theme: d417662a17367c83b8c084db971687c1cbfc0a906ea654cd05b219a188f733e3
+
   extraEnvVars:
     - name: KC_SPI_THEME_CACHE_THEMES
       value: "false"
@@ -58,6 +61,10 @@ keycloak:
             path: login/messages/messages_en.properties
           - key: messages_ru.properties
             path: login/messages/messages_ru.properties
+          - key: messages_de.properties
+            path: login/messages/messages_de.properties
+          - key: messages_fr.properties
+            path: login/messages/messages_fr.properties
           - key: playsay-login.css
             path: login/resources/css/playsay-login.css
           - key: logo.jpg
