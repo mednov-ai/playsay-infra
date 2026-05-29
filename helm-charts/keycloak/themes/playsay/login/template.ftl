@@ -85,30 +85,29 @@
 <body class="${properties.kcBodyClass!} playsay-login-body" data-page-id="login-${pageId}">
     <div class="playsay-brand">
         <div class="playsay-brand-logo">
-            <img src="${url.resourcesPath}/img/logo.jpg" alt="Play&Say" />
+            <img src="${url.resourcesPath}/img/logo.jpg" alt="${msg("playsayLoginLogoAlt")}" />
         </div>
-        <div>english studio</div>
+        <div>${msg("playsayLoginBrandSubtitle")}</div>
     </div>
 
     <main class="playsay-page">
-        <section class="playsay-copy" aria-label="Play&Say">
-            <p class="playsay-eyebrow">Личный кабинет Play&Say</p>
-            <h1>Английский начинается со входа<span class="playsay-mark"></span></h1>
+        <section class="playsay-copy" aria-label="${msg("playsayLoginCopyAria")}">
+            <p class="playsay-eyebrow">${msg("playsayLoginAccountEyebrow")}</p>
+            <h1>${msg("playsayLoginHeroTitle")}<span class="playsay-mark"></span></h1>
             <p class="playsay-lead">
-                Войдите в online-класс, чтобы открыть профиль, задания и будущие занятия.
-                Стиль Play&Say: ясно, дружелюбно и без лишнего шума.
+                ${msg("playsayLoginHeroLead")}
             </p>
 
-            <div class="playsay-chips" aria-label="Акценты">
-                <span class="playsay-chip">Play</span>
-                <span class="playsay-chip">I can speak</span>
-                <span class="playsay-chip">Hello!</span>
+            <div class="playsay-chips" aria-label="${msg("playsayLoginChipsAria")}">
+                <span class="playsay-chip">${msg("playsayLoginChipPlay")}</span>
+                <span class="playsay-chip">${msg("playsayLoginChipSpeak")}</span>
+                <span class="playsay-chip">${msg("playsayLoginChipHello")}</span>
             </div>
 
-            <div class="playsay-points" aria-label="Возможности">
-                <div class="playsay-point">Личный кабинет для занятий и заданий</div>
-                <div class="playsay-point">Профиль ученика и преподавателя</div>
-                <div class="playsay-point">Безопасный вход через Play&Say</div>
+            <div class="playsay-points" aria-label="${msg("playsayLoginPointsAria")}">
+                <div class="playsay-point">${msg("playsayLoginLessonWorkspace")}</div>
+                <div class="playsay-point">${msg("playsayLoginStudentTeacherProfile")}</div>
+                <div class="playsay-point">${msg("playsayLoginSecureAccess")}</div>
             </div>
         </section>
 
@@ -170,7 +169,7 @@
                 </script>
             </#if>
 
-            <p class="playsay-eyebrow">Добро пожаловать</p>
+            <p class="playsay-eyebrow">${msg("playsayLoginWelcome")}</p>
             <#if !(auth?has_content && auth.showUsername() && !auth.showResetCredentials())>
                 <h2 id="kc-page-title" class="playsay-card-title"><#nested "header"></h2>
             <#else>
@@ -185,7 +184,7 @@
                     </a>
                 </div>
             </#if>
-            <p class="playsay-card-text">Используйте логин и пароль, которые выдали в школе. После входа откроется online-класс.</p>
+            <p class="playsay-card-text">${msg("playsayLoginCardText")}</p>
 
             <div id="kc-content">
                 <div id="kc-content-wrapper">
@@ -225,8 +224,8 @@
                 </div>
             </div>
 
-            <div class="playsay-help">Нужен доступ? Напишите администратору Play&Say или преподавателю группы.</div>
-            <div class="playsay-return"><a href="https://play-and-say.ru">Вернуться на сайт</a></div>
+            <div class="playsay-help">${msg("playsayLoginAccessHelp")}</div>
+            <div class="playsay-return"><a href="https://play-and-say.ru">${msg("playsayLoginReturnToSite")}</a></div>
 
             <@loginFooter.content/>
         </section>
