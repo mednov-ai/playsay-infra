@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "codex_fill-gap-editor-polish-125"
+  tag: "dev-126"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_fill-gap-editor-polish-125
-  number: "125"
-  branch: codex/fill-gap-editor-polish
-  branchLabel: codex_fill-gap-editor-polish
-  commit: ca6875e3195b5c8e04aaaccf338f7fc4e07e7c5f
-  commitShort: "ca6875e3195b"
+  name: dev-126
+  number: "126"
+  branch: develop
+  branchLabel: dev
+  commit: be2587179621170611e2d750864fe8adbf379710
+  commitShort: "be2587179621"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
