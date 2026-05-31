@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "codex_universal-fill-gaps-127"
+  tag: "dev-128"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_universal-fill-gaps-127
-  number: "127"
-  branch: codex/universal-fill-gaps
-  branchLabel: codex_universal-fill-gaps
-  commit: 97386fb0832a75408298f375448c2cfcd989e818
-  commitShort: "97386fb0832a"
+  name: dev-128
+  number: "128"
+  branch: develop
+  branchLabel: dev
+  commit: f8970f9811b3a1c2e9f5993c8f57ead7c726ea4b
+  commitShort: "f8970f9811b3"
 service:
   type: NodePort
   nodePort: 32083
