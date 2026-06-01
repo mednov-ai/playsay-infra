@@ -1,13 +1,13 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "codex_sprint-5-live-workspace-134"
+  tag: "dev-135"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_sprint-5-live-workspace-134
-  number: "134"
-  branch: codex/sprint-5-live-workspace
-  branchLabel: codex_sprint-5-live-workspace
+  name: dev-135
+  number: "135"
+  branch: develop
+  branchLabel: dev
   commit: 70c62955e908f3316aaad4691eb8c4b83a844c39
   commitShort: "70c62955e908"
 ingress:
