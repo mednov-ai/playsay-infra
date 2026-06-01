@@ -785,6 +785,16 @@ curl -k -I https://online.play-and-say.ru/collab/ws
 
 Expected `curl` result is an HTTP response from the service path, not a full websocket session. Functional verification happens in the browser: teacher creates a group lesson, two students join, each student edits an individual document, everyone edits the group document, colored presence cursors appear, reconnect restores text and annotations, and finalize creates a normal material submission.
 
+Automated Sprint 5 UI smoke lives in `playsay-platform` and uses the local agent Playwright install without adding Playwright to the app dependencies:
+
+```bash
+cd /Users/evgeniymednov/Documents/Projects/Play\&Say/playsay-platform
+PLAYWRIGHT_PACKAGE_DIR=/Users/evgeniymednov/.codex/tools/playwright \
+  ./scripts/smoke/sprint5-ui-smoke.mjs
+```
+
+The script obtains Keycloak Authorization Code + PKCE tokens as `teacher-demo`, `student-demo`, and `student-demo-2`, reads demo passwords from the dev `keycloak-dev-users` Kubernetes secret over SSH without printing them, creates a temporary published private material, active group lesson, and required collaboration documents through the API for deterministic setup, then drives real browser classroom pages for teacher + two students. It verifies individual documents, teacher supervision/edit, group document sync, colored material-scoped cursors clipped to the lesson material surface, annotation sync after scroll/resize/reload, and finalize creating a normal material submission. The script deletes the temporary lesson and archives the temporary material at the end.
+
 ## LiveKit Dev Video
 
 Sprint 3 video work started early to make the platform demonstrable from the schedule screen.
