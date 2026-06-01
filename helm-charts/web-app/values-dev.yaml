@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "dev-132"
+  tag: "codex_sprint-5-live-workspace-134"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-132
-  number: "132"
-  branch: develop
-  branchLabel: dev
-  commit: ef83fefd7dd4f34d8b7a106106675e32dadebb9e
-  commitShort: "ef83fefd7dd4"
+  name: codex_sprint-5-live-workspace-134
+  number: "134"
+  branch: codex/sprint-5-live-workspace
+  branchLabel: codex_sprint-5-live-workspace
+  commit: 70c62955e908f3316aaad4691eb8c4b83a844c39
+  commitShort: "70c62955e908"
 service:
   type: NodePort
   nodePort: 32083
