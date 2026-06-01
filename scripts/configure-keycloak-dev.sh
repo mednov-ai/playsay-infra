@@ -8,6 +8,7 @@ KEYCLOAK_DEV_USERS_SECRET="${KEYCLOAK_DEV_USERS_SECRET:-keycloak-dev-users}"
 REALM="${KEYCLOAK_REALM:-playsay}"
 WEB_CLIENT_ID="${KEYCLOAK_WEB_CLIENT_ID:-playsay-web}"
 API_CLIENT_ID="${KEYCLOAK_API_CLIENT_ID:-playsay-api}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 CURL_TLS_ARGS=()
 if [[ "${KEYCLOAK_INSECURE_TLS:-true}" == "true" ]]; then
@@ -296,6 +297,13 @@ main() {
   ensure_user "$token" student-demo-4 student-demo-4@play-and-say.ru Student "Demo 4" STUDENT student-demo-4-password
   ensure_user "$token" teacher-demo teacher-demo@play-and-say.ru Teacher Demo TEACHER teacher-demo-password
   ensure_user "$token" admin-demo admin-demo@play-and-say.ru Admin Demo ADMIN admin-demo-password
+
+  if [[ "${SYNC_JENKINS_SMOKE_SECRET:-true}" == "true" && -x "$ROOT_DIR/scripts/sync-keycloak-dev-users-secret.sh" ]]; then
+    SOURCE_NAMESPACE="$KEYCLOAK_NAMESPACE" \
+      SOURCE_SECRET="$KEYCLOAK_DEV_USERS_SECRET" \
+      TARGET_NAMESPACES="${KEYCLOAK_DEV_USERS_TARGET_NAMESPACES:-jenkins}" \
+      "$ROOT_DIR/scripts/sync-keycloak-dev-users-secret.sh"
+  fi
 
   echo "Configured Keycloak realm '$REALM' with clients '$WEB_CLIENT_ID'/'$API_CLIENT_ID' and demo users."
   echo "Demo passwords are stored in Kubernetes secret '$KEYCLOAK_DEV_USERS_SECRET' in namespace '$KEYCLOAK_NAMESPACE'."
