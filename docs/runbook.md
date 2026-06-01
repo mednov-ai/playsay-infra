@@ -428,7 +428,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 
 Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
 
-The job uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. The trigger extracts `ref` into `BRANCH_NAME`, strips the `refs/heads/` prefix, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. This keeps Jenkins Git tags from recursively starting new builds while allowing merge commits into `develop` and `release/*` to build automatically. Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` when a dev deploy of that branch is needed.
+The job uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. In practice this means a merge commit pushed to `develop` or any `release/*` branch starts Jenkins automatically. The trigger extracts `ref` into `BRANCH_NAME`, strips the `refs/heads/` prefix, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. This keeps Jenkins Git tags from recursively starting new builds while allowing merge commits into `develop` and `release/*` to build automatically. Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` when a dev deploy of that branch is needed.
 
 The build label is written to:
 
@@ -496,6 +496,23 @@ Jenkins URL:
 https://ops.play-and-say.ru:18443/jenkins/
 ```
 
+Jenkins API checks require authentication. If local `kubectl` is not configured for the dev cluster, run the API check through SSH on the VPS and read the Jenkins admin credentials from the in-cluster secret without printing them:
+
+```bash
+ssh root@146.103.126.15 '
+set -euo pipefail
+JENKINS_URL="https://ops.play-and-say.ru:18443/jenkins"
+JENKINS_JOB_NAME="playsay-platform-develop"
+JENKINS_USER="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
+JENKINS_PASSWORD="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
+curl -k -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
+  "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json?tree=builds[number,displayName,building,result,timestamp,url]{0,10}" |
+  jq -r ".builds[] | \"#\\(.number) \\(.displayName) building=\\(.building) result=\\(.result)\""
+'
+```
+
+Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
+
 ## Headlamp Kubernetes UI
 
 Headlamp is installed at:
@@ -544,7 +561,7 @@ The script is idempotent. It creates/updates:
 - realm login theme `playsay`;
 - realm i18n: `internationalizationEnabled=true`, supported locales `ru`, `en`, `de`, `fr`, and default locale `ru`;
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
-- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, `http://localhost:5173`, and `http://localhost:4173`;
+- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, local Vite dev origins `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173`, `http://127.0.0.1:5174`, and local preview origins `http://localhost:4173`, `http://127.0.0.1:4173`;
 - backend client `playsay-api`;
 - dev users `student-demo`, `student-demo-2`, `student-demo-3`, `student-demo-4`, `teacher-demo`, and `admin-demo`.
 
