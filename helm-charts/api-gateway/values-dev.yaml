@@ -31,6 +31,10 @@ livekit:
   serverUrl: wss://online.play-and-say.ru/livekit
   existingSecret: livekit-keys
   tokenTtlSeconds: "3600"
+collaboration:
+  websocketUrl: wss://online.play-and-say.ru/collab/ws
+  existingSecret: playsay-collaboration
+  tokenTtlSeconds: "900"
 storage:
   provider: s3
   s3:

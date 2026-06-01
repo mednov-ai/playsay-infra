@@ -90,6 +90,7 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 - `https://ops.play-and-say.ru:18443/keycloak/` (Sprint 1 auth)
 - `https://ops.play-and-say.ru:18443/victoria-metrics/vmui/` (dev monitoring)
 - `https://online.play-and-say.ru`
+- `wss://online.play-and-say.ru/collab/ws` (Sprint 5 collaboration websocket)
 
 The existing `play-and-say.ru` site server block is not overwritten.
 
@@ -195,6 +196,7 @@ Current DNS/nginx split:
 
 - `play-and-say.ru` stays the public marketing/site host.
 - `online.play-and-say.ru` serves the React product SPA from k3s service `web-app`.
+- `online.play-and-say.ru/collab/ws` proxies directly to the `collaboration-service` NodePort for Yjs websocket rooms.
 - `ops.play-and-say.ru:18443` is reserved for dev infrastructure UI.
 - `ops.play-and-say.ru:18443/keycloak/` serves the Sprint 1 Keycloak dev instance.
 
@@ -433,7 +435,7 @@ The job uses Generic Webhook Trigger to run automatically for GitHub push events
 The build label is written to:
 
 - Jenkins build display name;
-- GHCR image tags for `playsay-api-gateway` and `playsay-web-app`;
+- GHCR image tags for `playsay-api-gateway`, `playsay-web-app`, and `playsay-collaboration-service`;
 - Git tags in `playsay-platform` and `playsay-infra`;
 - Helm `values-dev.yaml` build metadata;
 - Kubernetes pod labels and annotations under `playsay.io/*`.
@@ -447,7 +449,7 @@ kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath
 
 Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile` by copying the already-built jar from `api-gateway/build/libs`. Do not add a Gradle build stage back into the backend Dockerfile unless the pipeline is redesigned.
 
-Jenkins agent requests are kept compact so the build pod can schedule on the dev VPS while Keycloak and application PostgreSQL are running. Current Jenkinsfile requests are `768Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. Limits remain intentionally conservative after the upgrade to 4 vCPU / 8 GB RAM: Gradle `1 CPU / 2Gi`, Node `750m / 768Mi`, each Kaniko container `1 CPU / 1Gi`. The agent pod mounts the `jenkins-agent-cache` PVC for Gradle and npm caches; `deploy-cluster-addons.sh` creates this `4Gi` PVC before installing Jenkins. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
+Jenkins agent requests are kept compact so the build pod can schedule on the dev VPS while Keycloak and application PostgreSQL are running. Current Jenkinsfile requests are `768Mi` for Gradle, `256Mi` for Node, and `256Mi` for each Kaniko container; Jenkins also injects a small `jnlp` container. The pipeline now has separate Kaniko containers for api-gateway, web-app, and collaboration-service images. Limits remain intentionally conservative after the upgrade to 4 vCPU / 8 GB RAM: Gradle `1 CPU / 2Gi`, Node `750m / 768Mi`, each Kaniko container `1 CPU / 1Gi`. The agent pod mounts the `jenkins-agent-cache` PVC for Gradle and npm caches; `deploy-cluster-addons.sh` creates this `4Gi` PVC before installing Jenkins. If a build shows no Stage View progress and the console says `Insufficient memory`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free memory before retrying.
 
 After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tests` because Maven Central DNS resolution temporarily failed while the node was overloaded. A retry `dev-26` pushed load above `11` on the original 2 vCPU VPS, made the Kubernetes API intermittently time out, and was stopped manually. The first conservative retry `dev-27` proved that `1Gi` is too low for Gradle on `compileKotlin`, so Gradle memory was raised to `1536Mi` while limiting CPU and workers. Build `dev-28` passed with the conservative Jenkinsfile mode: Gradle `--max-workers=1`, Kotlin compiler in-process, lower CPU for build containers, and persistent Gradle/npm cache. During Sprint 4, Jenkins `dev-53` was `OOMKilled` in the Gradle container during backend tests after the test suite and Jackson dependencies grew; the Gradle request/limit were raised to `768Mi`/`2Gi` while keeping `--max-workers=1` and Kotlin compiler in-process. Keep this mode until several builds prove the upgraded VPS has enough headroom.
 
@@ -738,6 +740,50 @@ Manual auth checks:
 - `teacher-demo` can log in, sees the teacher workspace, `/api/admin/users` returns `403`;
 - `admin-demo` can log in, sees the admin workspace, `/api/admin/users` returns `200`;
 - logout returns through Keycloak and clears the local browser session.
+
+## Collaboration Service
+
+Sprint 5 adds a Yjs websocket service for live individual and group lesson documents.
+
+GitOps resources:
+
+- ArgoCD app: `argocd-apps/dev/apps/collaboration-service.yaml`;
+- Helm chart: `helm-charts/collaboration-service`;
+- namespace: `playsay-dev`;
+- image: `ghcr.io/mednov-ai/playsay-collaboration-service`;
+- secret: `playsay-collaboration` in namespace `playsay-dev`.
+
+The same `playsay-collaboration` secret is mounted into `api-gateway` and `collaboration-service`. It contains:
+
+- `token-secret`: HS256 signing secret for backend-issued room tokens;
+- `service-token`: header token used by `collaboration-service` when it persists room snapshots back to api-gateway.
+
+Create or refresh it without printing values:
+
+```bash
+./scripts/sync-collaboration-secret.sh
+```
+
+`deploy-cluster-addons.sh` runs the sync script automatically when it exists. Do not commit or print the secret values.
+
+Host nginx config is generated with a `/collab/ws` location under `online.play-and-say.ru`:
+
+- public websocket URL: `wss://online.play-and-say.ru/collab/ws`;
+- local NodePort target: `127.0.0.1:32086`;
+- Kubernetes service: `collaboration-service` in `playsay-dev`.
+
+The frontend receives short-lived room tokens from api-gateway, then opens `/collab/ws?room=<yjsDocumentId>&token=<token>`. The websocket service validates that the room query exactly matches token claims before joining the Yjs room. Snapshot persistence uses `PUT /schedule/lessons/{lessonId}/collaboration-documents/{documentId}/snapshot` with header `X-PlaySay-Collaboration-Service-Token`.
+
+Smoke checks:
+
+```bash
+kubectl -n argocd get applications.argoproj.io collaboration-service api-gateway web-app
+kubectl -n playsay-dev get pods -l app.kubernetes.io/name=collaboration-service
+kubectl -n playsay-dev get secret playsay-collaboration
+curl -k -I https://online.play-and-say.ru/collab/ws
+```
+
+Expected `curl` result is an HTTP response from the service path, not a full websocket session. Functional verification happens in the browser: teacher creates a group lesson, two students join, each student edits an individual document, everyone edits the group document, colored presence cursors appear, reconnect restores text and annotations, and finalize creates a normal material submission.
 
 ## LiveKit Dev Video
 

@@ -15,6 +15,7 @@ OPS_TLS_MODE="${OPS_TLS_MODE:-auto}"
 ONLINE_HOST="${ONLINE_HOST:-online.$DOMAIN}"
 ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
 ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
+COLLABORATION_NODEPORT_HTTP="${COLLABORATION_NODEPORT_HTTP:-32086}"
 KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
 LIVEKIT_SIGNALING_HOST_PORT="${LIVEKIT_SIGNALING_HOST_PORT:-7880}"
 VICTORIA_METRICS_NODEPORT_HTTP="${VICTORIA_METRICS_NODEPORT_HTTP:-32085}"
@@ -47,6 +48,7 @@ Environment variables:
   ONLINE_HOST            Product SPA host. Default: online.<PLAYSAY_DOMAIN>
   ONLINE_NODEPORT_HTTP   Local web-app NodePort. Default: 32083
   ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
+  COLLABORATION_NODEPORT_HTTP Local collaboration-service NodePort for /collab/ws. Default: 32086
   KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
   LIVEKIT_SIGNALING_HOST_PORT Local LiveKit signaling port for /livekit/. Default: 7880
   VICTORIA_METRICS_NODEPORT_HTTP Local VictoriaMetrics NodePort for /victoria-metrics/. Default: 32085
@@ -98,6 +100,10 @@ fi
 
 if [[ -x "$ROOT_DIR/scripts/sync-object-storage-secret.sh" ]]; then
   "$ROOT_DIR/scripts/sync-object-storage-secret.sh"
+fi
+
+if [[ -x "$ROOT_DIR/scripts/sync-collaboration-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/sync-collaboration-secret.sh"
 fi
 
 if [[ "$INSTALL_INGRESS_NGINX" == "true" ]]; then
@@ -314,6 +320,19 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
         return 301 /livekit/;
     }
 "
+    ONLINE_COLLABORATION_LOCATION="    location = /collab/ws {
+        proxy_pass http://127.0.0.1:${COLLABORATION_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+"
     if [[ "$ONLINE_TLS_MODE" == "off" ]]; then
       ONLINE_SCHEME="http"
       ONLINE_HTTP_SERVER="server {
@@ -322,6 +341,7 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
     server_name ${ONLINE_HOST};
 
 ${ONLINE_LIVEKIT_LOCATION}
+${ONLINE_COLLABORATION_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;
@@ -388,6 +408,7 @@ ${ONLINE_LIVEKIT_LOCATION}
     ssl_certificate_key ${ONLINE_SSL_KEY};
 
 ${ONLINE_LIVEKIT_LOCATION}
+${ONLINE_COLLABORATION_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;

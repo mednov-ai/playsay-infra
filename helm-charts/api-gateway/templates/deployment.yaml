@@ -90,6 +90,20 @@ spec:
             - name: PLAYSAY_LIVEKIT_TOKEN_TTL_SECONDS
               value: {{ .Values.livekit.tokenTtlSeconds | quote }}
             {{- end }}
+            - name: PLAYSAY_COLLABORATION_WEBSOCKET_URL
+              value: {{ .Values.collaboration.websocketUrl | quote }}
+            - name: PLAYSAY_COLLABORATION_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.collaboration.existingSecret | quote }}
+                  key: {{ .Values.collaboration.tokenSecretKey | quote }}
+            - name: PLAYSAY_COLLABORATION_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.collaboration.existingSecret | quote }}
+                  key: {{ .Values.collaboration.serviceTokenKey | quote }}
+            - name: PLAYSAY_COLLABORATION_TOKEN_TTL_SECONDS
+              value: {{ .Values.collaboration.tokenTtlSeconds | quote }}
             - name: PLAYSAY_STORAGE_PROVIDER
               value: {{ .Values.storage.provider | quote }}
             {{- if eq .Values.storage.provider "s3" }}

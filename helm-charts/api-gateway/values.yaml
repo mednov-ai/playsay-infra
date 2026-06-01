@@ -47,6 +47,13 @@ livekit:
   apiSecretKey: api-secret
   tokenTtlSeconds: "3600"
 
+collaboration:
+  websocketUrl: wss://online.play-and-say.ru/collab/ws
+  existingSecret: playsay-collaboration
+  tokenSecretKey: token-secret
+  serviceTokenKey: service-token
+  tokenTtlSeconds: "900"
+
 storage:
   provider: memory
   s3:
