@@ -1,4 +1,27 @@
 <#import "footer.ftl" as loginFooter>
+<#macro playsayLogoSvg className clipId shineId>
+<svg class="${className}" role="img" aria-label="${msg("playsayLoginLogoAlt")}" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="${clipId}">
+            <path d="M74 38C117 21 187 25 239 30C310 37 365 61 386 111C410 168 397 252 371 310C344 370 281 404 203 401C123 398 57 367 33 307C10 250 23 169 35 113C45 69 53 47 74 38Z" />
+        </clipPath>
+        <linearGradient id="${shineId}" x1="-30%" x2="130%" y1="0%" y2="100%">
+            <stop offset="0%" stop-color="#ff5c00" stop-opacity="0" />
+            <stop offset="35%" stop-color="#ffd84d" stop-opacity="0.1" />
+            <stop offset="50%" stop-color="#ffffff" stop-opacity="0.72" />
+            <stop offset="65%" stop-color="#74dbbe" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#ff5c00" stop-opacity="0" />
+        </linearGradient>
+    </defs>
+    <g clip-path="url(#${clipId})">
+        <rect class="playsay-logo-paper" height="420" width="420" />
+        <image class="playsay-logo-art" height="456" href="${url.resourcesPath}/img/logo.jpg" preserveAspectRatio="xMidYMid meet" width="456" x="-28" y="-18" />
+        <rect class="playsay-logo-shine" fill="url(#${shineId})" height="560" width="190" x="-240" y="-80" />
+    </g>
+    <path class="playsay-logo-outline" d="M74 38C117 21 187 25 239 30C310 37 365 61 386 111C410 168 397 252 371 310C344 370 281 404 203 401C123 398 57 367 33 307C10 250 23 169 35 113C45 69 53 47 74 38Z" />
+</svg>
+</#macro>
+
 <#macro registrationLayout bodyClass="" displayInfo=false displayMessage=true displayRequiredFields=false>
 <!DOCTYPE html>
 <html class="${properties.kcHtmlClass!}" lang="${lang}"<#if realm.internationalizationEnabled> dir="${(locale.rtl)?then('rtl','ltr')}"</#if>>
@@ -83,32 +106,12 @@
 </head>
 
 <body class="${properties.kcBodyClass!} playsay-login-body" data-page-id="login-${pageId}">
-    <div class="playsay-brand">
-        <div class="playsay-brand-logo">
-            <img src="${url.resourcesPath}/img/logo.jpg" alt="${msg("playsayLoginLogoAlt")}" />
-        </div>
-        <div>${msg("playsayLoginBrandSubtitle")}</div>
-    </div>
-
     <main class="playsay-page">
         <section class="playsay-copy" aria-label="${msg("playsayLoginCopyAria")}">
-            <p class="playsay-eyebrow">${msg("playsayLoginAccountEyebrow")}</p>
-            <h1>${msg("playsayLoginHeroTitle")}<span class="playsay-mark"></span></h1>
-            <p class="playsay-lead">
-                ${msg("playsayLoginHeroLead")}
-            </p>
-
-            <div class="playsay-chips" aria-label="${msg("playsayLoginChipsAria")}">
-                <span class="playsay-chip">${msg("playsayLoginChipPlay")}</span>
-                <span class="playsay-chip">${msg("playsayLoginChipSpeak")}</span>
-                <span class="playsay-chip">${msg("playsayLoginChipHello")}</span>
+            <div class="playsay-hero-logo" aria-hidden="true">
+                <@playsayLogoSvg className="playsay-hero-logo-svg" clipId="playsay-hero-logo-clip" shineId="playsay-hero-logo-shine" />
             </div>
-
-            <div class="playsay-points" aria-label="${msg("playsayLoginPointsAria")}">
-                <div class="playsay-point">${msg("playsayLoginLessonWorkspace")}</div>
-                <div class="playsay-point">${msg("playsayLoginStudentTeacherProfile")}</div>
-                <div class="playsay-point">${msg("playsayLoginSecureAccess")}</div>
-            </div>
+            <h1>${msg("playsayLoginHeroTitle")}</h1>
         </section>
 
         <section class="playsay-card" aria-label="${msg("loginAccountTitle")}">
@@ -169,7 +172,6 @@
                 </script>
             </#if>
 
-            <p class="playsay-eyebrow">${msg("playsayLoginWelcome")}</p>
             <#if !(auth?has_content && auth.showUsername() && !auth.showResetCredentials())>
                 <h2 id="kc-page-title" class="playsay-card-title"><#nested "header"></h2>
             <#else>
@@ -184,7 +186,6 @@
                     </a>
                 </div>
             </#if>
-            <p class="playsay-card-text">${msg("playsayLoginCardText")}</p>
 
             <div id="kc-content">
                 <div id="kc-content-wrapper">
@@ -223,9 +224,6 @@
                     </#if>
                 </div>
             </div>
-
-            <div class="playsay-help">${msg("playsayLoginAccessHelp")}</div>
-            <div class="playsay-return"><a href="https://play-and-say.ru">${msg("playsayLoginReturnToSite")}</a></div>
 
             <@loginFooter.content/>
         </section>
