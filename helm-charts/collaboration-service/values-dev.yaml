@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "codex_jenkins-build-speedups-147"
+  tag: "codex_jenkins-build-speedups-148"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: codex_jenkins-build-speedups-147
-  number: "147"
+  name: codex_jenkins-build-speedups-148
+  number: "148"
   branch: codex/jenkins-build-speedups
   branchLabel: codex_jenkins-build-speedups
-  commit: 144de3a2fc057f93415e39fac7c19684b7cf1077
-  commitShort: "144de3a2fc05"
+  commit: aafd1aab25f0effee64ab7ce74db4b185278dd3f
+  commitShort: "aafd1aab25f0"
 service:
   type: NodePort
   nodePort: 32086
