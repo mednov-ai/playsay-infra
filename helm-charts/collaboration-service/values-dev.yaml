@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "dev-142"
+  tag: "codex_backend-architecture-ratchets-143"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-142
-  number: "142"
-  branch: develop
-  branchLabel: dev
-  commit: 989658f28571368b669b2db77afe7844fac0942f
-  commitShort: "989658f28571"
+  name: codex_backend-architecture-ratchets-143
+  number: "143"
+  branch: codex/backend-architecture-ratchets
+  branchLabel: codex_backend-architecture-ratchets
+  commit: f6778bafabe88f8150486c6749046489b9913d95
+  commitShort: "f6778bafabe8"
 service:
   type: NodePort
   nodePort: 32086
