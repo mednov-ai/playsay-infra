@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "dev-144"
+  tag: "codex_jenkins-build-speedups-145"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-144
-  number: "144"
-  branch: develop
-  branchLabel: dev
-  commit: 2bfeb3e2e9edb2b335c8a6b36f5f3a399febc7f6
-  commitShort: "2bfeb3e2e9ed"
+  name: codex_jenkins-build-speedups-145
+  number: "145"
+  branch: codex/jenkins-build-speedups
+  branchLabel: codex_jenkins-build-speedups
+  commit: 2a9a1494801c841b17695f502e416b4815922d80
+  commitShort: "2a9a1494801c"
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
