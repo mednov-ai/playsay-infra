@@ -225,6 +225,8 @@
                 </div>
             </div>
 
+            <a class="playsay-site-return" href="https://play-and-say.ru">${msg("playsayLoginReturnToSite")}</a>
+
             <@loginFooter.content/>
         </section>
     </main>
