@@ -66,6 +66,9 @@ storage:
     pathStyleAccess: "true"
     createBucket: "false"
 
+runtime:
+  javaToolOptions: ""
+
 ingress:
   enabled: true
   className: nginx

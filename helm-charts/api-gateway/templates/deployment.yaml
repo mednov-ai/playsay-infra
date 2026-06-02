@@ -32,6 +32,10 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
           env:
+            {{- if .Values.runtime.javaToolOptions }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.runtime.javaToolOptions | quote }}
+            {{- end }}
             - name: PLAYSAY_AUTH_ISSUER_URI
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
