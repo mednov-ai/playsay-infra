@@ -188,6 +188,7 @@ EOF
 
 if [[ "$INSTALL_JENKINS" == "true" ]]; then
   kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create namespace playsay-dev --dry-run=client -o yaml | kubectl apply -f -
   kubectl -n jenkins apply -f - <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -199,6 +200,73 @@ spec:
   resources:
     requests:
       storage: 4Gi
+EOF
+
+  kubectl -n argocd apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-dev-rollout-reader
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - applications
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-dev-rollout-reader
+subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: jenkins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-dev-rollout-reader
+EOF
+
+  kubectl -n playsay-dev apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-dev-rollout-reader
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-dev-rollout-reader
+subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: jenkins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jenkins-dev-rollout-reader
 EOF
 
   helm upgrade --install jenkins jenkins/jenkins \
