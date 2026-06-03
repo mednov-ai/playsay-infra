@@ -47,8 +47,9 @@ storage:
 video:
   youtube:
     rfRelay:
-      enabled: "false"
+      enabled: "true"
       geoCountryHeader: X-PlaySay-Geo-Country
+      requireGeoCountry: "false"
       sessionTtlSeconds: "900"
       ytdlpPath: /usr/local/bin/yt-dlp
 runtime:

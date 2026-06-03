@@ -260,12 +260,15 @@ Runtime controls in the `api-gateway` chart:
 
 - `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED`: must be `"true"` to allow relay decisions. Default is `"false"`.
 - `PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER`: trusted reverse-proxy header used as IP geolocation country, for example `X-PlaySay-Geo-Country`.
+- `PLAYSAY_YOUTUBE_RF_RELAY_REQUIRE_GEO_COUNTRY`: must stay `"true"` outside temporary dev testing. When `"false"`, the backend skips the trusted IP country header requirement but still requires an authenticated `countryCode=RU` app profile and all material/video policy checks.
 - `PLAYSAY_YOUTUBE_RF_RELAY_SESSION_TTL_SECONDS`: short-lived playback session TTL, default `900`.
 - `PLAYSAY_YOUTUBE_RF_RELAY_YTDLP_PATH`: executable used by `api-gateway` to resolve a media URL, default `/usr/local/bin/yt-dlp` in the backend image.
 
 Relay eligibility is strict: the authenticated app profile must have `countryCode=RU`, the trusted IP country header must be `RU`, the user must already have normal Play&Say access to the material, the block must be a YouTube `videoEmbed`, and stored video metadata must show duration `<= 420` seconds and English language. If profile country and IP country conflict, relay is not used and the frontend falls back to the official YouTube embed decision.
 
-Do not trust a client-supplied geolocation header directly. Host nginx or another trusted edge proxy must strip any inbound `X-PlaySay-Geo-Country` header from the public request and set its own value before proxying to `web-app`/`api-gateway`. Until that edge geolocation is configured and verified, keep `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED=false`.
+Temporary dev test mode on 2026-06-03 enables `video.youtube.rfRelay.enabled: "true"` and `video.youtube.rfRelay.requireGeoCountry: "false"` in `values-dev.yaml` so the user can manually verify lesson playback before host nginx geolocation is wired. Do not carry this bypass into production-like environments; rollback by setting `enabled: "false"` or at least `requireGeoCountry: "true"`.
+
+Do not trust a client-supplied geolocation header directly. Host nginx or another trusted edge proxy must strip any inbound `X-PlaySay-Geo-Country` header from the public request and set its own value before proxying to `web-app`/`api-gateway`. Outside the temporary dev test bypass above, keep `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED=false` until that edge geolocation is configured and verified.
 
 Fast rollback: set `helm-charts/api-gateway/values-dev.yaml` `video.youtube.rfRelay.enabled` back to `"false"`, commit to `playsay-infra`, push `develop`, and let ArgoCD roll out the disabled value. The relay stream endpoint accepts only short-lived playback session IDs; it must never be changed to accept arbitrary YouTube URLs. Logs must not include extracted upstream media URLs or secret values.
 

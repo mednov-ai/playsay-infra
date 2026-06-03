@@ -71,6 +71,7 @@ video:
     rfRelay:
       enabled: "false"
       geoCountryHeader: ""
+      requireGeoCountry: "true"
       sessionTtlSeconds: "900"
       ytdlpPath: /usr/local/bin/yt-dlp
 
