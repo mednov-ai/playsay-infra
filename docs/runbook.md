@@ -94,7 +94,7 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 
 The existing `play-and-say.ru` site server block is not overwritten.
 
-Temporary incident note, 2026-06-03: while diagnosing TLS/SNI handshake failures from Russian consumer networks reported on MTS, t2, and MGTS, host nginx was restricted to TLS 1.2 only for the public site, product SPA, and ops route. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Re-enable TLS 1.3 after validation on the affected networks, or revert immediately if TLS 1.2-only does not improve reachability:
+Current dev TLS policy, since 2026-06-03: keep host nginx restricted to TLS 1.2 only for the public site, product SPA, and ops route. TLS/SNI handshake failures were reported from Russian consumer networks MTS, t2, and MGTS; after disabling TLS 1.3, access recovered from the affected networks. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Do not re-enable TLS 1.3 on dev without a dedicated retest from MTS, t2, and MGTS. Rollback command if TLS 1.3 must be restored for a controlled experiment:
 
 ```bash
 ssh root@146.103.126.15 '
