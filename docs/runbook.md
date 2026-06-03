@@ -94,6 +94,18 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 
 The existing `play-and-say.ru` site server block is not overwritten.
 
+Temporary incident note, 2026-06-03: while diagnosing TLS/SNI handshake failures from Russian consumer networks reported on MTS, t2, and MGTS, host nginx was restricted to TLS 1.2 only for the public site, product SPA, and ops route. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Re-enable TLS 1.3 after validation on the affected networks, or revert immediately if TLS 1.2-only does not improve reachability:
+
+```bash
+ssh root@146.103.126.15 '
+set -e
+cp /etc/nginx/nginx.conf.bak.tls12-test-20260603164526 /etc/nginx/nginx.conf
+cp /etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526 /etc/letsencrypt/options-ssl-nginx.conf
+nginx -t
+systemctl reload nginx
+'
+```
+
 TLS mode defaults to `auto`: if `/etc/letsencrypt/live/ops.play-and-say.ru/` exists, nginx uses that certificate; otherwise the script creates a self-signed certificate under `/etc/nginx/playsay-ops/`. Browsers will warn on self-signed certificates, but traffic is encrypted. After DNS is ready, replace it with a Let's Encrypt certificate and rerun the script:
 
 ```bash
