@@ -110,6 +110,14 @@ spec:
               value: {{ .Values.collaboration.tokenTtlSeconds | quote }}
             - name: PLAYSAY_STORAGE_PROVIDER
               value: {{ .Values.storage.provider | quote }}
+            - name: PLAYSAY_YOUTUBE_RF_RELAY_ENABLED
+              value: {{ .Values.video.youtube.rfRelay.enabled | quote }}
+            - name: PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER
+              value: {{ .Values.video.youtube.rfRelay.geoCountryHeader | quote }}
+            - name: PLAYSAY_YOUTUBE_RF_RELAY_SESSION_TTL_SECONDS
+              value: {{ .Values.video.youtube.rfRelay.sessionTtlSeconds | quote }}
+            - name: PLAYSAY_YOUTUBE_RF_RELAY_YTDLP_PATH
+              value: {{ .Values.video.youtube.rfRelay.ytdlpPath | quote }}
             {{- if eq .Values.storage.provider "s3" }}
             - name: PLAYSAY_S3_ENDPOINT
               value: {{ .Values.storage.s3.endpoint | quote }}

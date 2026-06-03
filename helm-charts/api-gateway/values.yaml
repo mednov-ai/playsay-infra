@@ -66,6 +66,14 @@ storage:
     pathStyleAccess: "true"
     createBucket: "false"
 
+video:
+  youtube:
+    rfRelay:
+      enabled: "false"
+      geoCountryHeader: ""
+      sessionTtlSeconds: "900"
+      ytdlpPath: /usr/local/bin/yt-dlp
+
 runtime:
   javaToolOptions: ""
 

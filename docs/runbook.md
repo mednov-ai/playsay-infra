@@ -252,6 +252,23 @@ kubectl -n storage get pods,pvc,svc
 kubectl -n playsay-dev get secret playsay-object-storage
 ```
 
+## YouTube RF Relay
+
+The product has a risk-flagged YouTube relay path for authorized Play&Say material video blocks. It is disabled by default and must stay disabled unless the business explicitly accepts the current risk profile.
+
+Runtime controls in the `api-gateway` chart:
+
+- `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED`: must be `"true"` to allow relay decisions. Default is `"false"`.
+- `PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER`: trusted reverse-proxy header used as IP geolocation country, for example `X-PlaySay-Geo-Country`.
+- `PLAYSAY_YOUTUBE_RF_RELAY_SESSION_TTL_SECONDS`: short-lived playback session TTL, default `900`.
+- `PLAYSAY_YOUTUBE_RF_RELAY_YTDLP_PATH`: executable used by `api-gateway` to resolve a media URL, default `/usr/local/bin/yt-dlp` in the backend image.
+
+Relay eligibility is strict: the authenticated app profile must have `countryCode=RU`, the trusted IP country header must be `RU`, the user must already have normal Play&Say access to the material, the block must be a YouTube `videoEmbed`, and stored video metadata must show duration `<= 420` seconds and English language. If profile country and IP country conflict, relay is not used and the frontend falls back to the official YouTube embed decision.
+
+Do not trust a client-supplied geolocation header directly. Host nginx or another trusted edge proxy must strip any inbound `X-PlaySay-Geo-Country` header from the public request and set its own value before proxying to `web-app`/`api-gateway`. Until that edge geolocation is configured and verified, keep `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED=false`.
+
+Fast rollback: set `helm-charts/api-gateway/values-dev.yaml` `video.youtube.rfRelay.enabled` back to `"false"`, commit to `playsay-infra`, push `develop`, and let ArgoCD roll out the disabled value. The relay stream endpoint accepts only short-lived playback session IDs; it must never be changed to accept arbitrary YouTube URLs. Logs must not include extracted upstream media URLs or secret values.
+
 ## Lightweight Monitoring
 
 Dev monitoring uses a lightweight VictoriaMetrics GitOps app instead of full `kube-prometheus-stack`, because the current dev VPS has `4 vCPU / 8 GB RAM` and Jenkins + Keycloak + PostgreSQL + LiveKit already consume a meaningful baseline. The ArgoCD app is `monitoring-lite`, deployed to namespace `monitoring` from `helm-charts/monitoring-lite`.
