@@ -402,6 +402,20 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 "
+    ONLINE_VIDEO_RELAY_LOCATION="    location ^~ /api/materials/video-playback-sessions/ {
+        proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_set_header Connection \"\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+"
     if [[ "$ONLINE_TLS_MODE" == "off" ]]; then
       ONLINE_SCHEME="http"
       ONLINE_HTTP_SERVER="server {
@@ -411,6 +425,7 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
 
 ${ONLINE_LIVEKIT_LOCATION}
 ${ONLINE_COLLABORATION_LOCATION}
+${ONLINE_VIDEO_RELAY_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;
@@ -478,6 +493,7 @@ ${ONLINE_COLLABORATION_LOCATION}
 
 ${ONLINE_LIVEKIT_LOCATION}
 ${ONLINE_COLLABORATION_LOCATION}
+${ONLINE_VIDEO_RELAY_LOCATION}
     location / {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;
