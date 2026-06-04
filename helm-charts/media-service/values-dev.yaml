@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "dev-193"
+  tag: "dev-194"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-193
-  number: "193"
+  name: dev-194
+  number: "194"
   branch: develop
   branchLabel: dev
-  commit: b318fba2e88c2727c91c8217b0531c1c09228beb
-  commitShort: "b318fba2e88c"
+  commit: bbb8a00f8ec3ac7e66d3da6e3a3a45a2c105edd6
+  commitShort: "bbb8a00f8ec3"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
