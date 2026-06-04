@@ -9,6 +9,10 @@ metadata:
     {{- include "api-gateway.buildAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- with .Values.updateStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "api-gateway.selectorLabels" . | nindent 6 }}

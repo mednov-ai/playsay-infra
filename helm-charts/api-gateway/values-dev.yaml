@@ -10,6 +10,11 @@ build:
   branchLabel: dev
   commit: c49454cbb69f75d1fd0806ccb3ac1444757e163c
   commitShort: "c49454cbb69f"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
@@ -58,7 +63,7 @@ runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
-    cpu: 250m
+    cpu: 50m
     memory: 384Mi
   limits:
     cpu: "1"

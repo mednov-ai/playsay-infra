@@ -9,6 +9,10 @@ metadata:
     {{- include "media-service.buildAnnotations" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- with .Values.updateStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "media-service.selectorLabels" . | nindent 6 }}
