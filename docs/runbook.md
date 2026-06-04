@@ -498,7 +498,7 @@ kubectl -n playsay-dev get pods --show-labels
 kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.annotations}'
 ```
 
-Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile` by copying the already-built jar from `api-gateway/build/libs`. Do not add a Gradle build stage back into the backend Dockerfile unless the pipeline is redesigned.
+Backend image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile` by copying the already-built jar from `api-gateway/build/libs`. The backend image also adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage in the backend Dockerfile unless the pipeline is redesigned.
 
 Frontend image builds are intentionally runtime-only too. Jenkins runs `npm --workspace web-app run build` once in the `Frontend build` stage, then Kaniko builds `frontend/web-app/Dockerfile` by copying the already-built `web-app/dist` into nginx. Do not add `npm install`, `npm ci`, or `npm run build` back into the frontend Dockerfile unless the pipeline is redesigned.
 
