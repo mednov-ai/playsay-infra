@@ -66,14 +66,17 @@ storage:
     pathStyleAccess: "true"
     createBucket: "false"
 
+mediaService:
+  baseUrl: http://media-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-media
+  serviceTokenKey: service-token
+
 video:
   youtube:
     rfRelay:
       enabled: "false"
       geoCountryHeader: ""
       requireGeoCountry: "true"
-      sessionTtlSeconds: "900"
-      ytdlpPath: /usr/local/bin/yt-dlp
 
 runtime:
   javaToolOptions: ""

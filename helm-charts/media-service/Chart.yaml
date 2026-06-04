@@ -1,0 +1,6 @@
+apiVersion: v2
+name: media-service
+description: Play&Say Media Service for YouTube relay playback
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

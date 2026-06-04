@@ -1,0 +1,53 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-media-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8082
+  nodePort: null
+
+mediaService:
+  existingSecret: playsay-media
+  serviceTokenKey: service-token
+  sessionTtlSeconds: "900"
+  maxUpstreamRangeBytes: "1048576"
+  maxThumbnailBytes: "5242880"
+  ytdlpPath: /usr/local/bin/yt-dlp
+
+storage:
+  provider: memory
+  s3:
+    endpoint: ""
+    region: us-east-1
+    bucket: playsay-material-assets
+    existingSecret: playsay-object-storage
+    accessKeyKey: access-key
+    secretKeyKey: secret-key
+    pathStyleAccess: "true"
+    createBucket: "false"
+
+runtime:
+  javaToolOptions: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

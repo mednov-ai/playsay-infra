@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "media-service.fullname" . }}
+  labels:
+    {{- include "media-service.labels" . | nindent 4 }}
+    {{- include "media-service.buildLabels" . | nindent 4 }}
+  annotations:
+    {{- include "media-service.buildAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "media-service.selectorLabels" . | nindent 8 }}
+        {{- include "media-service.buildLabels" . | nindent 8 }}
+      annotations:
+        {{- include "media-service.buildAnnotations" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: media-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          env:
+            {{- if .Values.runtime.javaToolOptions }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.runtime.javaToolOptions | quote }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: {{ .Values.service.targetPort | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mediaService.existingSecret | quote }}
+                  key: {{ .Values.mediaService.serviceTokenKey | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_SESSION_TTL_SECONDS
+              value: {{ .Values.mediaService.sessionTtlSeconds | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_MAX_UPSTREAM_RANGE_BYTES
+              value: {{ .Values.mediaService.maxUpstreamRangeBytes | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_MAX_THUMBNAIL_BYTES
+              value: {{ .Values.mediaService.maxThumbnailBytes | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_YTDLP_PATH
+              value: {{ .Values.mediaService.ytdlpPath | quote }}
+            - name: PLAYSAY_STORAGE_PROVIDER
+              value: {{ .Values.storage.provider | quote }}
+            {{- if eq .Values.storage.provider "s3" }}
+            - name: PLAYSAY_S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            - name: PLAYSAY_S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            - name: PLAYSAY_S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: PLAYSAY_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.accessKeyKey | quote }}
+            - name: PLAYSAY_S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.s3.existingSecret | quote }}
+                  key: {{ .Values.storage.s3.secretKeyKey | quote }}
+            - name: PLAYSAY_S3_PATH_STYLE_ACCESS
+              value: {{ .Values.storage.s3.pathStyleAccess | quote }}
+            - name: PLAYSAY_S3_CREATE_BUCKET
+              value: {{ .Values.storage.s3.createBucket | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 24
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

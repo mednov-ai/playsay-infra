@@ -44,14 +44,16 @@ storage:
     existingSecret: playsay-object-storage
     pathStyleAccess: "true"
     createBucket: "true"
+mediaService:
+  baseUrl: http://media-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-media
+  serviceTokenKey: service-token
 video:
   youtube:
     rfRelay:
       enabled: "true"
       geoCountryHeader: X-PlaySay-Geo-Country
       requireGeoCountry: "false"
-      sessionTtlSeconds: "900"
-      ytdlpPath: /usr/local/bin/yt-dlp
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:

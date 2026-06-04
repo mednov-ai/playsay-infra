@@ -106,6 +106,10 @@ if [[ -x "$ROOT_DIR/scripts/sync-collaboration-secret.sh" ]]; then
   "$ROOT_DIR/scripts/sync-collaboration-secret.sh"
 fi
 
+if [[ -x "$ROOT_DIR/scripts/sync-media-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/sync-media-secret.sh"
+fi
+
 if [[ "$INSTALL_INGRESS_NGINX" == "true" ]]; then
   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null
 fi
@@ -402,7 +406,7 @@ if [[ "$CONFIGURE_HOST_NGINX" == "true" ]]; then
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 "
-    ONLINE_VIDEO_RELAY_LOCATION="    location ^~ /api/materials/video-playback-sessions/ {
+    ONLINE_VIDEO_RELAY_LOCATION="    location ^~ /api/media/video-playback-sessions/ {
         proxy_pass http://127.0.0.1:${ONLINE_NODEPORT_HTTP};
         proxy_http_version 1.1;
         proxy_request_buffering off;
