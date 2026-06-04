@@ -121,6 +121,14 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mediaService.existingSecret | quote }}
                   key: {{ .Values.mediaService.serviceTokenKey | quote }}
+            - name: PLAYSAY_PAYMENT_SERVICE_BASE_URL
+              value: {{ .Values.paymentService.baseUrl | quote }}
+            - name: PLAYSAY_PAYMENT_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.paymentService.existingSecret | quote }}
+                  key: {{ .Values.paymentService.serviceTokenKey | quote }}
+                  optional: true
             - name: PLAYSAY_YOUTUBE_RF_RELAY_ENABLED
               value: {{ .Values.video.youtube.rfRelay.enabled | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER

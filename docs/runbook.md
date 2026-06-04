@@ -252,6 +252,62 @@ kubectl -n storage get pods,pvc,svc
 kubectl -n playsay-dev get secret playsay-object-storage
 ```
 
+## Payment Service
+
+Sprint 8 adds a separate `payment-service` Spring Boot app in namespace `playsay-dev`.
+
+Runtime wiring:
+
+- ArgoCD app: `payment-service`
+- Kubernetes service: `payment-service.playsay-dev.svc.cluster.local`
+- api-gateway env:
+  - `PLAYSAY_PAYMENT_SERVICE_BASE_URL`
+  - `PLAYSAY_PAYMENT_SERVICE_TOKEN`
+- payment-service env:
+  - `PLAYSAY_PAYMENT_SERVICE_TOKEN`
+  - `PLAYSAY_PAYMENT_PROVIDER`
+  - `PLAYSAY_PAYMENT_PUBLIC_BASE_URL`
+  - `PLAYSAY_YOOKASSA_API_URL`
+  - `PLAYSAY_YOOKASSA_SHOP_ID`
+  - `PLAYSAY_YOOKASSA_SECRET_KEY`
+
+The dev Helm default keeps `paymentService.provider: disabled` so the app rolls out before YooKassa test credentials are created. The `service-token` key is still required before the gateway can use payment APIs; without it payment UI/API calls fail closed as payment-service unavailable.
+
+For an internal-only disabled-provider smoke, create only the shared service token without printing values:
+
+```bash
+kubectl -n playsay-dev create secret generic playsay-payment \
+  --from-literal=service-token="$(openssl rand -base64 32)" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+To enable sandbox payments, create or update the same `playsay-payment` secret with YooKassa test credentials:
+
+```bash
+kubectl -n playsay-dev create secret generic playsay-payment \
+  --from-literal=service-token="$(openssl rand -base64 32)" \
+  --from-literal=yookassa-shop-id="<test-shop-id>" \
+  --from-literal=yookassa-secret-key="<test-secret-key>" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Then set `helm-charts/payment-service/values-dev.yaml`:
+
+```yaml
+paymentService:
+  provider: yookassa
+```
+
+and deploy through the normal Jenkins -> GHCR -> playsay-infra -> ArgoCD path. YooKassa does not have universal public test credentials; use the test shop credentials issued in the YooKassa merchant cabinet. Do not commit or print the secret values.
+
+Check payment state:
+
+```bash
+kubectl -n argocd get application payment-service
+kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=payment-service
+kubectl -n playsay-dev get secret playsay-payment
+```
+
 ## YouTube RF Relay
 
 The product has a risk-flagged YouTube relay path for authorized Play&Say material video blocks. It is disabled by default and must stay disabled unless the business explicitly accepts the current risk profile.

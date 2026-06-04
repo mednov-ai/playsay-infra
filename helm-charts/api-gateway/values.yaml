@@ -71,6 +71,11 @@ mediaService:
   existingSecret: playsay-media
   serviceTokenKey: service-token
 
+paymentService:
+  baseUrl: http://payment-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-payment
+  serviceTokenKey: service-token
+
 video:
   youtube:
     rfRelay:

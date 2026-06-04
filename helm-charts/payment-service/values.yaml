@@ -1,0 +1,50 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-payment-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8083
+  nodePort: null
+
+database:
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+
+paymentService:
+  existingSecret: playsay-payment
+  serviceTokenKey: service-token
+  publicBaseUrl: https://online.play-and-say.ru
+  provider: disabled
+  yookassa:
+    apiUrl: https://api.yookassa.ru/v3
+    shopIdKey: yookassa-shop-id
+    secretKeyKey: yookassa-secret-key
+
+runtime:
+  javaToolOptions: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

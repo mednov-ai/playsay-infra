@@ -1,0 +1,37 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-payment-service
+  tag: "dev-183"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: dev-183
+  number: "183"
+  branch: develop
+  branchLabel: dev
+  commit: 156a21f29bf848a1219e9a884dbd280382812c3e
+  commitShort: "156a21f29bf8"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+service:
+  type: ClusterIP
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
+paymentService:
+  existingSecret: playsay-payment
+  publicBaseUrl: https://online.play-and-say.ru
+  provider: disabled
+  yookassa:
+    apiUrl: https://api.yookassa.ru/v3
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi
