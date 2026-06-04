@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "dev-179"
+  tag: "dev-180"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-179
-  number: "179"
+  name: dev-180
+  number: "180"
   branch: develop
   branchLabel: dev
-  commit: 71a598819a4056ad38087d012c4d98805e99d851
-  commitShort: "71a598819a40"
+  commit: c49454cbb69f75d1fd0806ccb3ac1444757e163c
+  commitShort: "c49454cbb69f"
 service:
   type: NodePort
   nodePort: 32086
