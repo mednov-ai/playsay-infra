@@ -308,6 +308,14 @@ https://online.play-and-say.ru/api/payment-webhooks/yookassa
 
 Keep this URL in YooKassa test settings when rotating credentials; Play&Say does not create YooKassa webhooks automatically.
 
+Because `api-gateway` and `payment-service` read `playsay-payment` keys as environment variables, Kubernetes does not update already-running pods after secret creation or rotation. After creating or rotating this secret, roll both deployments so they pick up the new values:
+
+```bash
+kubectl -n playsay-dev rollout restart deployment/api-gateway deployment/payment-service
+kubectl -n playsay-dev rollout status deployment/api-gateway
+kubectl -n playsay-dev rollout status deployment/payment-service
+```
+
 Check payment state:
 
 ```bash
