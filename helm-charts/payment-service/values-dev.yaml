@@ -23,7 +23,7 @@ database:
 paymentService:
   existingSecret: playsay-payment
   publicBaseUrl: https://online.play-and-say.ru
-  provider: disabled
+  provider: yookassa
   yookassa:
     apiUrl: https://api.yookassa.ru/v3
 runtime:

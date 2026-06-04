@@ -271,7 +271,7 @@ Runtime wiring:
   - `PLAYSAY_YOOKASSA_SHOP_ID`
   - `PLAYSAY_YOOKASSA_SECRET_KEY`
 
-The dev Helm default keeps `paymentService.provider: disabled` so the app rolls out before YooKassa test credentials are created. The `service-token` key is still required before the gateway can use payment APIs; without it payment UI/API calls fail closed as payment-service unavailable.
+The base Helm chart keeps `paymentService.provider: disabled` so a new environment can roll out before YooKassa credentials are created. Dev `values-dev.yaml` uses `paymentService.provider: yookassa`; the `playsay-payment` secret in `playsay-dev` must therefore contain `service-token`, `yookassa-shop-id`, and `yookassa-secret-key` before syncing `payment-service`.
 
 For an internal-only disabled-provider smoke, create only the shared service token without printing values:
 
@@ -281,7 +281,7 @@ kubectl -n playsay-dev create secret generic playsay-payment \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-To enable sandbox payments, create or update the same `playsay-payment` secret with YooKassa test credentials:
+To enable or rotate sandbox payments, create or update the same `playsay-payment` secret with YooKassa test credentials:
 
 ```bash
 kubectl -n playsay-dev create secret generic playsay-payment \
@@ -299,6 +299,14 @@ paymentService:
 ```
 
 and deploy through the normal Jenkins -> GHCR -> playsay-infra -> ArgoCD path. YooKassa does not have universal public test credentials; use the test shop credentials issued in the YooKassa merchant cabinet. Do not commit or print the secret values.
+
+The YooKassa merchant cabinet notification URL for dev is:
+
+```text
+https://online.play-and-say.ru/api/payment-webhooks/yookassa
+```
+
+Keep this URL in YooKassa test settings when rotating credentials; Play&Say does not create YooKassa webhooks automatically.
 
 Check payment state:
 
