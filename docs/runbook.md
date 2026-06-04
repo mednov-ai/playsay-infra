@@ -268,7 +268,17 @@ Relay eligibility is strict: the authenticated app profile must have `countryCod
 
 When the backend returns `BLOCKED` or `NEEDS_REVIEW` for an authorized material playback request, the web-app must show a local Play&Say unavailable state with the backend `mode/reason` instead of silently falling back to a YouTube iframe. This is intentional for RF relay testing: missing metadata, duration/language policy failures, or server decision errors must be visible without requiring the student's browser to resolve YouTube domains.
 
-`api-gateway` logs playback decisions and stream response statuses with material/block/session/video IDs, but must not log the extracted upstream media URL. The stream service may cache only the extracted upstream URL in memory by playback session id until that session's `expiresAt`; it must not cache video bytes or accept arbitrary upstream URLs.
+`api-gateway` logs playback decisions and stream response statuses with material/block/session/video IDs, but must not log the extracted upstream media URL. Playback decision logs include safe block diagnostics such as `urlHost`, `urlKind`, parsed `videoId`, `videoMetaPresent`, `durationPresent`, `durationNodeType`, `languagePresent`, `profileCountry`, and `ipCountry`; they must not include raw YouTube query values such as `si` or any extracted media URL. The stream service may cache only the extracted upstream URL in memory by playback session id until that session's `expiresAt`; it must not cache video bytes or accept arbitrary upstream URLs.
+
+Useful RF relay log checks:
+
+```bash
+kubectl -n playsay-dev logs deploy/api-gateway --since=30m | grep 'YouTube RF relay playback decision'
+kubectl -n playsay-dev logs deploy/api-gateway --since=30m | grep 'YouTube RF relay yt-dlp'
+kubectl -n playsay-dev logs deploy/api-gateway --since=30m | grep 'YouTube RF relay stream response'
+```
+
+For a `YOUTUBE_METADATA_MISSING` report, expect fields like `urlKind=SHORT`, parsed `videoId=<id>`, and `videoMetaPresent=false` or `durationPresent=false` / `languagePresent=false`. If metadata is present and relay starts streaming, check `stream response` lines for upstream `status`, `contentType`, `contentLength`, `contentRange`, `acceptRanges`, and `rangeHeader`.
 
 Video relay streaming needs buffering disabled on both proxy layers. The web-app container nginx disables `proxy_buffering` and `proxy_request_buffering` for `/api/`; host nginx must include a more specific `/api/materials/video-playback-sessions/` location under `online.play-and-say.ru` with `proxy_buffering off`, `proxy_request_buffering off`, and long `proxy_read_timeout` / `proxy_send_timeout` values. After changing the host nginx generator on an existing VPS, re-render or manually verify `/etc/nginx/conf.d/playsay-k8s-dev.conf`, then run `nginx -t` and reload nginx without stopping Docker, k3s, or Amnezia.
 
