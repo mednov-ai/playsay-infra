@@ -63,6 +63,7 @@ blackboxExporter:
   service:
     port: 9115
   targets:
+    - https://key.play-and-say.ru/
     - https://online.play-and-say.ru/
     - https://ops.play-and-say.ru:18443/argocd/
   resources:

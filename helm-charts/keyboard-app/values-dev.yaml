@@ -1,0 +1,15 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-keyboard-app
+  tag: "dev"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: local-0
+  number: "0"
+  branch: develop
+  branchLabel: dev
+  commit: unknown
+  commitShort: unknown
+service:
+  type: NodePort
+  nodePort: 32087

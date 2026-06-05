@@ -28,3 +28,7 @@ spec:
 {{- range $key, $value := .Values.cluster.postgresql.parameters }}
       {{ $key }}: {{ $value | quote }}
 {{- end }}
+  {{- with .Values.cluster.managed }}
+  managed:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

@@ -17,3 +17,16 @@ cluster:
     parameters:
       shared_buffers: 64MB
       max_connections: "50"
+  managed:
+    roles:
+      - name: keyboard_app
+        ensure: present
+        login: true
+        passwordSecret:
+          name: playsay-postgres-keyboard
+
+databases:
+  - name: keyboard
+    owner: keyboard_app
+    ensure: present
+    reclaimPolicy: retain

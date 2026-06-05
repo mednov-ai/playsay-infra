@@ -1,0 +1,19 @@
+{{- range .Values.databases }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: {{ printf "%s-%s" $.Values.cluster.name .name | trunc 63 | trimSuffix "-" }}
+  labels:
+    app.kubernetes.io/name: app-postgres
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    playsay.io/component: app-postgres
+spec:
+  cluster:
+    name: {{ $.Values.cluster.name }}
+  name: {{ .name | quote }}
+  owner: {{ .owner | quote }}
+  databaseReclaimPolicy: {{ .reclaimPolicy | default "retain" }}
+  ensure: {{ .ensure | default "present" }}
+{{- end }}

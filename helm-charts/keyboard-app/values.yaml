@@ -1,0 +1,30 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-keyboard-app
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  nodePort: null
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi

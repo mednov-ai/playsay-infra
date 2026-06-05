@@ -15,6 +15,9 @@ OPS_TLS_MODE="${OPS_TLS_MODE:-auto}"
 ONLINE_HOST="${ONLINE_HOST:-online.$DOMAIN}"
 ONLINE_NODEPORT_HTTP="${ONLINE_NODEPORT_HTTP:-32083}"
 ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
+KEY_HOST="${KEY_HOST:-key.$DOMAIN}"
+KEY_NODEPORT_HTTP="${KEY_NODEPORT_HTTP:-32087}"
+KEY_TLS_MODE="${KEY_TLS_MODE:-auto}"
 COLLABORATION_NODEPORT_HTTP="${COLLABORATION_NODEPORT_HTTP:-32086}"
 KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
 LIVEKIT_SIGNALING_HOST_PORT="${LIVEKIT_SIGNALING_HOST_PORT:-7880}"
@@ -28,6 +31,7 @@ ARGOCD_NODEPORT_HTTP="${ARGOCD_NODEPORT_HTTP:-32080}"
 HEADLAMP_NODEPORT_HTTP="${HEADLAMP_NODEPORT_HTTP:-32081}"
 OPS_SCHEME="https"
 ONLINE_SCHEME="https"
+KEY_SCHEME="https"
 
 usage() {
   cat <<USAGE
@@ -48,6 +52,9 @@ Environment variables:
   ONLINE_HOST            Product SPA host. Default: online.<PLAYSAY_DOMAIN>
   ONLINE_NODEPORT_HTTP   Local web-app NodePort. Default: 32083
   ONLINE_TLS_MODE        auto, self-signed, existing, or off. Default: auto
+  KEY_HOST               Keyboard trainer host. Default: key.<PLAYSAY_DOMAIN>
+  KEY_NODEPORT_HTTP      Local keyboard-app NodePort. Default: 32087
+  KEY_TLS_MODE           auto, self-signed, existing, or off. Default: auto
   COLLABORATION_NODEPORT_HTTP Local collaboration-service NodePort for /collab/ws. Default: 32086
   KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
   LIVEKIT_SIGNALING_HOST_PORT Local LiveKit signaling port for /livekit/. Default: 7880
@@ -64,6 +71,11 @@ USAGE
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
+fi
+
+if [[ "$KEY_TLS_MODE" != "auto" && "$KEY_TLS_MODE" != "self-signed" && "$KEY_TLS_MODE" != "existing" && "$KEY_TLS_MODE" != "off" ]]; then
+  echo "KEY_TLS_MODE must be auto, self-signed, existing, or off" >&2
+  exit 1
 fi
 
 require() {
@@ -108,6 +120,10 @@ fi
 
 if [[ -x "$ROOT_DIR/scripts/sync-media-secret.sh" ]]; then
   "$ROOT_DIR/scripts/sync-media-secret.sh"
+fi
+
+if [[ -x "$ROOT_DIR/scripts/sync-keyboard-db-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/sync-keyboard-db-secret.sh"
 fi
 
 if [[ "$INSTALL_INGRESS_NGINX" == "true" ]]; then
@@ -512,6 +528,94 @@ ${ONLINE_VIDEO_RELAY_LOCATION}
 "
     fi
 
+    KEY_HTTP_SERVER=""
+    KEY_HTTPS_SERVER=""
+    if [[ "$KEY_TLS_MODE" == "off" ]]; then
+      KEY_SCHEME="http"
+      KEY_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${KEY_HOST};
+
+    location / {
+        proxy_pass http://127.0.0.1:${KEY_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+"
+    else
+      KEY_LETSENCRYPT_CERT="/etc/letsencrypt/live/${KEY_HOST}/fullchain.pem"
+      KEY_LETSENCRYPT_KEY="/etc/letsencrypt/live/${KEY_HOST}/privkey.pem"
+      KEY_SELF_SIGNED_DIR="/etc/nginx/playsay-key"
+      KEY_SELF_SIGNED_CERT="${KEY_SELF_SIGNED_DIR}/${KEY_HOST}.crt"
+      KEY_SELF_SIGNED_KEY="${KEY_SELF_SIGNED_DIR}/${KEY_HOST}.key"
+
+      if [[ -f "$KEY_LETSENCRYPT_CERT" && -f "$KEY_LETSENCRYPT_KEY" ]]; then
+        KEY_SSL_CERT="$KEY_LETSENCRYPT_CERT"
+        KEY_SSL_KEY="$KEY_LETSENCRYPT_KEY"
+      elif [[ "$KEY_TLS_MODE" == "existing" ]]; then
+        echo "KEY_TLS_MODE=existing but certificate is missing for ${KEY_HOST}" >&2
+        exit 1
+      else
+        mkdir -p "$KEY_SELF_SIGNED_DIR"
+        chmod 700 "$KEY_SELF_SIGNED_DIR"
+        if [[ ! -f "$KEY_SELF_SIGNED_CERT" || ! -f "$KEY_SELF_SIGNED_KEY" ]]; then
+          openssl req -x509 -nodes -newkey rsa:2048 \
+            -keyout "$KEY_SELF_SIGNED_KEY" \
+            -out "$KEY_SELF_SIGNED_CERT" \
+            -days 365 \
+            -subj "/CN=${KEY_HOST}" \
+            -addext "subjectAltName=DNS:${KEY_HOST}"
+          chmod 600 "$KEY_SELF_SIGNED_KEY"
+        fi
+        KEY_SSL_CERT="$KEY_SELF_SIGNED_CERT"
+        KEY_SSL_KEY="$KEY_SELF_SIGNED_KEY"
+      fi
+
+      KEY_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${KEY_HOST};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type \"text/plain\";
+        try_files \$uri =404;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+"
+      KEY_HTTPS_SERVER="server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${KEY_HOST};
+
+    ssl_certificate ${KEY_SSL_CERT};
+    ssl_certificate_key ${KEY_SSL_KEY};
+
+    location / {
+        proxy_pass http://127.0.0.1:${KEY_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+"
+    fi
+
     NGINX_CONF_TARGET="/etc/nginx/conf.d/playsay-k8s-dev.conf"
     NGINX_CONF_BACKUP=""
     if [[ -f "$NGINX_CONF_TARGET" ]]; then
@@ -620,6 +724,8 @@ ${OPS_ALLOW_DIRECTIVES}
 
 ${ONLINE_HTTP_SERVER}
 ${ONLINE_HTTPS_SERVER}
+${KEY_HTTP_SERVER}
+${KEY_HTTPS_SERVER}
 EOF
     if nginx -t; then
       systemctl reload nginx
@@ -646,6 +752,7 @@ kubectl apply -f "$ROOT_DIR/argocd-apps/$ENVIRONMENT/root-app.yaml"
 echo "Cluster add-ons installed for $ENVIRONMENT."
 echo "Ops URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT"
 echo "Online URL: ${ONLINE_SCHEME}://$ONLINE_HOST"
+echo "Key URL: ${KEY_SCHEME}://$KEY_HOST"
 echo "ArgoCD URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/argocd/"
 echo "Headlamp URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/headlamp/"
 echo "VictoriaMetrics URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/victoria-metrics/vmui/"

@@ -33,6 +33,7 @@ In coexist mode on the current VPS, `ingress-nginx` and `cert-manager` are not i
 4. Point DNS records to the VPS:
    - `ops.play-and-say.ru`
    - `online.play-and-say.ru`
+   - `key.play-and-say.ru`
 5. Create GitHub credentials for Jenkins (see below).
 
 ## One-Command Bootstrap
@@ -90,6 +91,7 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 - `https://ops.play-and-say.ru:18443/keycloak/` (Sprint 1 auth)
 - `https://ops.play-and-say.ru:18443/victoria-metrics/vmui/` (dev monitoring)
 - `https://online.play-and-say.ru`
+- `https://key.play-and-say.ru`
 - `wss://online.play-and-say.ru/collab/ws` (Sprint 5 collaboration websocket)
 
 The existing `play-and-say.ru` site server block is not overwritten.
@@ -178,6 +180,31 @@ certbot certonly \
   --email admin@example.com
 ```
 
+For `key.play-and-say.ru`, issue a matching Let's Encrypt certificate after `keyboard-app` has a healthy upstream:
+
+```bash
+mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+certbot certonly \
+  --webroot \
+  -w /var/www/letsencrypt \
+  -d key.play-and-say.ru \
+  --non-interactive \
+  --agree-tos \
+  --email admin@play-and-say.ru
+
+./scripts/bootstrap-dev.sh \
+  --ip 146.103.126.15 \
+  --domain play-and-say.ru \
+  --ops-host ops.play-and-say.ru \
+  --ops-port 18443 \
+  --ops-tls-mode existing \
+  --online-host online.play-and-say.ru \
+  --online-tls-mode existing \
+  --key-host key.play-and-say.ru \
+  --key-tls-mode existing \
+  --email admin@example.com
+```
+
 If you know the Amnezia VPN CIDR or a fixed admin IP, restrict the ops UI:
 
 ```bash
@@ -209,10 +236,61 @@ Current DNS/nginx split:
 - `play-and-say.ru` stays the public marketing/site host.
 - `online.play-and-say.ru` serves the React product SPA from k3s service `web-app`.
 - `online.play-and-say.ru/collab/ws` proxies directly to the `collaboration-service` NodePort for Yjs websocket rooms.
+- `key.play-and-say.ru` serves the authenticated keyboard trainer from k3s service `keyboard-app`.
 - `ops.play-and-say.ru:18443` is reserved for dev infrastructure UI.
 - `ops.play-and-say.ru:18443/keycloak/` serves the Sprint 1 Keycloak dev instance.
 
-The login redirect is not only an nginx setting. When Keycloak is added, `online.play-and-say.ru` must also be added to the frontend app config and Keycloak client's allowed redirect URIs. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
+The login redirect is not only an nginx setting. `online.play-and-say.ru` and `key.play-and-say.ru` must both be present in the Keycloak `playsay-web` client allowed redirect URIs, web origins, and post-logout redirects. The future `play-and-say.ru` login button should start Keycloak auth and return users to `online.play-and-say.ru`.
+
+## Keyboard Trainer
+
+`Play&Say Key` runs as a separate authenticated trainer at `https://key.play-and-say.ru`.
+
+Runtime objects:
+
+- frontend ArgoCD app: `keyboard-app`
+- backend ArgoCD app: `keyboard-service`
+- frontend service: `keyboard-app.playsay-dev.svc.cluster.local`, dev NodePort `32087`
+- backend service: `keyboard-service.playsay-dev.svc.cluster.local`
+- backend database: `keyboard`
+- backend role/user: `keyboard_app`
+- runtime/migration secret: `playsay-keyboard-db`
+
+Bootstrap and secret sync:
+
+```bash
+./scripts/sync-keyboard-db-secret.sh
+kubectl -n playsay-data get secret playsay-postgres-keyboard
+kubectl -n playsay-dev get secret playsay-keyboard-db
+kubectl -n jenkins get secret playsay-keyboard-db
+```
+
+The source secret `playsay-postgres-keyboard` is used by CloudNativePG declarative role management for `keyboard_app`; the synced `playsay-keyboard-db` secret contains `jdbc-uri`, `username`, and `password` for runtime and Jenkins Liquibase. Do not print secret values.
+
+Keycloak client wiring is managed by:
+
+```bash
+./scripts/configure-keycloak-dev.sh
+```
+
+The `playsay-web` public client must allow `https://key.play-and-say.ru/*`, `http://localhost:5175/*`, `http://localhost:4175/*`, and the same `127.0.0.1` origins. The trainer uses Authorization Code + PKCE and does not use local password/JWT auth.
+
+Deploy through separate Jenkins jobs:
+
+- `playsay-keyboard-backend-develop`: tests `:keyboard-service`, applies XML Liquibase to `keyboard`, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-service`, updates `helm-charts/keyboard-service/values-dev.yaml`, waits for rollout.
+- `playsay-keyboard-frontend-develop`: runs `keyboard-app` lint/test/build, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-app`, updates `helm-charts/keyboard-app/values-dev.yaml`, waits for rollout, then browser-smokes `https://key.play-and-say.ru`.
+
+Check rollout:
+
+```bash
+kubectl -n argocd get application keyboard-service keyboard-app
+kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=keyboard-service
+kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=keyboard-app
+curl -k -I --resolve key.play-and-say.ru:443:146.103.126.15 https://key.play-and-say.ru/
+curl -k -I --resolve key.play-and-say.ru:443:146.103.126.15 https://key.play-and-say.ru/healthz
+```
+
+Expected unauthenticated browser behavior: the trainer screen is not visible; the app shows only the auth entry flow and sends the user through Keycloak. After login, callback returns to `https://key.play-and-say.ru/auth/callback`.
 
 ## Object Storage
 

@@ -5,13 +5,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}/jenkins}"
-JENKINS_JOB_NAME="${JENKINS_JOB_NAME:-playsay-platform-develop}"
-JOB_CONFIG="${JOB_CONFIG:-$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml}"
+DEFAULT_JOB_NAMES=(
+  playsay-platform-develop
+  playsay-keyboard-backend-develop
+  playsay-keyboard-frontend-develop
+)
+DEFAULT_JOB_CONFIGS=(
+  "$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-keyboard-backend-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-keyboard-frontend-develop.xml"
+)
 
-if [[ ! -f "$JOB_CONFIG" ]]; then
-  echo "Job config not found: $JOB_CONFIG" >&2
-  exit 1
+if [[ -n "${JOB_CONFIG:-}" || -n "${JENKINS_JOB_NAME:-}" ]]; then
+  DEFAULT_JOB_NAMES=("${JENKINS_JOB_NAME:-playsay-platform-develop}")
+  DEFAULT_JOB_CONFIGS=("${JOB_CONFIG:-$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml}")
 fi
+
+for config in "${DEFAULT_JOB_CONFIGS[@]}"; do
+  if [[ ! -f "$config" ]]; then
+    echo "Job config not found: $config" >&2
+    exit 1
+  fi
+done
 
 if [[ -z "${JENKINS_USER:-}" || -z "${JENKINS_PASSWORD:-}" ]]; then
   if ! command -v kubectl >/dev/null 2>&1; then
@@ -42,24 +57,29 @@ if [[ -z "$CRUMB_FIELD" || -z "$CRUMB_VALUE" ]]; then
   exit 1
 fi
 
-if curl -k -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json" >/dev/null 2>&1; then
-  echo "Updating Jenkins job $JENKINS_JOB_NAME"
-  curl -k -fsS \
-    -b "$COOKIE_FILE" \
-    -u "$JENKINS_USER:$JENKINS_PASSWORD" \
-    -H "$CRUMB_FIELD: $CRUMB_VALUE" \
-    -H "Content-Type: application/xml" \
-    --data-binary "@$JOB_CONFIG" \
-    "$JENKINS_URL/job/$JENKINS_JOB_NAME/config.xml" >/dev/null
-else
-  echo "Creating Jenkins job $JENKINS_JOB_NAME"
-  curl -k -fsS \
-    -b "$COOKIE_FILE" \
-    -u "$JENKINS_USER:$JENKINS_PASSWORD" \
-    -H "$CRUMB_FIELD: $CRUMB_VALUE" \
-    -H "Content-Type: application/xml" \
-    --data-binary "@$JOB_CONFIG" \
-    "$JENKINS_URL/createItem?name=$JENKINS_JOB_NAME" >/dev/null
-fi
+for index in "${!DEFAULT_JOB_NAMES[@]}"; do
+  JENKINS_JOB_NAME="${DEFAULT_JOB_NAMES[$index]}"
+  JOB_CONFIG="${DEFAULT_JOB_CONFIGS[$index]}"
 
-echo "Jenkins job $JENKINS_JOB_NAME is configured."
+  if curl -k -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json" >/dev/null 2>&1; then
+    echo "Updating Jenkins job $JENKINS_JOB_NAME"
+    curl -k -fsS \
+      -b "$COOKIE_FILE" \
+      -u "$JENKINS_USER:$JENKINS_PASSWORD" \
+      -H "$CRUMB_FIELD: $CRUMB_VALUE" \
+      -H "Content-Type: application/xml" \
+      --data-binary "@$JOB_CONFIG" \
+      "$JENKINS_URL/job/$JENKINS_JOB_NAME/config.xml" >/dev/null
+  else
+    echo "Creating Jenkins job $JENKINS_JOB_NAME"
+    curl -k -fsS \
+      -b "$COOKIE_FILE" \
+      -u "$JENKINS_USER:$JENKINS_PASSWORD" \
+      -H "$CRUMB_FIELD: $CRUMB_VALUE" \
+      -H "Content-Type: application/xml" \
+      --data-binary "@$JOB_CONFIG" \
+      "$JENKINS_URL/createItem?name=$JENKINS_JOB_NAME" >/dev/null
+  fi
+
+  echo "Jenkins job $JENKINS_JOB_NAME is configured."
+done

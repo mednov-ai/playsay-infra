@@ -1,0 +1,44 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-keyboard-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8084
+  nodePort: null
+
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
+
+database:
+  existingSecret: playsay-keyboard-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+
+runtime:
+  javaToolOptions: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi
