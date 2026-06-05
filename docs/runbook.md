@@ -236,7 +236,7 @@ Current DNS/nginx split:
 - `play-and-say.ru` stays the public marketing/site host.
 - `online.play-and-say.ru` serves the React product SPA from k3s service `web-app`.
 - `online.play-and-say.ru/collab/ws` proxies directly to the `collaboration-service` NodePort for Yjs websocket rooms.
-- `key.play-and-say.ru` serves the authenticated keyboard trainer from k3s service `keyboard-app`.
+- `key.play-and-say.ru` serves the anonymous keyboard trainer with authenticated saved progress from k3s service `keyboard-app`.
 - `ops.play-and-say.ru:18443` is reserved for dev infrastructure UI.
 - `ops.play-and-say.ru:18443/keycloak/` serves the Sprint 1 Keycloak dev instance.
 
@@ -244,7 +244,7 @@ The login redirect is not only an nginx setting. `online.play-and-say.ru` and `k
 
 ## Keyboard Trainer
 
-`Play&Say Key` runs as a separate authenticated trainer at `https://key.play-and-say.ru`.
+`Play&Say Key` runs as a separate anonymous trainer with authenticated saved progress at `https://key.play-and-say.ru`.
 
 Runtime objects:
 
@@ -273,7 +273,7 @@ Keycloak client wiring is managed by:
 ./scripts/configure-keycloak-dev.sh
 ```
 
-The `playsay-web` public client must allow `https://key.play-and-say.ru/*`, `http://localhost:5175/*`, `http://localhost:4175/*`, and the same `127.0.0.1` origins. The trainer uses Authorization Code + PKCE and does not use local password/JWT auth.
+The `playsay-web` public client must allow `https://key.play-and-say.ru/*`, `http://localhost:5175/*`, `http://localhost:4175/*`, and the same `127.0.0.1` origins. The trainer uses Authorization Code + PKCE for saved progress and does not use local password/JWT auth. Anonymous practice uses bundled frontend chord sets and must not call protected `/api/*` endpoints without a token.
 
 Deploy through separate Jenkins jobs:
 
@@ -290,7 +290,7 @@ curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and
 curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and-say.ru/healthz
 ```
 
-Expected unauthenticated browser behavior: the trainer screen is not visible; the app shows only the auth entry flow and sends the user through Keycloak. After login, callback returns to `https://key.play-and-say.ru/auth/callback`.
+Expected unauthenticated browser behavior: the trainer screen is visible, the large centered Play/Space action starts a centered `3 -> 2 -> 1` countdown, typing is ignored during countdown, and completed guest sessions stay local. If typing stops for more than 3 seconds during a running session, a centered pause/resume overlay appears and Space resumes the same session. After 5 anonymous completions the app shows a soft registration prompt; the sign-in action sends the user through Keycloak and callback returns to `https://key.play-and-say.ru/auth/callback`. Laptop smoke should verify that a full 13-inch class browser viewport has no document-level vertical scroll, the virtual keyboard is centered near edge-to-edge, and the typing strip has natural in-chord letter spacing with visible gaps only for real spaces.
 
 ## Object Storage
 
