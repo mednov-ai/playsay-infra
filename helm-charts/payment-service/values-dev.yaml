@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-payment-service
-  tag: "dev-194"
+  tag: "dev-195"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: dev-194
-  number: "194"
+  name: dev-195
+  number: "195"
   branch: develop
   branchLabel: dev
-  commit: bbb8a00f8ec3ac7e66d3da6e3a3a45a2c105edd6
-  commitShort: "bbb8a00f8ec3"
+  commit: 96263533768f1b5dccf5531bcd2618385939aa1b
+  commitShort: "96263533768f"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
