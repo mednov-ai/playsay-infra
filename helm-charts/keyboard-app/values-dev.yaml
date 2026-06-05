@@ -1,13 +1,13 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-codex-key-trainer-integration-2"
+  tag: "key-frontend-dev-3"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-codex-key-trainer-integration-2
-  number: "2"
-  branch: codex/key-trainer-integration
-  branchLabel: key-frontend-codex-key-trainer-integration
+  name: key-frontend-dev-3
+  number: "3"
+  branch: develop
+  branchLabel: key-frontend-dev
   commit: f83011932db211d0f0b7d29338c09fd889325dcc
   commitShort: f83011932db2
 service:
