@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-service
-  tag: "key-backend-codex-key-trainer-integration-3"
+  tag: "key-backend-dev-4"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-backend-codex-key-trainer-integration-3
-  number: "3"
-  branch: codex/key-trainer-integration
-  branchLabel: key-backend-codex-key-trainer-integration
-  commit: df18f4cb9bad170f5205fba6690698cf022641fd
-  commitShort: df18f4cb9bad
+  name: key-backend-dev-4
+  number: "4"
+  branch: develop
+  branchLabel: key-backend-dev
+  commit: f83011932db211d0f0b7d29338c09fd889325dcc
+  commitShort: f83011932db2
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
