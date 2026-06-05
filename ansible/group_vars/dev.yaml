@@ -15,7 +15,7 @@ ufw_extra_tcp_ports:
   - 443
 
 coturn_realm: online.play-and-say.ru
-coturn_external_ip: 146.103.126.15
+coturn_external_ip: 89.124.113.223
 coturn_listening_port: 3478
 coturn_min_port: 49160
 coturn_max_port: 49200

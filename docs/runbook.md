@@ -76,7 +76,7 @@ For a server that already has Amnezia VPN and a public nginx site, keep the defa
 
 ```bash
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --ops-host ops.play-and-say.ru \
   --ops-port 18443 \
@@ -99,7 +99,7 @@ The existing `play-and-say.ru` site server block is not overwritten.
 Current dev TLS policy, since 2026-06-03: keep host nginx restricted to TLS 1.2 only for the public site, product SPA, and ops route. TLS/SNI handshake failures were reported from Russian consumer networks MTS, t2, and MGTS; after disabling TLS 1.3, access recovered from the affected networks. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Do not re-enable TLS 1.3 on dev without a dedicated retest from MTS, t2, and MGTS. Rollback command if TLS 1.3 must be restored for a controlled experiment:
 
 ```bash
-ssh root@146.103.126.15 '
+ssh root@89.124.113.223 '
 set -e
 cp /etc/nginx/nginx.conf.bak.tls12-test-20260603164526 /etc/nginx/nginx.conf
 cp /etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526 /etc/letsencrypt/options-ssl-nginx.conf
@@ -149,7 +149,7 @@ EOF
 chmod 0755 /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
 
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --ops-host ops.play-and-say.ru \
   --ops-port 18443 \
@@ -170,7 +170,7 @@ certbot certonly \
   --email admin@play-and-say.ru
 
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --ops-host ops.play-and-say.ru \
   --ops-port 18443 \
@@ -193,7 +193,7 @@ certbot certonly \
   --email admin@play-and-say.ru
 
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --ops-host ops.play-and-say.ru \
   --ops-port 18443 \
@@ -209,7 +209,7 @@ If you know the Amnezia VPN CIDR or a fixed admin IP, restrict the ops UI:
 
 ```bash
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --ops-host ops.play-and-say.ru \
   --ops-port 18443 \
@@ -223,7 +223,7 @@ If you want to avoid any nginx changes too:
 
 ```bash
 ./scripts/bootstrap-dev.sh \
-  --ip 146.103.126.15 \
+  --ip 89.124.113.223 \
   --domain play-and-say.ru \
   --email admin@example.com \
   --no-host-nginx
@@ -286,8 +286,8 @@ Check rollout:
 kubectl -n argocd get application keyboard-service keyboard-app
 kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=keyboard-service
 kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=keyboard-app
-curl -k -I --resolve key.play-and-say.ru:443:146.103.126.15 https://key.play-and-say.ru/
-curl -k -I --resolve key.play-and-say.ru:443:146.103.126.15 https://key.play-and-say.ru/healthz
+curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and-say.ru/
+curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and-say.ru/healthz
 ```
 
 Expected unauthenticated browser behavior: the trainer screen is not visible; the app shows only the auth entry flow and sends the user through Keycloak. After login, callback returns to `https://key.play-and-say.ru/auth/callback`.
@@ -534,7 +534,7 @@ Expected: `HTTP/1.1 200 OK`.
 Check cluster health:
 
 ```bash
-ssh root@146.103.126.15 "kubectl get nodes -o wide && kubectl get pods -A"
+ssh root@89.124.113.223 "kubectl get nodes -o wide && kubectl get pods -A"
 ```
 
 Expected:
@@ -549,12 +549,12 @@ Expected:
 Check ops UI before DNS exists by forcing local resolution:
 
 ```bash
-curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/headlamp/
-curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/argocd/
-curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/jenkins/
-curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/keycloak/
-curl -k -I --resolve ops.play-and-say.ru:18443:146.103.126.15 https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
-curl -k -I --resolve online.play-and-say.ru:443:146.103.126.15 https://online.play-and-say.ru/
+curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/headlamp/
+curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/argocd/
+curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/jenkins/
+curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/keycloak/
+curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
+curl -k -I --resolve online.play-and-say.ru:443:89.124.113.223 https://online.play-and-say.ru/
 ```
 
 Expected:
@@ -569,7 +569,7 @@ Expected:
 Check existing services:
 
 ```bash
-ssh root@146.103.126.15 "docker ps --format '{{.Names}} {{.Ports}}' && systemctl is-active nginx k3s docker && nginx -t"
+ssh root@89.124.113.223 "docker ps --format '{{.Names}} {{.Ports}}' && systemctl is-active nginx k3s docker && nginx -t"
 ```
 
 Expected: Amnezia containers are present, nginx/k3s/docker are active, nginx syntax is successful.
@@ -577,10 +577,10 @@ Expected: Amnezia containers are present, nginx/k3s/docker are active, nginx syn
 Check public port hardening:
 
 ```bash
-nc -vz -w 5 146.103.126.15 18443
-nc -vz -w 5 146.103.126.15 6443
-nc -vz -w 5 146.103.126.15 10250
-nc -vz -w 5 146.103.126.15 9100
+nc -vz -w 5 89.124.113.223 18443
+nc -vz -w 5 89.124.113.223 6443
+nc -vz -w 5 89.124.113.223 10250
+nc -vz -w 5 89.124.113.223 9100
 ```
 
 Expected: `18443` succeeds; `6443` and `10250` time out; `9100` is refused or timed out.
@@ -711,7 +711,7 @@ Current GitHub webhook for `playsay-platform`:
 Jenkins first login:
 
 ```bash
-ssh root@146.103.126.15 \
+ssh root@89.124.113.223 \
   "kubectl -n jenkins get secret jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
 ```
 
@@ -724,7 +724,7 @@ https://ops.play-and-say.ru:18443/jenkins/
 Jenkins API checks require authentication. If local `kubectl` is not configured for the dev cluster, run the API check through SSH on the VPS and read the Jenkins admin credentials from the in-cluster secret without printing them:
 
 ```bash
-ssh root@146.103.126.15 '
+ssh root@89.124.113.223 '
 set -euo pipefail
 JENKINS_URL="https://ops.play-and-say.ru:18443/jenkins"
 JENKINS_JOB_NAME="playsay-platform-develop"
@@ -793,20 +793,20 @@ The script is idempotent. It creates/updates:
 Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Re-running the script adds any missing password keys without rotating existing ones. `configure-keycloak-dev.sh` also syncs the three passwords required by Jenkins Sprint 5/Sprint 6 smoke into a same-named secret in the `jenkins` namespace through `scripts/sync-keycloak-dev-users-secret.sh`; run that sync script directly if the `jenkins` namespace is recreated. Do not commit or print those values in shared logs. Retrieve a password only when needed, replacing the jsonpath key with the needed user:
 
 ```bash
-ssh root@146.103.126.15 \
+ssh root@89.124.113.223 \
   "kubectl -n keycloak get secret keycloak-dev-users -o jsonpath='{.data.student-demo-password}' | base64 -d"
 ```
 
 Check status:
 
 ```bash
-ssh root@146.103.126.15 "kubectl -n argocd get app keycloak && kubectl -n keycloak get pods,pvc,svc"
+ssh root@89.124.113.223 "kubectl -n argocd get app keycloak && kubectl -n keycloak get pods,pvc,svc"
 ```
 
 Get the admin password only when needed:
 
 ```bash
-ssh root@146.103.126.15 \
+ssh root@89.124.113.223 \
   "kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.admin-password}' | base64 -d"
 ```
 
@@ -887,7 +887,7 @@ The dev Helm values enable OpenAI through Kubernetes secret `playsay-openai` in 
 Create or update the secret from a local terminal without printing the key:
 
 ```bash
-ssh -tt root@146.103.126.15 'bash -lc '"'"'
+ssh -tt root@89.124.113.223 'bash -lc '"'"'
 set -euo pipefail
 
 read -rsp "OpenAI API key: " OPENAI_API_KEY
@@ -907,14 +907,14 @@ KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-o
 Expected verification output is `playsay-openai` with `DATA` equal to `2`. Do not decode or paste the secret values into chat, Git, logs, or docs. To verify only key names without decoding values:
 
 ```bash
-ssh root@146.103.126.15 \
+ssh root@89.124.113.223 \
   'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai -o jsonpath="{.data}"'
 ```
 
 After deploying the chart, verify that the pod references the secret without printing values:
 
 ```bash
-ssh root@146.103.126.15 \
+ssh root@89.124.113.223 \
   'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get deploy api-gateway -o jsonpath="{.spec.template.spec.containers[0].env[?(@.name==\"PLAYSAY_AI_PROVIDER\")].value}"'
 ```
 
