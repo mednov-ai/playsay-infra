@@ -1,6 +1,6 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job">
-  <description>Play&amp;Say keyboard-app pipeline. Builds frontend, pushes image, updates dev infra, waits for rollout, and runs browser smoke.</description>
+  <description>Play&amp;Say web-app module pipeline. Generates client, lints, tests, builds, pushes image, updates dev infra, waits for rollout, and runs browser smoke.</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
@@ -65,7 +65,7 @@
       <submoduleCfg class="empty-list"/>
       <extensions/>
     </scm>
-    <scriptPath>Jenkinsfile.keyboard-frontend</scriptPath>
+    <scriptPath>Jenkinsfile.web-app</scriptPath>
     <lightweight>true</lightweight>
   </definition>
   <disabled>false</disabled>

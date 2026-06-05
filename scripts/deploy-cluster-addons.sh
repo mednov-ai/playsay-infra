@@ -186,6 +186,10 @@ helm upgrade --install argocd argo/argo-cd \
   --set server.service.nodePortHttp="$ARGOCD_NODEPORT_HTTP" \
   --set server.ingress.enabled=false
 
+if [[ -x "$ROOT_DIR/scripts/configure-argocd-webhook-secret.sh" ]]; then
+  "$ROOT_DIR/scripts/configure-argocd-webhook-secret.sh"
+fi
+
 kubectl create namespace headlamp --dry-run=client -o yaml | kubectl apply -f -
 helm upgrade --install headlamp headlamp/headlamp \
   --namespace headlamp \

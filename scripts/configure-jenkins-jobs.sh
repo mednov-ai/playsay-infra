@@ -8,12 +8,22 @@ JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}/jen
 DEFAULT_JOB_NAMES=(
   playsay-platform-dispatch-develop
   playsay-platform-develop
+  playsay-api-gateway-develop
+  playsay-web-app-develop
+  playsay-collaboration-service-develop
+  playsay-media-service-develop
+  playsay-payment-service-develop
   playsay-keyboard-backend-develop
   playsay-keyboard-frontend-develop
 )
 DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-api-gateway-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-web-app-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-collaboration-service-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-media-service-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-payment-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-backend-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-frontend-develop.xml"
 )

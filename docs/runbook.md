@@ -636,19 +636,28 @@ Jenkins platform jobs are configured by:
 The bootstrap/add-ons script runs it automatically after Jenkins is installed. The configured jobs are:
 
 - `playsay-platform-dispatch-develop`: lightweight Generic Webhook Trigger receiver for `develop` and `release/*`;
-- `playsay-platform-develop`: downstream core app job for `api-gateway`, `web-app`, `collaboration-service`, `media-service`, and `payment-service`;
+- `playsay-platform-develop`: manual full core rebuild compatibility job; the dispatcher does not call it;
+- `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/api-gateway/values-dev.yaml`, waits for rollout;
+- `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes image, updates only `helm-charts/web-app/values-dev.yaml`, waits for rollout, then runs Sprint 5/Sprint 6 browser smoke;
+- `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes image, updates only `helm-charts/collaboration-service/values-dev.yaml`, waits for rollout;
+- `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes image, updates only `helm-charts/media-service/values-dev.yaml`, waits for rollout;
+- `playsay-payment-service-develop`: tests/packages `payment-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/payment-service/values-dev.yaml`, waits for rollout;
 - `playsay-keyboard-backend-develop`: downstream keyboard backend job;
 - `playsay-keyboard-frontend-develop`: downstream keyboard frontend job.
 
-The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, and optional `FORCE_TARGETS=all|target1,target2`. Downstream jobs are manual/dispatcher-only and do not have GitHub webhook triggers. `playsay-platform-develop` also has `AFFECTED_TARGETS`, defaulting to `all` for manual recovery. All downstream jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed.
+The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, and optional `FORCE_TARGETS=all|target1,target2`. Module jobs are manual/dispatcher-only and do not have GitHub webhook triggers. All module jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed. `playsay-platform-develop` stays available as a manual full rebuild safety valve with `AFFECTED_TARGETS=all`, but it is no longer part of automatic dispatch.
 
-The core platform job has a `BRANCH_NAME` parameter:
+Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefixes:
 
-- `develop` creates build labels such as `dev-11`;
-- `codex/task-1` creates labels such as `codex_task-1-12`;
-- `feature/task-1` creates labels such as `f_task-1-12`;
-- `release/1.001.00` creates labels such as `rel_1.001.00-13`;
-- `hotfix/fix-login` creates labels such as `hotfix_fix-login-14`.
+- `api-gateway`: `api-dev-N` on `develop`;
+- `web-app`: `web-dev-N`;
+- `collaboration-service`: `collab-dev-N`;
+- `media-service`: `media-dev-N`;
+- `payment-service`: `payment-dev-N`;
+- `keyboard-service`: `key-backend-dev-N`;
+- `keyboard-app`: `key-frontend-dev-N`.
+
+Non-`develop` labels prefix the branch with the module name, for example `web-feature-task-1-N` or `api-rel-1.001.00-N`, sanitized for Docker/Git/Kubernetes label safety.
 
 Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
 
@@ -658,17 +667,17 @@ Affected-target policy:
 
 - `frontend/keyboard-app/**` -> `playsay-keyboard-frontend-develop`;
 - `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
-- `frontend/web-app/**` -> core `web-app`;
-- `backend/api-gateway/**` or `contracts/openapi.yaml` -> core `api-gateway,web-app`;
-- `backend/media-service/**` -> core `media-service`;
-- `backend/payment-service/**` -> core `payment-service`;
-- `collaboration-service/**` -> core `collaboration-service`;
+- `frontend/web-app/**` -> `playsay-web-app-develop`;
+- `backend/api-gateway/**` or `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
+- `backend/media-service/**` -> `playsay-media-service-develop`;
+- `backend/payment-service/**` -> `playsay-payment-service-develop`;
+- `collaboration-service/**` -> `playsay-collaboration-service-develop`;
 - shared backend config/code -> all backend targets including `keyboard-service`;
 - shared frontend config/lockfile -> `web-app` and `keyboard-app`;
 - CI/Jenkins/smoke scripts or unknown source paths -> fail-safe `all`;
 - docs-only Markdown/docs/spec changes -> no downstream jobs.
 
-Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` and `AFFECTED_TARGETS` or `FORCE_TARGETS` when a dev deploy of that branch is needed.
+Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through the dispatcher with an explicit `BRANCH_NAME` and `FORCE_TARGETS` when a dev deploy of that branch is needed. Trigger a module job directly only for recovery/debugging.
 
 The build label is written to:
 
@@ -685,25 +694,25 @@ kubectl -n playsay-dev get pods --show-labels
 kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.annotations}'
 ```
 
-Backend/media/payment image builds are intentionally runtime-only. Jenkins runs `gradle :api-gateway:bootJar :media-service:bootJar :payment-service:bootJar` once in the `Backend package` stage, then Kaniko builds `backend/api-gateway/Dockerfile`, `backend/media-service/Dockerfile`, and `backend/payment-service/Dockerfile` by copying the already-built jars from each module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage in these runtime Dockerfiles unless the pipeline is redesigned.
+Backend/media/payment image builds are intentionally runtime-only. Each backend module job runs only its own `:service:test` and `:service:bootJar`, then Kaniko builds the matching runtime Dockerfile by copying the already-built jar from that module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage in these runtime Dockerfiles unless the pipeline is redesigned.
 
-Frontend image builds are intentionally runtime-only too. Jenkins runs `npm --workspace web-app run build` once in the `Frontend build` stage, then Kaniko builds `frontend/web-app/Dockerfile` by copying the already-built `web-app/dist` into nginx. Do not add `npm install`, `npm ci`, or `npm run build` back into the frontend Dockerfile unless the pipeline is redesigned.
+Frontend image builds are intentionally runtime-only too. `playsay-web-app-develop` runs `npm --workspace web-app run generate/lint/test/build`, then Kaniko builds `frontend/web-app/Dockerfile` by copying the already-built `web-app/dist` into nginx. `playsay-keyboard-frontend-develop` does the same for `keyboard-app`. Do not add `npm install`, `npm ci`, or `npm run build` back into frontend Dockerfiles unless the pipeline is redesigned.
 
-Jenkins agent requests are kept moderate so the build pod can schedule on the dev VPS while Keycloak, application PostgreSQL, and all dev app pods are running. Current Jenkinsfile requests are `450m / 1Gi` for Gradle, `250m / 512Mi` for the frontend Node lane, `150m / 384Mi` for the collaboration Node lane, `150m / 256Mi` for each Kaniko container, and `250m / 512Mi` for the shared Sprint 5/Sprint 6 Playwright smoke container; Jenkins also injects a small `jnlp` container. The pipeline now has separate Node lanes for frontend and collaboration validation, plus separate Kaniko containers for api-gateway, web-app, collaboration-service, media-service, and payment-service images. Limits remain intentionally conservative after the upgrade to 4 vCPU / 8 GB RAM: Gradle `2 CPU / 3Gi`, frontend Node `1500m / 1Gi`, collaboration Node `1 CPU / 768Mi`, each Kaniko container `1 CPU / 1Gi`, and smoke `1 CPU / 1536Mi`. Gradle stages use `--max-workers=2` with the Kotlin compiler in-process; frontend/collaboration validation lanes run in parallel with backend validation, and the five image builds run in parallel after `DB migrate`. Jenkins agent pods explicitly use serviceAccount `jenkins`; `deploy-cluster-addons.sh` grants it access to refresh/read ArgoCD Applications and read `playsay-dev` deployments/pods so `Wait for dev rollout` can request ArgoCD refresh, then verify `Synced/Healthy`, `playsay.io/build-name`, ready replicas, and ready pods for `api-gateway`, `web-app`, `collaboration-service`, `media-service`, and `payment-service` before smoke. The dev `api-gateway`, `media-service`, and `payment-service` charts intentionally keep CPU requests at `50m` and use `maxSurge=0/maxUnavailable=1` so those rollout pods do not require a second Java replica while the Jenkins agent is alive in `Wait for dev rollout`; memory requests and CPU limits stay sized for normal Spring Boot startup. The agent pod mounts the `jenkins-agent-cache` PVC for Gradle and npm caches; `deploy-cluster-addons.sh` creates this `4Gi` PVC before installing Jenkins. If a build shows no Stage View progress and the console says `Insufficient cpu`, the pod is unscheduled before `Checkout`; abort that stuck build after pushing lower requests or free CPU requests before retrying. If `Wait for dev rollout` stalls with `Insufficient cpu`, first check whether a new service request or rolling surge exceeded the single-node dev budget before increasing Jenkins resources. If a running build shows OOM/restarts or strong swap growth, first revert Gradle/Node resources, Gradle `--max-workers=1`, or the new parallel stages.
+Jenkins agent requests are kept moderate so module pods can schedule on the dev VPS while Keycloak, application PostgreSQL, and all dev app pods are running. Module jobs use leaner pods than the old full core pipeline: a backend job carries only Gradle plus its optional Liquibase/Kaniko/tools containers, `web-app` carries Node/Kaniko/tools/smoke, and `collaboration-service` carries Node/Kaniko/tools. Gradle stages still use `--max-workers=2` with the Kotlin compiler in-process. Jenkins agent pods explicitly use serviceAccount `jenkins`; `deploy-cluster-addons.sh` grants it access to read ArgoCD Applications and `playsay-dev` deployments/pods. Rollout waiting is centralized in `scripts/ci/wait-for-argocd-rollout.sh`, which expects the `playsay-infra` GitHub webhook to wake ArgoCD and verifies `Synced/Healthy`, `playsay.io/build-name`, ready replicas, and ready pods. For recovery only, module jobs accept `ARGOCD_REFRESH_MODE=annotate`, which re-enables the old hard-refresh annotation. The dev `api-gateway`, `media-service`, and `payment-service` charts intentionally keep CPU requests `50m` and `maxSurge=0/maxUnavailable=1` to avoid rollout deadlock on the single-node dev VPS.
 
 After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tests` because Maven Central DNS resolution temporarily failed while the node was overloaded. A retry `dev-26` pushed load above `11` on the original 2 vCPU VPS, made the Kubernetes API intermittently time out, and was stopped manually. The first conservative retry `dev-27` proved that `1Gi` is too low for Gradle on `compileKotlin`, so Gradle memory was raised to `1536Mi` while limiting CPU and workers. Build `dev-28` passed with the conservative Jenkinsfile mode: Gradle `--max-workers=1`, Kotlin compiler in-process, lower CPU for build containers, and persistent Gradle/npm cache. During Sprint 4, Jenkins `dev-53` was `OOMKilled` in the Gradle container during backend tests after the test suite and Jackson dependencies grew; the Gradle request/limit were raised to `768Mi`/`2Gi` while keeping `--max-workers=1` and Kotlin compiler in-process. The current `--max-workers=2` mode is a build-time canary for the upgraded VPS, not a reason to ignore OOM/restart/swap signals.
 
 Jenkins chart must keep `controller.overwritePlugins=true`. In chart `jenkins-5.9.22`, the rendered `apply_config.sh` can still contain interactive `yes n | cp -i ...` plugin copying; after a controller restart this can leave the init container in `CrashLoopBackOff` and Jenkins will serve `502` through host nginx because the service has no ready endpoints. `deploy-cluster-addons.sh` patches the Jenkins ConfigMap to use non-interactive `cp -f ...` after Helm upgrade and deletes `jenkins-0` only if it is already stuck in init `CrashLoopBackOff`. If `/jenkins/` returns `502` after a VPS reboot, check `kubectl -n jenkins get pod,endpoints` first; healthy Jenkins should be `2/2 Running`, have an endpoint, and return `403 Forbidden` or a login redirect through nginx.
 
-The `OpenAPI contract` stage runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The frontend uses Orval to generate `web-app/src/generated/playsay-api.ts` from that contract before lint/build/test.
+The `OpenAPI contract` stage now lives in `playsay-api-gateway-develop`. It runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The dispatcher maps `contracts/openapi.yaml` and `backend/api-gateway/**` to both `playsay-api-gateway-develop` and `playsay-web-app-develop`, so the frontend client is rebuilt after API contract changes.
 
-The `DB migrate` stage runs after `OpenAPI contract` and before image builds for deployable branches. It uses `liquibase/liquibase:5.0.3`, downloads the pinned PostgreSQL JDBC driver `42.7.8`, and applies `backend/api-gateway/src/main/resources/db/changelog/db.changelog-master.xml` plus `backend/payment-service/src/main/resources/db/changelog/db.changelog-master.xml` to the dev application PostgreSQL database. The Jenkins agent reads `PLAYSAY_DB_JDBC_URL`, `PLAYSAY_DB_USERNAME`, and `PLAYSAY_DB_PASSWORD` from the Kubernetes secret `playsay-app-db` in the `jenkins` namespace. The Liquibase container must run as UID `1000` and GID `0`: UID `1000` lets Jenkins durable shell write temporary files in the shared workspace, while GID `0` lets the official image execute files under `/liquibase`; if `DB migrate` stays in progress with no console output or fails with `liquibase: Permission denied`, check this security context first. Keep service startup Liquibase disabled in Helm; migrations are controlled by Jenkins, not by service boot.
+The app DB migrate stages live only in `playsay-api-gateway-develop` and `playsay-payment-service-develop`. They run after module test/package and before image build for deployable branches, and they skip when `GITHUB_BEFORE..GITHUB_AFTER` proves the module's `db/changelog` directory did not change. Missing/invalid diff metadata fails safe to running the migration. Migrations use `liquibase/liquibase:5.0.3`, PostgreSQL JDBC `42.7.8`, and the `playsay-app-db` secret in the `jenkins` namespace. The Liquibase container must run as UID `1000` and GID `0`. Keep service startup Liquibase disabled in Helm; migrations are controlled by Jenkins, not by service boot.
 
 The JPA services `api-gateway` and `payment-service` keep `logging.level.org.hibernate.orm.connections.pooling=warn` so normal startup logs do not print Hibernate's database-info block with the secret-bearing JDBC URI. Do not lower this logger to `info` while `PLAYSAY_DB_JDBC_URL` contains credentials.
 
 The dev `api-gateway`, `media-service`, and `payment-service` charts give Spring Boot memory headroom while keeping CPU scheduling pressure low on the single-node dev VPS: `api-gateway` requests `50m / 384Mi`, `media-service` requests `50m / 256Mi`, `payment-service` requests `50m / 256Mi`, all limit at `1 CPU / 768Mi`, and `JAVA_TOOL_OPTIONS` sets container-aware initial/max RAM percentages plus string deduplication. Their dev strategy is `RollingUpdate` with `maxSurge=0/maxUnavailable=1`, accepting a short backend replacement window in dev to avoid a Jenkins `Wait for dev rollout` deadlock where the agent pod waits for a rollout that cannot schedule until the agent exits; re-check node memory/swap after Jenkins builds before raising the limits further.
 
-The `Sprint 5 UI smoke` and `Sprint 6 Homework smoke` stages run after Jenkins updates dev image tags and `Wait for dev rollout` confirms that api-gateway, web-app, collaboration-service, media-service, and payment-service are all on the current build label and ready in `playsay-dev`. They use `mcr.microsoft.com/playwright:v1.56.1-noble`, install only the matching `playwright` Node package into `/tmp/playsay-ui-smoke`, reuse the browser binaries already in the image, and run `scripts/smoke/sprint5-ui-smoke.mjs` plus `scripts/smoke/sprint6-homework-smoke.mjs` against `https://online.play-and-say.ru`. The stages read only the required demo passwords from the `keycloak-dev-users` secret in the `jenkins` namespace and set `PLAY_SAY_SMOKE_FETCH_PASSWORDS=false`, so Jenkins never SSHes to the VPS or prints secret values. If either stage fails immediately with missing smoke secret env vars, refresh the Jenkins copy with `./scripts/sync-keycloak-dev-users-secret.sh`.
+The `Sprint 5 UI smoke` and `Sprint 6 Homework smoke` stages now live in `playsay-web-app-develop` after `web-app` rollout. They use `scripts/ci/run-ui-smoke.sh`, `mcr.microsoft.com/playwright:v1.56.1-noble`, install only the matching `playwright` Node package into `/tmp/playsay-ui-smoke`, reuse the browser binaries already in the image, and run `scripts/smoke/sprint5-ui-smoke.mjs` plus `scripts/smoke/sprint6-homework-smoke.mjs` against `https://online.play-and-say.ru`. The stages read only the required demo passwords from the `keycloak-dev-users` secret in the `jenkins` namespace and set `PLAY_SAY_SMOKE_FETCH_PASSWORDS=false`, so Jenkins never SSHes to the VPS or prints secret values. Keyboard frontend keeps its own browser smoke against `https://key.play-and-say.ru`.
 
 The Sprint 6 homework/progress smoke creates a temporary published private material, creates standalone group homework for `student-demo` + `student-demo-2`, creates a single-student homework, verifies teacher UI due date/instructions and `0/N scored` without an initial `10/10`, verifies the single-student assignment has no group indicator, submits wrong answers as one student and correct answers as the other, verifies teacher group progress uses score/errors rather than status labels, resubmits improved answers, then creates homework from a completed lesson and confirms the completed live lesson is not joinable while the homework remains visible. The smoke pins demo profile `locale=en` before UI assertions and uses stable workspace tab selectors such as `data-tab-id` instead of localized tab labels. If `GET /api/assignments` returns `MATERIAL_NOT_FOUND`, check for active homework rows whose material was archived during prior smoke cleanup; current `api-gateway` must skip those rows in list endpoints so one stale assignment cannot break the teacher/student homework panels. Detail endpoints for such assignments may still return `404`.
 
@@ -732,6 +741,25 @@ Current GitHub webhook for `playsay-platform`:
 - GitHub hook id: `632315512`
 - Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
 - Secret: the current dev hook uses the Generic Webhook Trigger token in the URL. Before production use, replace it with a generated secret credential and configure the same secret/token in GitHub and Jenkins.
+
+Current GitHub webhook for `playsay-infra` -> ArgoCD refresh:
+
+- Payload URL: `https://ops.play-and-say.ru:18443/argocd/api/webhook`
+- Content type: `application/json`
+- Events: push
+- Secret: stored only in Kubernetes as `argocd/argocd-secret` key `webhook.github.secret`. Create or refresh it without printing the value:
+
+```bash
+./scripts/configure-argocd-webhook-secret.sh
+```
+
+When you are entering the GitHub webhook secret, read the value locally and do not paste it into chat, commits, shell history, or logs:
+
+```bash
+kubectl -n argocd get secret argocd-secret -o jsonpath='{.data.webhook\.github\.secret}' | base64 -d
+```
+
+Use the decoded value only in the GitHub webhook UI/API for `mednov-ai/playsay-infra`. This webhook wakes ArgoCD after Jenkins pushes a `values-dev.yaml` deploy commit, so module jobs normally use `ARGOCD_REFRESH_MODE=webhook`. Use `ARGOCD_REFRESH_MODE=annotate` only as a manual recovery path if the GitHub webhook is broken.
 
 Jenkins first login:
 
