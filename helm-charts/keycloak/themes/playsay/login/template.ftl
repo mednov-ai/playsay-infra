@@ -29,6 +29,32 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="robots" content="noindex, nofollow">
+    <script>
+        (function () {
+            var allowedThemes = { system: true, light: true, dark: true };
+
+            function requestedTheme() {
+                try {
+                    var value = new URL(window.location.href).searchParams.get("playsay_theme");
+                    return allowedThemes[value] ? value : "system";
+                } catch (caught) {
+                    return "system";
+                }
+            }
+
+            function resolvedTheme(theme) {
+                if (theme === "light" || theme === "dark") {
+                    return theme;
+                }
+                return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+
+            var theme = requestedTheme();
+            var resolved = resolvedTheme(theme);
+            document.documentElement.dataset.playsayTheme = theme;
+            document.documentElement.dataset.playsayResolvedTheme = resolved;
+        })();
+    </script>
     <#if properties.meta?has_content>
         <#list properties.meta?split(' ') as meta>
             <meta name="${meta?split('==')[0]}" content="${meta?split('==')[1]}"/>
@@ -147,6 +173,30 @@
                             }
                         }
 
+                        function currentLoginTheme() {
+                            try {
+                                var theme = new URL(window.location.href).searchParams.get("playsay_theme");
+                                return /^(system|light|dark)$/.test(theme || "") ? theme : null;
+                            } catch (caught) {
+                                return null;
+                            }
+                        }
+
+                        function withCurrentLoginTheme(href) {
+                            var theme = currentLoginTheme();
+                            if (!theme) {
+                                return href;
+                            }
+
+                            try {
+                                var url = new URL(href, window.location.href);
+                                url.searchParams.set("playsay_theme", theme);
+                                return url.toString();
+                            } catch (caught) {
+                                return href;
+                            }
+                        }
+
                         function rememberLoginLanguage(locale) {
                             var language = String(locale || "").toLowerCase().split(/[-_]/)[0];
                             if (!supportedLanguages[language]) {
@@ -164,6 +214,7 @@
                         }
 
                         links.forEach(function (link) {
+                            link.href = withCurrentLoginTheme(link.href);
                             link.addEventListener("click", function () {
                                 rememberLoginLanguage(loginLanguageFromHref(link.href));
                             });

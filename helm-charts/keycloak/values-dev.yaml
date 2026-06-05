@@ -38,7 +38,7 @@ keycloak:
       memory: 900Mi
 
   podAnnotations:
-    checksum/playsay-theme: 49cc0cfe36bea8868596de213c5e7956b5cae0c23b600874c122b7c0933d4f04
+    checksum/playsay-theme: f5541d8a0f510dd42d53e724a9c363b4ee3d6b25d41b89ab995f4608dcc6bec9
 
   extraEnvVars:
     - name: KC_SPI_THEME_CACHE_THEMES

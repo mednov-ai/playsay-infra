@@ -7,6 +7,52 @@
   --playsay-cream: #fff8ef;
   --playsay-mint: #dff4e9;
   --playsay-yellow: #ffe16a;
+  --playsay-body-bg:
+    radial-gradient(circle at 18% 18%, rgba(255, 225, 106, 0.14), transparent 24rem),
+    radial-gradient(circle at 86% 78%, rgba(116, 219, 190, 0.12), transparent 24rem),
+    #fffdf8;
+  --playsay-card-bg: rgba(255, 255, 255, 0.92);
+  --playsay-input-bg: #fffaf6;
+  --playsay-label: #333842;
+  --playsay-shadow: rgba(30, 36, 44, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-playsay-theme="light"]) {
+    --playsay-ink: #faf2eb;
+    --playsay-muted: #c4b3a7;
+    --playsay-line: #4b3427;
+    --playsay-cream: #221914;
+    --playsay-mint: #183126;
+    --playsay-yellow: #f0c941;
+    --playsay-body-bg:
+      radial-gradient(circle at 18% 18%, rgba(255, 90, 0, 0.16), transparent 24rem),
+      radial-gradient(circle at 86% 78%, rgba(116, 219, 190, 0.08), transparent 24rem),
+      linear-gradient(180deg, #17100c 0%, #110d0a 58%, #1d120d 100%);
+    --playsay-card-bg: rgba(34, 25, 20, 0.92);
+    --playsay-input-bg: rgba(43, 31, 24, 0.94);
+    --playsay-label: #ead8ca;
+    --playsay-shadow: rgba(0, 0, 0, 0.34);
+    color-scheme: dark;
+  }
+}
+
+:root[data-playsay-resolved-theme="dark"] {
+  --playsay-ink: #faf2eb;
+  --playsay-muted: #c4b3a7;
+  --playsay-line: #4b3427;
+  --playsay-cream: #221914;
+  --playsay-mint: #183126;
+  --playsay-yellow: #f0c941;
+  --playsay-body-bg:
+    radial-gradient(circle at 18% 18%, rgba(255, 90, 0, 0.16), transparent 24rem),
+    radial-gradient(circle at 86% 78%, rgba(116, 219, 190, 0.08), transparent 24rem),
+    linear-gradient(180deg, #17100c 0%, #110d0a 58%, #1d120d 100%);
+  --playsay-card-bg: rgba(34, 25, 20, 0.92);
+  --playsay-input-bg: rgba(43, 31, 24, 0.94);
+  --playsay-label: #ead8ca;
+  --playsay-shadow: rgba(0, 0, 0, 0.34);
+  color-scheme: dark;
 }
 
 .playsay-login-body *,
@@ -17,10 +63,7 @@
 
 body.playsay-login-body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255, 225, 106, 0.14), transparent 24rem),
-    radial-gradient(circle at 86% 78%, rgba(116, 219, 190, 0.12), transparent 24rem),
-    #fffdf8;
+  background: var(--playsay-body-bg);
   color: var(--playsay-ink);
   font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   overflow-x: hidden;
@@ -46,6 +89,18 @@ body.playsay-login-body {
 
 .playsay-logo-art {
   mix-blend-mode: multiply;
+}
+
+:root[data-playsay-resolved-theme="dark"] .playsay-logo-art {
+  mix-blend-mode: normal;
+  opacity: 0.94;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-playsay-theme="light"]) .playsay-logo-art {
+    mix-blend-mode: normal;
+    opacity: 0.94;
+  }
 }
 
 .playsay-logo-shine {
@@ -94,9 +149,9 @@ body.playsay-login-body {
   position: relative;
   border: 1px solid rgba(255, 90, 0, 0.12);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--playsay-card-bg);
   padding: 34px;
-  box-shadow: 0 20px 54px rgba(30, 36, 44, 0.08);
+  box-shadow: 0 20px 54px var(--playsay-shadow);
   backdrop-filter: blur(12px);
 }
 
@@ -115,7 +170,7 @@ body.playsay-login-body {
 .playsay-card label,
 .playsay-card .pf-c-form__label,
 .playsay-card .pf-c-form__label-text {
-  color: #333842;
+  color: var(--playsay-label);
   font-size: 13px;
   font-weight: 800;
 }
@@ -127,7 +182,7 @@ body.playsay-login-body {
   height: 52px;
   border: 1px solid var(--playsay-line);
   border-radius: 14px;
-  background: #fffaf6;
+  background: var(--playsay-input-bg);
   padding: 0 16px;
   color: var(--playsay-ink);
   font: inherit;
@@ -155,7 +210,7 @@ body.playsay-login-body {
   border: 1px solid var(--playsay-line);
   border-left: 0;
   border-radius: 0 14px 14px 0;
-  background: #fffaf6;
+  background: var(--playsay-input-bg);
   color: var(--playsay-muted);
 }
 
@@ -226,8 +281,65 @@ body.playsay-login-body {
   border-radius: 14px;
 }
 
+:root[data-playsay-resolved-theme="dark"] .playsay-card .pf-c-alert {
+  border-color: var(--playsay-line);
+  background: rgba(43, 31, 24, 0.94);
+  color: var(--playsay-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-playsay-theme="light"]) .playsay-card .pf-c-alert {
+    border-color: var(--playsay-line);
+    background: rgba(43, 31, 24, 0.94);
+    color: var(--playsay-ink);
+  }
+}
+
 #kc-social-providers {
   margin-top: 24px;
+}
+
+#kc-locale {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+
+#kc-current-locale-link {
+  min-height: 38px;
+  border: 1px solid var(--playsay-line);
+  border-radius: 999px;
+  background: var(--playsay-input-bg);
+  color: var(--playsay-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 14px;
+}
+
+#language-switch1 {
+  min-width: 160px;
+  margin-top: 8px;
+  border: 1px solid var(--playsay-line);
+  border-radius: 14px;
+  background: var(--playsay-card-bg);
+  box-shadow: 0 16px 36px var(--playsay-shadow);
+  list-style: none;
+  padding: 8px;
+}
+
+#language-switch1 a {
+  display: block;
+  border-radius: 10px;
+  color: var(--playsay-ink);
+  padding: 8px 10px;
+}
+
+#language-switch1 a:hover,
+#language-switch1 a:focus {
+  background: var(--playsay-input-bg);
+  color: var(--playsay-orange);
 }
 
 .playsay-site-return {
