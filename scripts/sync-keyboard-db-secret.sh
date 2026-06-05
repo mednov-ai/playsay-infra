@@ -43,18 +43,19 @@ trap cleanup EXIT
 kubectl create namespace "$SOURCE_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
 
 if ! kubectl -n "$SOURCE_NAMESPACE" get secret "$SOURCE_SECRET" >/dev/null 2>&1; then
-  openssl rand -base64 48 > "$tmp_dir/password"
+  openssl rand -base64 48 | tr -d '\r\n' > "$tmp_dir/password"
   printf "%s" "$DB_USERNAME" > "$tmp_dir/username"
-  kubectl -n "$SOURCE_NAMESPACE" create secret generic "$SOURCE_SECRET" \
-    --type=kubernetes.io/basic-auth \
-    --from-file=username="$tmp_dir/username" \
-    --from-file=password="$tmp_dir/password" \
-    --dry-run=client -o yaml \
-    | kubectl apply -f - >/dev/null
 else
-  kubectl -n "$SOURCE_NAMESPACE" get secret "$SOURCE_SECRET" -o jsonpath='{.data.username}' | base64 -d > "$tmp_dir/username"
-  kubectl -n "$SOURCE_NAMESPACE" get secret "$SOURCE_SECRET" -o jsonpath='{.data.password}' | base64 -d > "$tmp_dir/password"
+  kubectl -n "$SOURCE_NAMESPACE" get secret "$SOURCE_SECRET" -o jsonpath='{.data.username}' | base64 -d | tr -d '\r\n' > "$tmp_dir/username"
+  kubectl -n "$SOURCE_NAMESPACE" get secret "$SOURCE_SECRET" -o jsonpath='{.data.password}' | base64 -d | tr -d '\r\n' > "$tmp_dir/password"
 fi
+
+kubectl -n "$SOURCE_NAMESPACE" create secret generic "$SOURCE_SECRET" \
+  --type=kubernetes.io/basic-auth \
+  --from-file=username="$tmp_dir/username" \
+  --from-file=password="$tmp_dir/password" \
+  --dry-run=client -o yaml \
+  | kubectl apply -f - >/dev/null
 
 kubectl -n "$SOURCE_NAMESPACE" label secret "$SOURCE_SECRET" \
   app.kubernetes.io/name=playsay-keyboard-db \
