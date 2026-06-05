@@ -267,6 +267,10 @@ kubectl -n jenkins get secret playsay-keyboard-db
 
 The source secret `playsay-postgres-keyboard` is used by CloudNativePG declarative role management for `keyboard_app`; the synced `playsay-keyboard-db` secret contains `jdbc-uri`, `username`, and `password` for runtime and Jenkins Liquibase. Do not print secret values.
 
+Anonymous `Play&Say Key` practice now stores error analytics through public keyboard-service routes under `/api/anonymous/**`. The browser sends a local `playsay.key.anonymousDeviceId`; the service stores that device id plus an HMAC hash of IP/User-Agent features and never stores the raw IP as the profile key. For production-like environments, create a Kubernetes Secret such as `playsay-keyboard-anonymous` with key `fingerprint-secret` and set `anonymous.fingerprintSecret.existingSecret` / `anonymous.fingerprintSecret.key` in the keyboard-service Helm values. Do not print the secret value. Dev can run without that Secret using the application fallback, but that is not suitable for production-like privacy isolation.
+
+Current anonymous public API hardening is limited to request validation and payload caps for map sizes/key lengths. Dedicated anti-DDoS/rate limiting for `/api/anonymous/**` remains technical debt before a wider public launch.
+
 Keycloak client wiring is managed by:
 
 ```bash
@@ -290,7 +294,7 @@ curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and
 curl -k -I --resolve key.play-and-say.ru:443:89.124.113.223 https://key.play-and-say.ru/healthz
 ```
 
-Expected unauthenticated browser behavior: the trainer screen is visible without a blocking Play overlay; inline Play/Space starts a centered blocking `3 -> 2 -> 1` countdown, typing is ignored during countdown, and completed guest sessions stay local. The typing strip is a visually obvious two-line focus area with natural in-chord letter spacing and visible gaps only for real spaces. If typing stops for more than 3 seconds during a running session, a centered pause/resume overlay appears and Space resumes the same session; Esc exits countdown or paused session focus back to the normal non-blocking trainer interface. After 5 anonymous completions the app shows a soft registration prompt; the sign-in action sends the user through Keycloak and callback returns to `https://key.play-and-say.ru/auth/callback`. Laptop smoke should verify that a full 13-inch class browser viewport has no document-level vertical scroll and the virtual keyboard is centered near edge-to-edge.
+Expected unauthenticated browser behavior: the trainer screen is visible without a blocking Play overlay; inline Play/Space starts a centered blocking `3 -> 2 -> 1` countdown, typing is ignored during countdown, and completed guest sessions are submitted best-effort to `/api/anonymous/training/results` while the local session continues even if that request fails. The typing strip is a visually obvious two-line focus area with natural in-chord letter spacing and visible gaps only for real spaces; its visible capacity follows measured line width and must not overflow on a 13-inch MacBook-class viewport. If typing stops for more than 3 seconds during a running session, a centered pause/resume overlay appears and Space resumes the same session; Esc exits countdown or paused session focus back to the normal non-blocking trainer interface. After 2 anonymous completions the app softly asks for a display name and stores it in the anonymous profile; after 5 anonymous completions the app shows a soft registration prompt; the sign-in action sends the user through Keycloak and callback returns to `https://key.play-and-say.ru/auth/callback`. Laptop smoke should verify that a full 13-inch class browser viewport has no document-level vertical scroll and the virtual keyboard is centered near edge-to-edge.
 
 ## Object Storage
 

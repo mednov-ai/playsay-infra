@@ -35,6 +35,11 @@ database:
 runtime:
   javaToolOptions: ""
 
+anonymous:
+  fingerprintSecret:
+    existingSecret: ""
+    key: fingerprint-secret
+
 resources:
   requests:
     cpu: 50m

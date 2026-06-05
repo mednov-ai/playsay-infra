@@ -63,6 +63,13 @@ spec:
                   key: {{ .Values.database.passwordKey | quote }}
             - name: PLAYSAY_KEYBOARD_LIQUIBASE_ENABLED
               value: {{ .Values.database.liquibaseEnabled | quote }}
+            {{- if .Values.anonymous.fingerprintSecret.existingSecret }}
+            - name: PLAYSAY_KEYBOARD_ANONYMOUS_FINGERPRINT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.anonymous.fingerprintSecret.existingSecret | quote }}
+                  key: {{ .Values.anonymous.fingerprintSecret.key | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
