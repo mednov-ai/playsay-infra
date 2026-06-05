@@ -1,0 +1,59 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-registration-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8085
+  nodePort: null
+
+database:
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+
+registrationService:
+  publicBaseUrl: https://online.play-and-say.ru
+  tokenTtlHours: "24"
+  resendCooldownSeconds: "300"
+  rateLimit:
+    windowSeconds: "3600"
+    maxPerEmail: "5"
+    maxPerIp: "30"
+  keycloak:
+    baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
+    realm: playsay
+    existingSecret: playsay-registration
+    clientIdKey: keycloak-client-id
+    clientSecretKey: keycloak-client-secret
+  emailService:
+    baseUrl: http://email-service.playsay-dev.svc.cluster.local
+    existingSecret: playsay-email
+    serviceTokenKey: service-token
+
+runtime:
+  javaToolOptions: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

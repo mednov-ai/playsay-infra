@@ -1,0 +1,6 @@
+apiVersion: v2
+name: registration-service
+description: Play&Say Registration Service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

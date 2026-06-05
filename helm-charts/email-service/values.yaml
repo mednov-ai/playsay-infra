@@ -1,0 +1,52 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-email-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+build:
+  name: local-0
+  number: "0"
+  branch: local
+  branchLabel: local
+  commit: unknown
+  commitShort: unknown
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8086
+  nodePort: null
+
+database:
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+
+emailService:
+  existingSecret: playsay-email
+  serviceTokenKey: service-token
+  fromAddressKey: from-address
+  smtp:
+    hostKey: smtp-host
+    portKey: smtp-port
+    usernameKey: smtp-username
+    passwordKey: smtp-password
+    authKey: smtp-auth
+    starttlsKey: smtp-starttls
+
+runtime:
+  javaToolOptions: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi

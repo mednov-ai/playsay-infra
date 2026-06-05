@@ -1,0 +1,40 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-registration-service
+  tag: "registration-dev-1"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: registration-dev-1
+  number: "1"
+  branch: develop
+  branchLabel: registration-dev
+  commit: ae738d239d5171ce65ac0c3239457ea5f8612474
+  commitShort: "ae738d239d51"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+service:
+  type: ClusterIP
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
+registrationService:
+  publicBaseUrl: https://online.play-and-say.ru
+  keycloak:
+    baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
+    realm: playsay
+    existingSecret: playsay-registration
+  emailService:
+    baseUrl: http://email-service.playsay-dev.svc.cluster.local
+    existingSecret: playsay-email
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi

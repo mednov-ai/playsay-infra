@@ -406,6 +406,79 @@ kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=payment-ser
 kubectl -n playsay-dev get secret playsay-payment
 ```
 
+## Registration And Email Services
+
+Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
+
+- `registration-service`: public registration state machine, pending token storage, Keycloak user activation.
+- `email-service`: transactional email rendering and SMTP relay delivery.
+
+Runtime wiring:
+
+- ArgoCD apps: `registration-service`, `email-service`
+- Kubernetes services:
+  - `registration-service.playsay-dev.svc.cluster.local`
+  - `email-service.playsay-dev.svc.cluster.local`
+- api-gateway env:
+  - `PLAYSAY_REGISTRATION_SERVICE_BASE_URL`
+- registration-service env:
+  - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
+  - `PLAYSAY_KEYCLOAK_BASE_URL`
+  - `PLAYSAY_KEYCLOAK_REALM`
+  - `PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID`
+  - `PLAYSAY_KEYCLOAK_ADMIN_CLIENT_SECRET`
+  - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
+  - `PLAYSAY_EMAIL_SERVICE_TOKEN`
+- email-service env:
+  - `PLAYSAY_EMAIL_SERVICE_TOKEN`
+  - `PLAYSAY_EMAIL_FROM_ADDRESS`
+  - `PLAYSAY_EMAIL_SMTP_HOST`
+  - `PLAYSAY_EMAIL_SMTP_PORT`
+  - `PLAYSAY_EMAIL_SMTP_USERNAME`
+  - `PLAYSAY_EMAIL_SMTP_PASSWORD`
+  - `PLAYSAY_EMAIL_SMTP_AUTH`
+  - `PLAYSAY_EMAIL_SMTP_STARTTLS`
+
+Run or rerun Keycloak bootstrap after this change:
+
+```bash
+./scripts/configure-keycloak-dev.sh
+```
+
+It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update and role reads, and writes `keycloak-client-id` plus `keycloak-client-secret` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Secret values are not printed.
+
+Create the `playsay-email` secret before syncing `email-service` and `registration-service`. Use SMTP relay credentials supplied outside Git:
+
+```bash
+kubectl -n playsay-dev create secret generic playsay-email \
+  --from-literal=service-token="$(openssl rand -base64 32)" \
+  --from-literal=from-address="no-reply@play-and-say.ru" \
+  --from-literal=smtp-host="<smtp-host>" \
+  --from-literal=smtp-port="587" \
+  --from-literal=smtp-username="<smtp-username>" \
+  --from-literal=smtp-password="<smtp-password>" \
+  --from-literal=smtp-auth="true" \
+  --from-literal=smtp-starttls="true" \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Do not commit or print SMTP credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
+
+```bash
+kubectl -n playsay-dev rollout restart deployment/api-gateway deployment/registration-service deployment/email-service
+kubectl -n playsay-dev rollout status deployment/registration-service
+kubectl -n playsay-dev rollout status deployment/email-service
+```
+
+Check registration/email state:
+
+```bash
+kubectl -n argocd get application registration-service email-service
+kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=registration-service
+kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=email-service
+kubectl -n playsay-dev get secret playsay-registration playsay-email
+```
+
 ## YouTube RF Relay
 
 The product has a risk-flagged YouTube relay path for authorized Play&Say material video blocks. It is disabled by default and must stay disabled unless the business explicitly accepts the current risk profile.
@@ -646,6 +719,8 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes image, updates only `helm-charts/collaboration-service/values-dev.yaml`, waits for rollout;
 - `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes image, updates only `helm-charts/media-service/values-dev.yaml`, waits for rollout;
 - `playsay-payment-service-develop`: tests/packages `payment-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/payment-service/values-dev.yaml`, waits for rollout;
+- `playsay-registration-service-develop`: tests/packages `registration-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/registration-service/values-dev.yaml`, waits for rollout;
+- `playsay-email-service-develop`: tests/packages `email-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/email-service/values-dev.yaml`, waits for rollout;
 - `playsay-keyboard-backend-develop`: downstream keyboard backend job;
 - `playsay-keyboard-frontend-develop`: downstream keyboard frontend job.
 
@@ -658,6 +733,8 @@ Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefi
 - `collaboration-service`: `collab-dev-N`;
 - `media-service`: `media-dev-N`;
 - `payment-service`: `payment-dev-N`;
+- `registration-service`: `registration-dev-N`;
+- `email-service`: `email-dev-N`;
 - `keyboard-service`: `key-backend-dev-N`;
 - `keyboard-app`: `key-frontend-dev-N`.
 
@@ -673,8 +750,11 @@ Affected-target policy:
 - `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
 - `frontend/web-app/**` -> `playsay-web-app-develop`;
 - `backend/api-gateway/**` or `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
+- `contracts/registration-openapi.yaml` -> `playsay-registration-service-develop` and `playsay-web-app-develop`;
 - `backend/media-service/**` -> `playsay-media-service-develop`;
 - `backend/payment-service/**` -> `playsay-payment-service-develop`;
+- `backend/registration-service/**` -> `playsay-registration-service-develop`;
+- `backend/email-service/**` -> `playsay-email-service-develop`;
 - `collaboration-service/**` -> `playsay-collaboration-service-develop`;
 - shared backend config/code -> all backend targets including `keyboard-service`;
 - shared frontend config/lockfile -> `web-app` and `keyboard-app`;
@@ -686,7 +766,7 @@ Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through the dis
 The build label is written to:
 
 - Jenkins build display name;
-- GHCR image tags for affected images: `playsay-api-gateway`, `playsay-web-app`, `playsay-collaboration-service`, `playsay-media-service`, `playsay-payment-service`, `playsay-keyboard-service`, and `playsay-keyboard-app`;
+- GHCR image tags for affected images: `playsay-api-gateway`, `playsay-web-app`, `playsay-collaboration-service`, `playsay-media-service`, `playsay-payment-service`, `playsay-registration-service`, `playsay-email-service`, `playsay-keyboard-service`, and `playsay-keyboard-app`;
 - Git tags in `playsay-platform` and `playsay-infra`;
 - Helm `values-dev.yaml` build metadata;
 - Kubernetes pod labels and annotations under `playsay.io/*`.
@@ -698,7 +778,7 @@ kubectl -n playsay-dev get pods --show-labels
 kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.annotations}'
 ```
 
-Backend/media/payment image builds are intentionally runtime-only. Each backend module job runs only its own `:service:test` and `:service:bootJar`, then Kaniko builds the matching runtime Dockerfile by copying the already-built jar from that module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage in these runtime Dockerfiles unless the pipeline is redesigned.
+Backend service image builds are intentionally runtime-only. Each backend module job runs only its own `:service:test` and `:service:bootJar`, then Kaniko builds the matching runtime Dockerfile by copying the already-built jar from that module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage in these runtime Dockerfiles unless the pipeline is redesigned.
 
 Frontend image builds are intentionally runtime-only too. `playsay-web-app-develop` runs `npm --workspace web-app run generate/lint/test/build`, then Kaniko builds `frontend/web-app/Dockerfile` by copying the already-built `web-app/dist` into nginx. `playsay-keyboard-frontend-develop` does the same for `keyboard-app`. Do not add `npm install`, `npm ci`, or `npm run build` back into frontend Dockerfiles unless the pipeline is redesigned.
 
@@ -710,11 +790,11 @@ Jenkins chart must keep `controller.overwritePlugins=true`. In chart `jenkins-5.
 
 The `OpenAPI contract` stage now lives in `playsay-api-gateway-develop`. It runs `gradle :api-gateway:exportOpenApi`, writes `contracts/openapi.yaml`, checks that the generated file matches the committed contract, and archives it as a Jenkins artifact. If this stage fails with an out-of-sync message, regenerate the contract locally or in the same Gradle container, commit `contracts/openapi.yaml`, and rerun Jenkins. The dispatcher maps `contracts/openapi.yaml` and `backend/api-gateway/**` to both `playsay-api-gateway-develop` and `playsay-web-app-develop`, so the frontend client is rebuilt after API contract changes.
 
-The app DB migrate stages live only in `playsay-api-gateway-develop` and `playsay-payment-service-develop`. They run after module test/package and before image build for deployable branches, and they skip when `GITHUB_BEFORE..GITHUB_AFTER` proves the module's `db/changelog` directory did not change. Missing/invalid diff metadata fails safe to running the migration. Migrations use `liquibase/liquibase:5.0.3`, PostgreSQL JDBC `42.7.8`, and the `playsay-app-db` secret in the `jenkins` namespace. The Liquibase container must run as UID `1000` and GID `0`. Keep service startup Liquibase disabled in Helm; migrations are controlled by Jenkins, not by service boot.
+The app DB migrate stages live in `playsay-api-gateway-develop`, `playsay-payment-service-develop`, `playsay-registration-service-develop`, and `playsay-email-service-develop`. They run after module test/package and before image build for deployable branches, and they skip when `GITHUB_BEFORE..GITHUB_AFTER` proves the module's `db/changelog` directory did not change. Missing/invalid diff metadata fails safe to running the migration. Migrations use `liquibase/liquibase:5.0.3`, PostgreSQL JDBC `42.7.8`, and the `playsay-app-db` secret in the `jenkins` namespace. The Liquibase container must run as UID `1000` and GID `0`. Keep service startup Liquibase disabled in Helm; migrations are controlled by Jenkins, not by service boot.
 
-The JPA services `api-gateway` and `payment-service` keep `logging.level.org.hibernate.orm.connections.pooling=warn` so normal startup logs do not print Hibernate's database-info block with the secret-bearing JDBC URI. Do not lower this logger to `info` while `PLAYSAY_DB_JDBC_URL` contains credentials.
+The JPA services `api-gateway`, `payment-service`, `registration-service`, and `email-service` keep `logging.level.org.hibernate.orm.connections.pooling=warn` so normal startup logs do not print Hibernate's database-info block with the secret-bearing JDBC URI. Do not lower this logger to `info` while `PLAYSAY_DB_JDBC_URL` contains credentials.
 
-The dev `api-gateway`, `media-service`, and `payment-service` charts give Spring Boot memory headroom while keeping CPU scheduling pressure low on the single-node dev VPS: `api-gateway` requests `50m / 384Mi`, `media-service` requests `50m / 256Mi`, `payment-service` requests `50m / 256Mi`, all limit at `1 CPU / 768Mi`, and `JAVA_TOOL_OPTIONS` sets container-aware initial/max RAM percentages plus string deduplication. Their dev strategy is `RollingUpdate` with `maxSurge=0/maxUnavailable=1`, accepting a short backend replacement window in dev to avoid a Jenkins `Wait for dev rollout` deadlock where the agent pod waits for a rollout that cannot schedule until the agent exits; re-check node memory/swap after Jenkins builds before raising the limits further.
+The dev `api-gateway`, `media-service`, `payment-service`, `registration-service`, and `email-service` charts give Spring Boot memory headroom while keeping CPU scheduling pressure low on the single-node dev VPS: `api-gateway` requests `50m / 384Mi`, `media-service` requests `50m / 256Mi`, `payment-service`, `registration-service`, and `email-service` request `50m / 256Mi`, all limit at `1 CPU / 768Mi`, and `JAVA_TOOL_OPTIONS` sets container-aware initial/max RAM percentages plus string deduplication. Their dev strategy is `RollingUpdate` with `maxSurge=0/maxUnavailable=1`, accepting a short backend replacement window in dev to avoid a Jenkins `Wait for dev rollout` deadlock where the agent pod waits for a rollout that cannot schedule until the agent exits; re-check node memory/swap after Jenkins builds before raising the limits further.
 
 The `Sprint 5 UI smoke` and `Sprint 6 Homework smoke` stages now live in `playsay-web-app-develop` after `web-app` rollout. They use `scripts/ci/run-ui-smoke.sh`, `mcr.microsoft.com/playwright:v1.56.1-noble`, install only the matching `playwright` Node package into `/tmp/playsay-ui-smoke`, reuse the browser binaries already in the image, and run `scripts/smoke/sprint5-ui-smoke.mjs` plus `scripts/smoke/sprint6-homework-smoke.mjs` against `https://online.play-and-say.ru`. The stages read only the required demo passwords from the `keycloak-dev-users` secret in the `jenkins` namespace and set `PLAY_SAY_SMOKE_FETCH_PASSWORDS=false`, so Jenkins never SSHes to the VPS or prints secret values. Keyboard frontend keeps its own browser smoke against `https://key.play-and-say.ru`.
 

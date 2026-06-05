@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "registration-service.fullname" . }}
+  labels:
+    {{- include "registration-service.labels" . | nindent 4 }}
+    {{- include "registration-service.buildLabels" . | nindent 4 }}
+  annotations:
+    {{- include "registration-service.buildAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- with .Values.updateStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "registration-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "registration-service.selectorLabels" . | nindent 8 }}
+        {{- include "registration-service.buildLabels" . | nindent 8 }}
+      annotations:
+        {{- include "registration-service.buildAnnotations" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: registration-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          env:
+            {{- if .Values.runtime.javaToolOptions }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.runtime.javaToolOptions | quote }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: {{ .Values.service.targetPort | quote }}
+            - name: PLAYSAY_DB_JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.jdbcUriKey | quote }}
+            - name: PLAYSAY_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.usernameKey | quote }}
+            - name: PLAYSAY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
+            - name: PLAYSAY_REGISTRATION_LIQUIBASE_ENABLED
+              value: {{ .Values.database.liquibaseEnabled | quote }}
+            - name: PLAYSAY_REGISTRATION_PUBLIC_BASE_URL
+              value: {{ .Values.registrationService.publicBaseUrl | quote }}
+            - name: PLAYSAY_REGISTRATION_TOKEN_TTL_HOURS
+              value: {{ .Values.registrationService.tokenTtlHours | quote }}
+            - name: PLAYSAY_REGISTRATION_RESEND_COOLDOWN_SECONDS
+              value: {{ .Values.registrationService.resendCooldownSeconds | quote }}
+            - name: PLAYSAY_REGISTRATION_RATE_LIMIT_WINDOW_SECONDS
+              value: {{ .Values.registrationService.rateLimit.windowSeconds | quote }}
+            - name: PLAYSAY_REGISTRATION_RATE_LIMIT_MAX_PER_EMAIL
+              value: {{ .Values.registrationService.rateLimit.maxPerEmail | quote }}
+            - name: PLAYSAY_REGISTRATION_RATE_LIMIT_MAX_PER_IP
+              value: {{ .Values.registrationService.rateLimit.maxPerIp | quote }}
+            - name: PLAYSAY_KEYCLOAK_BASE_URL
+              value: {{ .Values.registrationService.keycloak.baseUrl | quote }}
+            - name: PLAYSAY_KEYCLOAK_REALM
+              value: {{ .Values.registrationService.keycloak.realm | quote }}
+            - name: PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.keycloak.existingSecret | quote }}
+                  key: {{ .Values.registrationService.keycloak.clientIdKey | quote }}
+            - name: PLAYSAY_KEYCLOAK_ADMIN_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.keycloak.existingSecret | quote }}
+                  key: {{ .Values.registrationService.keycloak.clientSecretKey | quote }}
+            - name: PLAYSAY_EMAIL_SERVICE_BASE_URL
+              value: {{ .Values.registrationService.emailService.baseUrl | quote }}
+            - name: PLAYSAY_EMAIL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.emailService.existingSecret | quote }}
+                  key: {{ .Values.registrationService.emailService.serviceTokenKey | quote }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 24
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -8,6 +8,9 @@ KEYCLOAK_DEV_USERS_SECRET="${KEYCLOAK_DEV_USERS_SECRET:-keycloak-dev-users}"
 REALM="${KEYCLOAK_REALM:-playsay}"
 WEB_CLIENT_ID="${KEYCLOAK_WEB_CLIENT_ID:-playsay-web}"
 API_CLIENT_ID="${KEYCLOAK_API_CLIENT_ID:-playsay-api}"
+REGISTRATION_CLIENT_ID="${KEYCLOAK_REGISTRATION_CLIENT_ID:-playsay-registration-service}"
+REGISTRATION_SECRET_NAMESPACE="${REGISTRATION_SECRET_NAMESPACE:-playsay-dev}"
+REGISTRATION_SECRET_NAME="${REGISTRATION_SECRET_NAME:-playsay-registration}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 CURL_TLS_ARGS=()
@@ -140,6 +143,13 @@ client_id() {
     "$KEYCLOAK_URL/admin/realms/$REALM/clients" | jq -r '.[0].id // empty'
 }
 
+service_account_user_id() {
+  local token="$1"
+  local client_uuid="$2"
+  kc_curl -H "Authorization: Bearer $token" \
+    "$KEYCLOAK_URL/admin/realms/$REALM/clients/$client_uuid/service-account-user" | jq -r '.id // empty'
+}
+
 upsert_client() {
   local token="$1"
   local client="$2"
@@ -223,6 +233,76 @@ ensure_clients() {
   upsert_client "$token" "$API_CLIENT_ID" "$api_payload"
 }
 
+ensure_registration_service_client() {
+  local token="$1"
+  local registration_payload
+  local registration_uuid
+  local realm_management_uuid
+  local service_user_id
+
+  registration_payload=$(jq -n --arg clientId "$REGISTRATION_CLIENT_ID" '
+    {
+      clientId: $clientId,
+      enabled: true,
+      protocol: "openid-connect",
+      publicClient: false,
+      standardFlowEnabled: false,
+      implicitFlowEnabled: false,
+      directAccessGrantsEnabled: false,
+      serviceAccountsEnabled: true
+    }
+  ')
+
+  upsert_client "$token" "$REGISTRATION_CLIENT_ID" "$registration_payload"
+  registration_uuid=$(client_id "$token" "$REGISTRATION_CLIENT_ID")
+  realm_management_uuid=$(client_id "$token" "realm-management")
+  service_user_id=$(service_account_user_id "$token" "$registration_uuid")
+
+  for role in view-users manage-users view-realm; do
+    if ! kc_curl -H "Authorization: Bearer $token" \
+      "$KEYCLOAK_URL/admin/realms/$REALM/users/$service_user_id/role-mappings/clients/$realm_management_uuid" \
+      | jq -e --arg role "$role" '.[] | select(.name == $role)' >/dev/null; then
+      local role_payload
+      role_payload=$(kc_curl -H "Authorization: Bearer $token" \
+        "$KEYCLOAK_URL/admin/realms/$REALM/clients/$realm_management_uuid/roles/$role")
+      jq -n --argjson role "$role_payload" '[$role]' \
+        | kc_curl -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+          -d @- "$KEYCLOAK_URL/admin/realms/$REALM/users/$service_user_id/role-mappings/clients/$realm_management_uuid" >/dev/null
+    fi
+  done
+
+  sync_registration_client_secret "$token" "$registration_uuid"
+}
+
+sync_registration_client_secret() {
+  local token="$1"
+  local client_uuid="$2"
+  local client_secret
+  local encoded_client_id
+  local encoded_client_secret
+  local patch
+
+  client_secret=$(kc_curl -H "Authorization: Bearer $token" \
+    "$KEYCLOAK_URL/admin/realms/$REALM/clients/$client_uuid/client-secret" | jq -r '.value')
+  encoded_client_id=$(printf "%s" "$REGISTRATION_CLIENT_ID" | base64 | tr -d '\n')
+  encoded_client_secret=$(printf "%s" "$client_secret" | base64 | tr -d '\n')
+
+  kubectl create namespace "$REGISTRATION_SECRET_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  if ! kubectl -n "$REGISTRATION_SECRET_NAMESPACE" get secret "$REGISTRATION_SECRET_NAME" >/dev/null 2>&1; then
+    kubectl -n "$REGISTRATION_SECRET_NAMESPACE" create secret generic "$REGISTRATION_SECRET_NAME" \
+      --from-literal=created-by=configure-keycloak-dev >/dev/null
+  fi
+  patch=$(jq -n \
+    --arg clientId "$encoded_client_id" \
+    --arg clientSecret "$encoded_client_secret" \
+    '{data: {"keycloak-client-id": $clientId, "keycloak-client-secret": $clientSecret}}')
+  kubectl -n "$REGISTRATION_SECRET_NAMESPACE" patch secret "$REGISTRATION_SECRET_NAME" --type merge -p "$patch" >/dev/null
+  kubectl -n "$REGISTRATION_SECRET_NAMESPACE" label secret "$REGISTRATION_SECRET_NAME" \
+    app.kubernetes.io/name=playsay-registration \
+    app.kubernetes.io/managed-by=playsay-infra \
+    --overwrite >/dev/null
+}
+
 user_id() {
   local token="$1"
   local username="$2"
@@ -301,6 +381,7 @@ main() {
   ensure_role "$token" TEACHER
   ensure_role "$token" ADMIN
   ensure_clients "$token"
+  ensure_registration_service_client "$token"
   ensure_user "$token" student-demo student-demo@play-and-say.ru Student Demo STUDENT student-demo-password
   ensure_user "$token" student-demo-2 student-demo-2@play-and-say.ru Student "Demo 2" STUDENT student-demo-2-password
   ensure_user "$token" student-demo-3 student-demo-3@play-and-say.ru Student "Demo 3" STUDENT student-demo-3-password
@@ -315,8 +396,9 @@ main() {
       "$ROOT_DIR/scripts/sync-keycloak-dev-users-secret.sh"
   fi
 
-  echo "Configured Keycloak realm '$REALM' with clients '$WEB_CLIENT_ID'/'$API_CLIENT_ID' and demo users."
+  echo "Configured Keycloak realm '$REALM' with clients '$WEB_CLIENT_ID'/'$API_CLIENT_ID'/'$REGISTRATION_CLIENT_ID' and demo users."
   echo "Demo passwords are stored in Kubernetes secret '$KEYCLOAK_DEV_USERS_SECRET' in namespace '$KEYCLOAK_NAMESPACE'."
+  echo "Registration client credentials are stored in secret '$REGISTRATION_SECRET_NAME' in namespace '$REGISTRATION_SECRET_NAMESPACE'."
 }
 
 main "$@"

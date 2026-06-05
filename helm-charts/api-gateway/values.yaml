@@ -76,6 +76,9 @@ paymentService:
   existingSecret: playsay-payment
   serviceTokenKey: service-token
 
+registrationService:
+  baseUrl: http://registration-service.playsay-dev.svc.cluster.local
+
 video:
   youtube:
     rfRelay:

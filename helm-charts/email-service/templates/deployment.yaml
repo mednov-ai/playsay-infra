@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "email-service.fullname" . }}
+  labels:
+    {{- include "email-service.labels" . | nindent 4 }}
+    {{- include "email-service.buildLabels" . | nindent 4 }}
+  annotations:
+    {{- include "email-service.buildAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- with .Values.updateStrategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "email-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "email-service.selectorLabels" . | nindent 8 }}
+        {{- include "email-service.buildLabels" . | nindent 8 }}
+      annotations:
+        {{- include "email-service.buildAnnotations" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: email-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          env:
+            {{- if .Values.runtime.javaToolOptions }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.runtime.javaToolOptions | quote }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: {{ .Values.service.targetPort | quote }}
+            - name: PLAYSAY_DB_JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.jdbcUriKey | quote }}
+            - name: PLAYSAY_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.usernameKey | quote }}
+            - name: PLAYSAY_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
+            - name: PLAYSAY_EMAIL_LIQUIBASE_ENABLED
+              value: {{ .Values.database.liquibaseEnabled | quote }}
+            - name: PLAYSAY_EMAIL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.serviceTokenKey | quote }}
+            - name: PLAYSAY_EMAIL_FROM_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.fromAddressKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.hostKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.portKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.usernameKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.passwordKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.authKey | quote }}
+            - name: PLAYSAY_EMAIL_SMTP_STARTTLS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.smtp.starttlsKey | quote }}
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 2
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 24
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
