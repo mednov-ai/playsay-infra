@@ -11,6 +11,24 @@
           <defaultValue>develop</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>AFFECTED_TARGETS</name>
+          <description>Comma-separated deploy targets to build: all, api-gateway, web-app, collaboration-service, media-service, payment-service.</description>
+          <defaultValue>all</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>GITHUB_BEFORE</name>
+          <description>GitHub push before SHA for dispatcher traceability.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>GITHUB_AFTER</name>
+          <description>GitHub push after SHA to build exactly, when dispatched from webhook.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
     <com.coravy.hudson.plugins.github.GithubProjectProperty>
@@ -29,46 +47,7 @@
       <abortPrevious>false</abortPrevious>
     </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
   </properties>
-  <triggers>
-    <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
-      <spec></spec>
-      <genericVariables>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>BRANCH_NAME</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter>^refs/heads/</regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_REF</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_AFTER</key>
-          <value>$.after</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-      </genericVariables>
-      <genericRequestVariables/>
-      <genericHeaderVariables/>
-      <token>playsay-platform-develop</token>
-      <tokenCredentialId></tokenCredentialId>
-      <printPostContent>false</printPostContent>
-      <printContributedVariables>false</printContributedVariables>
-      <causeString>GitHub push to $BRANCH_NAME</causeString>
-      <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
-      <regexpFilterExpression>^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
-      <silentResponse>false</silentResponse>
-      <shouldNotFlatten>false</shouldNotFlatten>
-      <overrideQuietPeriod>false</overrideQuietPeriod>
-    </org.jenkinsci.plugins.gwt.GenericTrigger>
-  </triggers>
+  <triggers/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps">
     <scm class="hudson.plugins.git.GitSCM" plugin="git">
       <configVersion>2</configVersion>

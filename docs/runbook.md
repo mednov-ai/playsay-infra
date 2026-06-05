@@ -275,7 +275,7 @@ Keycloak client wiring is managed by:
 
 The `playsay-web` public client must allow `https://key.play-and-say.ru/*`, `http://localhost:5175/*`, `http://localhost:4175/*`, and the same `127.0.0.1` origins. The trainer uses Authorization Code + PKCE for saved progress and does not use local password/JWT auth. Anonymous practice uses bundled frontend chord sets and must not call protected `/api/*` endpoints without a token.
 
-Deploy through separate Jenkins jobs:
+Keyboard deploys run through separate downstream Jenkins jobs. For normal `develop`/`release/*` pushes, `playsay-platform-dispatch-develop` triggers only the affected keyboard job; manual runs can still use the jobs directly with `BRANCH_NAME` and optional `GITHUB_AFTER`:
 
 - `playsay-keyboard-backend-develop`: tests `:keyboard-service`, applies XML Liquibase to `keyboard`, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-service`, updates `helm-charts/keyboard-service/values-dev.yaml`, waits for rollout.
 - `playsay-keyboard-frontend-develop`: runs `keyboard-app` lint/test/build, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-app`, updates `helm-charts/keyboard-app/values-dev.yaml`, waits for rollout, then browser-smokes `https://key.play-and-say.ru`.
@@ -627,13 +627,22 @@ If you prefer CLI later, pass secrets only through a local untracked file such a
 
 ## Jenkins Branch Builds and Build Labels
 
-The Jenkins job `playsay-platform-develop` is configured by:
+Jenkins platform jobs are configured by:
 
 ```bash
 ./scripts/configure-jenkins-jobs.sh
 ```
 
-The bootstrap/add-ons script runs it automatically after Jenkins is installed. The job has a `BRANCH_NAME` parameter:
+The bootstrap/add-ons script runs it automatically after Jenkins is installed. The configured jobs are:
+
+- `playsay-platform-dispatch-develop`: lightweight Generic Webhook Trigger receiver for `develop` and `release/*`;
+- `playsay-platform-develop`: downstream core app job for `api-gateway`, `web-app`, `collaboration-service`, `media-service`, and `payment-service`;
+- `playsay-keyboard-backend-develop`: downstream keyboard backend job;
+- `playsay-keyboard-frontend-develop`: downstream keyboard frontend job.
+
+The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, and optional `FORCE_TARGETS=all|target1,target2`. Downstream jobs are manual/dispatcher-only and do not have GitHub webhook triggers. `playsay-platform-develop` also has `AFFECTED_TARGETS`, defaulting to `all` for manual recovery. All downstream jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed.
+
+The core platform job has a `BRANCH_NAME` parameter:
 
 - `develop` creates build labels such as `dev-11`;
 - `codex/task-1` creates labels such as `codex_task-1-12`;
@@ -643,12 +652,28 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 
 Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
 
-The job uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. In practice this means a merge commit pushed to `develop` or any `release/*` branch starts Jenkins automatically. The trigger extracts `ref` into `BRANCH_NAME`, strips the `refs/heads/` prefix, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. This keeps Jenkins Git tags from recursively starting new builds while allowing merge commits into `develop` and `release/*` to build automatically. Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` when a dev deploy of that branch is needed.
+The dispatcher uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. It extracts `ref` into `BRANCH_NAME`, reads GitHub `before`/`after`, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. It runs `scripts/ci/detect-affected-targets.mjs` over `GITHUB_BEFORE..GITHUB_AFTER` and starts only the needed downstream jobs. Tag events are intentionally not used for module selection, because Jenkins creates build/deployment tags itself.
+
+Affected-target policy:
+
+- `frontend/keyboard-app/**` -> `playsay-keyboard-frontend-develop`;
+- `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
+- `frontend/web-app/**` -> core `web-app`;
+- `backend/api-gateway/**` or `contracts/openapi.yaml` -> core `api-gateway,web-app`;
+- `backend/media-service/**` -> core `media-service`;
+- `backend/payment-service/**` -> core `payment-service`;
+- `collaboration-service/**` -> core `collaboration-service`;
+- shared backend config/code -> all backend targets including `keyboard-service`;
+- shared frontend config/lockfile -> `web-app` and `keyboard-app`;
+- CI/Jenkins/smoke scripts or unknown source paths -> fail-safe `all`;
+- docs-only Markdown/docs/spec changes -> no downstream jobs.
+
+Trigger `codex/*`, `feature/*`, and `hotfix/*` branches manually through Jenkins UI/API with an explicit `BRANCH_NAME` and `AFFECTED_TARGETS` or `FORCE_TARGETS` when a dev deploy of that branch is needed.
 
 The build label is written to:
 
 - Jenkins build display name;
-- GHCR image tags for `playsay-api-gateway`, `playsay-web-app`, `playsay-collaboration-service`, and `playsay-media-service`;
+- GHCR image tags for affected images: `playsay-api-gateway`, `playsay-web-app`, `playsay-collaboration-service`, `playsay-media-service`, `playsay-payment-service`, `playsay-keyboard-service`, and `playsay-keyboard-app`;
 - Git tags in `playsay-platform` and `playsay-infra`;
 - Helm `values-dev.yaml` build metadata;
 - Kubernetes pod labels and annotations under `playsay.io/*`.
@@ -705,7 +730,7 @@ Current GitHub webhook for `playsay-platform`:
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
-- Status: branch-aware auto-build for `develop` and `release/*` is configured through Generic Webhook Trigger. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
+- Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
 - Secret: the current dev hook uses the Generic Webhook Trigger token in the URL. Before production use, replace it with a generated secret credential and configure the same secret/token in GitHub and Jenkins.
 
 Jenkins first login:
