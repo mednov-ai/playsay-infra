@@ -411,7 +411,7 @@ kubectl -n playsay-dev get secret playsay-payment
 Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
 
 - `registration-service`: public registration state machine, pending token storage, Keycloak user activation.
-- `email-service`: transactional email rendering and SMTP relay delivery.
+- `email-service`: transactional email rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments.
 
 Runtime wiring:
 
@@ -430,14 +430,19 @@ Runtime wiring:
   - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
   - `PLAYSAY_EMAIL_SERVICE_TOKEN`
 - email-service env:
+  - `PLAYSAY_EMAIL_DELIVERY_PROVIDER`
   - `PLAYSAY_EMAIL_SERVICE_TOKEN`
   - `PLAYSAY_EMAIL_FROM_ADDRESS`
+  - `PLAYSAY_EMAIL_FROM_NAME`
   - `PLAYSAY_EMAIL_SMTP_HOST`
   - `PLAYSAY_EMAIL_SMTP_PORT`
   - `PLAYSAY_EMAIL_SMTP_USERNAME`
   - `PLAYSAY_EMAIL_SMTP_PASSWORD`
   - `PLAYSAY_EMAIL_SMTP_AUTH`
   - `PLAYSAY_EMAIL_SMTP_STARTTLS`
+  - `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL`
+  - `PLAYSAY_EMAIL_UNISENDER_USER_ID`
+  - `PLAYSAY_EMAIL_UNISENDER_API_KEY`
 
 Run or rerun Keycloak bootstrap after this change:
 
@@ -447,22 +452,27 @@ Run or rerun Keycloak bootstrap after this change:
 
 It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update and role reads, and writes `keycloak-client-id` plus `keycloak-client-secret` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Secret values are not printed.
 
-Create the `playsay-email` secret before syncing `email-service` and `registration-service`. Use SMTP relay credentials supplied outside Git:
+Create the `playsay-email` secret before syncing `email-service` and `registration-service`. For dev, use Unisender Go. Keep the API key outside Git and do not print it:
 
 ```bash
+export UNISENDER_API_KEY="<unisender-go-api-key>"
+
 kubectl -n playsay-dev create secret generic playsay-email \
   --from-literal=service-token="$(openssl rand -base64 32)" \
   --from-literal=from-address="no-reply@play-and-say.ru" \
-  --from-literal=smtp-host="<smtp-host>" \
+  --from-literal=smtp-host="smtp.go2.unisender.ru" \
   --from-literal=smtp-port="587" \
-  --from-literal=smtp-username="<smtp-username>" \
-  --from-literal=smtp-password="<smtp-password>" \
+  --from-literal=smtp-username="8236338" \
+  --from-literal=smtp-password="$UNISENDER_API_KEY" \
   --from-literal=smtp-auth="true" \
   --from-literal=smtp-starttls="true" \
+  --from-literal=unisender-api-key="$UNISENDER_API_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Do not commit or print SMTP credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
+The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart.
+
+Do not commit or print email provider credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
 
 ```bash
 kubectl -n playsay-dev rollout restart deployment/api-gateway deployment/registration-service deployment/email-service

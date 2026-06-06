@@ -30,8 +30,10 @@ database:
 
 emailService:
   existingSecret: playsay-email
+  deliveryProvider: smtp
   serviceTokenKey: service-token
   fromAddressKey: from-address
+  fromName: Play&Say
   smtp:
     hostKey: smtp-host
     portKey: smtp-port
@@ -39,6 +41,10 @@ emailService:
     passwordKey: smtp-password
     authKey: smtp-auth
     starttlsKey: smtp-starttls
+  unisender:
+    apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
+    userId: ""
+    apiKeyKey: unisender-api-key
 
 runtime:
   javaToolOptions: ""

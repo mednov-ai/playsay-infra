@@ -59,6 +59,8 @@ spec:
                   key: {{ .Values.database.passwordKey | quote }}
             - name: PLAYSAY_EMAIL_LIQUIBASE_ENABLED
               value: {{ .Values.database.liquibaseEnabled | quote }}
+            - name: PLAYSAY_EMAIL_DELIVERY_PROVIDER
+              value: {{ .Values.emailService.deliveryProvider | quote }}
             - name: PLAYSAY_EMAIL_SERVICE_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -69,6 +71,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.fromAddressKey | quote }}
+            - name: PLAYSAY_EMAIL_FROM_NAME
+              value: {{ .Values.emailService.fromName | quote }}
             - name: PLAYSAY_EMAIL_SMTP_HOST
               valueFrom:
                 secretKeyRef:
@@ -99,6 +103,16 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.smtp.starttlsKey | quote }}
+            - name: PLAYSAY_EMAIL_UNISENDER_API_BASE_URL
+              value: {{ .Values.emailService.unisender.apiBaseUrl | quote }}
+            - name: PLAYSAY_EMAIL_UNISENDER_USER_ID
+              value: {{ .Values.emailService.unisender.userId | quote }}
+            - name: PLAYSAY_EMAIL_UNISENDER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.unisender.apiKeyKey | quote }}
+                  optional: true
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
