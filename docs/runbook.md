@@ -410,9 +410,10 @@ kubectl -n playsay-dev get secret playsay-payment
 
 Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
 
-- `registration-service`: public registration state machine, pending token storage, Keycloak user activation.
-- `registration-service`: password reset email-code state machine for active Keycloak users.
+- `registration-service`: public registration state machine, pending token storage, Keycloak user activation, and password reset email-code state machine for active Keycloak users.
 - `email-service`: transactional email DB-template rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments. Spring Mail SMTP healthcheck is disabled by default, so readiness follows the service process rather than blocked SMTP ports.
+
+The public registration facade is `api-gateway`; it must forward the resolved browser client address to `registration-service` so the service's per-IP rate limiter is not applied to one shared gateway/ingress IP. `registration-service` still falls back to the direct remote address for local/internal calls.
 
 Runtime wiring:
 
@@ -499,6 +500,15 @@ kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=registratio
 kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=email-service
 kubectl -n playsay-dev get secret playsay-registration playsay-email
 ```
+
+If `/api/registration/start` returns `429`, first check whether it is a real per-email/per-client limit or a proxy-address issue:
+
+```bash
+kubectl -n playsay-dev logs deploy/api-gateway --since=30m | grep 'registration-service request failed'
+kubectl -n playsay-dev logs deploy/registration-service --since=30m | grep -E '429|Too Many Requests|Rate'
+```
+
+A healthy gateway forwards `X-Forwarded-For` to `registration-service`; a shared gateway/ingress IP must not be the only address used for public registration rate limits. A rollout restart clears the in-memory limiter, but treat it as a temporary dev relief only. If an earlier email-provider outage created a disabled Keycloak user without a pending registration row, retrying `/register` for that email should create a fresh pending token and send a new confirmation email instead of silently returning `CHECK_EMAIL`.
 
 Manual auth smoke:
 
