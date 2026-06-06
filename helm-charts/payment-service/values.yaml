@@ -27,6 +27,7 @@ database:
   usernameKey: username
   passwordKey: password
   liquibaseEnabled: "false"
+  hikariMaxPoolSize: ""
 
 paymentService:
   existingSecret: playsay-payment

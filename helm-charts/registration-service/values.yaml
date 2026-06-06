@@ -27,6 +27,7 @@ database:
   usernameKey: username
   passwordKey: password
   liquibaseEnabled: "false"
+  hikariMaxPoolSize: ""
 
 registrationService:
   publicBaseUrl: https://online.play-and-say.ru

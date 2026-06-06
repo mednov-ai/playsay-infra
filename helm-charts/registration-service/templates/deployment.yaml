@@ -59,6 +59,10 @@ spec:
                   key: {{ .Values.database.passwordKey | quote }}
             - name: PLAYSAY_REGISTRATION_LIQUIBASE_ENABLED
               value: {{ .Values.database.liquibaseEnabled | quote }}
+            {{- if .Values.database.hikariMaxPoolSize }}
+            - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+              value: {{ .Values.database.hikariMaxPoolSize | quote }}
+            {{- end }}
             - name: PLAYSAY_REGISTRATION_PUBLIC_BASE_URL
               value: {{ .Values.registrationService.publicBaseUrl | quote }}
             - name: PLAYSAY_REGISTRATION_TOKEN_TTL_HOURS

@@ -20,6 +20,7 @@ service:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
 emailService:
   existingSecret: playsay-email
   deliveryProvider: unisender-api

@@ -38,6 +38,7 @@ database:
   usernameKey: username
   passwordKey: password
   liquibaseEnabled: "false"
+  hikariMaxPoolSize: ""
 
 livekit:
   enabled: true

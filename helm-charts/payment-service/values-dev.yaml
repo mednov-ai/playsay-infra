@@ -20,6 +20,7 @@ service:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
 paymentService:
   existingSecret: playsay-payment
   publicBaseUrl: https://online.play-and-say.ru
