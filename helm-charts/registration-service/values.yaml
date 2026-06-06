@@ -35,7 +35,7 @@ registrationService:
   resendCooldownSeconds: "300"
   rateLimit:
     windowSeconds: "3600"
-    maxPerEmail: "5"
+    maxPerEmail: "20"
     maxPerIp: "30"
   keycloak:
     baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak

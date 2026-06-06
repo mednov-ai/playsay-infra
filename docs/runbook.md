@@ -475,7 +475,7 @@ kubectl -n playsay-dev create secret generic playsay-email \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body.
+The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body. On the Unisender Go `free_tier`, delivery may be limited to verified domains or verified recipient emails; provider error `403` / `code=903` means the recipient domain/email is not yet allowed by the provider, not that Play&Say rate limiting blocked registration.
 
 Email texts are not hardcoded in code. `email-service` Liquibase creates and seeds app PostgreSQL table `email_templates` with active FreeMarker templates:
 
@@ -501,7 +501,7 @@ kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=email-servi
 kubectl -n playsay-dev get secret playsay-registration playsay-email
 ```
 
-If `/api/registration/start` returns `429`, first check whether it is a real per-email/per-client limit or a proxy-address issue:
+Registration rate limits use a 1-hour window; dev currently allows 20 attempts per normalized email and 30 attempts per resolved client address. If `/api/registration/start` returns `429`, first check whether it is a real per-email/per-client limit or a proxy-address issue:
 
 ```bash
 kubectl -n playsay-dev logs deploy/api-gateway --since=30m | grep 'registration-service request failed'
