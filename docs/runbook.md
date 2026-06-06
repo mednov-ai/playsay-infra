@@ -411,7 +411,7 @@ kubectl -n playsay-dev get secret playsay-payment
 Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
 
 - `registration-service`: public registration state machine, pending token storage, Keycloak user activation.
-- `email-service`: transactional email rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments.
+- `email-service`: transactional email rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments. Spring Mail SMTP healthcheck is disabled by default, so readiness follows the service process rather than blocked SMTP ports.
 
 Runtime wiring:
 
@@ -440,6 +440,7 @@ Runtime wiring:
   - `PLAYSAY_EMAIL_SMTP_PASSWORD`
   - `PLAYSAY_EMAIL_SMTP_AUTH`
   - `PLAYSAY_EMAIL_SMTP_STARTTLS`
+  - `PLAYSAY_EMAIL_SMTP_HEALTH_ENABLED` (default `false`)
   - `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL`
   - `PLAYSAY_EMAIL_UNISENDER_USER_ID`
   - `PLAYSAY_EMAIL_UNISENDER_API_KEY`
@@ -470,7 +471,7 @@ kubectl -n playsay-dev create secret generic playsay-email \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart.
+The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body.
 
 Do not commit or print email provider credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
 
