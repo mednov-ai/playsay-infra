@@ -254,6 +254,11 @@
 
                     <#nested "form">
 
+                    <div class="playsay-auth-links">
+                        <a href="https://online.play-and-say.ru/register">${msg("noAccount")} ${msg("doRegister")}</a>
+                        <a href="https://online.play-and-say.ru/forgot-password">${msg("doForgotPassword")}</a>
+                    </div>
+
                     <#if auth?has_content && auth.showTryAnotherWayLink()>
                         <form id="kc-select-try-another-way-form" action="${url.loginAction}" method="post">
                             <div class="${properties.kcFormGroupClass!}">

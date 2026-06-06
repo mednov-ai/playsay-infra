@@ -281,10 +281,33 @@ body.playsay-login-body {
   border-radius: 14px;
 }
 
+.playsay-auth-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.playsay-auth-links a:first-child {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 90, 0, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 250, 246, 0.76);
+  padding: 0 12px;
+}
+
 :root[data-playsay-resolved-theme="dark"] .playsay-card .pf-c-alert {
   border-color: var(--playsay-line);
   background: rgba(43, 31, 24, 0.94);
   color: var(--playsay-ink);
+}
+
+:root[data-playsay-resolved-theme="dark"] .playsay-auth-links a:first-child {
+  background: rgba(43, 31, 24, 0.9);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -292,6 +315,10 @@ body.playsay-login-body {
     border-color: var(--playsay-line);
     background: rgba(43, 31, 24, 0.94);
     color: var(--playsay-ink);
+  }
+
+  :root:not([data-playsay-theme="light"]) .playsay-auth-links a:first-child {
+    background: rgba(43, 31, 24, 0.9);
   }
 }
 

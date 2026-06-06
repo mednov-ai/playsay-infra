@@ -411,7 +411,8 @@ kubectl -n playsay-dev get secret playsay-payment
 Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
 
 - `registration-service`: public registration state machine, pending token storage, Keycloak user activation.
-- `email-service`: transactional email rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments. Spring Mail SMTP healthcheck is disabled by default, so readiness follows the service process rather than blocked SMTP ports.
+- `registration-service`: password reset email-code state machine for active Keycloak users.
+- `email-service`: transactional email DB-template rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments. Spring Mail SMTP healthcheck is disabled by default, so readiness follows the service process rather than blocked SMTP ports.
 
 Runtime wiring:
 
@@ -423,6 +424,8 @@ Runtime wiring:
   - `PLAYSAY_REGISTRATION_SERVICE_BASE_URL`
 - registration-service env:
   - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
+  - `PLAYSAY_REGISTRATION_PASSWORD_RESET_CODE_TTL_MINUTES` (default `15`)
+  - `PLAYSAY_REGISTRATION_PASSWORD_RESET_MAX_ATTEMPTS` (default `5`)
   - `PLAYSAY_KEYCLOAK_BASE_URL`
   - `PLAYSAY_KEYCLOAK_REALM`
   - `PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID`
@@ -473,6 +476,13 @@ kubectl -n playsay-dev create secret generic playsay-email \
 
 The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body.
 
+Email texts are not hardcoded in code. `email-service` Liquibase creates and seeds app PostgreSQL table `email_templates` with active FreeMarker templates:
+
+- `registration-confirmation` in `ru`, `en`, `de`, `fr`
+- `password-reset-code` in `ru`, `en`, `de`, `fr`
+
+Template rows contain `subject_template`, `text_template`, `html_template`, `version`, `enabled`, timestamps. Runtime rendering falls back to `ru` only if a localized row is missing. Edit rows carefully in DB or add a new Liquibase changeset; keep required model variables (`confirmationUrl`, `code`, `expiresMinutes`) intact.
+
 Do not commit or print email provider credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
 
 ```bash
@@ -489,6 +499,15 @@ kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=registratio
 kubectl -n playsay-dev get deploy,svc,pods -l app.kubernetes.io/name=email-service
 kubectl -n playsay-dev get secret playsay-registration playsay-email
 ```
+
+Manual auth smoke:
+
+1. Open `https://online.play-and-say.ru/register`; verify the welcome page and Keycloak login theme both expose registration links.
+2. Register with a password that passes the visible policy (`8..128` chars, 3 character classes, no email/name fragments).
+3. Confirm the email and sign in through Keycloak; `/api/me` must include `STUDENT`.
+4. Open `https://online.play-and-say.ru/forgot-password`, request a code for the same email, then reset the password at `/reset-password`.
+5. Verify the reset code is one-time, expires after 15 minutes, and repeated bad attempts stop after 5 tries.
+6. In received emails, SPF/DKIM/DMARC should pass and sender should be `no-reply@play-and-say.ru`.
 
 ## YouTube RF Relay
 
