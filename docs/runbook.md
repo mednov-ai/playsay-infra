@@ -681,19 +681,23 @@ Create or update the Multica runtime secret without printing values:
 
 ```bash
 export MULTICA_ALLOWED_EMAILS="e.mednov@gmail.com"
-export MULTICA_SMTP_HOST="<unisender-smtp-host>"
-export MULTICA_SMTP_PORT="587"
-export MULTICA_SMTP_USERNAME="<unisender-smtp-username>"
-export MULTICA_SMTP_PASSWORD="<unisender-smtp-password>"
 export MULTICA_GITHUB_APP_SLUG="<github-app-slug>"
 export MULTICA_GITHUB_WEBHOOK_SECRET="<same-secret-as-github-app-webhook>"
 
 ./scripts/sync-multica-secret.sh
 
-unset MULTICA_SMTP_PASSWORD MULTICA_GITHUB_WEBHOOK_SECRET
+unset MULTICA_GITHUB_WEBHOOK_SECRET
 ```
 
 `sync-multica-secret.sh` generates/reuses `JWT_SECRET`, `POSTGRES_PASSWORD`, and a GitHub webhook secret if none exists. It also keeps `MULTICA_DEV_VERIFICATION_CODE` empty, sets `APP_ENV=production` through the chart, disables Multica analytics by default, and restricts first-time signup through `ALLOWED_EMAILS`. If `MULTICA_ALLOWED_EMAILS` is not set, the safe default is `admin@play-and-say.ru`; replace it with the real operator emails before public use.
+
+For dev email delivery, the script reuses the existing Play&Say email secret by default:
+
+- source secret: `playsay-dev/playsay-email`
+- copied keys: `smtp-host`, `smtp-port`, `smtp-username`, `smtp-password`, `smtp-starttls`, and `from-address`
+- Multica target keys: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_TLS`, and `RESEND_FROM_EMAIL`
+
+Only set `MULTICA_SMTP_HOST`, `MULTICA_SMTP_PORT`, `MULTICA_SMTP_USERNAME`, `MULTICA_SMTP_PASSWORD`, `MULTICA_SMTP_TLS`, or `MULTICA_RESEND_FROM_EMAIL` when Multica must intentionally diverge from the shared Play&Say email provider. Do not print the copied values. If `playsay-email` is rotated, rerun `sync-multica-secret.sh` and restart `deployment/multica-backend` so Multica receives the new environment.
 
 Access policy:
 
@@ -701,7 +705,7 @@ Access policy:
 - Use explicit `ALLOWED_EMAILS`; do not allow an entire domain in the first dev rollout.
 - Keep `ALLOW_SIGNUP=true` while allowlisted users need first login codes.
 - After the shared Play&Say workspace is created, rerun the secret sync with `MULTICA_DISABLE_WORKSPACE_CREATION=true` and restart `deployment/multica-backend`; this prevents parallel workspaces.
-- If SMTP is missing, Multica writes verification codes to backend logs. That is acceptable only for a short private bootstrap, not for the public host.
+- If SMTP is missing, Multica writes verification codes to backend logs. That is acceptable only for a short private bootstrap, not for the public host. The normal dev state is SMTP configured from `playsay-dev/playsay-email`.
 
 GitHub App setup for PR auto-linking:
 

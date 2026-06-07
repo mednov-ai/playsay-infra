@@ -6,6 +6,8 @@ SECRET_NAME="${MULTICA_SECRET_NAME:-multica-secrets}"
 PUBLIC_URL="${MULTICA_PUBLIC_URL:-https://tasks.play-and-say.ru}"
 APP_URL="${MULTICA_APP_URL:-$PUBLIC_URL}"
 DEFAULT_ALLOWED_EMAILS="${MULTICA_DEFAULT_ALLOWED_EMAILS:-admin@play-and-say.ru}"
+PLAYSAY_EMAIL_NAMESPACE="${MULTICA_PLAYSAY_EMAIL_NAMESPACE:-playsay-dev}"
+PLAYSAY_EMAIL_SECRET_NAME="${MULTICA_PLAYSAY_EMAIL_SECRET_NAME:-playsay-email}"
 
 require() {
   command -v "$1" >/dev/null || { echo "$1 is required" >&2; exit 1; }
@@ -25,6 +27,11 @@ Usage:
 Creates or updates the Multica runtime secret in Kubernetes without printing
 secret values. Existing generated JWT/PostgreSQL/GitHub webhook values are reused
 unless matching environment variables are provided.
+
+If MULTICA_SMTP_* values are not provided and multica-secrets does not already
+contain SMTP values, the script copies SMTP fallback values and from-address from
+the existing Play&Say email secret:
+  ${PLAYSAY_EMAIL_NAMESPACE}/${PLAYSAY_EMAIL_SECRET_NAME}
 USAGE
 }
 
@@ -51,6 +58,58 @@ existing_value() {
     -o "jsonpath={.data.${key}}" 2>/dev/null \
     | base64 -d 2>/dev/null \
     | tr -d '\r' || true
+}
+
+secret_value() {
+  local namespace="$1"
+  local secret_name="$2"
+  local key="$3"
+  local encoded
+
+  encoded="$(
+    kubectl -n "$namespace" get secret "$secret_name" \
+      -o "jsonpath={.data.${key}}" 2>/dev/null || true
+  )"
+  if [[ -z "$encoded" ]]; then
+    return
+  fi
+
+  printf "%s" "$encoded" | base64 -d 2>/dev/null | tr -d '\r' || true
+}
+
+playsay_email_value() {
+  local key="$1"
+  secret_value "$PLAYSAY_EMAIL_NAMESPACE" "$PLAYSAY_EMAIL_SECRET_NAME" "$key"
+}
+
+default_if_empty() {
+  local value="$1"
+  local fallback="$2"
+
+  if [[ -n "$value" ]]; then
+    printf "%s" "$value"
+  else
+    printf "%s" "$fallback"
+  fi
+}
+
+smtp_tls_from_playsay_email() {
+  local starttls
+  local normalized
+  starttls="$(playsay_email_value smtp-starttls)"
+  normalized="$(printf "%s" "$starttls" | tr '[:upper:]' '[:lower:]')"
+
+  case "$normalized" in
+    true|1|yes|on)
+      printf "starttls"
+      ;;
+    false|0|no|off)
+      printf "none"
+      ;;
+    *)
+      printf "starttls"
+      ;;
+  esac
 }
 
 write_value() {
@@ -84,13 +143,13 @@ write_value JWT_SECRET "$(value_from_env_or_existing MULTICA_JWT_SECRET JWT_SECR
 write_value POSTGRES_PASSWORD "$(value_from_env_or_existing MULTICA_POSTGRES_PASSWORD POSTGRES_PASSWORD "$(openssl rand -hex 24)")"
 
 write_value RESEND_API_KEY "$(value_from_env_or_existing MULTICA_RESEND_API_KEY RESEND_API_KEY)"
-write_value RESEND_FROM_EMAIL "$(value_from_env_or_existing MULTICA_RESEND_FROM_EMAIL RESEND_FROM_EMAIL "noreply@play-and-say.ru")"
+write_value RESEND_FROM_EMAIL "$(value_from_env_or_existing MULTICA_RESEND_FROM_EMAIL RESEND_FROM_EMAIL "$(default_if_empty "$(playsay_email_value from-address)" "noreply@play-and-say.ru")")"
 
-write_value SMTP_HOST "$(value_from_env_or_existing MULTICA_SMTP_HOST SMTP_HOST)"
-write_value SMTP_PORT "$(value_from_env_or_existing MULTICA_SMTP_PORT SMTP_PORT "587")"
-write_value SMTP_USERNAME "$(value_from_env_or_existing MULTICA_SMTP_USERNAME SMTP_USERNAME)"
-write_value SMTP_PASSWORD "$(value_from_env_or_existing MULTICA_SMTP_PASSWORD SMTP_PASSWORD)"
-write_value SMTP_TLS "$(value_from_env_or_existing MULTICA_SMTP_TLS SMTP_TLS "starttls")"
+write_value SMTP_HOST "$(value_from_env_or_existing MULTICA_SMTP_HOST SMTP_HOST "$(playsay_email_value smtp-host)")"
+write_value SMTP_PORT "$(value_from_env_or_existing MULTICA_SMTP_PORT SMTP_PORT "$(default_if_empty "$(playsay_email_value smtp-port)" "587")")"
+write_value SMTP_USERNAME "$(value_from_env_or_existing MULTICA_SMTP_USERNAME SMTP_USERNAME "$(playsay_email_value smtp-username)")"
+write_value SMTP_PASSWORD "$(value_from_env_or_existing MULTICA_SMTP_PASSWORD SMTP_PASSWORD "$(playsay_email_value smtp-password)")"
+write_value SMTP_TLS "$(value_from_env_or_existing MULTICA_SMTP_TLS SMTP_TLS "$(smtp_tls_from_playsay_email)")"
 write_value SMTP_TLS_INSECURE "$(value_from_env_or_existing MULTICA_SMTP_TLS_INSECURE SMTP_TLS_INSECURE "false")"
 write_value SMTP_EHLO_NAME "$(value_from_env_or_existing MULTICA_SMTP_EHLO_NAME SMTP_EHLO_NAME "tasks.play-and-say.ru")"
 
@@ -165,6 +224,8 @@ echo "Synced $SECRET_NAME in namespace $NAMESPACE."
 
 if [[ -z "$(cat "$tmp_dir/SMTP_HOST")" && -z "$(cat "$tmp_dir/RESEND_API_KEY")" ]]; then
   echo "Warning: Multica email delivery is not configured. Verification codes will be written to backend logs until SMTP or Resend is set." >&2
+elif [[ -n "$(playsay_email_value smtp-host)" && -z "${MULTICA_SMTP_HOST:-}" ]]; then
+  echo "Multica email delivery is configured from ${PLAYSAY_EMAIL_NAMESPACE}/${PLAYSAY_EMAIL_SECRET_NAME} SMTP fallback values." >&2
 fi
 
 if [[ "$(cat "$tmp_dir/ALLOWED_EMAILS")" == "$DEFAULT_ALLOWED_EMAILS" ]]; then
