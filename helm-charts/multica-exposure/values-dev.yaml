@@ -5,3 +5,6 @@ frontend:
 backend:
   service:
     nodePort: 32089
+
+mailBridge:
+  enabled: true

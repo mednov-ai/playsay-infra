@@ -8,6 +8,12 @@ APP_URL="${MULTICA_APP_URL:-$PUBLIC_URL}"
 DEFAULT_ALLOWED_EMAILS="${MULTICA_DEFAULT_ALLOWED_EMAILS:-admin@play-and-say.ru}"
 PLAYSAY_EMAIL_NAMESPACE="${MULTICA_PLAYSAY_EMAIL_NAMESPACE:-playsay-dev}"
 PLAYSAY_EMAIL_SECRET_NAME="${MULTICA_PLAYSAY_EMAIL_SECRET_NAME:-playsay-email}"
+PLAYSAY_EMAIL_BRIDGE_ENABLED="${MULTICA_PLAYSAY_EMAIL_BRIDGE_ENABLED:-true}"
+PLAYSAY_EMAIL_BRIDGE_SMTP_HOST="${MULTICA_PLAYSAY_EMAIL_BRIDGE_SMTP_HOST:-multica-mail-bridge.${NAMESPACE}.svc.cluster.local}"
+PLAYSAY_EMAIL_BRIDGE_SMTP_PORT="${MULTICA_PLAYSAY_EMAIL_BRIDGE_SMTP_PORT:-1025}"
+UNISENDER_API_BASE_URL="${MULTICA_UNISENDER_API_BASE_URL:-https://goapi.unisender.ru/ru/transactional/api/v1}"
+UNISENDER_USER_ID="${MULTICA_UNISENDER_USER_ID:-8236338}"
+UNISENDER_FROM_NAME="${MULTICA_UNISENDER_FROM_NAME:-Play&Say}"
 
 require() {
   command -v "$1" >/dev/null || { echo "$1 is required" >&2; exit 1; }
@@ -28,9 +34,9 @@ Creates or updates the Multica runtime secret in Kubernetes without printing
 secret values. Existing generated JWT/PostgreSQL/GitHub webhook values are reused
 unless matching environment variables are provided.
 
-If MULTICA_SMTP_* values are not provided and multica-secrets does not already
-contain SMTP values, the script copies SMTP fallback values and from-address from
-the existing Play&Say email secret:
+If MULTICA_SMTP_* values are not provided, the script routes Multica SMTP to the
+in-cluster multica-mail-bridge and copies Unisender API credentials from the
+existing Play&Say email secret:
   ${PLAYSAY_EMAIL_NAMESPACE}/${PLAYSAY_EMAIL_SECRET_NAME}
 USAGE
 }
@@ -112,6 +118,10 @@ smtp_tls_from_playsay_email() {
   esac
 }
 
+use_play_say_email_bridge() {
+  [[ "$PLAYSAY_EMAIL_BRIDGE_ENABLED" == "true" && -z "${MULTICA_SMTP_HOST:-}" ]]
+}
+
 write_value() {
   local key="$1"
   local value="$2"
@@ -139,19 +149,59 @@ value_from_env_or_existing() {
   printf "%s" "$fallback"
 }
 
+value_from_env_or_primary_or_existing() {
+  local env_name="$1"
+  local key="$2"
+  local primary="${3:-}"
+  local fallback="${4:-}"
+  local env_value="${!env_name:-}"
+
+  if [[ -n "$env_value" ]]; then
+    printf "%s" "$env_value"
+    return
+  fi
+
+  if [[ -n "$primary" ]]; then
+    printf "%s" "$primary"
+    return
+  fi
+
+  local existing
+  existing="$(existing_value "$key")"
+  if [[ -n "$existing" ]]; then
+    printf "%s" "$existing"
+    return
+  fi
+
+  printf "%s" "$fallback"
+}
+
 write_value JWT_SECRET "$(value_from_env_or_existing MULTICA_JWT_SECRET JWT_SECRET "$(openssl rand -hex 32)")"
 write_value POSTGRES_PASSWORD "$(value_from_env_or_existing MULTICA_POSTGRES_PASSWORD POSTGRES_PASSWORD "$(openssl rand -hex 24)")"
 
 write_value RESEND_API_KEY "$(value_from_env_or_existing MULTICA_RESEND_API_KEY RESEND_API_KEY)"
 write_value RESEND_FROM_EMAIL "$(value_from_env_or_existing MULTICA_RESEND_FROM_EMAIL RESEND_FROM_EMAIL "$(default_if_empty "$(playsay_email_value from-address)" "noreply@play-and-say.ru")")"
 
-write_value SMTP_HOST "$(value_from_env_or_existing MULTICA_SMTP_HOST SMTP_HOST "$(playsay_email_value smtp-host)")"
-write_value SMTP_PORT "$(value_from_env_or_existing MULTICA_SMTP_PORT SMTP_PORT "$(default_if_empty "$(playsay_email_value smtp-port)" "587")")"
-write_value SMTP_USERNAME "$(value_from_env_or_existing MULTICA_SMTP_USERNAME SMTP_USERNAME "$(playsay_email_value smtp-username)")"
-write_value SMTP_PASSWORD "$(value_from_env_or_existing MULTICA_SMTP_PASSWORD SMTP_PASSWORD "$(playsay_email_value smtp-password)")"
-write_value SMTP_TLS "$(value_from_env_or_existing MULTICA_SMTP_TLS SMTP_TLS "$(smtp_tls_from_playsay_email)")"
+if use_play_say_email_bridge; then
+  write_value SMTP_HOST "$PLAYSAY_EMAIL_BRIDGE_SMTP_HOST"
+  write_value SMTP_PORT "$PLAYSAY_EMAIL_BRIDGE_SMTP_PORT"
+  write_value SMTP_USERNAME "${MULTICA_SMTP_USERNAME:-}"
+  write_value SMTP_PASSWORD "${MULTICA_SMTP_PASSWORD:-}"
+  write_value SMTP_TLS "${MULTICA_SMTP_TLS:-none}"
+else
+  write_value SMTP_HOST "$(value_from_env_or_existing MULTICA_SMTP_HOST SMTP_HOST "$(playsay_email_value smtp-host)")"
+  write_value SMTP_PORT "$(value_from_env_or_existing MULTICA_SMTP_PORT SMTP_PORT "$(default_if_empty "$(playsay_email_value smtp-port)" "587")")"
+  write_value SMTP_USERNAME "$(value_from_env_or_existing MULTICA_SMTP_USERNAME SMTP_USERNAME "$(playsay_email_value smtp-username)")"
+  write_value SMTP_PASSWORD "$(value_from_env_or_existing MULTICA_SMTP_PASSWORD SMTP_PASSWORD "$(playsay_email_value smtp-password)")"
+  write_value SMTP_TLS "$(value_from_env_or_existing MULTICA_SMTP_TLS SMTP_TLS "$(smtp_tls_from_playsay_email)")"
+fi
 write_value SMTP_TLS_INSECURE "$(value_from_env_or_existing MULTICA_SMTP_TLS_INSECURE SMTP_TLS_INSECURE "false")"
 write_value SMTP_EHLO_NAME "$(value_from_env_or_existing MULTICA_SMTP_EHLO_NAME SMTP_EHLO_NAME "tasks.play-and-say.ru")"
+write_value UNISENDER_API_BASE_URL "$(value_from_env_or_existing MULTICA_UNISENDER_API_BASE_URL UNISENDER_API_BASE_URL "$UNISENDER_API_BASE_URL")"
+write_value UNISENDER_USER_ID "$(value_from_env_or_existing MULTICA_UNISENDER_USER_ID UNISENDER_USER_ID "$UNISENDER_USER_ID")"
+write_value UNISENDER_API_KEY "$(value_from_env_or_primary_or_existing MULTICA_UNISENDER_API_KEY UNISENDER_API_KEY "$(playsay_email_value unisender-api-key)")"
+write_value UNISENDER_FROM_EMAIL "$(value_from_env_or_primary_or_existing MULTICA_UNISENDER_FROM_EMAIL UNISENDER_FROM_EMAIL "$(playsay_email_value from-address)" "noreply@play-and-say.ru")"
+write_value UNISENDER_FROM_NAME "$(value_from_env_or_existing MULTICA_UNISENDER_FROM_NAME UNISENDER_FROM_NAME "$UNISENDER_FROM_NAME")"
 
 write_value GOOGLE_CLIENT_SECRET "$(value_from_env_or_existing MULTICA_GOOGLE_CLIENT_SECRET GOOGLE_CLIENT_SECRET)"
 write_value CLOUDFRONT_PRIVATE_KEY "$(value_from_env_or_existing MULTICA_CLOUDFRONT_PRIVATE_KEY CLOUDFRONT_PRIVATE_KEY)"
@@ -190,6 +240,11 @@ kubectl -n "$NAMESPACE" create secret generic "$SECRET_NAME" \
   --from-file=SMTP_TLS="$tmp_dir/SMTP_TLS" \
   --from-file=SMTP_TLS_INSECURE="$tmp_dir/SMTP_TLS_INSECURE" \
   --from-file=SMTP_EHLO_NAME="$tmp_dir/SMTP_EHLO_NAME" \
+  --from-file=UNISENDER_API_BASE_URL="$tmp_dir/UNISENDER_API_BASE_URL" \
+  --from-file=UNISENDER_USER_ID="$tmp_dir/UNISENDER_USER_ID" \
+  --from-file=UNISENDER_API_KEY="$tmp_dir/UNISENDER_API_KEY" \
+  --from-file=UNISENDER_FROM_EMAIL="$tmp_dir/UNISENDER_FROM_EMAIL" \
+  --from-file=UNISENDER_FROM_NAME="$tmp_dir/UNISENDER_FROM_NAME" \
   --from-file=GOOGLE_CLIENT_SECRET="$tmp_dir/GOOGLE_CLIENT_SECRET" \
   --from-file=CLOUDFRONT_PRIVATE_KEY="$tmp_dir/CLOUDFRONT_PRIVATE_KEY" \
   --from-file=MULTICA_DEV_VERIFICATION_CODE="$tmp_dir/MULTICA_DEV_VERIFICATION_CODE" \
@@ -224,8 +279,14 @@ echo "Synced $SECRET_NAME in namespace $NAMESPACE."
 
 if [[ -z "$(cat "$tmp_dir/SMTP_HOST")" && -z "$(cat "$tmp_dir/RESEND_API_KEY")" ]]; then
   echo "Warning: Multica email delivery is not configured. Verification codes will be written to backend logs until SMTP or Resend is set." >&2
+elif use_play_say_email_bridge; then
+  echo "Multica email delivery is configured through multica-mail-bridge -> Unisender Go HTTPS API." >&2
 elif [[ -n "$(playsay_email_value smtp-host)" && -z "${MULTICA_SMTP_HOST:-}" ]]; then
   echo "Multica email delivery is configured from ${PLAYSAY_EMAIL_NAMESPACE}/${PLAYSAY_EMAIL_SECRET_NAME} SMTP fallback values." >&2
+fi
+
+if use_play_say_email_bridge && [[ -z "$(cat "$tmp_dir/UNISENDER_API_KEY")" ]]; then
+  echo "Warning: multica-mail-bridge is enabled but UNISENDER_API_KEY is missing." >&2
 fi
 
 if [[ "$(cat "$tmp_dir/ALLOWED_EMAILS")" == "$DEFAULT_ALLOWED_EMAILS" ]]; then

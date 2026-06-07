@@ -1,0 +1,249 @@
+{{- if .Values.mailBridge.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.releaseName }}-mail-bridge
+  labels:
+    app.kubernetes.io/name: multica
+    app.kubernetes.io/instance: {{ .Values.releaseName }}
+    app.kubernetes.io/component: mail-bridge
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  bridge.py: |
+    import asyncore
+    import email
+    import html
+    import json
+    import logging
+    import os
+    import smtplib
+    import smtpd
+    import urllib.error
+    import urllib.request
+    from email.header import decode_header, make_header
+    from email.policy import default
+
+    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+    logger = logging.getLogger("multica-mail-bridge")
+
+    LISTEN_HOST = os.environ.get("LISTEN_HOST", "0.0.0.0")
+    LISTEN_PORT = int(os.environ.get("LISTEN_PORT", "1025"))
+    API_BASE_URL = os.environ["UNISENDER_API_BASE_URL"].rstrip("/")
+    API_KEY = os.environ["UNISENDER_API_KEY"]
+    USER_ID = int(os.environ["UNISENDER_USER_ID"])
+    FROM_EMAIL = os.environ["UNISENDER_FROM_EMAIL"]
+    FROM_NAME = os.environ.get("UNISENDER_FROM_NAME", "Play&Say")
+
+    def decode_text(value):
+        if not value:
+            return ""
+        return str(make_header(decode_header(value)))
+
+    def body_parts(message):
+        text_body = ""
+        html_body = ""
+        if message.is_multipart():
+            for part in message.walk():
+                if part.get_content_maintype() == "multipart":
+                    continue
+                if part.get_content_disposition() == "attachment":
+                    continue
+                content_type = part.get_content_type()
+                try:
+                    content = part.get_content()
+                except Exception:
+                    payload = part.get_payload(decode=True) or b""
+                    charset = part.get_content_charset() or "utf-8"
+                    content = payload.decode(charset, errors="replace")
+                if content_type == "text/plain" and not text_body:
+                    text_body = content
+                elif content_type == "text/html" and not html_body:
+                    html_body = content
+        else:
+            try:
+                content = message.get_content()
+            except Exception:
+                payload = message.get_payload(decode=True) or b""
+                charset = message.get_content_charset() or "utf-8"
+                content = payload.decode(charset, errors="replace")
+            if message.get_content_type() == "text/html":
+                html_body = content
+            else:
+                text_body = content
+
+        if not text_body and html_body:
+            text_body = " ".join(html_body.replace("<br>", "\n").replace("<br/>", "\n").split())
+        if not html_body:
+            html_body = "<pre>{}</pre>".format(html.escape(text_body))
+        return text_body, html_body
+
+    def send_unisender(to_address, subject, text_body, html_body):
+        payload = {
+            "api_key": API_KEY,
+            "user_id": USER_ID,
+            "message": {
+                "template_engine": "velocity",
+                "body": {
+                    "html": html_body,
+                    "plaintext": text_body,
+                },
+                "subject": subject,
+                "from_email": FROM_EMAIL,
+                "from_name": FROM_NAME,
+                "recipients": [{"email": to_address}],
+            },
+        }
+        request = urllib.request.Request(
+            API_BASE_URL + "/email/send.json",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"content-type": "application/json", "accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                response_body = response.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as caught:
+            body = caught.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Unisender HTTP {caught.code}: {body}") from caught
+        except urllib.error.URLError as caught:
+            raise RuntimeError(f"Unisender request failed: {caught.reason}") from caught
+
+        parsed = json.loads(response_body or "{}")
+        if parsed.get("status") != "success":
+            raise RuntimeError(
+                "Unisender send failed: status={}, code={}, message={}".format(
+                    parsed.get("status"),
+                    parsed.get("code"),
+                    parsed.get("message"),
+                )
+            )
+
+    class Bridge(smtpd.SMTPServer):
+        def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
+            message = email.message_from_bytes(data, policy=default)
+            subject = decode_text(message.get("subject")) or "Play&Say task tracker"
+            text_body, html_body = body_parts(message)
+            for recipient in rcpttos:
+                try:
+                    send_unisender(recipient, subject, text_body, html_body)
+                    logger.info("sent verification email to %s", recipient)
+                except Exception as caught:
+                    logger.exception("failed to relay email to %s", recipient)
+                    return f"451 failed to relay message: {caught}"
+            return None
+
+    if not API_KEY:
+        raise SystemExit("UNISENDER_API_KEY is required")
+
+    server = Bridge((LISTEN_HOST, LISTEN_PORT), None)
+    logger.info("listening on %s:%s", LISTEN_HOST, LISTEN_PORT)
+    try:
+        asyncore.loop()
+    except KeyboardInterrupt:
+        server.close()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.releaseName }}-mail-bridge
+  labels:
+    app.kubernetes.io/name: multica
+    app.kubernetes.io/instance: {{ .Values.releaseName }}
+    app.kubernetes.io/component: mail-bridge
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multica
+      app.kubernetes.io/instance: {{ .Values.releaseName }}
+      app.kubernetes.io/component: mail-bridge
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: multica
+        app.kubernetes.io/instance: {{ .Values.releaseName }}
+        app.kubernetes.io/component: mail-bridge
+    spec:
+      containers:
+        - name: mail-bridge
+          image: "{{ .Values.mailBridge.image.repository }}:{{ .Values.mailBridge.image.tag }}"
+          imagePullPolicy: {{ .Values.mailBridge.image.pullPolicy }}
+          command:
+            - python
+            - /app/bridge.py
+          ports:
+            - name: smtp
+              containerPort: {{ .Values.mailBridge.service.port }}
+          env:
+            - name: LISTEN_HOST
+              value: "0.0.0.0"
+            - name: LISTEN_PORT
+              value: {{ .Values.mailBridge.service.port | quote }}
+            - name: UNISENDER_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mailBridge.secretName | quote }}
+                  key: UNISENDER_API_BASE_URL
+            - name: UNISENDER_USER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mailBridge.secretName | quote }}
+                  key: UNISENDER_USER_ID
+            - name: UNISENDER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mailBridge.secretName | quote }}
+                  key: UNISENDER_API_KEY
+            - name: UNISENDER_FROM_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mailBridge.secretName | quote }}
+                  key: UNISENDER_FROM_EMAIL
+            - name: UNISENDER_FROM_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mailBridge.secretName | quote }}
+                  key: UNISENDER_FROM_NAME
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.mailBridge.resources | nindent 12 }}
+          volumeMounts:
+            - name: bridge-script
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: bridge-script
+          configMap:
+            name: {{ .Values.releaseName }}-mail-bridge
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.releaseName }}-mail-bridge
+  labels:
+    app.kubernetes.io/name: multica
+    app.kubernetes.io/instance: {{ .Values.releaseName }}
+    app.kubernetes.io/component: mail-bridge
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: smtp
+      port: {{ .Values.mailBridge.service.port }}
+      targetPort: smtp
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: multica
+    app.kubernetes.io/instance: {{ .Values.releaseName }}
+    app.kubernetes.io/component: mail-bridge
+{{- end }}

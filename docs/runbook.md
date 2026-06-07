@@ -691,13 +691,20 @@ unset MULTICA_GITHUB_WEBHOOK_SECRET
 
 `sync-multica-secret.sh` generates/reuses `JWT_SECRET`, `POSTGRES_PASSWORD`, and a GitHub webhook secret if none exists. It also keeps `MULTICA_DEV_VERIFICATION_CODE` empty, sets `APP_ENV=production` through the chart, disables Multica analytics by default, and restricts first-time signup through `ALLOWED_EMAILS`. If `MULTICA_ALLOWED_EMAILS` is not set, the safe default is `admin@play-and-say.ru`; replace it with the real operator emails before public use.
 
-For dev email delivery, the script reuses the existing Play&Say email secret by default:
+For dev email delivery, Multica does not connect to the external Unisender SMTP endpoint directly. Outbound SMTP port `587` can be blocked from the VPS/provider path, while Unisender Go HTTPS API remains reachable. The default dev path is:
+
+```text
+Multica backend -> in-cluster SMTP multica-mail-bridge:1025 -> Unisender Go HTTPS API
+```
+
+`sync-multica-secret.sh` configures this path by default:
 
 - source secret: `playsay-dev/playsay-email`
-- copied keys: `smtp-host`, `smtp-port`, `smtp-username`, `smtp-password`, `smtp-starttls`, and `from-address`
-- Multica target keys: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_TLS`, and `RESEND_FROM_EMAIL`
+- copied keys: `unisender-api-key` and `from-address`
+- Multica SMTP target: `SMTP_HOST=multica-mail-bridge.multica.svc.cluster.local`, `SMTP_PORT=1025`, `SMTP_TLS=none`
+- bridge target keys in `multica-secrets`: `UNISENDER_API_BASE_URL`, `UNISENDER_USER_ID`, `UNISENDER_API_KEY`, `UNISENDER_FROM_EMAIL`, `UNISENDER_FROM_NAME`
 
-Only set `MULTICA_SMTP_HOST`, `MULTICA_SMTP_PORT`, `MULTICA_SMTP_USERNAME`, `MULTICA_SMTP_PASSWORD`, `MULTICA_SMTP_TLS`, or `MULTICA_RESEND_FROM_EMAIL` when Multica must intentionally diverge from the shared Play&Say email provider. Do not print the copied values. If `playsay-email` is rotated, rerun `sync-multica-secret.sh` and restart `deployment/multica-backend` so Multica receives the new environment.
+Only set `MULTICA_SMTP_HOST`, `MULTICA_SMTP_PORT`, `MULTICA_SMTP_USERNAME`, `MULTICA_SMTP_PASSWORD`, `MULTICA_SMTP_TLS`, `MULTICA_UNISENDER_*`, or `MULTICA_RESEND_FROM_EMAIL` when Multica must intentionally diverge from the shared Play&Say email provider. Do not print the copied values. If `playsay-email` is rotated, rerun `sync-multica-secret.sh` and restart `deployment/multica-backend` so Multica and the bridge receive the new environment.
 
 Access policy:
 
@@ -705,7 +712,7 @@ Access policy:
 - Use explicit `ALLOWED_EMAILS`; do not allow an entire domain in the first dev rollout.
 - Keep `ALLOW_SIGNUP=true` while allowlisted users need first login codes.
 - After the shared Play&Say workspace is created, rerun the secret sync with `MULTICA_DISABLE_WORKSPACE_CREATION=true` and restart `deployment/multica-backend`; this prevents parallel workspaces.
-- If SMTP is missing, Multica writes verification codes to backend logs. That is acceptable only for a short private bootstrap, not for the public host. The normal dev state is SMTP configured from `playsay-dev/playsay-email`.
+- If SMTP is missing, Multica writes verification codes to backend logs. That is acceptable only for a short private bootstrap, not for the public host. The normal dev state is SMTP configured to the in-cluster bridge, with provider credentials copied from `playsay-dev/playsay-email`.
 
 GitHub App setup for PR auto-linking:
 

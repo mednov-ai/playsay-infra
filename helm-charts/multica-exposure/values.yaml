@@ -11,3 +11,23 @@ backend:
     type: NodePort
     port: 8080
     nodePort: 32089
+
+mailBridge:
+  enabled: true
+  image:
+    repository: python
+    tag: "3.11-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 1025
+  secretName: multica-secrets
+  unisender:
+    apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
+    fromName: Play&Say
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
