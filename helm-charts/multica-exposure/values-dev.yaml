@@ -1,0 +1,7 @@
+frontend:
+  service:
+    nodePort: 32088
+
+backend:
+  service:
+    nodePort: 32089

@@ -20,6 +20,10 @@ ONLINE_TLS_MODE="auto"
 KEY_HOST=""
 KEY_NODEPORT_HTTP="32087"
 KEY_TLS_MODE="auto"
+TASKS_HOST=""
+TASKS_FRONTEND_NODEPORT_HTTP="32088"
+TASKS_BACKEND_NODEPORT_HTTP="32089"
+TASKS_TLS_MODE="auto"
 COLLABORATION_NODEPORT_HTTP="32086"
 LIVEKIT_SIGNALING_HOST_PORT="7880"
 REMOTE_USER="root"
@@ -49,6 +53,10 @@ Options:
   --key-host <host>         Keyboard trainer host. Default: key.<domain>
   --key-nodeport <port>     Keyboard trainer local NodePort. Default: 32087
   --key-tls-mode <mode>     auto, self-signed, existing, or off. Default: auto
+  --tasks-host <host>       Multica task tracker host. Default: tasks.<domain>
+  --tasks-frontend-nodeport <port> Multica frontend local NodePort. Default: 32088
+  --tasks-backend-nodeport <port>  Multica backend local NodePort. Default: 32089
+  --tasks-tls-mode <mode>   auto, self-signed, existing, or off. Default: auto
   --collaboration-nodeport <port> Collaboration service local NodePort. Default: 32086
   --livekit-signaling-port <port> Local LiveKit signaling port. Default: 7880
   --ssh-key <path>          Optional SSH key path. Default: use normal ssh config/agent
@@ -131,6 +139,22 @@ while [[ $# -gt 0 ]]; do
       KEY_TLS_MODE="$2"
       shift 2
       ;;
+    --tasks-host)
+      TASKS_HOST="$2"
+      shift 2
+      ;;
+    --tasks-frontend-nodeport)
+      TASKS_FRONTEND_NODEPORT_HTTP="$2"
+      shift 2
+      ;;
+    --tasks-backend-nodeport)
+      TASKS_BACKEND_NODEPORT_HTTP="$2"
+      shift 2
+      ;;
+    --tasks-tls-mode)
+      TASKS_TLS_MODE="$2"
+      shift 2
+      ;;
     --collaboration-nodeport)
       COLLABORATION_NODEPORT_HTTP="$2"
       shift 2
@@ -194,6 +218,10 @@ if [[ -z "$KEY_HOST" ]]; then
   KEY_HOST="key.$DOMAIN"
 fi
 
+if [[ -z "$TASKS_HOST" ]]; then
+  TASKS_HOST="tasks.$DOMAIN"
+fi
+
 if [[ "$OPS_TLS_MODE" != "auto" && "$OPS_TLS_MODE" != "self-signed" && "$OPS_TLS_MODE" != "existing" && "$OPS_TLS_MODE" != "off" ]]; then
   echo "--ops-tls-mode must be auto, self-signed, existing, or off" >&2
   exit 1
@@ -206,6 +234,11 @@ fi
 
 if [[ "$KEY_TLS_MODE" != "auto" && "$KEY_TLS_MODE" != "self-signed" && "$KEY_TLS_MODE" != "existing" && "$KEY_TLS_MODE" != "off" ]]; then
   echo "--key-tls-mode must be auto, self-signed, existing, or off" >&2
+  exit 1
+fi
+
+if [[ "$TASKS_TLS_MODE" != "auto" && "$TASKS_TLS_MODE" != "self-signed" && "$TASKS_TLS_MODE" != "existing" && "$TASKS_TLS_MODE" != "off" ]]; then
+  echo "--tasks-tls-mode must be auto, self-signed, existing, or off" >&2
   exit 1
 fi
 
@@ -306,7 +339,7 @@ quote() {
   printf "%q" "$1"
 }
 
-REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") ONLINE_HOST=$(quote "$ONLINE_HOST") ONLINE_NODEPORT_HTTP=$(quote "$ONLINE_NODEPORT_HTTP") ONLINE_TLS_MODE=$(quote "$ONLINE_TLS_MODE") KEY_HOST=$(quote "$KEY_HOST") KEY_NODEPORT_HTTP=$(quote "$KEY_NODEPORT_HTTP") KEY_TLS_MODE=$(quote "$KEY_TLS_MODE") COLLABORATION_NODEPORT_HTTP=$(quote "$COLLABORATION_NODEPORT_HTTP") LIVEKIT_SIGNALING_HOST_PORT=$(quote "$LIVEKIT_SIGNALING_HOST_PORT") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
+REMOTE_CMD="cd $(quote "$REMOTE_BOOTSTRAP_DIR") && PLAYSAY_DOMAIN=$(quote "$DOMAIN") LETSENCRYPT_EMAIL=$(quote "$LETSENCRYPT_EMAIL") HEADLAMP_HOST=$(quote "$HEADLAMP_HOST") OPS_HOST=$(quote "$OPS_HOST") OPS_PORT=$(quote "$OPS_PORT") OPS_ALLOW_CIDRS=$(quote "$OPS_ALLOW_CIDRS") OPS_TLS_MODE=$(quote "$OPS_TLS_MODE") ONLINE_HOST=$(quote "$ONLINE_HOST") ONLINE_NODEPORT_HTTP=$(quote "$ONLINE_NODEPORT_HTTP") ONLINE_TLS_MODE=$(quote "$ONLINE_TLS_MODE") KEY_HOST=$(quote "$KEY_HOST") KEY_NODEPORT_HTTP=$(quote "$KEY_NODEPORT_HTTP") KEY_TLS_MODE=$(quote "$KEY_TLS_MODE") TASKS_HOST=$(quote "$TASKS_HOST") TASKS_FRONTEND_NODEPORT_HTTP=$(quote "$TASKS_FRONTEND_NODEPORT_HTTP") TASKS_BACKEND_NODEPORT_HTTP=$(quote "$TASKS_BACKEND_NODEPORT_HTTP") TASKS_TLS_MODE=$(quote "$TASKS_TLS_MODE") COLLABORATION_NODEPORT_HTTP=$(quote "$COLLABORATION_NODEPORT_HTTP") LIVEKIT_SIGNALING_HOST_PORT=$(quote "$LIVEKIT_SIGNALING_HOST_PORT") INSTALL_JENKINS=$(quote "$INSTALL_JENKINS") CONFIGURE_HOST_NGINX=$(quote "$CONFIGURE_HOST_NGINX") ./scripts/deploy-cluster-addons.sh $(quote "$ENVIRONMENT")"
 
 echo "Installing Kubernetes add-ons directly on the VPS."
 ssh "${SSH_ARGS[@]}" "$REMOTE_USER@$SERVER_IP" "$REMOTE_CMD"
@@ -341,6 +374,9 @@ Online app, after web-app image is built and ArgoCD syncs:
 
 Keyboard trainer, after keyboard-app image is built and ArgoCD syncs:
   https://$KEY_HOST
+
+Multica task tracker, after DNS, TLS, secrets and ArgoCD sync:
+  https://$TASKS_HOST
 
 Headlamp dev-admin token:
   ssh root@$SERVER_IP "kubectl -n headlamp get secret headlamp-admin-token -o jsonpath='{.data.token}' | base64 -d"

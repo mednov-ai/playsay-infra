@@ -92,11 +92,12 @@ This creates nginx server blocks for infrastructure UI and the product SPA:
 - `https://ops.play-and-say.ru:18443/victoria-metrics/vmui/` (dev monitoring)
 - `https://online.play-and-say.ru`
 - `https://key.play-and-say.ru`
+- `https://tasks.play-and-say.ru`
 - `wss://online.play-and-say.ru/collab/ws` (Sprint 5 collaboration websocket)
 
 The existing `play-and-say.ru` site server block is not overwritten.
 
-Current dev TLS policy, since 2026-06-03: keep host nginx restricted to TLS 1.2 only for the public site, product SPA, and ops route. TLS/SNI handshake failures were reported from Russian consumer networks MTS, t2, and MGTS; after disabling TLS 1.3, access recovered from the affected networks. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Do not re-enable TLS 1.3 on dev without a dedicated retest from MTS, t2, and MGTS. Rollback command if TLS 1.3 must be restored for a controlled experiment:
+Current dev TLS policy, since 2026-06-03: keep host nginx restricted to TLS 1.2 only for the public site, product SPA, keyboard trainer, task tracker, and ops route. TLS/SNI handshake failures were reported from Russian consumer networks MTS, t2, and MGTS; after disabling TLS 1.3, access recovered from the affected networks. The change was made manually in `/etc/nginx/nginx.conf` and `/etc/letsencrypt/options-ssl-nginx.conf`; backups are `/etc/nginx/nginx.conf.bak.tls12-test-20260603164526` and `/etc/letsencrypt/options-ssl-nginx.conf.bak.tls12-test-20260603164526`. Current validation expects `openssl s_client -tls1_2` to succeed and `openssl s_client -tls1_3` to fail with `protocol version alert`. Do not re-enable TLS 1.3 on dev without a dedicated retest from MTS, t2, and MGTS. Rollback command if TLS 1.3 must be restored for a controlled experiment:
 
 ```bash
 ssh root@89.124.113.223 '
@@ -202,6 +203,33 @@ certbot certonly \
   --online-tls-mode existing \
   --key-host key.play-and-say.ru \
   --key-tls-mode existing \
+  --email admin@example.com
+```
+
+For `tasks.play-and-say.ru`, issue a matching Let's Encrypt certificate after the Multica frontend/backend NodePorts are healthy:
+
+```bash
+mkdir -p /var/www/letsencrypt/.well-known/acme-challenge
+certbot certonly \
+  --webroot \
+  -w /var/www/letsencrypt \
+  -d tasks.play-and-say.ru \
+  --non-interactive \
+  --agree-tos \
+  --email admin@play-and-say.ru
+
+./scripts/bootstrap-dev.sh \
+  --ip 146.103.126.15 \
+  --domain play-and-say.ru \
+  --ops-host ops.play-and-say.ru \
+  --ops-port 18443 \
+  --ops-tls-mode existing \
+  --online-host online.play-and-say.ru \
+  --online-tls-mode existing \
+  --key-host key.play-and-say.ru \
+  --key-tls-mode existing \
+  --tasks-host tasks.play-and-say.ru \
+  --tasks-tls-mode existing \
   --email admin@example.com
 ```
 
@@ -638,6 +666,75 @@ probe_success
 kube_pod_container_status_restarts_total
 ```
 
+## Multica Agent Task Tracker
+
+Multica is the self-hosted task tracker for agent-driven Play&Say development. It is published at `https://tasks.play-and-say.ru`; the Multica server stores workspaces, issues, comments, agent config and GitHub links, while actual Codex execution stays on the local Mac mini through `multica daemon`.
+
+The dev deployment uses the upstream OCI Helm chart `ghcr.io/multica-ai/charts/multica` pinned to chart version `0.3.17`. `deploy-cluster-addons.sh` registers this public OCI Helm repository in ArgoCD through the non-secret repository Secret `argocd/multica-oci-helm-repository`. Because Play&Say dev runs in host-nginx/k3s coexist mode without a public cluster ingress, `multica-exposure` adds localhost-only NodePort services:
+
+- frontend NodePort: `32088`
+- backend NodePort: `32089`
+
+Host nginx sends `/api`, `/auth`, `/uploads`, `/ws`, `/healthz`, and `/readyz` to the backend NodePort; everything else goes to the frontend NodePort. Do not expose those NodePorts publicly; public access must stay through `tasks.play-and-say.ru`.
+
+Create or update the Multica runtime secret without printing values:
+
+```bash
+export MULTICA_ALLOWED_EMAILS="e.mednov@gmail.com"
+export MULTICA_SMTP_HOST="<unisender-smtp-host>"
+export MULTICA_SMTP_PORT="587"
+export MULTICA_SMTP_USERNAME="<unisender-smtp-username>"
+export MULTICA_SMTP_PASSWORD="<unisender-smtp-password>"
+export MULTICA_GITHUB_APP_SLUG="<github-app-slug>"
+export MULTICA_GITHUB_WEBHOOK_SECRET="<same-secret-as-github-app-webhook>"
+
+./scripts/sync-multica-secret.sh
+
+unset MULTICA_SMTP_PASSWORD MULTICA_GITHUB_WEBHOOK_SECRET
+```
+
+`sync-multica-secret.sh` generates/reuses `JWT_SECRET`, `POSTGRES_PASSWORD`, and a GitHub webhook secret if none exists. It also keeps `MULTICA_DEV_VERIFICATION_CODE` empty, sets `APP_ENV=production` through the chart, disables Multica analytics by default, and restricts first-time signup through `ALLOWED_EMAILS`. If `MULTICA_ALLOWED_EMAILS` is not set, the safe default is `admin@play-and-say.ru`; replace it with the real operator emails before public use.
+
+Access policy:
+
+- Do not run open signup on `tasks.play-and-say.ru`.
+- Use explicit `ALLOWED_EMAILS`; do not allow an entire domain in the first dev rollout.
+- Keep `ALLOW_SIGNUP=true` while allowlisted users need first login codes.
+- After the shared Play&Say workspace is created, rerun the secret sync with `MULTICA_DISABLE_WORKSPACE_CREATION=true` and restart `deployment/multica-backend`; this prevents parallel workspaces.
+- If SMTP is missing, Multica writes verification codes to backend logs. That is acceptable only for a short private bootstrap, not for the public host.
+
+GitHub App setup for PR auto-linking:
+
+- Homepage URL: `https://tasks.play-and-say.ru`
+- Setup URL: `https://tasks.play-and-say.ru/api/github/setup`
+- Webhook URL: `https://tasks.play-and-say.ru/api/webhooks/github`
+- Webhook secret: same value as `MULTICA_GITHUB_WEBHOOK_SECRET`
+- Repository permissions: Pull requests read-only and Metadata read-only
+- Events: Pull request
+
+After installing the GitHub App on `mednov-ai/playsay-platform` and `mednov-ai/playsay-infra`, PRs whose branch, title, or body contains a Multica issue identifier auto-link to that issue, and merged PRs move linked issues to Done.
+
+Mac mini daemon setup:
+
+```bash
+brew install multica-ai/tap/multica
+multica setup self-host \
+  --server-url https://tasks.play-and-say.ru \
+  --app-url https://tasks.play-and-say.ru
+multica daemon status
+```
+
+Create the first agent in Multica with runtime `Codex` and Play&Say project instructions. Keep task prompts explicit about repo (`playsay-platform` or `playsay-infra`), acceptance criteria, required tests, and whether `spec.md`/runbook sync is required. Codex reruns should start from issue/PR context rather than relying on session resumption.
+
+Operational checks:
+
+```bash
+kubectl -n argocd get application multica multica-exposure
+kubectl -n multica get pods,svc,pvc
+curl -I https://tasks.play-and-say.ru
+curl -sS https://tasks.play-and-say.ru/readyz
+```
+
 ## Post-Install Verification
 
 Check the public site still works:
@@ -672,6 +769,8 @@ curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-a
 curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/keycloak/
 curl -k -I --resolve ops.play-and-say.ru:18443:89.124.113.223 https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
 curl -k -I --resolve online.play-and-say.ru:443:89.124.113.223 https://online.play-and-say.ru/
+curl -k -I --resolve tasks.play-and-say.ru:443:146.103.126.15 https://tasks.play-and-say.ru/
+curl -k --resolve tasks.play-and-say.ru:443:146.103.126.15 https://tasks.play-and-say.ru/readyz
 ```
 
 Expected:
@@ -682,6 +781,7 @@ Expected:
 - Keycloak: `200 OK` or a redirect/login response, which means Keycloak is alive behind nginx.
 - VictoriaMetrics VMUI: `200 OK`.
 - Online SPA: `200 OK`.
+- Multica: frontend returns an HTTP response and `/readyz` returns JSON after backend/PostgreSQL are ready.
 
 Check existing services:
 

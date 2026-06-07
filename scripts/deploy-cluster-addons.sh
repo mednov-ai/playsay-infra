@@ -18,6 +18,10 @@ ONLINE_TLS_MODE="${ONLINE_TLS_MODE:-auto}"
 KEY_HOST="${KEY_HOST:-key.$DOMAIN}"
 KEY_NODEPORT_HTTP="${KEY_NODEPORT_HTTP:-32087}"
 KEY_TLS_MODE="${KEY_TLS_MODE:-auto}"
+TASKS_HOST="${TASKS_HOST:-tasks.$DOMAIN}"
+TASKS_FRONTEND_NODEPORT_HTTP="${TASKS_FRONTEND_NODEPORT_HTTP:-32088}"
+TASKS_BACKEND_NODEPORT_HTTP="${TASKS_BACKEND_NODEPORT_HTTP:-32089}"
+TASKS_TLS_MODE="${TASKS_TLS_MODE:-auto}"
 COLLABORATION_NODEPORT_HTTP="${COLLABORATION_NODEPORT_HTTP:-32086}"
 KEYCLOAK_NODEPORT_HTTP="${KEYCLOAK_NODEPORT_HTTP:-32084}"
 LIVEKIT_SIGNALING_HOST_PORT="${LIVEKIT_SIGNALING_HOST_PORT:-7880}"
@@ -32,6 +36,7 @@ HEADLAMP_NODEPORT_HTTP="${HEADLAMP_NODEPORT_HTTP:-32081}"
 OPS_SCHEME="https"
 ONLINE_SCHEME="https"
 KEY_SCHEME="https"
+TASKS_SCHEME="https"
 
 usage() {
   cat <<USAGE
@@ -55,6 +60,10 @@ Environment variables:
   KEY_HOST               Keyboard trainer host. Default: key.<PLAYSAY_DOMAIN>
   KEY_NODEPORT_HTTP      Local keyboard-app NodePort. Default: 32087
   KEY_TLS_MODE           auto, self-signed, existing, or off. Default: auto
+  TASKS_HOST             Multica task tracker host. Default: tasks.<PLAYSAY_DOMAIN>
+  TASKS_FRONTEND_NODEPORT_HTTP Local Multica frontend NodePort. Default: 32088
+  TASKS_BACKEND_NODEPORT_HTTP  Local Multica backend NodePort. Default: 32089
+  TASKS_TLS_MODE         auto, self-signed, existing, or off. Default: auto
   COLLABORATION_NODEPORT_HTTP Local collaboration-service NodePort for /collab/ws. Default: 32086
   KEYCLOAK_NODEPORT_HTTP Local Keycloak NodePort for /keycloak/. Default: 32084
   LIVEKIT_SIGNALING_HOST_PORT Local LiveKit signaling port for /livekit/. Default: 7880
@@ -75,6 +84,11 @@ fi
 
 if [[ "$KEY_TLS_MODE" != "auto" && "$KEY_TLS_MODE" != "self-signed" && "$KEY_TLS_MODE" != "existing" && "$KEY_TLS_MODE" != "off" ]]; then
   echo "KEY_TLS_MODE must be auto, self-signed, existing, or off" >&2
+  exit 1
+fi
+
+if [[ "$TASKS_TLS_MODE" != "auto" && "$TASKS_TLS_MODE" != "self-signed" && "$TASKS_TLS_MODE" != "existing" && "$TASKS_TLS_MODE" != "off" ]]; then
+  echo "TASKS_TLS_MODE must be auto, self-signed, existing, or off" >&2
   exit 1
 fi
 
@@ -189,6 +203,20 @@ helm upgrade --install argocd argo/argo-cd \
 if [[ -x "$ROOT_DIR/scripts/configure-argocd-webhook-secret.sh" ]]; then
   "$ROOT_DIR/scripts/configure-argocd-webhook-secret.sh"
 fi
+
+kubectl -n argocd apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: multica-oci-helm-repository
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: multica
+  url: ghcr.io/multica-ai/charts
+  enableOCI: "true"
+EOF
 
 kubectl create namespace headlamp --dry-run=client -o yaml | kubectl apply -f -
 helm upgrade --install headlamp headlamp/headlamp \
@@ -620,6 +648,203 @@ ${ONLINE_VIDEO_RELAY_LOCATION}
 "
     fi
 
+    TASKS_BACKEND_LOCATIONS="    location = /healthz {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location = /readyz {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location = /ws {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_read_timeout 3600s;
+    }
+
+    location = /api {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_request_buffering off;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location = /auth {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location /auth/ {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location = /uploads {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:${TASKS_BACKEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+"
+    TASKS_HTTP_SERVER=""
+    TASKS_HTTPS_SERVER=""
+    if [[ "$TASKS_TLS_MODE" == "off" ]]; then
+      TASKS_SCHEME="http"
+      TASKS_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${TASKS_HOST};
+
+${TASKS_BACKEND_LOCATIONS}
+    location / {
+        proxy_pass http://127.0.0.1:${TASKS_FRONTEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+}
+"
+    else
+      TASKS_LETSENCRYPT_CERT="/etc/letsencrypt/live/${TASKS_HOST}/fullchain.pem"
+      TASKS_LETSENCRYPT_KEY="/etc/letsencrypt/live/${TASKS_HOST}/privkey.pem"
+      TASKS_SELF_SIGNED_DIR="/etc/nginx/playsay-tasks"
+      TASKS_SELF_SIGNED_CERT="${TASKS_SELF_SIGNED_DIR}/${TASKS_HOST}.crt"
+      TASKS_SELF_SIGNED_KEY="${TASKS_SELF_SIGNED_DIR}/${TASKS_HOST}.key"
+
+      if [[ -f "$TASKS_LETSENCRYPT_CERT" && -f "$TASKS_LETSENCRYPT_KEY" ]]; then
+        TASKS_SSL_CERT="$TASKS_LETSENCRYPT_CERT"
+        TASKS_SSL_KEY="$TASKS_LETSENCRYPT_KEY"
+      elif [[ "$TASKS_TLS_MODE" == "existing" ]]; then
+        echo "TASKS_TLS_MODE=existing but certificate is missing for ${TASKS_HOST}" >&2
+        exit 1
+      else
+        mkdir -p "$TASKS_SELF_SIGNED_DIR"
+        chmod 700 "$TASKS_SELF_SIGNED_DIR"
+        if [[ ! -f "$TASKS_SELF_SIGNED_CERT" || ! -f "$TASKS_SELF_SIGNED_KEY" ]]; then
+          openssl req -x509 -nodes -newkey rsa:2048 \
+            -keyout "$TASKS_SELF_SIGNED_KEY" \
+            -out "$TASKS_SELF_SIGNED_CERT" \
+            -days 365 \
+            -subj "/CN=${TASKS_HOST}" \
+            -addext "subjectAltName=DNS:${TASKS_HOST}"
+          chmod 600 "$TASKS_SELF_SIGNED_KEY"
+        fi
+        TASKS_SSL_CERT="$TASKS_SELF_SIGNED_CERT"
+        TASKS_SSL_KEY="$TASKS_SELF_SIGNED_KEY"
+      fi
+
+      TASKS_HTTP_SERVER="server {
+    listen 80;
+    listen [::]:80;
+    server_name ${TASKS_HOST};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type \"text/plain\";
+        try_files \$uri =404;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+"
+      TASKS_HTTPS_SERVER="server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${TASKS_HOST};
+
+    ssl_certificate ${TASKS_SSL_CERT};
+    ssl_certificate_key ${TASKS_SSL_KEY};
+
+${TASKS_BACKEND_LOCATIONS}
+    location / {
+        proxy_pass http://127.0.0.1:${TASKS_FRONTEND_NODEPORT_HTTP};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+}
+"
+    fi
+
     NGINX_CONF_TARGET="/etc/nginx/conf.d/playsay-k8s-dev.conf"
     NGINX_CONF_BACKUP=""
     if [[ -f "$NGINX_CONF_TARGET" ]]; then
@@ -730,6 +955,8 @@ ${ONLINE_HTTP_SERVER}
 ${ONLINE_HTTPS_SERVER}
 ${KEY_HTTP_SERVER}
 ${KEY_HTTPS_SERVER}
+${TASKS_HTTP_SERVER}
+${TASKS_HTTPS_SERVER}
 EOF
     if nginx -t; then
       systemctl reload nginx
@@ -751,12 +978,19 @@ EOF
   fi
 fi
 
+if [[ -x "$ROOT_DIR/scripts/sync-multica-secret.sh" ]]; then
+  MULTICA_PUBLIC_URL="${MULTICA_PUBLIC_URL:-${TASKS_SCHEME}://${TASKS_HOST}}" \
+  MULTICA_APP_URL="${MULTICA_APP_URL:-${TASKS_SCHEME}://${TASKS_HOST}}" \
+    "$ROOT_DIR/scripts/sync-multica-secret.sh"
+fi
+
 kubectl apply -f "$ROOT_DIR/argocd-apps/$ENVIRONMENT/root-app.yaml"
 
 echo "Cluster add-ons installed for $ENVIRONMENT."
 echo "Ops URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT"
 echo "Online URL: ${ONLINE_SCHEME}://$ONLINE_HOST"
 echo "Key URL: ${KEY_SCHEME}://$KEY_HOST"
+echo "Tasks URL: ${TASKS_SCHEME}://$TASKS_HOST"
 echo "ArgoCD URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/argocd/"
 echo "Headlamp URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/headlamp/"
 echo "VictoriaMetrics URL: ${OPS_SCHEME}://$OPS_HOST:$OPS_PORT/victoria-metrics/vmui/"

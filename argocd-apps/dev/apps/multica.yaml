@@ -1,0 +1,101 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: multica
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/multica-ai/charts
+    chart: multica
+    targetRevision: 0.3.17
+    helm:
+      releaseName: multica
+      values: |
+        existingSecret: multica-secrets
+
+        backend:
+          config:
+            appEnv: production
+            appUrl: https://tasks.play-and-say.ru
+            frontendOrigin: https://tasks.play-and-say.ru
+            corsAllowedOrigins: https://tasks.play-and-say.ru
+            cookieDomain: ""
+            resendFromEmail: noreply@play-and-say.ru
+            allowSignup: true
+            allowedEmails: e.mednov@gmail.com
+            allowedEmailDomains: ""
+            disableWorkspaceCreation: false
+            googleClientId: ""
+            googleRedirectUri: https://tasks.play-and-say.ru/auth/callback
+            localUploadBaseUrl: https://tasks.play-and-say.ru
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          uploads:
+            persistence:
+              size: 5Gi
+
+        frontend:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+
+        postgres:
+          persistence:
+            size: 8Gi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+
+        ingress:
+          enabled: false
+
+        monitoring:
+          prometheusRule:
+            enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: multica
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: multica-exposure
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: develop
+    path: helm-charts/multica-exposure
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: multica
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
