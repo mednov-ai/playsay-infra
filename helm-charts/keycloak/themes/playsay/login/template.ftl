@@ -240,8 +240,8 @@
 
             <div id="kc-content">
                 <div id="kc-content-wrapper">
-                    <#if displayMessage && message?has_content && (message.type != 'warning' || !isAppInitiatedAction??)>
-                        <div class="alert-${message.type} ${properties.kcAlertClass!} pf-m-<#if message.type = 'error'>danger<#else>${message.type}</#if>">
+                    <#if message?has_content && ((displayMessage || message.type = 'error') && (message.type != 'warning' || !isAppInitiatedAction??))>
+                        <div class="alert-${message.type} ${properties.kcAlertClass!} playsay-login-message<#if message.type = 'error'> playsay-login-error</#if> pf-m-<#if message.type = 'error'>danger<#else>${message.type}</#if>" role="<#if message.type = 'error'>alert<#else>status</#if>" aria-live="<#if message.type = 'error'>assertive<#else>polite</#if>">
                             <div class="pf-c-alert__icon">
                                 <#if message.type = 'success'><span class="${properties.kcFeedbackSuccessIcon!}"></span></#if>
                                 <#if message.type = 'warning'><span class="${properties.kcFeedbackWarningIcon!}"></span></#if>

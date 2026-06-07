@@ -281,6 +281,33 @@ body.playsay-login-body {
   border-radius: 14px;
 }
 
+.playsay-card .playsay-login-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.playsay-card .playsay-login-error {
+  border: 1px solid rgba(163, 0, 0, 0.28);
+  border-left: 4px solid #d4351c;
+  background: linear-gradient(180deg, rgba(255, 241, 236, 0.98), rgba(255, 248, 244, 0.96));
+  color: #8f1f12;
+  box-shadow: 0 14px 30px rgba(143, 31, 18, 0.1);
+}
+
+.playsay-card .playsay-login-error .pf-c-alert__icon {
+  color: #d4351c;
+}
+
+.playsay-card .playsay-login-error .pf-c-alert__title,
+.playsay-card .playsay-login-error .kc-feedback-text {
+  color: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .playsay-auth-links {
   display: grid;
   gap: 8px;
@@ -306,6 +333,18 @@ body.playsay-login-body {
   color: var(--playsay-ink);
 }
 
+:root[data-playsay-resolved-theme="dark"] .playsay-card .playsay-login-error {
+  border-color: rgba(255, 134, 96, 0.36);
+  border-left-color: #ff7a3d;
+  background: linear-gradient(180deg, rgba(66, 32, 24, 0.98), rgba(45, 28, 22, 0.96));
+  color: #ffd6c8;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
+}
+
+:root[data-playsay-resolved-theme="dark"] .playsay-card .playsay-login-error .pf-c-alert__icon {
+  color: #ff9a6b;
+}
+
 :root[data-playsay-resolved-theme="dark"] .playsay-auth-links a:first-child {
   background: rgba(43, 31, 24, 0.9);
 }
@@ -315,6 +354,18 @@ body.playsay-login-body {
     border-color: var(--playsay-line);
     background: rgba(43, 31, 24, 0.94);
     color: var(--playsay-ink);
+  }
+
+  :root:not([data-playsay-theme="light"]) .playsay-card .playsay-login-error {
+    border-color: rgba(255, 134, 96, 0.36);
+    border-left-color: #ff7a3d;
+    background: linear-gradient(180deg, rgba(66, 32, 24, 0.98), rgba(45, 28, 22, 0.96));
+    color: #ffd6c8;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.26);
+  }
+
+  :root:not([data-playsay-theme="light"]) .playsay-card .playsay-login-error .pf-c-alert__icon {
+    color: #ff9a6b;
   }
 
   :root:not([data-playsay-theme="light"]) .playsay-auth-links a:first-child {
