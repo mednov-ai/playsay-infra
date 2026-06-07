@@ -701,7 +701,7 @@ Multica backend -> in-cluster SMTP multica-mail-bridge:1025 -> Unisender Go HTTP
 
 - source secret: `playsay-dev/playsay-email`
 - copied keys: `unisender-api-key` and `from-address`
-- Multica SMTP target: `SMTP_HOST=multica-mail-bridge.multica.svc.cluster.local`, `SMTP_PORT=1025`, `SMTP_TLS=none`
+- Multica SMTP target: `SMTP_HOST=multica-mail-bridge.multica.svc.cluster.local`, `SMTP_PORT=1025`, `SMTP_TLS=starttls`. The bridge does not advertise STARTTLS, so traffic stays plain inside the cluster while Multica uses a recognized TLS mode.
 - bridge target keys in `multica-secrets`: `UNISENDER_API_BASE_URL`, `UNISENDER_USER_ID`, `UNISENDER_API_KEY`, `UNISENDER_FROM_EMAIL`, `UNISENDER_FROM_NAME`
 
 Only set `MULTICA_SMTP_HOST`, `MULTICA_SMTP_PORT`, `MULTICA_SMTP_USERNAME`, `MULTICA_SMTP_PASSWORD`, `MULTICA_SMTP_TLS`, `MULTICA_UNISENDER_*`, or `MULTICA_RESEND_FROM_EMAIL` when Multica must intentionally diverge from the shared Play&Say email provider. Do not print the copied values. If `playsay-email` is rotated, rerun `sync-multica-secret.sh` and restart `deployment/multica-backend` so Multica and the bridge receive the new environment.

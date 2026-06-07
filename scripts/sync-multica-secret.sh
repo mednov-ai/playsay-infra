@@ -187,7 +187,7 @@ if use_play_say_email_bridge; then
   write_value SMTP_PORT "$PLAYSAY_EMAIL_BRIDGE_SMTP_PORT"
   write_value SMTP_USERNAME "${MULTICA_SMTP_USERNAME:-}"
   write_value SMTP_PASSWORD "${MULTICA_SMTP_PASSWORD:-}"
-  write_value SMTP_TLS "${MULTICA_SMTP_TLS:-none}"
+  write_value SMTP_TLS "${MULTICA_SMTP_TLS:-starttls}"
 else
   write_value SMTP_HOST "$(value_from_env_or_existing MULTICA_SMTP_HOST SMTP_HOST "$(playsay_email_value smtp-host)")"
   write_value SMTP_PORT "$(value_from_env_or_existing MULTICA_SMTP_PORT SMTP_PORT "$(default_if_empty "$(playsay_email_value smtp-port)" "587")")"
