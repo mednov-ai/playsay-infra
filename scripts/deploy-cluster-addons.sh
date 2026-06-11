@@ -325,19 +325,22 @@ EOF
   helm upgrade --install jenkins jenkins/jenkins \
     --namespace jenkins \
     --set controller.jenkinsUriPrefix=/jenkins \
+    --set controller.jenkinsUrl="https://$OPS_HOST:$OPS_PORT/jenkins/" \
     --set controller.serviceType=NodePort \
     --set controller.nodePort="$JENKINS_NODEPORT_HTTP" \
     --set controller.servicePort=8080 \
-    --set controller.installPlugins[0]=kubernetes \
-    --set controller.installPlugins[1]=workflow-aggregator \
-    --set controller.installPlugins[2]=git \
-    --set controller.installPlugins[3]=github \
-    --set controller.installPlugins[4]=github-branch-source \
-    --set controller.installPlugins[5]=credentials-binding \
-    --set controller.installPlugins[6]=configuration-as-code \
-    --set controller.installPlugins[7]=timestamper \
-    --set controller.installPlugins[8]=pipeline-stage-view \
-    --set controller.installPlugins[9]=generic-webhook-trigger \
+    --set 'controller.installPlugins[0]=kubernetes' \
+    --set 'controller.installPlugins[1]=workflow-aggregator' \
+    --set 'controller.installPlugins[2]=git' \
+    --set 'controller.installPlugins[3]=github' \
+    --set 'controller.installPlugins[4]=github-branch-source' \
+    --set 'controller.installPlugins[5]=credentials-binding' \
+    --set 'controller.installPlugins[6]=configuration-as-code' \
+    --set 'controller.installPlugins[7]=timestamper' \
+    --set 'controller.installPlugins[8]=pipeline-stage-view' \
+    --set 'controller.installPlugins[9]=generic-webhook-trigger' \
+    --set 'controller.installPlugins[10]=dark-theme' \
+    --set-file controller.JCasC.configScripts.playsay-appearance="$ROOT_DIR/jenkins/jcasc/playsay-appearance.yaml" \
     --set controller.overwritePlugins=true \
     --set controller.resources.requests.cpu=250m \
     --set controller.resources.requests.memory=768Mi \
@@ -898,10 +901,12 @@ ${OPS_ALLOW_DIRECTIVES}
         proxy_http_version 1.1;
         proxy_request_buffering off;
         proxy_buffering off;
-        proxy_set_header Host \$host;
+        proxy_set_header Host \$http_host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Port ${OPS_PORT};
         proxy_set_header X-Forwarded-Prefix /jenkins;
     }
 
