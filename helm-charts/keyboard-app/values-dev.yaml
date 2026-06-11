@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-dev-25"
+  tag: "key-frontend-dev-26"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-dev-25
-  number: "25"
+  name: key-frontend-dev-26
+  number: "26"
   branch: develop
   branchLabel: key-frontend-dev
-  commit: d4d75b2ad9f08cc07ac51a02b35fce73ac555e07
-  commitShort: d4d75b2ad9f0
+  commit: e2ede85328776d5f1286ecb074bf12b46d637335
+  commitShort: e2ede8532877
 service:
   type: NodePort
   nodePort: 32087
