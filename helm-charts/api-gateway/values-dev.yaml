@@ -60,6 +60,11 @@ paymentService:
   serviceTokenKey: service-token
 registrationService:
   baseUrl: http://registration-service.playsay-dev.svc.cluster.local
+emailService:
+  baseUrl: http://email-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-email
+  serviceTokenKey: service-token
+publicAppUrl: https://online.play-and-say.ru
 video:
   youtube:
     rfRelay:

@@ -135,6 +135,16 @@ spec:
                   optional: true
             - name: PLAYSAY_REGISTRATION_SERVICE_BASE_URL
               value: {{ .Values.registrationService.baseUrl | quote }}
+            - name: PLAYSAY_EMAIL_SERVICE_BASE_URL
+              value: {{ .Values.emailService.baseUrl | quote }}
+            - name: PLAYSAY_EMAIL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.serviceTokenKey | quote }}
+                  optional: true
+            - name: PLAYSAY_PUBLIC_APP_URL
+              value: {{ .Values.publicAppUrl | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_ENABLED
               value: {{ .Values.video.youtube.rfRelay.enabled | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER

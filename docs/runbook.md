@@ -451,6 +451,9 @@ Runtime wiring:
   - `email-service.playsay-dev.svc.cluster.local`
 - api-gateway env:
   - `PLAYSAY_REGISTRATION_SERVICE_BASE_URL`
+  - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
+  - `PLAYSAY_EMAIL_SERVICE_TOKEN`
+  - `PLAYSAY_PUBLIC_APP_URL`
 - registration-service env:
   - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
   - `PLAYSAY_REGISTRATION_PASSWORD_RESET_CODE_TTL_MINUTES` (default `15`)
@@ -509,6 +512,7 @@ Email texts are not hardcoded in code. `email-service` Liquibase creates and see
 
 - `registration-confirmation` in `ru`, `en`, `de`, `fr`
 - `password-reset-code` in `ru`, `en`, `de`, `fr`
+- `lesson-reminder-30m` in `ru`, `en`, `de`, `fr`
 
 Template rows contain `subject_template`, `text_template`, `html_template`, `version`, `enabled`, timestamps. Runtime rendering falls back to `ru` only if a localized row is missing. Edit rows carefully in DB or add a new Liquibase changeset; keep required model variables (`confirmationUrl`, `code`, `expiresMinutes`) intact.
 
