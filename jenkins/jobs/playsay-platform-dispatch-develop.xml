@@ -31,8 +31,8 @@
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>MAX_PARALLEL_MODULE_JOBS</name>
-          <description>Maximum downstream module jobs to run at once. Use 1 for conservative recovery on the dev VPS.</description>
-          <defaultValue>2</defaultValue>
+          <description>Maximum downstream module jobs to run at once. Dev default is 1 for single-node VPS stability; use 2 only after checking node memory and swap.</description>
+          <defaultValue>1</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>

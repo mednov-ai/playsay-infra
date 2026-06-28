@@ -17,7 +17,7 @@ blackboxExporter:
     - https://online.play-and-say.ru/
     - https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
     - https://ops.play-and-say.ru:18443/argocd/
-    - https://ops.play-and-say.ru:18443/jenkins/
+    - https://ops.play-and-say.ru:18443/jenkins/login
 
 alertmanager:
   telegram:
