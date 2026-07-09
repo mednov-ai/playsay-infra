@@ -621,7 +621,7 @@ Manual auth smoke:
 Managed-student invite smoke:
 
 1. Sign in as `teacher-demo`, create a managed student from the schedule participant picker, create a lesson with that student, then use the lesson copy-links action.
-2. Open the returned `/student-invite#ABC123` style link in a clean browser context. The fragment is a 6-character manual-entry invite code and must not be sent as a `?token=` query parameter; the SPA must read and clear it, call `/api/student-invites/consume`, store the returned Keycloak token set, and redirect to `/lessons/{lessonId}/classroom` without showing the Keycloak login form.
+2. Open the returned `/join#ABC123` style link in a clean browser context. The fragment is a 6-character manual-entry invite code and must not be sent as a `?token=` query parameter; the SPA must read and clear it, call `/api/student-invites/consume`, store the returned Keycloak token set, and redirect to `/lessons/{lessonId}/classroom` without showing the Keycloak login form.
 3. Reopen the same invite link in another clean context; it must fail as already consumed or invalid.
 
 ## YouTube RF Relay
