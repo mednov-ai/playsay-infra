@@ -79,6 +79,8 @@ spec:
               value: {{ .Values.registrationService.keycloak.baseUrl | quote }}
             - name: PLAYSAY_KEYCLOAK_REALM
               value: {{ .Values.registrationService.keycloak.realm | quote }}
+            - name: PLAYSAY_KEYCLOAK_STUDENT_TOKEN_CLIENT_ID
+              value: {{ .Values.registrationService.keycloak.studentTokenClientId | quote }}
             - name: PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID
               valueFrom:
                 secretKeyRef:

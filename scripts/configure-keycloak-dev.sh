@@ -179,7 +179,7 @@ ensure_clients() {
       publicClient: true,
       standardFlowEnabled: true,
       implicitFlowEnabled: false,
-      directAccessGrantsEnabled: false,
+      directAccessGrantsEnabled: true,
       serviceAccountsEnabled: false,
       redirectUris: [
         "https://online.play-and-say.ru/*",

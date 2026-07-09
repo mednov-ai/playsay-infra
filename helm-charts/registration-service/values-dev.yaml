@@ -26,6 +26,7 @@ registrationService:
   keycloak:
     baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
     realm: playsay
+    studentTokenClientId: playsay-web
     existingSecret: playsay-registration
   emailService:
     baseUrl: http://email-service.playsay-dev.svc.cluster.local

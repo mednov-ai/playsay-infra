@@ -504,7 +504,7 @@ kubectl -n playsay-dev get secret playsay-payment
 
 Custom email registration is split into two Spring Boot apps in namespace `playsay-dev`:
 
-- `registration-service`: public registration state machine, pending token storage, Keycloak user activation, and password reset email-code state machine for active Keycloak users.
+- `registration-service`: public registration state machine, pending token storage, managed-student invite storage/token exchange, Keycloak user activation, and password reset email-code state machine for active Keycloak users.
 - `email-service`: transactional email DB-template rendering and external delivery provider integration. Dev uses Unisender Go Web API because SMTP ports to `smtp.go2.unisender.ru` time out from the dev network; SMTP remains the default fallback/provider option for other environments. Spring Mail SMTP healthcheck is disabled by default, so readiness follows the service process rather than blocked SMTP ports.
 
 The public registration facade is `api-gateway`; it must forward the resolved browser client address to `registration-service` so the service's per-IP rate limiter is not applied to one shared gateway/ingress IP. `registration-service` still falls back to the direct remote address for local/internal calls.
@@ -526,6 +526,7 @@ Runtime wiring:
   - `PLAYSAY_REGISTRATION_PASSWORD_RESET_MAX_ATTEMPTS` (default `5`)
   - `PLAYSAY_KEYCLOAK_BASE_URL`
   - `PLAYSAY_KEYCLOAK_REALM`
+  - `PLAYSAY_KEYCLOAK_STUDENT_TOKEN_CLIENT_ID` (default `playsay-web`)
   - `PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID`
   - `PLAYSAY_KEYCLOAK_ADMIN_CLIENT_SECRET`
   - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
@@ -552,7 +553,7 @@ Run or rerun Keycloak bootstrap after this change:
 ./scripts/configure-keycloak-dev.sh
 ```
 
-It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update and role reads, and writes `keycloak-client-id` plus `keycloak-client-secret` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Secret values are not printed.
+It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update and role reads, enables direct access grants on the public `playsay-web` client for server-side managed-student invite exchange, and writes `keycloak-client-id` plus `keycloak-client-secret` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Secret values are not printed.
 
 Create the `playsay-email` secret before syncing `email-service` and `registration-service`. For dev, use Unisender Go. Keep the API key outside Git and do not print it:
 
@@ -616,6 +617,12 @@ Manual auth smoke:
 4. Open `https://online.play-and-say.ru/forgot-password`, request a code for the same email, then reset the password at `/reset-password`.
 5. Verify the reset code is one-time, expires after 15 minutes, and repeated bad attempts stop after 5 tries.
 6. In received emails, SPF/DKIM/DMARC should pass and sender should be `no-reply@play-and-say.ru`.
+
+Managed-student invite smoke:
+
+1. Sign in as `teacher-demo`, create a managed student from the schedule participant picker, create a lesson with that student, then use the lesson copy-links action.
+2. Open the returned `/student-invite?token=...` link in a clean browser context. The SPA must call `/api/student-invites/consume`, store the returned Keycloak token set, and redirect to `/lessons/{lessonId}/classroom` without showing the Keycloak login form.
+3. Reopen the same invite link in another clean context; it must fail as already consumed or invalid.
 
 ## YouTube RF Relay
 
@@ -1150,7 +1157,7 @@ The script is idempotent. It creates/updates:
 - realm login theme `playsay`;
 - realm i18n: `internationalizationEnabled=true`, supported locales `ru`, `en`, `de`, `fr`, and default locale `ru`;
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
-- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, local Vite dev origins `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173`, `http://127.0.0.1:5174`, and local preview origins `http://localhost:4173`, `http://127.0.0.1:4173`;
+- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, local Vite dev origins `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173`, `http://127.0.0.1:5174`, local preview origins `http://localhost:4173`, `http://127.0.0.1:4173`, and direct access grants enabled for server-side managed-student invite exchange by `registration-service`;
 - backend client `playsay-api`;
 - dev users `student-demo`, `student-demo-2`, `student-demo-3`, `student-demo-4`, `teacher-demo`, and `admin-demo`.
 
