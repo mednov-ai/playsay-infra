@@ -1,0 +1,29 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-vocabulary-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+build: { name: local-0, number: "0", branch: local, branchLabel: local, commit: unknown, commitShort: unknown }
+replicaCount: 1
+service: { type: ClusterIP, port: 80, targetPort: 8088 }
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
+database:
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
+openai:
+  enabled: false
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+  baseUrl: https://api.openai.com/v1
+  model: gpt-5-mini
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests: { cpu: 25m, memory: 96Mi }
+  limits: { cpu: 500m, memory: 384Mi }

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vocabulary-service.fullname" . }}
+  labels: {{- include "vocabulary-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "vocabulary-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vocabulary-service.selectorLabels" . | nindent 8 }}
+        playsay.io/build-name: {{ .Values.build.name | quote }}
+        playsay.io/source-commit: {{ .Values.build.commitShort | quote }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: vocabulary-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 8088 }
+          env:
+            - { name: SERVER_PORT, value: "8088" }
+            - { name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI, value: {{ .Values.auth.issuerUri | quote }} }
+            - { name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI, value: {{ .Values.auth.jwkSetUri | quote }} }
+            - name: PLAYSAY_DB_JDBC_URL
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.jdbcUriKey | quote }} } }
+            - name: PLAYSAY_DB_USERNAME
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.usernameKey | quote }} } }
+            - name: PLAYSAY_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.passwordKey | quote }} } }
+            - { name: PLAYSAY_VOCABULARY_LIQUIBASE_ENABLED, value: {{ .Values.database.liquibaseEnabled | quote }} }
+            - { name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE, value: {{ .Values.database.hikariMaxPoolSize | quote }} }
+            - { name: PLAYSAY_VOCABULARY_OPENAI_BASE_URL, value: {{ .Values.openai.baseUrl | quote }} }
+            - { name: PLAYSAY_VOCABULARY_OPENAI_MODEL, value: {{ .Values.openai.model | quote }} }
+            {{- if .Values.openai.enabled }}
+            - name: PLAYSAY_VOCABULARY_OPENAI_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.openai.existingSecret | quote }}, key: {{ .Values.openai.apiKeyKey | quote }} } }
+            {{- end }}
+            {{- if .Values.runtime.javaToolOptions }}
+            - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
+            {{- end }}
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: http }, failureThreshold: 24, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, periodSeconds: 10 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, periodSeconds: 20 }
+          resources: {{- toYaml .Values.resources | nindent 12 }}

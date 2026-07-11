@@ -4,6 +4,12 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
+## Vocabulary service
+
+`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для необязательных учебных переводов. Jenkins job `playsay-vocabulary-service-develop` выполняет Liquibase migration, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек.
+
+Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`.
+
 ## Sprint 0 Goal
 
 Create a reproducible dev environment:
@@ -948,6 +954,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-platform-develop`: manual full core rebuild compatibility job; the dispatcher does not call it;
 - `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/api-gateway/values-dev.yaml`, waits for rollout;
 - `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, runs its app DB Liquibase changelog when changed, builds/pushes `playsay-ai-tutor-service`, updates only `helm-charts/ai-tutor-service/values-dev.yaml`, waits for rollout;
+- `playsay-vocabulary-service-develop`: tests/packages `vocabulary-service`, applies its Liquibase changelog, builds/pushes `playsay-vocabulary-service`, updates only `helm-charts/vocabulary-service/values-dev.yaml`, waits for rollout;
 - `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes image, updates only `helm-charts/web-app/values-dev.yaml`, waits for rollout, then runs Sprint 5/Sprint 6 browser smoke;
 - `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes image, updates only `helm-charts/collaboration-service/values-dev.yaml`, waits for rollout;
 - `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes image, updates only `helm-charts/media-service/values-dev.yaml`, waits for rollout;
@@ -984,6 +991,7 @@ Affected-target policy:
 - `frontend/web-app/**` -> `playsay-web-app-develop`;
 - `backend/api-gateway/**` or `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
 - `backend/ai-tutor-service/**` or `contracts/ai-tutor-openapi.yaml` -> `playsay-ai-tutor-service-develop` and `playsay-web-app-develop`;
+- `backend/vocabulary-service/**` or `contracts/vocabulary-openapi.yaml` -> `playsay-vocabulary-service-develop`, `playsay-web-app-develop`, and `playsay-keyboard-frontend-develop`;
 - `contracts/registration-openapi.yaml` -> `playsay-registration-service-develop` and `playsay-web-app-develop`;
 - `backend/media-service/**` -> `playsay-media-service-develop`;
 - `backend/payment-service/**` -> `playsay-payment-service-develop`;
