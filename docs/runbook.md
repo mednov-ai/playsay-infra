@@ -1742,6 +1742,8 @@ ArgoCD will sync the reverted state.
 
 Возрастная политика AI-разговора определяется только backend по `student_profile.birth_date`: `<13 = CHILD`, `13–17 = TEEN`, `18+ = ADULT`; non-student роли получают `ADULT`. Параметра `agePolicy` в запросах каталога и создания сессии нет. Если у `STUDENT` дата рождения не заполнена, ожидаем `409 Conflict`; сначала сохраните дату рождения через профиль SPA/API. `ai-tutor-service` читает `app_user` и `student_profile` через JPA entity/repository и не содержит прямых SQL-вызовов.
 
+Keep `org.hibernate.orm.connections.pooling` at `WARN` for this service: the shared dev JDBC URI can contain connection parameters and must not be printed by Hibernate's startup database-info logger.
+
 Перед включением живого голоса проверьте Secret `playsay-openai` с ключом `api-key`; значение нельзя выводить в логи. Dev chart включает `PLAYSAY_AI_TUTOR_REALTIME_PROVIDER=openai`, модель `gpt-realtime-2.1` и выполняет Liquibase при single-replica startup. Если Secret или provider недоступен, установите `openai.enabled=false`: каталог и сохранение сессий продолжат работать в явном stub-режиме.
 
 Проверка после rollout:
