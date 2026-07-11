@@ -3,7 +3,7 @@ image:
   tag: "vocabulary-dev-4"
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-dev-4, number: "4", branch: develop, branchLabel: vocabulary-dev, commit: 33c9198727ccc22b6c4b0d27c4b6c01341276c7f, commitShort: 33c9198727cc}
+build: {name: vocabulary-dev-4, number: "4", branch: develop, branchLabel: vocabulary-dev, commit: e4c251f9585374bebc2173c9422b3278730c632a, commitShort: e4c251f95853}
 service: {type: ClusterIP}
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
@@ -21,5 +21,5 @@ openai:
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
-  requests: { cpu: 25m, memory: 96Mi }
-  limits: { cpu: 500m, memory: 384Mi }
+  requests: {cpu: 25m, memory: 96Mi}
+  limits: {cpu: 500m, memory: 384Mi}
