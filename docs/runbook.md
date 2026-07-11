@@ -947,6 +947,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-platform-dispatch-develop`: lightweight Generic Webhook Trigger receiver for `develop` and `release/*`;
 - `playsay-platform-develop`: manual full core rebuild compatibility job; the dispatcher does not call it;
 - `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/api-gateway/values-dev.yaml`, waits for rollout;
+- `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, runs its app DB Liquibase changelog when changed, builds/pushes `playsay-ai-tutor-service`, updates only `helm-charts/ai-tutor-service/values-dev.yaml`, waits for rollout;
 - `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes image, updates only `helm-charts/web-app/values-dev.yaml`, waits for rollout, then runs Sprint 5/Sprint 6 browser smoke;
 - `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes image, updates only `helm-charts/collaboration-service/values-dev.yaml`, waits for rollout;
 - `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes image, updates only `helm-charts/media-service/values-dev.yaml`, waits for rollout;
@@ -982,6 +983,7 @@ Affected-target policy:
 - `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
 - `frontend/web-app/**` -> `playsay-web-app-develop`;
 - `backend/api-gateway/**` or `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
+- `backend/ai-tutor-service/**` or `contracts/ai-tutor-openapi.yaml` -> `playsay-ai-tutor-service-develop` and `playsay-web-app-develop`;
 - `contracts/registration-openapi.yaml` -> `playsay-registration-service-develop` and `playsay-web-app-develop`;
 - `backend/media-service/**` -> `playsay-media-service-develop`;
 - `backend/payment-service/**` -> `playsay-payment-service-develop`;
@@ -1731,3 +1733,22 @@ git push
 ```
 
 ArgoCD will sync the reverted state.
+
+## AI Tutor Service
+
+`ai-tutor-service` разворачивается ArgoCD из `helm-charts/ai-tutor-service` в `playsay-dev`. `web-app/nginx.conf` направляет `/api/ai-tutor/` на cluster service, поэтому отдельный публичный NodePort или host-nginx route не нужен.
+
+Возрастная политика AI-разговора определяется только backend по `student_profile.birth_date`: `<13 = CHILD`, `13–17 = TEEN`, `18+ = ADULT`; non-student роли получают `ADULT`. Параметра `agePolicy` в запросах каталога и создания сессии нет. Если у `STUDENT` дата рождения не заполнена, ожидаем `409 Conflict`; сначала сохраните дату рождения через профиль SPA/API. `ai-tutor-service` читает `app_user` и `student_profile` через JPA entity/repository и не содержит прямых SQL-вызовов.
+
+Перед включением живого голоса проверьте Secret `playsay-openai` с ключом `api-key`; значение нельзя выводить в логи. Dev chart включает `PLAYSAY_AI_TUTOR_REALTIME_PROVIDER=openai`, модель `gpt-realtime-2.1` и выполняет Liquibase при single-replica startup. Если Secret или provider недоступен, установите `openai.enabled=false`: каталог и сохранение сессий продолжат работать в явном stub-режиме.
+
+Проверка после rollout:
+
+```bash
+kubectl -n playsay-dev rollout status deploy/ai-tutor-service
+kubectl -n playsay-dev get svc ai-tutor-service
+kubectl -n playsay-dev port-forward svc/ai-tutor-service 18087:80
+curl -fsS http://127.0.0.1:18087/actuator/health
+```
+
+Production-допуск детских голосовых сессий блокируется до документированного родительского согласия, сроков удаления аудио и safety-eval свободных тем. AI-тренер не выполняет pronunciation scoring: неразборчивую реплику нужно запросить повторно без сохранения `TURN_EVALUATION`.

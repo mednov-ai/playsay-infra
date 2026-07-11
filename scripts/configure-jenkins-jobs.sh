@@ -9,6 +9,7 @@ DEFAULT_JOB_NAMES=(
   playsay-platform-dispatch-develop
   playsay-platform-develop
   playsay-api-gateway-develop
+  playsay-ai-tutor-service-develop
   playsay-web-app-develop
   playsay-collaboration-service-develop
   playsay-media-service-develop
@@ -22,6 +23,7 @@ DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-api-gateway-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-ai-tutor-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-web-app-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-collaboration-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-media-service-develop.xml"

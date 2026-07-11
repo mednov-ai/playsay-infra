@@ -1,0 +1,29 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+build: { name: local-0, number: "0", branch: local, branchLabel: local, commit: unknown, commitShort: unknown }
+replicaCount: 1
+service: { type: ClusterIP, port: 80, targetPort: 8087 }
+auth:
+  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
+database:
+  existingSecret: playsay-app-db
+  jdbcUriKey: jdbc-uri
+  usernameKey: username
+  passwordKey: password
+  liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
+openai:
+  enabled: false
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+  baseUrl: https://api.openai.com/v1
+  realtimeModel: gpt-realtime-2.1
+runtime:
+  javaToolOptions: ""
+resources:
+  requests: { cpu: 50m, memory: 192Mi }
+  limits: { cpu: "1", memory: 640Mi }
