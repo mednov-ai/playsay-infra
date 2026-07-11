@@ -5,6 +5,9 @@ image:
 imagePullSecrets: []
 build: { name: local-0, number: "0", branch: local, branchLabel: local, commit: unknown, commitShort: unknown }
 replicaCount: 1
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate: { maxSurge: 0, maxUnavailable: 1 }
 service: { type: ClusterIP, port: 80, targetPort: 8088 }
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay

@@ -5,6 +5,9 @@ imagePullSecrets:
   - name: ghcr-pull-secret
 build: {name: vocabulary-dev-4, number: "4", branch: develop, branchLabel: vocabulary-dev, commit: e4c251f9585374bebc2173c9422b3278730c632a, commitShort: e4c251f95853}
 service: {type: ClusterIP}
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate: { maxSurge: 0, maxUnavailable: 1 }
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs

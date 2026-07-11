@@ -8,7 +8,7 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 `vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для необязательных учебных переводов. Jenkins job `playsay-vocabulary-service-develop` выполняет Liquibase migration, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек.
 
-Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`.
+Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`. RollingUpdate использует `maxSurge=0`/`maxUnavailable=1`, чтобы single-node dev не запускал две JVM словаря одновременно.
 
 ## Sprint 0 Goal
 
