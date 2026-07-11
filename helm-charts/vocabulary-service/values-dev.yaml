@@ -1,13 +1,13 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: "vocabulary-dev-4"
+  tag: "vocabulary-dev-5"
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-dev-4, number: "4", branch: develop, branchLabel: vocabulary-dev, commit: e4c251f9585374bebc2173c9422b3278730c632a, commitShort: e4c251f95853}
+build: {name: vocabulary-dev-5, number: "5", branch: develop, branchLabel: vocabulary-dev, commit: bd844c6ff41c5bf52083bb497b1a88ddde337a5a, commitShort: bd844c6ff41c}
 service: {type: ClusterIP}
 updateStrategy:
   type: RollingUpdate
-  rollingUpdate: { maxSurge: 0, maxUnavailable: 1 }
+  rollingUpdate: {maxSurge: 0, maxUnavailable: 1}
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
