@@ -6,7 +6,7 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Vocabulary service
 
-`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для необязательных учебных переводов. Jenkins job `playsay-vocabulary-service-develop` выполняет Liquibase migration, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек.
+`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для учебных переводов. Из этого secret Deployment читает `api-key` и `model`; нельзя задавать отдельную hardcoded-модель только для словаря, иначе доступный ключ может получить `model_not_found`/access error. Jenkins job `playsay-vocabulary-service-develop` выполняет Liquibase migration, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до четырёх вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
 
 Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`. RollingUpdate использует `maxSurge=0`/`maxUnavailable=1`, чтобы single-node dev не запускал две JVM словаря одновременно.
 
@@ -1026,7 +1026,7 @@ Frontend image builds are intentionally runtime-only too. `playsay-web-app-devel
 
 The `playsay-web-app-develop` Node container sets `NODE_OPTIONS=--max-old-space-size=1024` inside its `1536Mi` memory limit and requests `768Mi`. The Vite production bundle uses about `878Mi` Node heap plus `esbuild`/native overhead, so `1Gi` cgroup memory is insufficient; keep module parallelism at `1` on the dev VPS.
 
-The `playsay-api-gateway-develop` Gradle container caps its daemon with `-Xmx384m -XX:MaxMetaspaceSize=256m` and uses a `2Gi` container limit. Its test stage passes `-PlowMemoryTests`, which keeps one test fork, uses a `512m` test heap and restarts the worker after every 8 classes so Spring/H2 context caches are released. Do not raise the container back to `3Gi` on the single-node VPS: an uncapped API test/package run can drive available host memory below 200Mi and cause cluster-wide swap thrash. Keep `--max-workers=1` and in-process Kotlin compilation.
+The `playsay-api-gateway-develop` Gradle container caps its daemon with `-Xmx384m -XX:MaxMetaspaceSize=256m` and uses a `2Gi` container limit. Its test stage passes `-PlowMemoryTests`, which keeps one test fork, uses a `512m` test heap and restarts the worker after every 8 classes so Spring/H2 context caches are released. Do not raise the container back to `3Gi` on the single-node VPS: an uncapped API test/package run can drive available host memory below 200Mi and cause cluster-wide swap thrash. Keep `--max-workers=1` and pass `-Pkotlin.compiler.execution.strategy=in-process`; the `-D` system-property form is not consumed by the Kotlin Gradle Plugin and starts a separate compiler daemon that can exhaust the dev node.
 
 Jenkins agent requests are kept moderate so module pods can schedule on the dev VPS while Keycloak, application PostgreSQL, and all dev app pods are running. The dispatcher caps downstream fan-out with `MAX_PARALLEL_MODULE_JOBS` so one webhook build creates at most one module agent pod by default on the single-node dev VPS. Module jobs use leaner pods than the old full core pipeline: a backend job carries only Gradle plus its optional Liquibase/Kaniko/tools containers, `web-app` carries Node/Kaniko/tools/smoke, and `collaboration-service` carries Node/Kaniko/tools. Backend Gradle stages use `--max-workers=1` with the Kotlin compiler in-process. Gradle containers may share the `jenkins-agent-cache` PVC, but each Gradle-based pipeline must mount a job-specific subPath such as `gradle-registration-service` or `gradle-api-gateway`; using one shared `subPath: gradle` lets parallel module jobs fight over `/home/gradle/.gradle/caches/journal-1` and fail before tests start. Jenkins agent pods explicitly use serviceAccount `jenkins`; `deploy-cluster-addons.sh` grants it access to read ArgoCD Applications and `playsay-dev` deployments/pods. Rollout waiting is centralized in `scripts/ci/wait-for-argocd-rollout.sh`, which expects the `playsay-infra` GitHub webhook to wake ArgoCD and verifies `Synced/Healthy`, `playsay.io/build-name`, ready replicas, and ready pods. For recovery only, module jobs accept `ARGOCD_REFRESH_MODE=annotate`, which re-enables the old hard-refresh annotation. The dev `api-gateway`, `media-service`, and `payment-service` charts intentionally keep CPU requests `50m` and `maxSurge=0/maxUnavailable=1` to avoid rollout deadlock on the single-node dev VPS.
 
@@ -1272,7 +1272,7 @@ The dev Helm values enable OpenAI through Kubernetes secret `playsay-openai` in 
 Create or update the secret from a local terminal without printing the key:
 
 ```bash
-ssh -tt root@89.124.113.223 'bash -lc '"'"'
+ssh -tt root@146.103.126.15 'bash -lc '"'"'
 set -euo pipefail
 
 read -rsp "OpenAI API key: " OPENAI_API_KEY
@@ -1292,14 +1292,14 @@ KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-o
 Expected verification output is `playsay-openai` with `DATA` equal to `2`. Do not decode or paste the secret values into chat, Git, logs, or docs. To verify only key names without decoding values:
 
 ```bash
-ssh root@89.124.113.223 \
+ssh root@146.103.126.15 \
   'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai -o jsonpath="{.data}"'
 ```
 
 After deploying the chart, verify that the pod references the secret without printing values:
 
 ```bash
-ssh root@89.124.113.223 \
+ssh root@146.103.126.15 \
   'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get deploy api-gateway -o jsonpath="{.spec.template.spec.containers[0].env[?(@.name==\"PLAYSAY_AI_PROVIDER\")].value}"'
 ```
 
