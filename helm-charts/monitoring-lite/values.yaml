@@ -28,6 +28,13 @@ vmagent:
     tag: v1.123.0
   scrapeInterval: 30s
   evaluationInterval: 30s
+  applicationScrapes:
+    - jobName: playsay-api-gateway
+      metricsPath: /actuator/prometheus
+      target: api-gateway.playsay-dev.svc.cluster.local:80
+    - jobName: playsay-media-service
+      metricsPath: /actuator/prometheus
+      target: media-service.playsay-dev.svc.cluster.local:80
   hostNetwork: true
   hostNodeExporter:
     enabled: true

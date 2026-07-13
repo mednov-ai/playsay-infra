@@ -10,6 +10,14 @@ data:
       scrape_interval: {{ .Values.vmagent.scrapeInterval }}
 
     scrape_configs:
+      {{- range .Values.vmagent.applicationScrapes }}
+      - job_name: {{ .jobName | quote }}
+        metrics_path: {{ .metricsPath | quote }}
+        static_configs:
+          - targets:
+              - {{ .target | quote }}
+      {{- end }}
+
       {{- if .Values.vmagent.hostNodeExporter.enabled }}
       - job_name: node-exporter-host
         static_configs:
