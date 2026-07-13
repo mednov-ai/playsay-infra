@@ -13,7 +13,7 @@ auth:
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 database:
   existingSecret: playsay-app-db
-  liquibaseEnabled: "true"
+  liquibaseEnabled: "false"
   hikariMaxPoolSize: "3"
 openai:
   enabled: true
