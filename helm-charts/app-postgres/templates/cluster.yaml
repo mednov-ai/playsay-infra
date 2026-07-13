@@ -10,6 +10,10 @@ metadata:
 spec:
   instances: {{ .Values.cluster.instances }}
   imageName: {{ .Values.cluster.imageName | quote }}
+  stopDelay: {{ .Values.cluster.stopDelay }}
+  smartShutdownTimeout: {{ .Values.cluster.smartShutdownTimeout }}
+  probes:
+    {{- toYaml .Values.cluster.probes | nindent 4 }}
   bootstrap:
     initdb:
       database: {{ .Values.cluster.database | quote }}
