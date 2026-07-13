@@ -48,7 +48,7 @@ spec:
             {{- if .Values.runtime.javaToolOptions }}
             - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
             {{- end }}
-          startupProbe: { httpGet: { path: /actuator/health/liveness, port: http }, failureThreshold: 24, periodSeconds: 10 }
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, periodSeconds: 20 }
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: http }, failureThreshold: 24, periodSeconds: 10, timeoutSeconds: 5 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, periodSeconds: 10, timeoutSeconds: 5 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, failureThreshold: 6, periodSeconds: 20, timeoutSeconds: 5 }
           resources: {{- toYaml .Values.resources | nindent 12 }}
