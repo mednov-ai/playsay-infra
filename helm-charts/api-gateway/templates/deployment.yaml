@@ -125,6 +125,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mediaService.existingSecret | quote }}
                   key: {{ .Values.mediaService.serviceTokenKey | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_CACHE_REQUEST_TIMEOUT_SECONDS
+              value: {{ .Values.mediaService.cacheRequestTimeoutSeconds | quote }}
             - name: PLAYSAY_PAYMENT_SERVICE_BASE_URL
               value: {{ .Values.paymentService.baseUrl | quote }}
             - name: PLAYSAY_PAYMENT_SERVICE_TOKEN
@@ -151,6 +153,14 @@ spec:
               value: {{ .Values.video.youtube.rfRelay.geoCountryHeader | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_REQUIRE_GEO_COUNTRY
               value: {{ .Values.video.youtube.rfRelay.requireGeoCountry | quote }}
+            - name: PLAYSAY_YOUTUBE_CACHE_ENABLED
+              value: {{ .Values.video.youtube.cache.enabled | quote }}
+            - name: PLAYSAY_YOUTUBE_CACHE_POLL_DELAY_MS
+              value: {{ .Values.video.youtube.cache.pollDelayMs | quote }}
+            - name: PLAYSAY_YOUTUBE_CACHE_LEASE_SECONDS
+              value: {{ .Values.video.youtube.cache.leaseSeconds | quote }}
+            - name: PLAYSAY_YOUTUBE_CACHE_RETENTION_DAYS
+              value: {{ .Values.video.youtube.cache.retentionDays | quote }}
             {{- if eq .Values.storage.provider "s3" }}
             - name: PLAYSAY_S3_ENDPOINT
               value: {{ .Values.storage.s3.endpoint | quote }}

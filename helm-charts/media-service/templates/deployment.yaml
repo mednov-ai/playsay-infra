@@ -28,6 +28,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: youtube-cache-temp
+          emptyDir:
+            sizeLimit: {{ .Values.cacheTempStorage.sizeLimit | quote }}
       containers:
         - name: media-service
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -55,6 +59,16 @@ spec:
               value: {{ .Values.mediaService.maxThumbnailBytes | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_YTDLP_PATH
               value: {{ .Values.mediaService.ytdlpPath | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_FFMPEG_PATH
+              value: {{ .Values.mediaService.ffmpegPath | quote }}
+            - name: PLAYSAY_YOUTUBE_CACHE_ENABLED
+              value: {{ .Values.mediaService.youtubeCacheEnabled | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_CACHE_DOWNLOAD_TIMEOUT_SECONDS
+              value: {{ .Values.mediaService.cacheDownloadTimeoutSeconds | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_CACHE_MAX_VIDEO_BYTES
+              value: {{ .Values.mediaService.cacheMaxVideoBytes | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_CACHE_TEMP_DIRECTORY
+              value: {{ .Values.mediaService.cacheTempDirectory | quote }}
             - name: PLAYSAY_STORAGE_PROVIDER
               value: {{ .Values.storage.provider | quote }}
             {{- if eq .Values.storage.provider "s3" }}
@@ -79,6 +93,9 @@ spec:
             - name: PLAYSAY_S3_CREATE_BUCKET
               value: {{ .Values.storage.s3.createBucket | quote }}
             {{- end }}
+          volumeMounts:
+            - name: youtube-cache-temp
+              mountPath: {{ .Values.mediaService.cacheTempDirectory | quote }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

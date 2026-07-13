@@ -28,6 +28,14 @@ mediaService:
   maxUpstreamRangeBytes: "1048576"
   maxThumbnailBytes: "5242880"
   ytdlpPath: /usr/local/bin/yt-dlp
+  ffmpegPath: /usr/local/bin/ffmpeg
+  youtubeCacheEnabled: "false"
+  cacheDownloadTimeoutSeconds: "600"
+  cacheMaxVideoBytes: "262144000"
+  cacheTempDirectory: /tmp/playsay-media-cache
+
+cacheTempStorage:
+  sizeLimit: 1Gi
 
 storage:
   provider: memory

@@ -54,6 +54,7 @@ mediaService:
   baseUrl: http://media-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-media
   serviceTokenKey: service-token
+  cacheRequestTimeoutSeconds: "660"
 paymentService:
   baseUrl: http://payment-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-payment
@@ -71,6 +72,11 @@ video:
       enabled: "true"
       geoCountryHeader: X-PlaySay-Geo-Country
       requireGeoCountry: "false"
+    cache:
+      enabled: "true"
+      pollDelayMs: "5000"
+      leaseSeconds: "900"
+      retentionDays: "30"
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:

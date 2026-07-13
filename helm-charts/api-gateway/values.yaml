@@ -71,6 +71,7 @@ mediaService:
   baseUrl: http://media-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-media
   serviceTokenKey: service-token
+  cacheRequestTimeoutSeconds: "660"
 
 paymentService:
   baseUrl: http://payment-service.playsay-dev.svc.cluster.local
@@ -93,6 +94,11 @@ video:
       enabled: "false"
       geoCountryHeader: ""
       requireGeoCountry: "true"
+    cache:
+      enabled: "false"
+      pollDelayMs: "5000"
+      leaseSeconds: "900"
+      retentionDays: "30"
 
 runtime:
   javaToolOptions: ""
