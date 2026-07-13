@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-53"
+  tag: "web-codex-natural-avatar-blink-54"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-53
-  number: "53"
-  branch: develop
-  branchLabel: web-dev
-  commit: 29a6e6aae66d9b6d2318361a0d01919abe89b654
-  commitShort: "29a6e6aae66d"
+  name: web-codex-natural-avatar-blink-54
+  number: "54"
+  branch: codex/natural-avatar-blink
+  branchLabel: web-codex-natural-avatar-blink
+  commit: 888e888b297ff47e238fa25df694fae06f7dff6c
+  commitShort: "888e888b297f"
 service:
   type: NodePort
   nodePort: 32083
