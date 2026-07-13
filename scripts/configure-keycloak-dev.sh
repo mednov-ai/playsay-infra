@@ -11,6 +11,9 @@ API_CLIENT_ID="${KEYCLOAK_API_CLIENT_ID:-playsay-api}"
 REGISTRATION_CLIENT_ID="${KEYCLOAK_REGISTRATION_CLIENT_ID:-playsay-registration-service}"
 REGISTRATION_SECRET_NAMESPACE="${REGISTRATION_SECRET_NAMESPACE:-playsay-dev}"
 REGISTRATION_SECRET_NAME="${REGISTRATION_SECRET_NAME:-playsay-registration}"
+PLAYSAY_DATA_NAMESPACE="${PLAYSAY_DATA_NAMESPACE:-playsay-data}"
+PLAYSAY_POSTGRES_POD="${PLAYSAY_POSTGRES_POD:-playsay-postgres-1}"
+PLAYSAY_DATABASE="${PLAYSAY_DATABASE:-playsay}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 CURL_TLS_ARGS=()
@@ -118,6 +121,67 @@ ensure_realm_theme() {
       }' \
     | kc_curl -X PUT -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
       -d @- "$KEYCLOAK_URL/admin/realms/$REALM" >/dev/null
+}
+
+ensure_managed_student_user_profile() {
+  local profile
+
+  profile=$(kc_curl -H "Authorization: Bearer $1" \
+    "$KEYCLOAK_URL/admin/realms/$REALM/users/profile")
+  printf '%s' "$profile" \
+    | jq '
+        .attributes |= (
+          map(
+            if .name == "email" or .name == "lastName" then
+              del(.required)
+            elif .name == "playsay_managed_student" then
+              .permissions = {view: ["admin"], edit: ["admin"]}
+            else
+              .
+            end
+          )
+          | if any(.name == "playsay_managed_student") then
+              .
+            else
+              . + [{
+                name: "playsay_managed_student",
+                displayName: "Managed student",
+                permissions: {view: ["admin"], edit: ["admin"]},
+                multivalued: false
+              }]
+            end
+        )
+      ' \
+    | kc_curl -X PUT -H "Authorization: Bearer $1" -H "Content-Type: application/json" \
+      -d @- "$KEYCLOAK_URL/admin/realms/$REALM/users/profile" >/dev/null
+}
+
+backfill_managed_student_attributes() {
+  local token="$1"
+  local usernames
+
+  if ! kubectl -n "$PLAYSAY_DATA_NAMESPACE" get pod "$PLAYSAY_POSTGRES_POD" >/dev/null 2>&1; then
+    echo "Skipping managed-student Keycloak backfill: PostgreSQL pod is unavailable." >&2
+    return
+  fi
+
+  if ! usernames=$(kubectl -n "$PLAYSAY_DATA_NAMESPACE" exec "$PLAYSAY_POSTGRES_POD" -c postgres -- \
+    psql -U postgres -d "$PLAYSAY_DATABASE" -Atc \
+      "select username from app_user where managed_by_teacher = true and username is not null order by username" 2>/dev/null); then
+    echo "Skipping managed-student Keycloak backfill: app_user is unavailable." >&2
+    return
+  fi
+
+  while IFS= read -r username; do
+    [[ -n "$username" ]] || continue
+    local id
+    id=$(user_id "$token" "$username")
+    [[ -n "$id" ]] || continue
+    kc_curl -H "Authorization: Bearer $token" "$KEYCLOAK_URL/admin/realms/$REALM/users/$id" \
+      | jq '.attributes = ((.attributes // {}) + {playsay_managed_student: ["true"]})' \
+      | kc_curl -X PUT -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
+        -d @- "$KEYCLOAK_URL/admin/realms/$REALM/users/$id" >/dev/null
+  done <<< "$usernames"
 }
 
 ensure_role() {
@@ -377,6 +441,7 @@ main() {
 
   ensure_realm "$token"
   ensure_realm_theme "$token"
+  ensure_managed_student_user_profile "$token"
   ensure_role "$token" STUDENT
   ensure_role "$token" TEACHER
   ensure_role "$token" ADMIN
@@ -388,6 +453,7 @@ main() {
   ensure_user "$token" student-demo-4 student-demo-4@play-and-say.ru Student "Demo 4" STUDENT student-demo-4-password
   ensure_user "$token" teacher-demo teacher-demo@play-and-say.ru Teacher Demo TEACHER teacher-demo-password
   ensure_user "$token" admin-demo admin-demo@play-and-say.ru Admin Demo ADMIN admin-demo-password
+  backfill_managed_student_attributes "$token"
 
   if [[ "${SYNC_JENKINS_SMOKE_SECRET:-true}" == "true" && -x "$ROOT_DIR/scripts/sync-keycloak-dev-users-secret.sh" ]]; then
     SOURCE_NAMESPACE="$KEYCLOAK_NAMESPACE" \
