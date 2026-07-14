@@ -38,6 +38,8 @@ spec:
             - { name: PLAYSAY_AI_TUTOR_REALTIME_PROVIDER, value: {{ ternary "openai" "stub" .Values.openai.enabled | quote }} }
             - { name: PLAYSAY_AI_TUTOR_OPENAI_BASE_URL, value: {{ .Values.openai.baseUrl | quote }} }
             - { name: PLAYSAY_AI_TUTOR_REALTIME_MODEL, value: {{ .Values.openai.realtimeModel | quote }} }
+            - name: PLAYSAY_USER_DATA_SERVICE_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ .Values.userData.existingSecret | quote }}, key: {{ .Values.userData.serviceTokenKey | quote }} } }
             {{- if .Values.openai.enabled }}
             - name: PLAYSAY_AI_TUTOR_OPENAI_API_KEY
               valueFrom: { secretKeyRef: { name: {{ .Values.openai.existingSecret | quote }}, key: {{ .Values.openai.apiKeyKey | quote }} } }

@@ -523,10 +523,16 @@ Runtime wiring:
   - `email-service.playsay-dev.svc.cluster.local`
 - api-gateway env:
   - `PLAYSAY_REGISTRATION_SERVICE_BASE_URL`
+  - `PLAYSAY_REGISTRATION_SERVICE_TOKEN`
+  - `PLAYSAY_USER_DATA_SERVICE_TOKEN`
+  - `PLAYSAY_AI_TUTOR_SERVICE_BASE_URL`
+  - `PLAYSAY_VOCABULARY_SERVICE_BASE_URL`
+  - `PLAYSAY_KEYBOARD_SERVICE_BASE_URL`
   - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
   - `PLAYSAY_EMAIL_SERVICE_TOKEN`
   - `PLAYSAY_PUBLIC_APP_URL`
 - registration-service env:
+  - `PLAYSAY_REGISTRATION_SERVICE_TOKEN`
   - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
   - `PLAYSAY_REGISTRATION_PASSWORD_RESET_CODE_TTL_MINUTES` (default `15`)
   - `PLAYSAY_REGISTRATION_PASSWORD_RESET_MAX_ATTEMPTS` (default `5`)
@@ -559,7 +565,7 @@ Run or rerun Keycloak bootstrap after this change:
 ./scripts/configure-keycloak-dev.sh
 ```
 
-It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update and role reads, enables direct access grants on the public `playsay-web` client for server-side managed-student invite exchange, and writes `keycloak-client-id` plus `keycloak-client-secret` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Secret values are not printed.
+It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update/delete and role reads, enables direct access grants on the public `playsay-web` client for server-side managed-student invite exchange, and writes `keycloak-client-id`, `keycloak-client-secret` plus a stable randomly generated `service-token` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Re-running the script preserves an existing service token. Secret values are not printed. The same `service-token` is mounted into `api-gateway`, `registration-service`, `ai-tutor-service`, `vocabulary-service` and `keyboard-service` for internal user-management/data-purge calls only; it must never be exposed to the SPA.
 
 Create the `playsay-email` secret before syncing `email-service` and `registration-service`. For dev, use Unisender Go. Keep the API key outside Git and do not print it:
 
@@ -592,7 +598,7 @@ Template rows contain `subject_template`, `text_template`, `html_template`, `ver
 Do not commit or print email provider credentials. After creating or rotating `playsay-registration` or `playsay-email`, restart the affected deployments so env vars are refreshed:
 
 ```bash
-kubectl -n playsay-dev rollout restart deployment/api-gateway deployment/registration-service deployment/email-service
+kubectl -n playsay-dev rollout restart deployment/api-gateway deployment/registration-service deployment/email-service deployment/ai-tutor-service deployment/vocabulary-service deployment/keyboard-service
 kubectl -n playsay-dev rollout status deployment/registration-service
 kubectl -n playsay-dev rollout status deployment/email-service
 ```
@@ -1257,10 +1263,32 @@ Protected endpoints:
 - `PUT /users/me/profile` updates editable app-level fields: `displayName`, `locale`, `timezone`, and `learningGoal`.
 - `DELETE /users/me/profile` resets editable app-level fields for the current user.
 - `GET /admin/users` lists known app-level user profiles and requires the `ADMIN` role.
+- `/admin/user-management/users|operations|students/*/teacher|delegations` provides the admin user-management facade.
+- `/teacher/students|delegations` and `/teachers/directory` provide primary/delegated student management and the minimal active teacher directory.
 - `GET/POST /schedule/lessons`, `GET/PUT/DELETE /schedule/lessons/{lessonId}` manage scheduled lessons.
 - `POST /schedule/lessons/{lessonId}/room-token` returns a short-lived LiveKit join token for a teacher/admin or a student participant.
 
 Sprint 2 moved UserProfile data out of the in-memory dev store into application PostgreSQL. Keycloak remains the source of identity and roles. `api-gateway` now stores the app-level profile fields in `app_user` and refreshes username, email, name, and roles from each JWT access.
+
+### User management and delegation
+
+No new deployment, ArgoCD application or Jenkins job is introduced. `api-gateway` owns `app_user.managed_by_teacher_user_id`, `teacher_delegation`, `teacher_delegation_student`, audit rows and background deletion operations. `registration-service` exclusively owns Keycloak Admin mutations. Deploy in this order: internal token wiring/endpoints, `api-gateway` Liquibase migration, `api-gateway`, then `web-app`.
+
+Delegation periods are stored as instants converted from the primary teacher timezone (fallback `Europe/Moscow`); `ends_at` is exclusive at the next local day boundary. A substitute receives only student-scoped access. Schedule, classroom/collaboration, homework and AI Tutor enforce `PRIMARY_TEACHER`, `ACTIVE_DELEGATE`, `ADMIN` or `DENIED` server-side. A group lesson owned by the primary teacher can be started/completed by a substitute only when every participant is actively delegated.
+
+Deletion is asynchronous and idempotent. `DELETE /api/admin/user-management/users/{subject}` returns `202` with an operation id; poll `/api/admin/user-management/operations/{operationId}` until `COMPLETED` or `FAILED`. Teacher deletion requires `replacementTeacherSubject` whenever dependent students/future lessons/active assignments/materials exist, and an `IN_PROGRESS` lesson blocks the request. The processor transfers ownership, revokes delegations, removes future student assignments, calls the three internal purge endpoints, deletes Keycloak invites/account through `registration-service`, and finally tombstones personal app-profile fields while historical rows remain anonymized.
+
+Internal user-data purge endpoints are `DELETE /internal/user-data/{subject}` on `ai-tutor-service`, `vocabulary-service` and `keyboard-service`, all requiring `X-PlaySay-Service-Token`. They fail closed when the token is absent. `api-gateway` does not delete the Keycloak account until all three return `204`; a downstream failure leaves the operation `FAILED` for diagnosis/retry.
+
+Operational checks:
+
+```bash
+kubectl -n playsay-dev get secret playsay-registration -o jsonpath='{.data.service-token}' | wc -c
+kubectl -n playsay-dev get deploy api-gateway registration-service ai-tutor-service vocabulary-service keyboard-service
+kubectl -n playsay-dev logs deploy/api-gateway --since=15m | grep -E 'User-data purge|USER_DELETE_FAILED'
+```
+
+Do not decode or print the token during normal verification. Role/self/last-admin protections are application checks; Keycloak console changes bypass the app audit and should remain break-glass operations only.
 
 Dev runtime configuration is passed through the Helm chart:
 

@@ -26,6 +26,9 @@ openai:
   modelKey: model
   baseUrl: https://api.openai.com/v1
   model: gpt-5.4-mini
+userData:
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:

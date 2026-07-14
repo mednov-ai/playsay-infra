@@ -80,6 +80,15 @@ paymentService:
 
 registrationService:
   baseUrl: http://registration-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
+
+userData:
+  aiTutorBaseUrl: http://ai-tutor-service.playsay-dev.svc.cluster.local
+  vocabularyBaseUrl: http://vocabulary-service.playsay-dev.svc.cluster.local
+  keyboardBaseUrl: http://keyboard-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
 
 emailService:
   baseUrl: http://email-service.playsay-dev.svc.cluster.local

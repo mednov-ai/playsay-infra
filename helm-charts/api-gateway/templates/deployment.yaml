@@ -137,6 +137,22 @@ spec:
                   optional: true
             - name: PLAYSAY_REGISTRATION_SERVICE_BASE_URL
               value: {{ .Values.registrationService.baseUrl | quote }}
+            - name: PLAYSAY_REGISTRATION_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.existingSecret | quote }}
+                  key: {{ .Values.registrationService.serviceTokenKey | quote }}
+            - name: PLAYSAY_USER_DATA_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.userData.existingSecret | quote }}
+                  key: {{ .Values.userData.serviceTokenKey | quote }}
+            - name: PLAYSAY_AI_TUTOR_SERVICE_BASE_URL
+              value: {{ .Values.userData.aiTutorBaseUrl | quote }}
+            - name: PLAYSAY_VOCABULARY_SERVICE_BASE_URL
+              value: {{ .Values.userData.vocabularyBaseUrl | quote }}
+            - name: PLAYSAY_KEYBOARD_SERVICE_BASE_URL
+              value: {{ .Values.userData.keyboardBaseUrl | quote }}
             - name: PLAYSAY_EMAIL_SERVICE_BASE_URL
               value: {{ .Values.emailService.baseUrl | quote }}
             - name: PLAYSAY_EMAIL_SERVICE_TOKEN

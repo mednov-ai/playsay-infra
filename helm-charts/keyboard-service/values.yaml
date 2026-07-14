@@ -41,6 +41,10 @@ anonymous:
     existingSecret: ""
     key: fingerprint-secret
 
+userData:
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
+
 resources:
   requests:
     cpu: 50m

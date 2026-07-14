@@ -31,6 +31,9 @@ database:
 
 registrationService:
   publicBaseUrl: https://online.play-and-say.ru
+  internalApi:
+    existingSecret: playsay-registration
+    serviceTokenKey: service-token
   tokenTtlHours: "24"
   resendCooldownSeconds: "300"
   rateLimit:

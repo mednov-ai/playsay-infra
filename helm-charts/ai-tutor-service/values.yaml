@@ -22,6 +22,9 @@ openai:
   apiKeyKey: api-key
   baseUrl: https://api.openai.com/v1
   realtimeModel: gpt-realtime-2.1
+userData:
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
 runtime:
   javaToolOptions: ""
 resources:

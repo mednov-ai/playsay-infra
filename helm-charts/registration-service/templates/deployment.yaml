@@ -65,6 +65,11 @@ spec:
             {{- end }}
             - name: PLAYSAY_REGISTRATION_PUBLIC_BASE_URL
               value: {{ .Values.registrationService.publicBaseUrl | quote }}
+            - name: PLAYSAY_REGISTRATION_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.internalApi.existingSecret | quote }}
+                  key: {{ .Values.registrationService.internalApi.serviceTokenKey | quote }}
             - name: PLAYSAY_REGISTRATION_TOKEN_TTL_HOURS
               value: {{ .Values.registrationService.tokenTtlHours | quote }}
             - name: PLAYSAY_REGISTRATION_RESEND_COOLDOWN_SECONDS

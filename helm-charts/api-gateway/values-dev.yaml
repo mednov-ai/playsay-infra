@@ -61,6 +61,8 @@ paymentService:
   serviceTokenKey: service-token
 registrationService:
   baseUrl: http://registration-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
 emailService:
   baseUrl: http://email-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-email

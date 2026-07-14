@@ -344,6 +344,9 @@ sync_registration_client_secret() {
   local client_secret
   local encoded_client_id
   local encoded_client_secret
+  local internal_service_token
+  local encoded_internal_service_token
+  local service_token_patch
   local patch
 
   client_secret=$(kc_curl -H "Authorization: Bearer $token" \
@@ -355,6 +358,12 @@ sync_registration_client_secret() {
   if ! kubectl -n "$REGISTRATION_SECRET_NAMESPACE" get secret "$REGISTRATION_SECRET_NAME" >/dev/null 2>&1; then
     kubectl -n "$REGISTRATION_SECRET_NAMESPACE" create secret generic "$REGISTRATION_SECRET_NAME" \
       --from-literal=created-by=configure-keycloak-dev >/dev/null
+  fi
+  if [ -z "$(kubectl -n "$REGISTRATION_SECRET_NAMESPACE" get secret "$REGISTRATION_SECRET_NAME" -o jsonpath='{.data.service-token}' 2>/dev/null)" ]; then
+    internal_service_token=$(openssl rand -base64 48)
+    encoded_internal_service_token=$(printf "%s" "$internal_service_token" | base64 | tr -d '\n')
+    service_token_patch=$(jq -n --arg serviceToken "$encoded_internal_service_token" '{data: {"service-token": $serviceToken}}')
+    kubectl -n "$REGISTRATION_SECRET_NAMESPACE" patch secret "$REGISTRATION_SECRET_NAME" --type merge -p "$service_token_patch" >/dev/null
   fi
   patch=$(jq -n \
     --arg clientId "$encoded_client_id" \
