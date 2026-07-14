@@ -1,9 +1,9 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: "ai-tutor-dev-12"
+  tag: "ai-tutor-users-2ef8964"
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: ai-tutor-dev-12, number: "12", branch: develop, branchLabel: ai-tutor-dev, commit: fd1fdfb5fd7bcc4360fc66a1c20a34373fd75e7c, commitShort: fd1fdfb5fd7b}
+build: {name: ai-tutor-users-2ef8964, number: "manual", branch: develop, branchLabel: ai-tutor-users, commit: 2ef89645d1880eb374c5c3263002342034110e98, commitShort: 2ef89645d188}
 service: {type: ClusterIP}
 auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay

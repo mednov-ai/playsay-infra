@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-dev-23"
+  tag: "registration-users-2ef8964"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-dev-23
-  number: "23"
+  name: registration-users-2ef8964
+  number: "manual"
   branch: develop
-  branchLabel: registration-dev
-  commit: 9352e1d3b9900bbaa318c685dbad93e0c42a5032
-  commitShort: "9352e1d3b990"
+  branchLabel: registration-users
+  commit: 2ef89645d1880eb374c5c3263002342034110e98
+  commitShort: "2ef89645d188"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
