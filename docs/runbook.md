@@ -1823,3 +1823,31 @@ curl -fsS http://127.0.0.1:18087/actuator/health
 ```
 
 Production-допуск детских голосовых сессий блокируется до документированного родительского согласия, сроков удаления аудио и safety-eval свободных тем. AI-тренер не выполняет pronunciation scoring: неразборчивую реплику нужно запросить повторно без сохранения `TURN_EVALUATION`.
+
+## Individual Lesson Push-to-Talk Translation
+
+Перевод в live classroom работает только для `INDIVIDUAL` lesson с одним teacher и одним student. Обе стороны отдельно включают функцию в интерфейсе. Browser listener создаёт второй WebRTC connection к OpenAI Realtime Translation; source LiveKit microphone track подключается к нему, пока remote participant удерживает push-to-talk, и отключается после capture tail до 300 мс. Переведённый звук и последние три caption существуют только в браузере, backend их не сохраняет.
+
+`api-gateway` выдаёт короткоживущие client secrets через authenticated `POST /api/schedule/lessons/{lessonId}/translation-session`. Постоянный provider key должен оставаться в существующем Secret `playsay-openai`, key `api-key`; не выводите его через `kubectl get secret`, shell history или логи. Dev values включают:
+
+```yaml
+lessonTranslation:
+  enabled: true
+  provider: openai
+  model: gpt-realtime-translate
+  baseUrl: https://api.openai.com/v1
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+```
+
+Chart передаёт в `api-gateway` `PLAYSAY_LESSON_TRANSLATION_ENABLED`, `PLAYSAY_LESSON_TRANSLATION_PROVIDER`, `PLAYSAY_LESSON_TRANSLATION_MODEL`, `PLAYSAY_LESSON_TRANSLATION_BASE_URL` и secret-backed `PLAYSAY_LESSON_TRANSLATION_API_KEY`. Перед classroom smoke проверьте только наличие Secret и rollout, не значение ключа:
+
+```bash
+kubectl -n playsay-dev get secret playsay-openai
+kubectl -n playsay-dev rollout status deploy/api-gateway
+kubectl -n playsay-dev logs deploy/api-gateway --since=10m | rg 'Lesson translation credential request failed|Started ApiGatewayApplication'
+```
+
+Smoke выполняется двумя authenticated браузерами в одном начавшемся individual lesson: teacher и student включают перевод, teacher удерживает кнопку и student слышит `app_user.locale` (`ru`, `de` или `fr`), затем student удерживает кнопку и teacher слышит английский. Во время translated output исходный голос должен быть приглушён, после реплики — восстановлен. После refresh captions должны исчезнуть. Group lesson, неподдерживаемый locale и участник вне lesson должны получать явный отказ без отправки аудио provider.
+
+Если provider недоступен или нужно быстро отключить контур, установите `lessonTranslation.enabled=false` и синхронизируйте ArgoCD. Это отключает только credential endpoint/translation control и не мешает основному LiveKit classroom. Не заменяйте этот rollback остановкой Docker, LiveKit, Amnezia или root site на `play-and-say.ru`.

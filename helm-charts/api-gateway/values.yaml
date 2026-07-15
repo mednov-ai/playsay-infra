@@ -48,6 +48,14 @@ livekit:
   apiSecretKey: api-secret
   tokenTtlSeconds: "3600"
 
+lessonTranslation:
+  enabled: false
+  provider: stub
+  model: gpt-realtime-translate
+  baseUrl: https://api.openai.com/v1
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+
 collaboration:
   websocketUrl: wss://online.play-and-say.ru/collab/ws
   existingSecret: playsay-collaboration

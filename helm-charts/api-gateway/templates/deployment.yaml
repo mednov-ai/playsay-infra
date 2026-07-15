@@ -102,6 +102,21 @@ spec:
             - name: PLAYSAY_LIVEKIT_TOKEN_TTL_SECONDS
               value: {{ .Values.livekit.tokenTtlSeconds | quote }}
             {{- end }}
+            - name: PLAYSAY_LESSON_TRANSLATION_ENABLED
+              value: {{ .Values.lessonTranslation.enabled | quote }}
+            - name: PLAYSAY_LESSON_TRANSLATION_PROVIDER
+              value: {{ .Values.lessonTranslation.provider | quote }}
+            - name: PLAYSAY_LESSON_TRANSLATION_MODEL
+              value: {{ .Values.lessonTranslation.model | quote }}
+            - name: PLAYSAY_LESSON_TRANSLATION_BASE_URL
+              value: {{ .Values.lessonTranslation.baseUrl | quote }}
+            {{- if .Values.lessonTranslation.enabled }}
+            - name: PLAYSAY_LESSON_TRANSLATION_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lessonTranslation.existingSecret | quote }}
+                  key: {{ .Values.lessonTranslation.apiKeyKey | quote }}
+            {{- end }}
             - name: PLAYSAY_COLLABORATION_WEBSOCKET_URL
               value: {{ .Values.collaboration.websocketUrl | quote }}
             - name: PLAYSAY_COLLABORATION_TOKEN_SECRET
