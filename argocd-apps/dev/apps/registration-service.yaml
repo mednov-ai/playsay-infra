@@ -17,9 +17,17 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: playsay-dev
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: registration-service
+      namespace: playsay-dev
+      jsonPointers:
+        - /spec/replicas
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true

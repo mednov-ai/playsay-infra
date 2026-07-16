@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: playsay-ci-capacity-scripts
+  namespace: jenkins
+data:
+  guard.sh: |
+    #!/bin/sh
+    set -eu
+
+    state_name="playsay-ci-capacity-state"
+    vm_url="http://monitoring-lite-victoria-metrics.monitoring.svc.cluster.local:8428/victoria-metrics/api/v1/query"
+    pod_name="${POD_NAME:?POD_NAME is required}"
+    breach_count=0
+
+    query_value() {
+      curl -fsS -G "$vm_url" --data-urlencode "query=$1" |
+        jq -er '.data.result[0].value[1] | tonumber'
+    }
+
+    while true; do
+      active="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.active}' 2>/dev/null || true)"
+      holder_pod="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.agentPod}' 2>/dev/null || true)"
+      if [ "$active" != "true" ] || [ "$holder_pod" != "$pod_name" ]; then
+        breach_count=0
+        sleep 15
+        continue
+      fi
+
+      ready="$(kubectl get nodes -o jsonpath='{range .items[*]}{range .status.conditions[?(@.type=="Ready")]}{.status}{end}{end}' 2>/dev/null || true)"
+      mem_available="$(query_value 'node_memory_MemAvailable_bytes' 2>/dev/null || true)"
+      io_wait="$(query_value '100 * avg(rate(node_cpu_seconds_total{mode="iowait"}[2m]))' 2>/dev/null || true)"
+
+      critical=false
+      if [ "$ready" != "True" ]; then
+        critical=true
+      elif [ -n "$mem_available" ] && awk "BEGIN { exit !($mem_available < 1073741824) }"; then
+        critical=true
+      elif [ -n "$io_wait" ] && awk "BEGIN { exit !($io_wait > 30) }"; then
+        critical=true
+      fi
+
+      if [ "$critical" = true ]; then
+        breach_count=$((breach_count + 1))
+      else
+        breach_count=0
+      fi
+
+      if [ "$ready" != "True" ] || [ "$breach_count" -ge 4 ]; then
+        echo "CI capacity guard is deleting agent pod $pod_name after a critical node threshold."
+        kubectl -n jenkins delete pod "$pod_name" --wait=false || true
+        exit 0
+      fi
+      sleep 15
+    done
+
+  watchdog.sh: |
+    #!/bin/sh
+    set -eu
+
+    state_name="playsay-ci-capacity-state"
+
+    restore_all() {
+      replicas="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.replicas}' 2>/dev/null || true)"
+      printf '%s\n' "$replicas" | while IFS='=' read -r workload count; do
+        [ -n "$workload" ] || continue
+        namespace="${workload%%/*}"
+        deployment="${workload#*/}"
+        kubectl -n "$namespace" scale deployment "$deployment" --replicas="$count" || true
+      done
+      kubectl -n jenkins patch configmap "$state_name" --type merge \
+        -p '{"data":{"active":"false","holder":"","agentPod":"","deadlineEpoch":"0","replicas":"","breachSinceEpoch":"0"}}' || true
+      kubectl -n jenkins patch lease playsay-ci-capacity --type merge \
+        -p '{"spec":{"holderIdentity":"","renewTime":null}}' || true
+    }
+
+    active="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.active}' 2>/dev/null || true)"
+    [ "$active" = "true" ] || exit 0
+
+    agent_pod="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.agentPod}' 2>/dev/null || true)"
+    deadline="$(kubectl -n jenkins get configmap "$state_name" -o jsonpath='{.data.deadlineEpoch}' 2>/dev/null || echo 0)"
+    now="$(date +%s)"
+
+    if [ -z "$agent_pod" ] || ! kubectl -n jenkins get pod "$agent_pod" >/dev/null 2>&1; then
+      echo "CI capacity watchdog is restoring workloads because agent pod is absent."
+      restore_all
+      exit 0
+    fi
+
+    if [ "${deadline:-0}" -gt 0 ] && [ "$now" -ge "$deadline" ]; then
+      echo "CI capacity watchdog is deleting expired agent pod $agent_pod and restoring workloads."
+      kubectl -n jenkins delete pod "$agent_pod" --wait=false || true
+      restore_all
+    fi
+

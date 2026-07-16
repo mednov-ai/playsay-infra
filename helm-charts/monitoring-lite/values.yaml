@@ -118,7 +118,8 @@ alertmanager:
 
 alerts:
   node:
-    memoryAvailableRatio: 0.15
+    memoryAvailableRatio: 0.25
+    memoryCriticalRatio: 0.15
     rootDiskAvailableRatio: 0.15
     swapUsedBytes: 536870912
   livekit:

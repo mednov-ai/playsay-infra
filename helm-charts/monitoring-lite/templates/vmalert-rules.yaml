@@ -11,12 +11,21 @@ data:
         rules:
           - alert: PlaySayNodeMemoryLow
             expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < {{ .Values.alerts.node.memoryAvailableRatio }}
-            for: 10m
+            for: 5m
             labels:
               severity: warning
             annotations:
               summary: "Play&Say dev VPS: мало свободной RAM"
-              description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryAvailableRatio 100.0 }}% больше 10 минут."
+              description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryAvailableRatio 100.0 }}% больше 5 минут."
+
+          - alert: PlaySayNodeMemoryCritical
+            expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < {{ .Values.alerts.node.memoryCriticalRatio }}
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Play&Say dev VPS: критически мало RAM"
+              description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryCriticalRatio 100.0 }}% больше 2 минут."
 
           - alert: PlaySayNodeSwapHigh
             expr: node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes > {{ .Values.alerts.node.swapUsedBytes }}
@@ -26,6 +35,33 @@ data:
             annotations:
               summary: "Play&Say dev VPS: активно используется swap"
               description: "Использование swap выше 512Mi больше 10 минут."
+
+          - alert: PlaySayNodeMemoryPressureStall
+            expr: rate(node_pressure_memory_waiting_seconds_total[2m]) > 0.05
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say dev VPS: memory PSI pressure"
+              description: "Процессы ждут память больше 5% времени."
+
+          - alert: PlaySayNodeIoPressureStall
+            expr: rate(node_pressure_io_waiting_seconds_total[2m]) > 0.20
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Play&Say dev VPS: I/O PSI pressure"
+              description: "Процессы ждут I/O больше 20% времени."
+
+          - alert: PlaySayJenkinsAgentStartedWithoutHeadroom
+            expr: count(kube_pod_info{namespace="jenkins",pod=~"playsay-.*-develop-.*"}) > 0 and on() (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < {{ .Values.alerts.node.memoryAvailableRatio }})
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Jenkins agent запущен без запаса памяти"
+              description: "Во время Jenkins agent MemAvailable ниже безопасных {{ mulf .Values.alerts.node.memoryAvailableRatio 100.0 }}%."
 
           - alert: PlaySayRootDiskLow
             expr: node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < {{ .Values.alerts.node.rootDiskAvailableRatio }}
