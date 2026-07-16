@@ -46,7 +46,9 @@ data:
         breach_count=0
       fi
 
-      if [ "$ready" != "True" ] || [ "$breach_count" -ge 4 ]; then
+      echo "CI capacity guard: ready=${ready:-unknown} memAvailable=${mem_available:-unknown} ioWait=${io_wait:-unknown} criticalSamples=$breach_count/5"
+
+      if [ "$ready" != "True" ] || [ "$breach_count" -ge 5 ]; then
         echo "CI capacity guard is deleting agent pod $pod_name after a critical node threshold."
         kubectl -n jenkins delete pod "$pod_name" --wait=false || true
         exit 0
@@ -92,4 +94,3 @@ data:
       kubectl -n jenkins delete pod "$agent_pod" --wait=false || true
       restore_all
     fi
-

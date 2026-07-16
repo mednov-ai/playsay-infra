@@ -29,6 +29,28 @@ roleRef:
   name: playsay-ci-capacity-manager
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: playsay-ci-capacity-node-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: playsay-ci-capacity-node-reader
+subjects:
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: jenkins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: playsay-ci-capacity-node-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: playsay-ci-capacity-manager
@@ -54,4 +76,3 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: playsay-ci-capacity-manager
-
