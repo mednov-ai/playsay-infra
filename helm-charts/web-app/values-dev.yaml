@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-77"
+  tag: "web-codex-classroom-content-focus-79"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-77
-  number: "77"
-  branch: develop
-  branchLabel: web-dev
-  commit: 64c4035c38aae0a154aa7791511d17c5ea3f6428
-  commitShort: "64c4035c38aa"
+  name: web-codex-classroom-content-focus-79
+  number: "79"
+  branch: codex/classroom-content-focus
+  branchLabel: web-codex-classroom-content-focus
+  commit: df17a1d6553b0f53933d9f37a923f054bbde4ff8
+  commitShort: "df17a1d6553b"
 service:
   type: NodePort
   nodePort: 32083
