@@ -1034,8 +1034,9 @@ Use the decoded value only in the GitHub webhook UI/API for `mednov-ai/playsay-i
 Jenkins first login:
 
 ```bash
-ssh root@89.124.113.223 \
-  "kubectl -n jenkins get secret jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
+ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
+  -o IdentitiesOnly=yes root@146.103.126.15 \
+  "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n jenkins get secret jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
 ```
 
 Jenkins URL:
@@ -1047,10 +1048,12 @@ https://ops.play-and-say.ru:18443/jenkins/
 Jenkins API checks require authentication. If local `kubectl` is not configured for the dev cluster, run the API check through SSH on the VPS and read the Jenkins admin credentials from the in-cluster secret without printing them:
 
 ```bash
-ssh root@89.124.113.223 '
+ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
+  -o IdentitiesOnly=yes root@146.103.126.15 '
 set -euo pipefail
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 JENKINS_URL="https://ops.play-and-say.ru:18443/jenkins"
-JENKINS_JOB_NAME="playsay-platform-develop"
+JENKINS_JOB_NAME="playsay-platform-dispatch-develop"
 JENKINS_USER="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
 JENKINS_PASSWORD="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
 curl -k -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
@@ -1059,7 +1062,7 @@ curl -k -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
 '
 ```
 
-Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
+The current agent SSH route is the explicit key and `146.103.126.15` command above. `89.124.113.223` is retired and must not be used for Jenkins or cluster diagnostics. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
 
 ## Headlamp Kubernetes UI
 
