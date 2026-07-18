@@ -1729,7 +1729,7 @@ Production-допуск детских голосовых сессий блок�
 
 ## Individual Lesson Push-to-Talk Translation
 
-Перевод в live classroom работает только для `INDIVIDUAL` lesson с одним teacher и одним student. Обе стороны отдельно включают функцию в интерфейсе. Browser listener создаёт второй WebRTC connection к OpenAI Realtime Translation; source LiveKit microphone track подключается к нему, пока remote participant удерживает push-to-talk, и отключается после capture tail до 300 мс. Переведённый звук и последние три caption существуют только в браузере, backend их не сохраняет.
+Перевод в live classroom работает только для `INDIVIDUAL` lesson с одним teacher и одним student и выключен для каждого ученика по умолчанию. До smoke основной преподаватель, активный замещающий преподаватель или администратор должен явно включить галку голосового перевода в карточке ученика. Без галки у teacher и student отсутствуют кнопка, статусы, captions, disclosure и связанные pointer/keyboard actions; frontend не вызывает translation API. После профильного разрешения обе стороны всё равно отдельно включают функцию внутри урока. Browser listener создаёт второй WebRTC connection к OpenAI Realtime Translation; source LiveKit microphone track подключается к нему, пока remote participant удерживает push-to-talk, и отключается после capture tail до 300 мс. Переведённый звук и последние три caption существуют только в браузере, backend их не сохраняет.
 
 `api-gateway` выдаёт короткоживущие client secrets через authenticated `POST /api/schedule/lessons/{lessonId}/translation-session`. Постоянный provider key должен оставаться в существующем Secret `playsay-openai`, key `api-key`; не выводите его через `kubectl get secret`, shell history или логи. Dev values включают:
 
@@ -1751,6 +1751,14 @@ kubectl -n playsay-dev rollout status deploy/api-gateway
 kubectl -n playsay-dev logs deploy/api-gateway --since=10m | rg 'Lesson translation credential request failed|Started ApiGatewayApplication'
 ```
 
-Smoke выполняется двумя authenticated браузерами в одном начавшемся individual lesson: teacher и student включают перевод, teacher удерживает кнопку и student слышит `app_user.locale` (`ru`, `de` или `fr`), затем student удерживает кнопку и teacher слышит английский. Во время translated output исходный голос должен быть приглушён, после реплики — восстановлен. После refresh captions должны исчезнуть. Group lesson, неподдерживаемый locale и участник вне lesson должны получать явный отказ без отправки аудио provider.
+Smoke выполняется двумя authenticated браузерами в одном начавшемся individual lesson:
+
+1. Оставьте профильную галку выключенной и войдите teacher и student. У обоих не должно быть кнопки, статусов, captions, disclosure или клавиатурного управления переводом; в Network не должно быть запросов к `translation-session`.
+2. Проверьте backend guard: запрос `POST /api/schedule/lessons/{lessonId}/translation-session` от участника урока возвращает `409` с `LESSON_TRANSLATION_PERMISSION_REQUIRED`, а в backend-логах нет попытки запроса credential provider.
+3. Основной преподаватель, активный замещающий преподаватель или администратор включает галку в карточке ученика. Обновите страницу classroom либо войдите заново в обоих браузерах; открытый без обновления room token не обязан менять UI.
+4. Teacher и student отдельно включают перевод внутри урока. Teacher удерживает кнопку и student слышит `app_user.locale` (`ru`, `de` или `fr`), затем student удерживает кнопку и teacher слышит английский. Во время translated output исходный голос должен быть приглушён, после реплики — восстановлен. После refresh captions должны исчезнуть.
+5. Снимите профильную галку. UI уже открытого classroom может оставаться до refresh/повторного входа, но новая попытка получить credentials должна сразу вернуть `409`; после обновления элементы перевода снова полностью отсутствуют.
+
+Group lesson, неподдерживаемый locale и участник вне lesson должны получать явный отказ без отправки аудио provider.
 
 Если provider недоступен или нужно быстро отключить контур, установите `lessonTranslation.enabled=false` и синхронизируйте ArgoCD. Это отключает только credential endpoint/translation control и не мешает основному LiveKit classroom. Не заменяйте этот rollback остановкой Docker, LiveKit, Amnezia или root site на `play-and-say.ru`.
