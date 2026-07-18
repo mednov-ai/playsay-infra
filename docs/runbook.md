@@ -564,6 +564,7 @@ Email texts are not hardcoded in code. `email-service` Liquibase creates and see
 - `registration-confirmation` in `ru`, `en`, `de`, `fr`
 - `password-reset-code` in `ru`, `en`, `de`, `fr`
 - `lesson-reminder-30m` in `ru`, `en`, `de`, `fr`
+- `lesson-rescheduled` in `ru`, `en`, `de`, `fr`
 
 Template rows contain `subject_template`, `text_template`, `html_template`, `version`, `enabled`, timestamps. Runtime rendering falls back to `ru` only if a localized row is missing. Edit rows carefully in DB or add a new Liquibase changeset; keep required model variables (`confirmationUrl`, `code`, `expiresMinutes`) intact.
 
@@ -607,6 +608,28 @@ Managed-student invite smoke:
 1. Sign in as `teacher-demo`, create a managed student from the schedule participant picker, create a lesson with that student, then use the lesson copy-links action.
 2. Open the returned `/join#ABC123` style link in a clean browser context. The fragment is a 6-character manual-entry invite code and must not be sent as a `?token=` query parameter; the SPA must read and clear it, call `/api/student-invites/consume`, store the returned Keycloak token set, and redirect to `/lessons/{lessonId}/classroom` without showing the Keycloak login form.
 3. Reopen the same invite link in another clean context; it must fail as already consumed or invalid.
+
+### Schedule reschedule and classroom/email smoke
+
+Run this after `api-gateway`, `email-service`, and `web-app` have all rolled out. Use the existing `teacher-demo` and `student-demo` browser profiles; do not repair lesson state with SQL.
+
+1. As `teacher-demo`, create or open a lesson more than 10 minutes in the future. The card and header must say it is planned, must not show a live/join action, and the preparation page must show the exact access-opening time while still allowing material preparation.
+2. Open `/lessons/{lessonId}/classroom` directly. The SPA must return to the schedule with a localized explanation; the API `/start` must return localized `409` for the owning teacher, while an unrelated user still sees `404`.
+3. From the lesson card menu choose the localized “change date and time” action. Confirm the dialog shows the assigned students and, for a recurring lesson, says only the selected occurrence changes. Save an actually different future time.
+4. Confirm the card changes immediately, the other occurrences remain unchanged, and the open classroom (if one was deliberately prepared inside the window before a second transfer) closes with the reschedule explanation.
+5. Confirm one `LESSON_RESCHEDULED` queue row per assigned student and rebuilt `LESSON_START_30M` rows. A student without email must become `SKIPPED`; a provider failure must become `FAILED` without reverting the lesson time. A second transfer before dispatch must cancel the older unsent reschedule row.
+6. Confirm the received `lesson-rescheduled` message is in the recipient locale and contains the lesson title, old and new local times, teacher, and lesson link. Check `email-service` logs for the delivery outcome without printing provider credentials.
+7. Enter a lesson during `start - 10m .. end + 10m` in Chromium and WebKit as teacher and student. After pre-join, both participants must remain connected; outside the window neither role receives a LiveKit token.
+
+Read-only queue verification on the VPS (replace the UUID, do not paste credentials):
+
+```bash
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-data exec playsay-postgres-1 -c postgres -- \
+  psql -d playsay -c "select reminder_type, recipient_role, status, due_at, previous_scheduled_start, previous_scheduled_end, scheduled_start_snapshot, scheduled_end_snapshot from lesson_email_reminder where lesson_id = '<lesson-uuid>' order by created_at;"
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev logs deploy/email-service --since=15m | grep -E 'lesson-rescheduled|delivery|provider'
+```
+
+For the known lesson `19.07.2026 10:00–10:45 Europe/Moscow`, saving the same time through this dialog is the supported repair for an erroneous early `IN_PROGRESS`: expect `SCHEDULED`, cleared actual timestamps, and rebuilt start reminders, but no `LESSON_RESCHEDULED` email because the time did not actually change. Verify email delivery with an actual reschedule of a disposable smoke lesson instead.
 
 ## YouTube RF Relay
 
