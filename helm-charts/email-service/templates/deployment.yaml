@@ -77,6 +77,23 @@ spec:
                   key: {{ .Values.emailService.fromAddressKey | quote }}
             - name: PLAYSAY_EMAIL_FROM_NAME
               value: {{ .Values.emailService.fromName | quote }}
+            - name: PLAYSAY_EMAIL_REPLAY_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.replayEncryptionKeyKey | quote }}
+            - name: PLAYSAY_EMAIL_DEFAULT_REPLAY_TTL
+              value: {{ .Values.emailService.defaultReplayTtl | quote }}
+            - name: PLAYSAY_EMAIL_PROVIDER_TRACKING_TTL
+              value: {{ .Values.emailService.providerTrackingTtl | quote }}
+            - name: PLAYSAY_EMAIL_PROVIDER_RECONCILE_WINDOW
+              value: {{ .Values.emailService.providerReconcileWindow | quote }}
+            - name: PLAYSAY_EMAIL_PROVIDER_RECONCILE_OVERLAP
+              value: {{ .Values.emailService.providerReconcileOverlap | quote }}
+            - name: PLAYSAY_EMAIL_PROVIDER_RECONCILE_POLL_MS
+              value: {{ .Values.emailService.providerReconcilePollMs | quote }}
+            - name: PLAYSAY_EMAIL_WEBHOOK_CHECK_MS
+              value: {{ .Values.emailService.webhookCheckMs | quote }}
             - name: PLAYSAY_EMAIL_SMTP_HOST
               valueFrom:
                 secretKeyRef:
@@ -117,6 +134,8 @@ spec:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.unisender.apiKeyKey | quote }}
                   optional: true
+            - name: PLAYSAY_EMAIL_UNISENDER_WEBHOOK_URL
+              value: {{ .Values.emailService.unisender.webhookUrl | quote }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

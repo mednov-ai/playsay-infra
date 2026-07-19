@@ -35,6 +35,13 @@ emailService:
   serviceTokenKey: service-token
   fromAddressKey: from-address
   fromName: Play&Say
+  replayEncryptionKeyKey: replay-encryption-key
+  defaultReplayTtl: PT72H
+  providerTrackingTtl: PT72H
+  providerReconcileWindow: PT5M
+  providerReconcileOverlap: PT1M
+  providerReconcilePollMs: "30000"
+  webhookCheckMs: "3600000"
   smtp:
     hostKey: smtp-host
     portKey: smtp-port
@@ -46,6 +53,7 @@ emailService:
     apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
     userId: ""
     apiKeyKey: unisender-api-key
+    webhookUrl: ""
 
 runtime:
   javaToolOptions: ""

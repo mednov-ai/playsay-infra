@@ -534,6 +534,14 @@ Runtime wiring:
   - `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL`
   - `PLAYSAY_EMAIL_UNISENDER_USER_ID`
   - `PLAYSAY_EMAIL_UNISENDER_API_KEY`
+  - `PLAYSAY_EMAIL_UNISENDER_WEBHOOK_URL`
+  - `PLAYSAY_EMAIL_REPLAY_ENCRYPTION_KEY` (base64-encoded 32-byte AES key; secret)
+  - `PLAYSAY_EMAIL_DEFAULT_REPLAY_TTL` (default `PT72H`)
+  - `PLAYSAY_EMAIL_PROVIDER_TRACKING_TTL` (default `PT72H`)
+  - `PLAYSAY_EMAIL_PROVIDER_RECONCILE_WINDOW` (default `PT5M`)
+  - `PLAYSAY_EMAIL_PROVIDER_RECONCILE_OVERLAP` (default `PT1M`)
+  - `PLAYSAY_EMAIL_PROVIDER_RECONCILE_POLL_MS` (default `30000`; polls an active async dump, while completed reconciliation windows advance every five minutes)
+  - `PLAYSAY_EMAIL_WEBHOOK_CHECK_MS` (default `3600000`)
 
 Run or rerun Keycloak bootstrap after this change:
 
@@ -547,6 +555,7 @@ Create the `playsay-email` secret before syncing `email-service` and `registrati
 
 ```bash
 export UNISENDER_API_KEY="<unisender-go-api-key>"
+export EMAIL_REPLAY_ENCRYPTION_KEY="$(openssl rand -base64 32)"
 
 kubectl -n playsay-dev create secret generic playsay-email \
   --from-literal=service-token="$(openssl rand -base64 32)" \
@@ -558,10 +567,29 @@ kubectl -n playsay-dev create secret generic playsay-email \
   --from-literal=smtp-auth="true" \
   --from-literal=smtp-starttls="true" \
   --from-literal=unisender-api-key="$UNISENDER_API_KEY" \
+  --from-literal=replay-encryption-key="$EMAIL_REPLAY_ENCRYPTION_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, and `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`; only `unisender-api-key` is secret. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body. On the Unisender Go `free_tier`, delivery may be limited to verified domains or verified recipient emails; provider error `403` / `code=903` means the recipient domain/email is not yet allowed by the provider, not that Play&Say rate limiting blocked registration.
+For an existing dev secret, add the replay key only if it is absent; do not rotate it while unexpired replay snapshots may still be resent:
+
+```bash
+if ! kubectl -n playsay-dev get secret playsay-email -o jsonpath='{.data.replay-encryption-key}' | grep -q .; then
+  REPLAY_SECRET_DATA="$(openssl rand -base64 32 | base64 | tr -d '\n')"
+  kubectl -n playsay-dev patch secret playsay-email --type merge -p "{\"data\":{\"replay-encryption-key\":\"$REPLAY_SECRET_DATA\"}}"
+fi
+```
+
+The dev Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=unisender-api`, `PLAYSAY_EMAIL_UNISENDER_API_BASE_URL=https://goapi.unisender.ru/ru/transactional/api/v1`, `PLAYSAY_EMAIL_UNISENDER_USER_ID=8236338`, and `PLAYSAY_EMAIL_UNISENDER_WEBHOOK_URL=https://online.play-and-say.ru/api/webhooks/unisender`. `unisender-api-key` and `replay-encryption-key` are secrets. SMTP keys stay in the secret as a fallback record and for parity with the generic chart. Unisender Go transactional API expects the credential field as `api_key` in the JSON body. On the Unisender Go `free_tier`, delivery may be limited to verified domains or verified recipient emails; provider error `403` / `code=903` means the recipient domain/email is not yet allowed by the provider, not that Play&Say rate limiting blocked registration.
+
+`email-service` registers/checks the UniSender Go JSON webhook hourly and reconciles missed events with durable `event-dump/*` windows. The first window covers the previous five minutes; later windows advance by five minutes with a one-minute overlap. An active asynchronous dump is polled every 30 seconds until `ready` or `failed`, so no second dump is created concurrently. Provider `delivered` is terminal for the delivery objective; later `opened`, `clicked`, subscription, spam, or bounce webhooks may still replace the displayed factual status. `soft_bounced` remains non-terminal because UniSender Go continues delivery attempts.
+
+After rollout, sign in as `ADMIN` and open workspace section **Письма**. Confirm that a non-admin profile has no such section and receives `403` from `/api/admin/email-deliveries`. The admin log must show local status separately from provider status, auto-refresh about every 30 seconds, show attempt history without email body/provider credentials, and enable resend only for an eligible failed/expired record. Verify webhook and reconciliation without printing payloads or credentials:
+
+```bash
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev logs deploy/email-service --since=20m | grep -E 'reconciliation|webhook|delivery'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get pods -l app.kubernetes.io/name=email-service
+```
 
 Email texts are not hardcoded in code. `email-service` Liquibase creates and seeds app PostgreSQL table `email_templates` with active FreeMarker templates:
 
