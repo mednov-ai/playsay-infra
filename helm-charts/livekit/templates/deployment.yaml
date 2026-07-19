@@ -32,6 +32,14 @@ spec:
             - -ec
           args:
             - |
+              {{- if .Values.turn.enabled }}
+              COTURN_STATIC_AUTH_SECRET="$(printf '%s' "$COTURN_STATIC_AUTH_SECRET" | tr -d '\r\n')"
+              case "$COTURN_STATIC_AUTH_SECRET" in
+                ''|*[!0-9a-fA-F]*) echo "invalid coturn shared secret" >&2; exit 1 ;;
+              esac
+              [ "${#COTURN_STATIC_AUTH_SECRET}" -eq 64 ] || { echo "invalid coturn shared secret length" >&2; exit 1; }
+              export COTURN_STATIC_AUTH_SECRET
+              {{- end }}
               cat >/tmp/livekit.yaml <<EOF
               port: {{ .Values.signaling.port }}
               {{- if .Values.metrics.enabled }}
