@@ -575,7 +575,8 @@ For an existing dev secret, add the replay key only if it is absent; do not rota
 
 ```bash
 if ! kubectl -n playsay-dev get secret playsay-email -o jsonpath='{.data.replay-encryption-key}' | grep -q .; then
-  REPLAY_SECRET_DATA="$(openssl rand -base64 32 | base64 | tr -d '\n')"
+  REPLAY_SECRET_VALUE="$(openssl rand -base64 32)"
+  REPLAY_SECRET_DATA="$(printf '%s' "$REPLAY_SECRET_VALUE" | base64 | tr -d '\n')"
   kubectl -n playsay-dev patch secret playsay-email --type merge -p "{\"data\":{\"replay-encryption-key\":\"$REPLAY_SECRET_DATA\"}}"
 fi
 ```
