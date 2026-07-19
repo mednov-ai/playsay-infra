@@ -503,6 +503,10 @@ Runtime wiring:
   - `PLAYSAY_EMAIL_SERVICE_BASE_URL`
   - `PLAYSAY_EMAIL_SERVICE_TOKEN`
   - `PLAYSAY_PUBLIC_APP_URL`
+  - `PLAYSAY_CHAT_EMAIL_INITIAL_DELAY` (default `PT2M`)
+  - `PLAYSAY_CHAT_EMAIL_COOLDOWN` (default `PT10M`)
+  - `PLAYSAY_CHAT_EMAIL_POLL_DELAY_MS` (default `30000`)
+  - `PLAYSAY_CHAT_EMAIL_RETRY_DELAYS` (default `PT1M,PT5M,PT15M`)
 - registration-service env:
   - `PLAYSAY_REGISTRATION_SERVICE_TOKEN`
   - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
@@ -565,6 +569,7 @@ Email texts are not hardcoded in code. `email-service` Liquibase creates and see
 - `password-reset-code` in `ru`, `en`, `de`, `fr`
 - `lesson-reminder-30m` in `ru`, `en`, `de`, `fr`
 - `lesson-rescheduled` in `ru`, `en`, `de`, `fr`
+- `chat-unread-digest` in `ru`, `en`, `de`, `fr`
 
 Template rows contain `subject_template`, `text_template`, `html_template`, `version`, `enabled`, timestamps. Runtime rendering falls back to `ru` only if a localized row is missing. Edit rows carefully in DB or add a new Liquibase changeset; keep required model variables (`confirmationUrl`, `code`, `expiresMinutes`) intact.
 
@@ -630,6 +635,25 @@ KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev logs deploy/email-se
 ```
 
 For the known lesson `19.07.2026 10:00–10:45 Europe/Moscow`, saving the same time through this dialog is the supported repair for an erroneous early `IN_PROGRESS`: expect `SCHEDULED`, cleared actual timestamps, and rebuilt start reminders, but no `LESSON_RESCHEDULED` email because the time did not actually change. Verify email delivery with an actual reschedule of a disposable smoke lesson instead.
+
+### Chat delivery and offline email smoke
+
+Deploy in the order `email-service` (template migration), `api-gateway` (chat migration/queue), then `web-app`. The current presence contract assumes one `api-gateway` replica; do not scale it horizontally until chat presence is moved to a shared broker.
+
+1. Open the same teacher/student dialog in two authenticated browser profiles. A new outgoing message must move from one grey check after REST save to two grey checks after delivery and two orange checks after the recipient opens the dialog.
+2. Close every Play&Say tab for the recipient, send several short messages within two minutes, and confirm only one `chat_email_digest` row remains `PENDING` with all message links.
+3. Confirm one localized `chat-unread-digest` email arrives after the two-minute grace period. It must show the message count and sender name, contain no message body, and open `/?chat=<conversationId>` or `/?chat=open`.
+4. Send more messages after the first email. No second email may be sent before `sent_at + 10 minutes`; without new messages there must be no repeat at all.
+5. Repeat with the recipient returning online or reading before `due_at`: the digest becomes `SKIPPED`. A recipient without email is also `SKIPPED`; provider errors retry with the configured 1/5/15-minute backoff and eventually become `FAILED` without losing chat messages.
+
+Read-only queue verification on the VPS:
+
+```bash
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-data exec playsay-postgres-1 -c postgres -- \
+  psql -d playsay -c "select recipient_user_id, status, attempts, due_at, sent_at, created_at from chat_email_digest order by created_at desc limit 20;"
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev logs deploy/api-gateway --since=20m | grep -E 'chat digest email failed'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev logs deploy/email-service --since=20m | grep -E 'chat-unread-digest|delivery|provider'
+```
 
 ## YouTube RF Relay
 
@@ -1462,7 +1486,9 @@ ss -lntup | grep -E ':(3478|7880|7881)\b'
 curl -k -I https://online.play-and-say.ru/livekit/
 ```
 
-For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo`, `student-demo-2`, and `student-demo-3` as participants, click "Войти в урок", then log in as those students in separate browser profiles and click the same button. The classroom URL should first show the branded pre-join without creating a LiveKit participant: allow browser camera/microphone permissions, verify the camera preview, choose the intended microphone, speak until the input-level check becomes ready, play the speaker test and confirm that it is audible. Device choices should survive a reload, while the pre-join itself must appear before every entry. Denying a device or skipping the sound confirmation must show a warning and still allow a second-click entry. Only after confirmation should the room-token request run and the LiveKit room connect. In the room, verify that microphone/camera device menus can switch inputs without leaving, the page does not scroll, and the controls expose microphone/camera/screen share according to the participant permissions.
+For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo`, `student-demo-2`, and `student-demo-3` as participants, and enter the classroom. Before students open the room, teacher/admin must see one persistent placeholder tile per assigned student with “not connected yet”; a student must never receive that presence map. Log in as each student in a separate browser profile and confirm the teacher tile changes `OFFLINE → ONLINE`. Open the classroom URL as a student: the branded pre-join must appear without creating a LiveKit participant, and the teacher tile must change to “checking connection”. Allow camera/microphone permissions, verify the camera preview and choose the intended input/output. Hold the sound button for `0.3–5` seconds, speak, release it, listen to the automatically played recording and confirm “yes, I hear”; the live meter is informational and background noise alone must not mark the microphone ready. Where supported, verify playback follows the selected output; otherwise it must use the system output. Changing either audio device must reset the check. A short/failed/skipped recording must show a warning and still allow the explicit second-click entry. Device choices survive reload, while pre-join appears before every entry.
+
+Repeat pre-join at `1280×720`, `1440×900`, and a phone viewport. At `1280×720`, the join button must remain visible, the result area must not resize when the hearing confirmation appears, and the page must not jump upward. Only after entry confirmation may the room-token request run and LiveKit connect. The teacher’s placeholder must then be replaced by the real LiveKit participant with no duplicate; in an individual lesson the absent student is the main tile and local teacher video is PiP, while a group lesson shows every assigned student. In the room, verify microphone/camera device menus can switch inputs without leaving, the page does not scroll, and controls expose microphone/camera/screen share according to participant permissions. Finally close/reopen the student WebSocket and confirm `ONLINE` is restored; with two student tabs, one tab in pre-join keeps the aggregated state at `CHECKING_DEVICES` until it leaves.
 
 ## Application PostgreSQL
 
