@@ -176,6 +176,14 @@ spec:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.serviceTokenKey | quote }}
                   optional: true
+            - name: PLAYSAY_CHAT_EMAIL_INITIAL_DELAY
+              value: {{ .Values.chatEmail.initialDelay | quote }}
+            - name: PLAYSAY_CHAT_EMAIL_COOLDOWN
+              value: {{ .Values.chatEmail.cooldown | quote }}
+            - name: PLAYSAY_CHAT_EMAIL_POLL_DELAY_MS
+              value: {{ .Values.chatEmail.pollDelayMs | quote }}
+            - name: PLAYSAY_CHAT_EMAIL_RETRY_DELAYS
+              value: {{ .Values.chatEmail.retryDelays | quote }}
             - name: PLAYSAY_PUBLIC_APP_URL
               value: {{ .Values.publicAppUrl | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_ENABLED

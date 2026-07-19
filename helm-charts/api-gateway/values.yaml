@@ -103,6 +103,12 @@ emailService:
   existingSecret: playsay-email
   serviceTokenKey: service-token
 
+chatEmail:
+  initialDelay: PT2M
+  cooldown: PT10M
+  pollDelayMs: "30000"
+  retryDelays: PT1M,PT5M,PT15M
+
 publicAppUrl: https://online.play-and-say.ru
 
 video:
