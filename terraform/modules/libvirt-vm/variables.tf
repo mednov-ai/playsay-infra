@@ -61,7 +61,9 @@ variable "admin_ssh_public_key" {
 variable "ubuntu_image_url" {
   description = "Pinned Ubuntu 24.04 cloud-image URL."
   type        = string
-  default     = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+  # Ubuntu build serial 20260705; official SHA-256:
+  # ffe6203da54deeb6db5d2a98a83f9ec8e55f149d3f7ba622e1abe5fa966ee3d6
+  default = "https://cloud-images.ubuntu.com/noble/20260705/noble-server-cloudimg-amd64.img"
 }
 
 variable "io_weight" {
