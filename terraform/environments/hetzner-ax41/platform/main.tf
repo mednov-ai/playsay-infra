@@ -14,6 +14,10 @@ resource "libvirt_network" "workloads" {
   name      = "playsay-workloads"
   autostart = true
 
+  forward = {
+    mode = "nat"
+  }
+
   bridge = {
     name  = "virbr60"
     stp   = "on"
