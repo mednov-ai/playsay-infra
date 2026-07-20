@@ -1,6 +1,7 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
   tag: "0.1.0"
+  digest: ""
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 build: { name: local-0, number: "0", branch: local, branchLabel: local, commit: unknown, commitShort: unknown }

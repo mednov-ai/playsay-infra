@@ -1,30 +1,25 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "0.1.0"
-  digest: ""
-  pullPolicy: IfNotPresent
-
-imagePullSecrets: []
-
+  tag: "media-release-1.001.00-18"
+  digest: "sha256:e5b3bed96c6ed48433a30e00cd19587b958e45e9f9e9db8aab9775ba0ec232c4"
+imagePullSecrets:
+  - name: ghcr-pull-secret
 build:
-  name: local-0
-  number: "0"
-  branch: local
-  branchLabel: local
-  commit: unknown
-  commitShort: unknown
-
-replicaCount: 1
-
+  name: media-release-1.001.00-18
+  number: "18"
+  branch: release/1.001.00
+  branchLabel: media-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 service:
   type: ClusterIP
-  port: 80
-  targetPort: 8082
-  nodePort: null
-
 mediaService:
   existingSecret: playsay-media
-  serviceTokenKey: service-token
   sessionTtlSeconds: "900"
   maxUpstreamRangeBytes: "1048576"
   maxThumbnailBytes: "5242880"
@@ -32,15 +27,14 @@ mediaService:
   ytdlpPluginDirectory: /usr/local/lib
   ytdlpJsRuntime: deno:/usr/local/bin/deno
   ffmpegPath: /usr/local/bin/ffmpeg
-  youtubeCacheEnabled: "false"
+  youtubeCacheEnabled: "true"
   cacheDownloadTimeoutSeconds: "600"
   cacheMaxVideoBytes: "262144000"
   cacheTempDirectory: /tmp/playsay-media-cache
-
 youtubePot:
-  enabled: false
+  enabled: true
   providerBaseUrl: http://127.0.0.1:4416
-  allowedVideoIds: ""
+  allowedVideoIds: "WX8HmogNyCY,8ChQVaEAKsk,BwHMMZQGFoM,OsuWvoBWOnA,FkL8j0wIRf8"
   playerClients: mweb
   sleepRequestsSeconds: "1"
   provider:
@@ -54,29 +48,23 @@ youtubePot:
       limits:
         cpu: 500m
         memory: 384Mi
-
 cacheTempStorage:
   sizeLimit: 1Gi
-
 storage:
-  provider: memory
+  provider: s3
   s3:
-    endpoint: ""
+    endpoint: http://minio.storage.svc.cluster.local:9000
     region: us-east-1
     bucket: playsay-material-assets
     existingSecret: playsay-object-storage
-    accessKeyKey: access-key
-    secretKeyKey: secret-key
     pathStyleAccess: "true"
-    createBucket: "false"
-
+    createBucket: "true"
 runtime:
-  javaToolOptions: ""
-
+  javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=35 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
-    cpu: 100m
-    memory: 192Mi
+    cpu: 50m
+    memory: 256Mi
   limits:
     cpu: "1"
-    memory: 512Mi
+    memory: 1280Mi

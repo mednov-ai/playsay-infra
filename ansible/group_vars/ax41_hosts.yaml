@@ -26,6 +26,15 @@ ax41_public_tcp_ports:
 ax41_public_udp_ports:
   - "51820"
 
+ax41_public_interface: enp41s0
+ax41_prod_vm_address: 10.60.0.20
+ax41_prod_livekit_tcp_ports:
+  - "3478"
+  - "7881"
+ax41_prod_livekit_udp_ports:
+  - "3478"
+  - "50000:50020"
+
 wireguard_interface: wg0
 wireguard_address: 10.250.0.1/24
 wireguard_listen_port: 51820

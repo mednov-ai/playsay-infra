@@ -1,0 +1,43 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-registration-service
+  tag: "registration-release-1.001.00-29"
+  digest: "sha256:df9fb4ca2a80e422ece73ebecc260265bfb2662f6d91404301d3fd2c92f76629"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: registration-release-1.001.00-29
+  number: "29"
+  branch: release/1.001.00
+  branchLabel: registration-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+service:
+  type: ClusterIP
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
+registrationService:
+  publicBaseUrl: https://online.honey.school
+  keycloak:
+    baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
+    realm: playsay
+    studentTokenClientId: playsay-web
+    existingSecret: playsay-registration
+  emailService:
+    baseUrl: http://email-service.playsay-prod.svc.cluster.local
+    existingSecret: playsay-email
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 25m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi

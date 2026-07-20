@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: livekit
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: release/1.001.00
+    path: helm-charts/livekit
+    helm:
+      releaseName: livekit
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: livekit
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

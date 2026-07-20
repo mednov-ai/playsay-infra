@@ -1,0 +1,39 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-payment-service
+  tag: "payment-release-1.001.00-10"
+  digest: "sha256:4ec8a62425cd0568de8903fd5ed5b140e189d73d082d35b4c82821699003e049"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: payment-release-1.001.00-10
+  number: "10"
+  branch: release/1.001.00
+  branchLabel: payment-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+service:
+  type: ClusterIP
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
+paymentService:
+  existingSecret: playsay-payment
+  publicBaseUrl: https://online.honey.school
+  provider: yookassa
+  yookassa:
+    apiUrl: https://api.yookassa.ru/v3
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=45 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 320Mi
