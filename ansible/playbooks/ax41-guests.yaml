@@ -3,6 +3,8 @@
   hosts: ax41_guests
   become: true
   gather_facts: true
+  vars_files:
+    - ../group_vars/ax41_guests.yaml
   roles:
     - common
     - k3s-server
