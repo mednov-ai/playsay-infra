@@ -47,7 +47,7 @@ youtubePot:
         memory: 64Mi
       limits:
         cpu: 500m
-        memory: 256Mi
+        memory: 384Mi
 cacheTempStorage:
   sizeLimit: 1Gi
 storage:
@@ -60,11 +60,11 @@ storage:
     pathStyleAccess: "true"
     createBucket: "true"
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=50 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
     cpu: 50m
     memory: 256Mi
   limits:
     cpu: "1"
-    memory: 1Gi
+    memory: 896Mi

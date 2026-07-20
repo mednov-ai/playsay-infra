@@ -52,7 +52,7 @@ youtubePot:
         memory: 64Mi
       limits:
         cpu: 500m
-        memory: 256Mi
+        memory: 384Mi
 
 cacheTempStorage:
   sizeLimit: 1Gi
