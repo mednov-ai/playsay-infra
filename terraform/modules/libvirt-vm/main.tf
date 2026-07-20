@@ -48,7 +48,9 @@ resource "libvirt_volume" "cloud_init" {
 
   target = {
     format = {
-      type = "raw"
+      # libvirt reports cloud-init media as ISO. Declaring raw makes provider
+      # 0.9.8 return an inconsistent post-apply value after creating it.
+      type = "iso"
     }
   }
 
