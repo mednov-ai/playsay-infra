@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "media-dev-metrics-03e52d1"
+  tag: "media-dev-12"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: media-dev-metrics-03e52d1
-  number: "manual"
+  name: media-dev-12
+  number: "12"
   branch: develop
-  branchLabel: develop
-  commit: 03e52d1970b7c4258819f85d0562f3c479d5eddd
-  commitShort: "03e52d1970b7"
+  branchLabel: media-dev
+  commit: 61c2bb3dc08ded7fd08f6de1d0722c736b0961ba
+  commitShort: "61c2bb3dc08d"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -30,7 +30,6 @@ mediaService:
   cacheDownloadTimeoutSeconds: "600"
   cacheMaxVideoBytes: "262144000"
   cacheTempDirectory: /tmp/playsay-media-cache
-
 youtubePot:
   enabled: true
   providerBaseUrl: http://127.0.0.1:4416
