@@ -16,3 +16,9 @@ k3s_disable_components:
 k3s_node_taints: []
 
 node_exporter_enabled: true
+
+coturn_listening_port: 3478
+coturn_min_port: 49160
+coturn_max_port: 49200
+coturn_external_ip: 65.109.55.110/10.60.0.20
+coturn_realm: online.honey.school

@@ -59,9 +59,23 @@
       -A PREROUTING -i {{ ax41_public_interface }} -p tcp --dport 3478 -j DNAT --to-destination {{ ax41_prod_vm_address }}:3478
       -A PREROUTING -i {{ ax41_public_interface }} -p tcp --dport 7881 -j DNAT --to-destination {{ ax41_prod_vm_address }}:7881
       -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 3478 -j DNAT --to-destination {{ ax41_prod_vm_address }}:3478
+      -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 49160:49200 -j DNAT --to-destination {{ ax41_prod_vm_address }}
       -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 50000:50020 -j DNAT --to-destination {{ ax41_prod_vm_address }}
       COMMIT
   notify: Reload UFW
+
+- name: Install the persistent libvirt ingress hook
+  ansible.builtin.template:
+    src: libvirt-network-hook.sh.j2
+    dest: /etc/libvirt/hooks/network
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Apply the libvirt ingress hook to the running workloads network
+  ansible.builtin.command:
+    cmd: /etc/libvirt/hooks/network playsay-workloads started -
+  changed_when: false
 
 - name: Allow routed prod LiveKit TCP traffic
   community.general.ufw:

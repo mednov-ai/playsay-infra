@@ -11,6 +11,7 @@ Verified infrastructure state:
 - offline Keycloak export was filtered before import, dev SMTP/client secrets and old/local redirect URLs were removed, and prod contains exactly seven human users plus two expected confidential-client service accounts;
 - prod PostgreSQL contains 7 `app_user`, 22 `lesson_material`, 51 `material_asset`, 11 `material_html_game_enrichment`, zero `hello` materials and zero copied lesson/chat/submission history; schema/changelog data and 24 system email templates were recreated separately;
 - exactly 51 allowlisted MinIO objects were streamed from dev to prod through authenticated S3 operations without storing plaintext object files on the workstation;
+- byte-for-byte SHA-256 verification passed for all 51 selected objects; MinIO ETags changed during the authenticated copy and are therefore not used as the content-integrity proof;
 - the source MinIO credential had accidental trailing newlines; both dev consumers were updated to the normalized credential and MinIO, API Gateway and Media Service rolled out successfully before the selective object copy;
 - nginx edge configuration is managed by Ansible and proxies only the four exact requested hostnames to the two VM NodePorts;
 - a single Let's Encrypt certificate covers `online.honey.school`, `key.honey.school`, `dev.online.honey.school` and `dev.key.honey.school`, expires `2026-10-18` and has automatic renewal configured;
@@ -18,6 +19,7 @@ Verified infrastructure state:
 - `online.honey.school` intentionally returns 502 until the release web/API workloads are promoted; it must not be accepted as cut over before T5/T9 pass.
 - Helm application charts support an optional OCI digest and prod values pin every completed `release/1.001.00` candidate by digest; mutable tags are retained only as human-readable build evidence.
 - prod LiveKit values use independent keys, the AX41 public address and the prod API webhook; the reviewed firewall change adds only the prod TURN/TCP/UDP DNAT ranges and remains subject to an external forced-relay smoke gate.
+- repeated prod SQL verification reports `7/22/51/11`, `hello=0`, zero lesson/chat history and zero orphaned material-owner, asset-material or enrichment-material references.
 
 Remaining gates are completion of the API, collaboration, email and keyboard
 frontend release jobs, immutable prod runtime rollout, login/material/object

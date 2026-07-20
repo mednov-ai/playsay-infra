@@ -33,6 +33,7 @@ ax41_prod_livekit_tcp_ports:
   - "7881"
 ax41_prod_livekit_udp_ports:
   - "3478"
+  - "49160:49200"
   - "50000:50020"
 
 wireguard_interface: wg0
