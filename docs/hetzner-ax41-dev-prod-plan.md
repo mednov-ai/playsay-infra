@@ -159,7 +159,9 @@ Initial tooling contract:
 - `prevent_destroy` on the prod VM and every prod disk;
 - no passwords, private keys or API tokens in `.tf`, `.tfvars`, plan artifacts or Git.
 
-State is stored in an independent S3-compatible bucket with TLS, server-side encryption, versioning and native S3 lock files. Backend credentials are supplied at runtime from protected environment variables. The Hetzner Storage Box is not the OpenTofu state backend.
+The steady-state design stores state in an independent S3-compatible bucket with TLS, server-side encryption, versioning and native S3 lock files. Backend credentials are supplied at runtime from protected environment variables. The Hetzner Storage Box is not the OpenTofu state backend.
+
+For the accelerated first `honey.school` cutover, absence of Object Storage is explicitly not a blocker. A temporary single-operator exception stores separate `platform`, `dev` and `prod` local states on the AX41 under `/var/lib/playsay-opentofu-state`, owned by the named `playsay` operator with mode `0700`. OpenTofu runs only on the AX41 against local `qemu:///system`; Jenkins apply, parallel apply and a second operator are prohibited. An encrypted snapshot of every state is copied off the AX41 before and after each apply and tied to the applied Git commit/plan checksum. The exception ends immediately after the first production stabilization window: migrate all three states with `tofu init -migrate-state`, prove versioning/locking and delete the local plaintext copies only after the remote copies are verified.
 
 Both VMs use libvirt autostart, but neither environment may depend on guest startup order. The host remains manageable if either guest fails, and prod keeps the higher CPU/I/O priority when both start concurrently.
 
@@ -300,7 +302,23 @@ Required capabilities:
 - Any failed integrity, login, object-checksum, backup/restore, LiveKit/TURN or rollback gate stops progression to the next phase.
 - Secrets, private keys, state, plans with sensitive values and migration data never enter Git.
 
-### 7.3 Task checklist
+### 7.3 Today-first execution order
+
+This is the critical path for the first `honey.school` move. Object Storage is deliberately deferred and does not block these tasks:
+
+- [ ] **T1** Apply the Ansible local-state directories, check out the reviewed infra commit on AX41 and make an encrypted off-host copy around every OpenTofu apply.
+- [ ] **T2** Plan and apply `platform`, creating `playsay-workloads`/`virbr60` and the libvirt pool; verify no public administrative port is opened.
+- [ ] **T3** Plan and create `playsay-prod` (`10.60.0.20`, 8 vCPU, 42 GB, 200 GB) and `playsay-dev` (`10.60.0.30`, 2 vCPU, 12 GB, 120 GB); verify guest agent, autostart and prod destroy protection.
+- [ ] **T4** Bootstrap independent Ubuntu/k3s/ArgoCD environments from Git; dev and prod receive separate CIDRs, secrets, databases, MinIO and Keycloak.
+- [ ] **T5** Create/protect `release/1.001.00`, build immutable `rel_1.001.00-N` images and promote only their digests through the matching infra release branch. Do not deploy prod from `develop`, `main` or `hotfix/*`.
+- [ ] **T6** Configure the host edge and TLS for `online.honey.school`/`key.honey.school` to prod and `dev.online.honey.school`/`dev.key.honey.school` to dev. Keep Cockpit and future ops interfaces VPN-only; do not overwrite separately owned root-site/mail configuration.
+- [ ] **T7** Restore the full verified bundle into dev and run login, application, material, MinIO and Jenkins/ArgoCD smoke tests.
+- [ ] **T8** Build the immutable-ID prod allowlist and import only Maria Mednova, her six approved students and 22 materials/51 assets/11 enrichments; refuse `hello`, other dev users and dev history.
+- [ ] **T9** Verify exact prod counts, Maria and one student login, every material/object, Keycloak redirects, API/WebSocket and LiveKit/TURN before accepting user traffic.
+- [ ] **T10** Enable the already-resolving new hostnames at the AX41 edge, observe errors/latency/resources continuously and retain the old VPS unchanged as rollback through its paid lifetime.
+- [ ] **T11** After stabilization, provision Object Storage, migrate the three OpenTofu states with locking/versioning and configure permanent encrypted off-site dev/prod backups before deleting the old VPS.
+
+### 7.4 Task checklist
 
 All unchecked tasks are pending. A phase is complete only when its exit check is recorded with the exact Git commit and non-secret evidence location.
 
@@ -335,8 +353,9 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 #### Phase 2 — build the Git/OpenTofu control plane
 
 - [x] **2.1** Create the versioned `terraform/modules/libvirt-vm` module with cloud-init, CPU/RAM, qcow2, network, autostart and QEMU guest-agent support; local backend-disabled initialization and validation passed.
-- [x] **2.2** Create separate `platform`, `dev` and `prod` OpenTofu roots and separate states; pin OpenTofu 1.12.x and `dmacvicar/libvirt` 0.9.8 and generate each provider lock file. The configuration is ready, but no state/apply is allowed until task 2.3 is complete.
-- [ ] **2.3** Provision an independent versioned/locked encrypted S3-compatible state backend and inject credentials only at runtime.
+- [x] **2.2** Create separate `platform`, `dev` and `prod` OpenTofu roots and separate states; pin OpenTofu 1.12.x and `dmacvicar/libvirt` 0.9.8 and generate each provider lock file. The accelerated cutover uses the documented local-state exception and does not wait for task 2.3.
+- [ ] **2.3** After the first production stabilization window, provision an independent versioned/locked encrypted S3-compatible state backend, inject credentials only at runtime and migrate all three temporary local states with verification.
+- [ ] **2.3a** Before VM creation, apply the `0700` local-state directories on AX41, enforce a single named operator/no Jenkins apply and test encrypted off-host state capture and restore.
 - [ ] **2.4** Add `prevent_destroy` and explicit replacement protection to the prod VM and all prod disks; verify a destroy attempt fails in a test plan.
 - [ ] **2.5** Add format, validate and read-only plan jobs with human-readable plan summaries; ensure plan artifacts cannot expose secrets.
 - [ ] **2.6** Require a separate manual approval for every apply and an additional prod approval; merging a pull request must not auto-apply prod.
@@ -344,7 +363,7 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 - [ ] **2.8** Write the Git workflow for change, review, plan checksum, apply record and rollback commit/digest.
 
 **Depends on:** Phase 1 for live provider validation; code can be drafted after Phase 0.
-**Exit check:** validation is green, remote-state locking is proven and a reviewed plan contains no unexpected destroy/replace action.
+**Exit check for first cutover:** validation is green, the temporary local-state controls and encrypted off-host copy are proven, and a reviewed plan contains no unexpected destroy/replace action. **Steady-state exit check:** remote-state migration, versioning and locking are proven after stabilization.
 
 #### Phase 3 — automate and secure the AX41 host
 

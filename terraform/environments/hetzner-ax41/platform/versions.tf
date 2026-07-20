@@ -8,7 +8,11 @@ terraform {
     }
   }
 
-  backend "s3" {}
+  # Temporary single-operator backend for the accelerated first cutover.
+  # Migrate it to the versioned S3 backend after service stabilization.
+  backend "local" {
+    path = "/var/lib/playsay-opentofu-state/platform/terraform.tfstate"
+  }
 }
 
 provider "libvirt" {

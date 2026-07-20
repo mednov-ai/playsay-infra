@@ -55,6 +55,18 @@
     group: kvm
     mode: "0711"
 
+- name: Create temporary local OpenTofu state directories
+  ansible.builtin.file:
+    path: "{{ opentofu_local_state_path }}/{{ item }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0700"
+  loop:
+    - platform
+    - dev
+    - prod
+
 - name: Enable libvirt daemon
   ansible.builtin.service:
     name: libvirtd
