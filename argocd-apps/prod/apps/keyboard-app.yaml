@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keyboard-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: release/1.001.00
+    path: helm-charts/keyboard-app
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: playsay-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
