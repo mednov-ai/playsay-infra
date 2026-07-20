@@ -1,0 +1,41 @@
+---
+- name: Install the minimal AX41 edge packages
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - certbot
+    state: present
+    update_cache: true
+
+- name: Create the ACME webroot
+  ansible.builtin.file:
+    path: /var/www/playsay-acme
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0755"
+
+- name: Check whether the shared honey.school certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
+  register: edge_certificate
+
+- name: Render exact-host AX41 edge routes
+  ansible.builtin.template:
+    src: playsay-honey.conf.j2
+    dest: /etc/nginx/conf.d/playsay-honey.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

@@ -36,3 +36,14 @@ wireguard_peers:
   - name: phone
     public_key: XOHhYpu0HaHcy9qe1viPg1RHoeoiALGnjJw0gO4J60Y=
     allowed_ips: 10.250.0.3/32
+
+edge_certificate_name: online.honey.school
+edge_routes:
+  - hostname: online.honey.school
+    upstream: 10.60.0.20:32083
+  - hostname: key.honey.school
+    upstream: 10.60.0.20:32084
+  - hostname: dev.online.honey.school
+    upstream: 10.60.0.30:32083
+  - hostname: dev.key.honey.school
+    upstream: 10.60.0.30:32084

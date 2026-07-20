@@ -10,4 +10,5 @@
     - libvirt-host
     - wireguard
     - ax41-firewall
+    - edge-proxy
     - cockpit
