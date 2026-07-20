@@ -24,6 +24,31 @@ resource "libvirt_volume" "root" {
   }
 }
 
+# Provider 0.9.8 imports the cloud image at its source virtual size and does
+# not honor a larger capacity in the same create request. Keep the required
+# post-import grow operation in the OpenTofu graph before the domain starts.
+resource "terraform_data" "root_volume_capacity" {
+  triggers_replace = [
+    libvirt_volume.root.id,
+    tostring(local.root_disk_bytes),
+  ]
+
+  provisioner "local-exec" {
+    command     = <<-EOT
+      set -euo pipefail
+      current_bytes="$(virsh vol-info --pool '${var.pool_name}' --bytes '${libvirt_volume.root.name}' | awk '$1 == "Capacity:" {print $2}')"
+      target_bytes='${local.root_disk_bytes}'
+      if (( current_bytes < target_bytes )); then
+        virsh vol-resize --pool '${var.pool_name}' '${libvirt_volume.root.name}' "${local.root_disk_bytes}B"
+      elif (( current_bytes > target_bytes )); then
+        echo "Refusing to shrink ${libvirt_volume.root.name} from $current_bytes to $target_bytes bytes" >&2
+        exit 1
+      fi
+    EOT
+    interpreter = ["/bin/bash", "-c"]
+  }
+}
+
 resource "libvirt_cloudinit_disk" "config" {
   name = "${var.name}-cloud-init"
   user_data = templatefile("${path.module}/cloud-init.tftpl", {
@@ -91,6 +116,8 @@ resource "libvirt_domain" "vm" {
   lifecycle {
     prevent_destroy = true
   }
+
+  depends_on = [terraform_data.root_volume_capacity]
 
   devices = {
     disks = [

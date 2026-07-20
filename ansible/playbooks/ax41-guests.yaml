@@ -5,6 +5,26 @@
   gather_facts: true
   vars_files:
     - ../group_vars/ax41_guests.yaml
+  pre_tasks:
+    - name: Grow the root partition to the OpenTofu-managed disk capacity
+      ansible.builtin.shell: |
+        set -euo pipefail
+        output="$(growpart /dev/vda 1 2>&1)" || {
+          grep -q '^NOCHANGE:' <<<"$output" && exit 0
+          printf '%s\n' "$output" >&2
+          exit 1
+        }
+        printf '%s\n' "$output"
+      args:
+        executable: /bin/bash
+      register: root_partition_grow
+      changed_when: "'CHANGED:' in root_partition_grow.stdout"
+
+    - name: Grow the root filesystem to the partition capacity
+      ansible.builtin.command:
+        cmd: resize2fs /dev/vda1
+      register: root_filesystem_grow
+      changed_when: "'Nothing to do' not in root_filesystem_grow.stdout"
   roles:
     - common
     - k3s-server
