@@ -703,6 +703,13 @@ Runtime controls in the `media-service` chart:
 - `PLAYSAY_MEDIA_SERVICE_MAX_UPSTREAM_RANGE_BYTES`: maximum upstream Range window for relay stream requests, default `1048576`.
 - `PLAYSAY_MEDIA_SERVICE_MAX_THUMBNAIL_BYTES`: thumbnail download cap, default `5242880`.
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_PATH`: executable used by `media-service` for YouTube metadata, format selection, thumbnail source URL, and upstream media URLs; default `/usr/local/bin/yt-dlp`.
+- `PLAYSAY_MEDIA_SERVICE_YTDLP_PLUGIN_DIRECTORY`: yt-dlp plugin root; the pinned image uses `/usr/local/lib/yt-dlp-plugins`.
+- `PLAYSAY_MEDIA_SERVICE_YTDLP_JS_RUNTIME`: JS challenge runtime; the pinned image uses `deno:/usr/local/bin/deno`.
+- `PLAYSAY_YOUTUBE_POT_ENABLED`: dev-only switch for automatic YouTube PO Token support; default `false`.
+- `PLAYSAY_YOUTUBE_POT_PROVIDER_BASE_URL`: loopback-only bgutil sidecar endpoint, default `http://127.0.0.1:4416`.
+- `PLAYSAY_YOUTUBE_POT_ALLOWED_VIDEO_IDS`: comma-separated spike allowlist; keep empty outside the controlled dev experiment.
+- `PLAYSAY_YOUTUBE_POT_PLAYER_CLIENTS`: yt-dlp player client list for allowlisted videos; spike default `mweb`.
+- `PLAYSAY_YOUTUBE_POT_SLEEP_REQUESTS_SECONDS`: bounded delay between yt-dlp YouTube requests; spike default `1`.
 - `PLAYSAY_MEDIA_SERVICE_FFMPEG_PATH`: pinned static ffmpeg used to merge separate MP4/M4A streams; default `/usr/local/bin/ffmpeg`.
 - `PLAYSAY_YOUTUBE_CACHE_ENABLED`: independent cache feature flag, default `false`; it must have the same value in `api-gateway` and `media-service`.
 - `PLAYSAY_MEDIA_SERVICE_CACHE_DOWNLOAD_TIMEOUT_SECONDS`: full download/merge timeout, default `600`.
@@ -710,6 +717,25 @@ Runtime controls in the `media-service` chart:
 - `PLAYSAY_MEDIA_SERVICE_CACHE_TEMP_DIRECTORY`: disk-backed working directory, mounted as a size-limited `emptyDir`, default `/tmp/playsay-media-cache` with `1Gi` limit.
 
 Relay eligibility is strict: the authenticated app profile must have `countryCode=RU`, the trusted IP country header must be `RU`, the user must already have normal Play&Say access to the material, the block must be a YouTube `videoEmbed`, and effective video metadata must show duration `<= 420` seconds and English language. If stored `videoMeta` is missing or incomplete, `api-gateway` calls the internal `media-service` metadata endpoint by parsed YouTube `videoId` before the policy check. If that lookup fails or returns incomplete metadata, playback stays fail-closed as `NEEDS_REVIEW/YOUTUBE_METADATA_MISSING` and no relay session is created. If profile country and IP country conflict, relay is not used and the frontend falls back to the official YouTube embed decision.
+
+### Dev-only YouTube PO Token spike
+
+The current pinned media image contains `yt-dlp 2026.07.04`, Deno `2.6.9`, bundled `yt_dlp_ejs`, and `bgutil-ytdlp-pot-provider 1.3.1`. The Helm chart can add the provider as a same-pod sidecar bound only to port `4416`; no Service or ingress exposes it. The media container calls it over `127.0.0.1`, and no account cookies or manually copied PO tokens are stored. The dev values enable the experiment only for the explicit test allowlist; every other video keeps the existing extractor path.
+
+Verify the runtime before testing:
+
+```bash
+kubectl -n playsay-dev exec deploy/media-service -c media-service -- /usr/local/bin/yt-dlp -v --simulate 'https://www.youtube.com/watch?v=9r4D-D18f_g' 2>&1 \
+  | grep -E 'yt-dlp version|Optional libraries|JS runtimes|Plugin directories|PO Token Providers'
+kubectl -n playsay-dev get pod -l app.kubernetes.io/name=media-service \
+  -o custom-columns=NAME:.metadata.name,READY:.status.containerStatuses[*].ready,RESTARTS:.status.containerStatuses[*].restartCount
+```
+
+Expected verbose signals for an allowlisted video are Deno under `JS runtimes`, the configured plugin directory, and a `bgutil:http` PO Token provider. Application logs may contain `potEnabled=true` and one of the bounded `failureKind` values (`EMBED_DISABLED`, `BOT_CHECK`, `PO_TOKEN_REQUIRED`, `RATE_LIMITED`, `FORMAT_UNAVAILABLE`, `PRIVATE_VIDEO`, `VIDEO_UNAVAILABLE`, `UNKNOWN`), but must not contain a token, visitor data, cookies, or extracted upstream URLs.
+
+The spike matrix is `WX8HmogNyCY`, `8ChQVaEAKsk`, `BwHMMZQGFoM`, and `OsuWvoBWOnA`; `FkL8j0wIRf8` is diagnostic-only because YouTube may have removed it, and `9r4D-D18f_g` remains the non-kids control. Success requires metadata plus live relay and `MEDIUM` MinIO cache Range playback for at least three of the four matrix videos. Use temporary materials/references, archive them after evidence is captured, delete the test cache objects through the authenticated internal DELETE endpoint, and confirm two non-overlapping requests return `206` with correct `Content-Range`.
+
+Rollback is to set `youtubePot.enabled=false` in `values-dev.yaml` and sync ArgoCD; this removes the sidecar and makes all yt-dlp calls ignore the provider arguments. Do not delete unrelated cache objects, stop Docker/k3s/Amnezia, or change the public-site nginx configuration.
 
 The `api-gateway` owns material authorization, policy decisions, `material_asset` rows, durable YouTube cache jobs, and material-to-cache references. The `media-service` owns `yt-dlp`, pinned static `ffmpeg`, in-memory playback sessions, quality selection, thumbnail/video bytes upload to MinIO/S3, and Range/chunked streaming. Gateway reserves/reuses a `VIDEO_THUMBNAIL` asset with provider `YOUTUBE` and metadata `{ blockId, videoId, sourceThumbnailUrl }`; if thumbnail storage fails, playback must continue and only a safe warning should be logged. Public video bytes do not pass back through gateway: playback responses return `relayUrl=/api/media/video-playback-sessions/{sessionId}/stream`, and the web-app nginx maps that path to `media-service`.
 

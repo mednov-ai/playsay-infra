@@ -59,6 +59,20 @@ spec:
               value: {{ .Values.mediaService.maxThumbnailBytes | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_YTDLP_PATH
               value: {{ .Values.mediaService.ytdlpPath | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_YTDLP_PLUGIN_DIRECTORY
+              value: {{ .Values.mediaService.ytdlpPluginDirectory | quote }}
+            - name: PLAYSAY_MEDIA_SERVICE_YTDLP_JS_RUNTIME
+              value: {{ .Values.mediaService.ytdlpJsRuntime | quote }}
+            - name: PLAYSAY_YOUTUBE_POT_ENABLED
+              value: {{ .Values.youtubePot.enabled | quote }}
+            - name: PLAYSAY_YOUTUBE_POT_PROVIDER_BASE_URL
+              value: {{ .Values.youtubePot.providerBaseUrl | quote }}
+            - name: PLAYSAY_YOUTUBE_POT_ALLOWED_VIDEO_IDS
+              value: {{ .Values.youtubePot.allowedVideoIds | quote }}
+            - name: PLAYSAY_YOUTUBE_POT_PLAYER_CLIENTS
+              value: {{ .Values.youtubePot.playerClients | quote }}
+            - name: PLAYSAY_YOUTUBE_POT_SLEEP_REQUESTS_SECONDS
+              value: {{ .Values.youtubePot.sleepRequestsSeconds | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_FFMPEG_PATH
               value: {{ .Values.mediaService.ffmpegPath | quote }}
             - name: PLAYSAY_YOUTUBE_CACHE_ENABLED
@@ -119,3 +133,25 @@ spec:
             timeoutSeconds: 2
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.youtubePot.enabled }}
+        - name: youtube-pot-provider
+          image: {{ .Values.youtubePot.provider.image | quote }}
+          imagePullPolicy: {{ .Values.youtubePot.provider.pullPolicy }}
+          ports:
+            - name: pot-http
+              containerPort: {{ .Values.youtubePot.provider.port }}
+          readinessProbe:
+            tcpSocket:
+              port: pot-http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            tcpSocket:
+              port: pot-http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml .Values.youtubePot.provider.resources | nindent 12 }}
+        {{- end }}

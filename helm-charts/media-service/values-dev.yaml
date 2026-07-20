@@ -23,11 +23,31 @@ mediaService:
   maxUpstreamRangeBytes: "1048576"
   maxThumbnailBytes: "5242880"
   ytdlpPath: /usr/local/bin/yt-dlp
+  ytdlpPluginDirectory: /usr/local/lib/yt-dlp-plugins
+  ytdlpJsRuntime: deno:/usr/local/bin/deno
   ffmpegPath: /usr/local/bin/ffmpeg
   youtubeCacheEnabled: "true"
   cacheDownloadTimeoutSeconds: "600"
   cacheMaxVideoBytes: "262144000"
   cacheTempDirectory: /tmp/playsay-media-cache
+
+youtubePot:
+  enabled: true
+  providerBaseUrl: http://127.0.0.1:4416
+  allowedVideoIds: "WX8HmogNyCY,8ChQVaEAKsk,BwHMMZQGFoM,OsuWvoBWOnA,FkL8j0wIRf8"
+  playerClients: mweb
+  sleepRequestsSeconds: "1"
+  provider:
+    image: brainicism/bgutil-ytdlp-pot-provider@sha256:1fd724c0a987a1eaa7e0875667a55770f954d8634fdbba96d858072f4a655afe
+    pullPolicy: IfNotPresent
+    port: 4416
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
 cacheTempStorage:
   sizeLimit: 1Gi
 storage:
@@ -40,11 +60,11 @@ storage:
     pathStyleAccess: "true"
     createBucket: "true"
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
     cpu: 50m
     memory: 256Mi
   limits:
     cpu: "1"
-    memory: 768Mi
+    memory: 1Gi
