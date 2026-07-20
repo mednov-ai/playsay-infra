@@ -113,10 +113,6 @@ resource "libvirt_domain" "vm" {
     weight = var.io_weight
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   depends_on = [terraform_data.root_volume_capacity]
 
   devices = {
