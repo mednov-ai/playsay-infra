@@ -1,6 +1,6 @@
 # Hetzner AX41 Dev/Prod Consolidation Plan
 
-**Status:** implementation in progress; safety bundle verified and AX41 host/VPN baseline active; no VM or DNS cutover yet
+**Status:** implementation in progress; safety bundle verified, AX41 host/VPN baseline active and both empty workload VMs running; application/data/TLS cutover is still pending
 **Target host:** `65.109.55.110`, Hetzner AX41 in Finland
 **Audience assumption:** the first production audience is outside Russia; the existing Russian-data production contract in `spec.md` remains mandatory when Russian citizens' personal data is collected.
 
@@ -306,9 +306,9 @@ Required capabilities:
 
 This is the critical path for the first `honey.school` move. Object Storage is deliberately deferred and does not block these tasks:
 
-- [ ] **T1** Apply the Ansible local-state directories, check out the reviewed infra commit on AX41 and make an encrypted off-host copy around every OpenTofu apply.
-- [ ] **T2** Plan and apply `platform`, creating `playsay-workloads`/`virbr60` and the libvirt pool; verify no public administrative port is opened.
-- [ ] **T3** Plan and create `playsay-prod` (`10.60.0.20`, 8 vCPU, 42 GB, 200 GB) and `playsay-dev` (`10.60.0.30`, 2 vCPU, 12 GB, 120 GB); verify guest agent, autostart and prod destroy protection.
+- [x] **T1** Apply the Ansible local-state directories, check out the reviewed infra commit on AX41 and make an encrypted off-host copy around every OpenTofu apply. Latest platform/dev/prod bundles were copied off-host and decrypted/verified successfully; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
+- [x] **T2** Plan and apply `platform`, creating NAT-backed `playsay-workloads`/`virbr60` and the libvirt pool; verify no public administrative port is opened. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
+- [x] **T3** Plan and create `playsay-prod` (`10.60.0.20`, 8 vCPU, 42 GB, 200 GB) and `playsay-dev` (`10.60.0.30`, 2 vCPU, 12 GB, 120 GB); verify guest agent, autostart and destroy protection. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
 - [ ] **T4** Bootstrap independent Ubuntu/k3s/ArgoCD environments from Git; dev and prod receive separate CIDRs, secrets, databases, MinIO and Keycloak.
 - [ ] **T5** Create/protect `release/1.001.00`, build immutable `rel_1.001.00-N` images and promote only their digests through the matching infra release branch. Do not deploy prod from `develop`, `main` or `hotfix/*`.
 - [ ] **T6** Configure the host edge and TLS for `online.honey.school`/`key.honey.school` to prod and `dev.online.honey.school`/`dev.key.honey.school` to dev. Keep Cockpit and future ops interfaces VPN-only; do not overwrite separately owned root-site/mail configuration.
@@ -355,8 +355,8 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 - [x] **2.1** Create the versioned `terraform/modules/libvirt-vm` module with cloud-init, CPU/RAM, qcow2, network, autostart and QEMU guest-agent support; local backend-disabled initialization and validation passed.
 - [x] **2.2** Create separate `platform`, `dev` and `prod` OpenTofu roots and separate states; pin OpenTofu 1.12.x and `dmacvicar/libvirt` 0.9.8 and generate each provider lock file. The accelerated cutover uses the documented local-state exception and does not wait for task 2.3.
 - [ ] **2.3** After the first production stabilization window, provision an independent versioned/locked encrypted S3-compatible state backend, inject credentials only at runtime and migrate all three temporary local states with verification.
-- [ ] **2.3a** Before VM creation, apply the `0700` local-state directories on AX41, enforce a single named operator/no Jenkins apply and test encrypted off-host state capture and restore.
-- [ ] **2.4** Add `prevent_destroy` and explicit replacement protection to the prod VM and all prod disks; verify a destroy attempt fails in a test plan.
+- [x] **2.3a** Before VM creation, apply the `0700` local-state directories on AX41, enforce a single named operator/no Jenkins apply and test encrypted off-host state capture and restore. All three current bundles verified; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
+- [x] **2.4** Add `prevent_destroy` to managed VM domains and disks so a destroy/replacement plan is rejected before apply; the provider's tainted cloud-init replacement was refused by this lifecycle gate during bootstrap and was reconciled through a new Git plan.
 - [ ] **2.5** Add format, validate and read-only plan jobs with human-readable plan summaries; ensure plan artifacts cannot expose secrets.
 - [ ] **2.6** Require a separate manual approval for every apply and an additional prod approval; merging a pull request must not auto-apply prod.
 - [ ] **2.7** Add a scheduled read-only drift plan and alert on exit code `2`; document reconciliation of Cockpit/`virsh` break-glass changes.
@@ -368,7 +368,7 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 #### Phase 3 — automate and secure the AX41 host
 
 - [x] **3.1** Implement idempotent Ansible roles/playbook for KVM/QEMU/libvirt, storage pool, QEMU tooling and hardware-acceleration checks without repartitioning or replacing mdadm/ext4. Applied to AX41 and re-run with `changed=0`; evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
-- [ ] **3.2** Implement the `10.60.0.0/24` bridge, nftables default-deny policy, NAT and the explicit prod/dev LiveKit/TURN port split.
+- [ ] **3.2** Implement the `10.60.0.0/24` bridge, nftables default-deny policy, NAT and the explicit prod/dev LiveKit/TURN port split. The libvirt bridge and NAT are active; the public LiveKit/TURN split remains pending.
 - [ ] **3.3** Deploy WireGuard management networking on `10.250.0.0/24`, add computer and phone peers and verify both work behind carrier/private IPv4 NAT.
 - [ ] **3.4** Verify host SSH, guest SSH, libvirt administration and ops interfaces over VPN in a second session; only then remove public administrative access.
 - [x] **3.5** Install Cockpit + Machines through Ansible, bind it only to `10.250.0.1:9090`, use the named `playsay` administrator and system journal audit trail. Public access timed out and a temporary external VPN peer received HTTP 200; evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
@@ -384,10 +384,10 @@ Implementation note: the server tunnel and both permanent peer definitions are a
 
 #### Phase 4 — create the isolated VMs from Git
 
-- [ ] **4.1** Produce a clean `platform` plan for libvirt networks/storage and apply it after review.
-- [ ] **4.2** Create `playsay-dev` at `10.60.0.30`, Ubuntu 24.04, 2 vCPU, 12 GB RAM and maximum 120-GB qcow2; verify console, SSH, guest agent and autostart.
-- [ ] **4.3** Create `playsay-prod` at `10.60.0.20`, Ubuntu 24.04, 8 vCPU, 42 GB RAM and maximum 200-GB qcow2; verify protection against accidental destroy.
-- [ ] **4.4** Apply CPU/I/O priorities so prod wins contention; keep dev CI serialized.
+- [x] **4.1** Produce clean reviewed `platform` plans and apply the libvirt pool plus NAT network. The NAT addition deliberately replaced only the still-empty network with both guests shut down; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
+- [x] **4.2** Create `playsay-dev` at `10.60.0.30`, Ubuntu 24.04, 2 vCPU, 12 GB RAM and maximum 120-GB qcow2; SSH, cloud-init, guest agent and autostart pass.
+- [x] **4.3** Create `playsay-prod` at `10.60.0.20`, Ubuntu 24.04, 8 vCPU, 42 GB RAM and maximum 200-GB qcow2; SSH, cloud-init, guest agent, autostart and lifecycle protection pass.
+- [x] **4.4** Apply CPU/I/O priorities so prod wins contention (I/O weights 900 versus 300); keep dev CI serialized.
 - [ ] **4.5** Reboot the host with both guests enabled and verify independent recovery, correct addresses and no startup-order dependency.
 - [ ] **4.6** Run a controlled dev CPU/memory/disk stress test and confirm host reserve, prod responsiveness and storage thresholds.
 

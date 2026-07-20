@@ -1,0 +1,18 @@
+---
+timezone: Europe/Moscow
+admin_user: playsay
+ssh_port: 22
+
+manage_ssh_hardening: true
+manage_ufw: false
+install_docker: false
+swap_file_path: /swapfile
+swap_file_size: 2G
+
+k3s_version: v1.35.5+k3s1
+k3s_disable_components:
+  - traefik
+  - servicelb
+k3s_node_taints: []
+
+node_exporter_enabled: true

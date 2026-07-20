@@ -1,0 +1,9 @@
+---
+- name: Bootstrap independent Play&Say AX41 k3s guests
+  hosts: ax41_guests
+  become: true
+  gather_facts: true
+  roles:
+    - common
+    - k3s-server
+    - monitoring-agent

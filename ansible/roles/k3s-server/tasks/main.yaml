@@ -11,12 +11,14 @@
 - name: Install k3s server
   ansible.builtin.shell: |
     set -euo pipefail
-    curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="{{ k3s_version }}" sh -s - server \
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server \
       {{ k3s_disable_flags }} \
       --write-kubeconfig-mode 0640 \
-      --node-ip "{{ public_ipv4 | default(ansible_host) }}" \
-      --tls-san "{{ public_ipv4 | default(ansible_host) }}" \
-      --kube-proxy-arg "nodeport-addresses=127.0.0.0/8"
+      --node-ip "{{ k3s_node_ip | default(public_ipv4 | default(ansible_host)) }}" \
+      --tls-san "{{ k3s_api_address | default(k3s_node_ip | default(public_ipv4 | default(ansible_host))) }}" \
+      --cluster-cidr "{{ k3s_cluster_cidr }}" \
+      --service-cidr "{{ k3s_service_cidr }}" \
+      --kube-proxy-arg "nodeport-addresses={{ k3s_nodeport_addresses | default('127.0.0.0/8') }}"
   args:
     executable: /bin/bash
   when: not k3s_binary.stat.exists
@@ -46,7 +48,7 @@
 - name: Write admin kubeconfig with public server address
   ansible.builtin.shell: |
     set -euo pipefail
-    sed "s/127.0.0.1/{{ public_ipv4 | default(ansible_host) }}/g" /etc/rancher/k3s/k3s.yaml > "/home/{{ admin_user }}/.kube/config"
+    sed "s/127.0.0.1/{{ k3s_api_address | default(k3s_node_ip | default(public_ipv4 | default(ansible_host))) }}/g" /etc/rancher/k3s/k3s.yaml > "/home/{{ admin_user }}/.kube/config"
     chown "{{ admin_user }}:{{ admin_user }}" "/home/{{ admin_user }}/.kube/config"
     chmod 0600 "/home/{{ admin_user }}/.kube/config"
   args:
