@@ -1,0 +1,73 @@
+---
+- name: Install Cockpit visual host tooling
+  ansible.builtin.apt:
+    name:
+      - cockpit
+      - cockpit-machines
+      - cockpit-networkmanager
+      - cockpit-storaged
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create Cockpit socket override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/cockpit.socket.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Bind Cockpit only to the WireGuard management address
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/cockpit.socket.d/10-playsay-vpn-only.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Socket]
+      ListenStream=
+      ListenStream={{ cockpit_listen_address }}:{{ cockpit_listen_port }}
+  register: cockpit_socket_override
+
+- name: Reload systemd after Cockpit socket changes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: cockpit_socket_override.changed
+
+- name: Keep Cockpit socket disabled until VPN gate passes
+  ansible.builtin.systemd_service:
+    name: cockpit.socket
+    enabled: false
+    state: stopped
+  when: not cockpit_enabled | bool
+
+- name: Enable Cockpit only after the VPN gate is explicitly approved
+  ansible.builtin.systemd_service:
+    name: cockpit.socket
+    enabled: true
+    state: started
+  when: cockpit_enabled | bool
+
+- name: Restart Cockpit after its VPN-only binding changes
+  ansible.builtin.systemd_service:
+    name: cockpit.socket
+    state: restarted
+  when:
+    - cockpit_enabled | bool
+    - cockpit_socket_override.changed
+
+- name: Read Cockpit listeners
+  ansible.builtin.command:
+    cmd: ss -lntH sport = :{{ cockpit_listen_port }}
+  register: cockpit_listeners
+  changed_when: false
+  when: cockpit_enabled | bool
+
+- name: Assert Cockpit is not listening on a public wildcard
+  ansible.builtin.assert:
+    that:
+      - "cockpit_listen_address in cockpit_listeners.stdout"
+      - "'0.0.0.0:' + (cockpit_listen_port | string) not in cockpit_listeners.stdout"
+      - "'[::]:' + (cockpit_listen_port | string) not in cockpit_listeners.stdout"
+  when: cockpit_enabled | bool

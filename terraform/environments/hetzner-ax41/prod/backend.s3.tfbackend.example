@@ -1,0 +1,5 @@
+bucket       = "playsay-opentofu-state"
+key          = "hetzner-ax41/prod.tfstate"
+region       = "eu-central-1"
+use_lockfile = true
+encrypt      = true
