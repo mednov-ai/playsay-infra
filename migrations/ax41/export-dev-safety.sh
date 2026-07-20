@@ -79,16 +79,16 @@ kubectl -n keycloak exec "$keycloak_db_pod" -c postgresql -- sh -lc \
   >"$payload_dir/keycloak-postgresql.dump"
 
 echo "Validating PostgreSQL dump catalogs with source PostgreSQL 17 tools..."
-application_catalog="$(kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
-  <"$payload_dir/application-postgresql.dump")"
-keyboard_catalog="$(kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
-  <"$payload_dir/keyboard-postgresql.dump")"
-keycloak_catalog="$(kubectl -n keycloak exec -i "$keycloak_db_pod" -c postgresql -- \
+kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
+  <"$payload_dir/application-postgresql.dump" >"$work_dir/application.catalog"
+kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
+  <"$payload_dir/keyboard-postgresql.dump" >"$work_dir/keyboard.catalog"
+kubectl -n keycloak exec -i "$keycloak_db_pod" -c postgresql -- \
   /opt/bitnami/postgresql/bin/pg_restore --list \
-  <"$payload_dir/keycloak-postgresql.dump")"
-application_table_data_count="$(grep -c ' TABLE DATA ' <<<"$application_catalog")"
-keyboard_table_data_count="$(grep -c ' TABLE DATA ' <<<"$keyboard_catalog")"
-keycloak_table_data_count="$(grep -c ' TABLE DATA ' <<<"$keycloak_catalog")"
+  <"$payload_dir/keycloak-postgresql.dump" >"$work_dir/keycloak.catalog"
+application_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/application.catalog")"
+keyboard_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/keyboard.catalog")"
+keycloak_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/keycloak.catalog")"
 (( application_table_data_count > 0 && keyboard_table_data_count > 0 && keycloak_table_data_count > 0 )) || {
   echo "A required PostgreSQL dump contains no table-data entries" >&2
   exit 1
