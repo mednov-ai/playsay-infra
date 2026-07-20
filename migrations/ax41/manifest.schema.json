@@ -27,12 +27,14 @@
       "additionalProperties": false,
       "required": [
         "applicationPostgreSQL",
+        "keyboardPostgreSQL",
         "keycloakPostgreSQL",
         "minio",
         "sealedSecretsKeys"
       ],
       "properties": {
         "applicationPostgreSQL": { "type": "string", "minLength": 1 },
+        "keyboardPostgreSQL": { "type": "string", "minLength": 1 },
         "keycloakPostgreSQL": { "type": "string", "minLength": 1 },
         "minio": { "type": "string", "minLength": 1 },
         "sealedSecretsKeys": { "type": "boolean" }

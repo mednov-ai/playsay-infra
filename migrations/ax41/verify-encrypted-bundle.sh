@@ -62,7 +62,7 @@ gzip -t "$archive"
 tar -tzf "$archive" >/dev/null
 tar -xzf "$archive" -C "$payload"
 
-for required_payload in application-postgresql.dump keycloak-postgresql.dump minio-data.tar.gz \
+for required_payload in application-postgresql.dump keyboard-postgresql.dump keycloak-postgresql.dump minio-data.tar.gz \
   sealed-secrets-keys.yaml workload-inventory.json pvc-inventory.json \
   kubernetes-version.json dump-validation.json manifest.json SHA256SUMS; do
   [[ -s "$payload/$required_payload" ]] || { echo "Missing payload: $required_payload" >&2; exit 1; }
@@ -77,12 +77,13 @@ gzip -t "$payload/minio-data.tar.gz"
 tar -tzf "$payload/minio-data.tar.gz" >/dev/null
 
 if command -v jq >/dev/null; then
-  jq -e '.schemaVersion == "1" and .targetEnvironment == "dev" and (.components.sealedSecretsKeys == true)' "$payload/manifest.json" >/dev/null
-  jq -e '.applicationPostgreSQL == "pg_restore-list-ok" and .keycloakPostgreSQL == "pg_restore-list-ok" and .toolMajorVersion == 17' "$payload/dump-validation.json" >/dev/null
+  jq -e '.schemaVersion == "1" and .targetEnvironment == "dev" and (.components.keyboardPostgreSQL | type == "string") and (.components.sealedSecretsKeys == true)' "$payload/manifest.json" >/dev/null
+  jq -e '.applicationPostgreSQL == "pg_restore-list-ok" and .keyboardPostgreSQL == "pg_restore-list-ok" and .keycloakPostgreSQL == "pg_restore-list-ok" and .toolMajorVersion == 17 and .applicationTableDataCount > 0 and .keyboardTableDataCount > 0 and .keycloakTableDataCount > 0' "$payload/dump-validation.json" >/dev/null
 fi
 
 if command -v pg_restore >/dev/null; then
   if ! pg_restore --list "$payload/application-postgresql.dump" >/dev/null 2>&1 \
+    || ! pg_restore --list "$payload/keyboard-postgresql.dump" >/dev/null 2>&1 \
     || ! pg_restore --list "$payload/keycloak-postgresql.dump" >/dev/null 2>&1; then
     echo "Local pg_restore cannot read PostgreSQL 17 custom dumps; source-side PostgreSQL 17 catalog validation is recorded and checksum-verified."
   fi

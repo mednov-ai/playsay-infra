@@ -64,9 +64,14 @@ minio_pod="$(kubectl -n storage get pods -o json | jq -r '.items[] | select(any(
 }
 
 echo "Exporting application PostgreSQL..."
-kubectl -n playsay-data exec "$app_pod" -c postgres -- sh -lc \
-  'pg_dump --format=custom --no-owner --no-privileges -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+kubectl -n playsay-data exec "$app_pod" -c postgres -- \
+  pg_dump --format=custom --no-owner --no-privileges -U postgres -d playsay \
   >"$payload_dir/application-postgresql.dump"
+
+echo "Exporting keyboard PostgreSQL..."
+kubectl -n playsay-data exec "$app_pod" -c postgres -- \
+  pg_dump --format=custom --no-owner --no-privileges -U postgres -d keyboard \
+  >"$payload_dir/keyboard-postgresql.dump"
 
 echo "Exporting Keycloak PostgreSQL..."
 kubectl -n keycloak exec "$keycloak_db_pod" -c postgresql -- sh -lc \
@@ -74,12 +79,25 @@ kubectl -n keycloak exec "$keycloak_db_pod" -c postgresql -- sh -lc \
   >"$payload_dir/keycloak-postgresql.dump"
 
 echo "Validating PostgreSQL dump catalogs with source PostgreSQL 17 tools..."
-kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
-  <"$payload_dir/application-postgresql.dump" >/dev/null
-kubectl -n keycloak exec -i "$keycloak_db_pod" -c postgresql -- \
+application_catalog="$(kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
+  <"$payload_dir/application-postgresql.dump")"
+keyboard_catalog="$(kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
+  <"$payload_dir/keyboard-postgresql.dump")"
+keycloak_catalog="$(kubectl -n keycloak exec -i "$keycloak_db_pod" -c postgresql -- \
   /opt/bitnami/postgresql/bin/pg_restore --list \
-  <"$payload_dir/keycloak-postgresql.dump" >/dev/null
-jq -n '{applicationPostgreSQL: "pg_restore-list-ok", keycloakPostgreSQL: "pg_restore-list-ok", toolMajorVersion: 17}' \
+  <"$payload_dir/keycloak-postgresql.dump")"
+application_table_data_count="$(grep -c ' TABLE DATA ' <<<"$application_catalog")"
+keyboard_table_data_count="$(grep -c ' TABLE DATA ' <<<"$keyboard_catalog")"
+keycloak_table_data_count="$(grep -c ' TABLE DATA ' <<<"$keycloak_catalog")"
+(( application_table_data_count > 0 && keyboard_table_data_count > 0 && keycloak_table_data_count > 0 )) || {
+  echo "A required PostgreSQL dump contains no table-data entries" >&2
+  exit 1
+}
+jq -n \
+  --argjson applicationTableDataCount "$application_table_data_count" \
+  --argjson keyboardTableDataCount "$keyboard_table_data_count" \
+  --argjson keycloakTableDataCount "$keycloak_table_data_count" \
+  '{applicationPostgreSQL: "pg_restore-list-ok", keyboardPostgreSQL: "pg_restore-list-ok", keycloakPostgreSQL: "pg_restore-list-ok", toolMajorVersion: 17, applicationTableDataCount: $applicationTableDataCount, keyboardTableDataCount: $keyboardTableDataCount, keycloakTableDataCount: $keycloakTableDataCount}' \
   >"$payload_dir/dump-validation.json"
 
 echo "Exporting MinIO storage..."
@@ -120,12 +138,12 @@ jq -n \
   --arg applicationPod "$app_pod" \
   --arg keycloakDatabasePod "$keycloak_db_pod" \
   --arg minioPod "$minio_pod" \
-  '{schemaVersion: $schemaVersion, bundleId: $bundleId, createdAt: $createdAt, sourceHost: $sourceHost, targetEnvironment: "dev", platformCommit: $platformCommit, infraCommit: $infraCommit, components: {applicationPostgreSQL: $applicationPod, keycloakPostgreSQL: $keycloakDatabasePod, minio: $minioPod, sealedSecretsKeys: true}}' \
+  '{schemaVersion: $schemaVersion, bundleId: $bundleId, createdAt: $createdAt, sourceHost: $sourceHost, targetEnvironment: "dev", platformCommit: $platformCommit, infraCommit: $infraCommit, components: {applicationPostgreSQL: $applicationPod, keyboardPostgreSQL: $applicationPod, keycloakPostgreSQL: $keycloakDatabasePod, minio: $minioPod, sealedSecretsKeys: true}}' \
   >"$payload_dir/manifest.json"
 
 (
   cd "$payload_dir"
-  sha256sum application-postgresql.dump keycloak-postgresql.dump minio-data.tar.gz \
+  sha256sum application-postgresql.dump keyboard-postgresql.dump keycloak-postgresql.dump minio-data.tar.gz \
     sealed-secrets-keys.yaml workload-inventory.json pvc-inventory.json \
     kubernetes-version.json dump-validation.json manifest.json >SHA256SUMS
 )
