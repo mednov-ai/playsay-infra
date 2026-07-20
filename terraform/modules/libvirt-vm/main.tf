@@ -36,10 +36,10 @@ resource "terraform_data" "root_volume_capacity" {
   provisioner "local-exec" {
     command     = <<-EOT
       set -euo pipefail
-      current_bytes="$(virsh vol-info --pool '${var.pool_name}' --bytes '${libvirt_volume.root.name}' | awk '$1 == "Capacity:" {print $2}')"
+      current_bytes="$(virsh --connect qemu:///system vol-info --pool '${var.pool_name}' --bytes '${libvirt_volume.root.name}' | awk '$1 == "Capacity:" {print $2}')"
       target_bytes='${local.root_disk_bytes}'
       if (( current_bytes < target_bytes )); then
-        virsh vol-resize --pool '${var.pool_name}' '${libvirt_volume.root.name}' "${local.root_disk_bytes}B"
+        virsh --connect qemu:///system vol-resize --pool '${var.pool_name}' '${libvirt_volume.root.name}' "${local.root_disk_bytes}B"
       elif (( current_bytes > target_bytes )); then
         echo "Refusing to shrink ${libvirt_volume.root.name} from $current_bytes to $target_bytes bytes" >&2
         exit 1
