@@ -28,7 +28,7 @@ mediaService:
   maxUpstreamRangeBytes: "1048576"
   maxThumbnailBytes: "5242880"
   ytdlpPath: /usr/local/bin/yt-dlp
-  ytdlpPluginDirectory: /usr/local/lib/yt-dlp-plugins
+  ytdlpPluginDirectory: /usr/local/lib
   ytdlpJsRuntime: deno:/usr/local/bin/deno
   ffmpegPath: /usr/local/bin/ffmpeg
   youtubeCacheEnabled: "false"

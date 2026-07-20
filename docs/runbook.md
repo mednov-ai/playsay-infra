@@ -703,7 +703,7 @@ Runtime controls in the `media-service` chart:
 - `PLAYSAY_MEDIA_SERVICE_MAX_UPSTREAM_RANGE_BYTES`: maximum upstream Range window for relay stream requests, default `1048576`.
 - `PLAYSAY_MEDIA_SERVICE_MAX_THUMBNAIL_BYTES`: thumbnail download cap, default `5242880`.
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_PATH`: executable used by `media-service` for YouTube metadata, format selection, thumbnail source URL, and upstream media URLs; default `/usr/local/bin/yt-dlp`.
-- `PLAYSAY_MEDIA_SERVICE_YTDLP_PLUGIN_DIRECTORY`: yt-dlp plugin root; the pinned image uses `/usr/local/lib/yt-dlp-plugins`.
+- `PLAYSAY_MEDIA_SERVICE_YTDLP_PLUGIN_DIRECTORY`: yt-dlp plugin search root; the pinned standalone binary requires `/usr/local/lib`, which contains `yt-dlp-plugins/yt_dlp_plugins`.
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_JS_RUNTIME`: JS challenge runtime; the pinned image uses `deno:/usr/local/bin/deno`.
 - `PLAYSAY_YOUTUBE_POT_ENABLED`: dev-only switch for automatic YouTube PO Token support; default `false`.
 - `PLAYSAY_YOUTUBE_POT_PROVIDER_BASE_URL`: loopback-only bgutil sidecar endpoint, default `http://127.0.0.1:4416`.
