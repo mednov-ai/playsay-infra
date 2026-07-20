@@ -326,7 +326,7 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 - [x] **1.6** Wait for AX41 mdadm RAID1 synchronization to finish and save non-secret `/proc/mdstat`, array-detail and filesystem-capacity evidence. Evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 - [x] **1.7** Run SMART/NVMe health checks for both AX41 drives; stop if either drive or RAID member is degraded. Both drives passed with zero media/integrity errors; evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 - [ ] **1.8** Capture the current AX41 Ubuntu packages, network, firewall, mounts and boot configuration before automation changes.
-- [ ] **1.9** Patch AX41 Ubuntu and reboot once; confirm RAID, network and SSH recovery after reboot.
+- [x] **1.9** Patch AX41 Ubuntu to kernel `6.8.0-136-generic` and complete the reboot gate; RAID, network, SSH, libvirt, WireGuard, UFW and VPN-only Cockpit recovered. Evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 - [ ] **1.10** Configure AX41 health alerts for RAID degradation, NVMe errors, filesystem thresholds and `MemAvailable < 4 GiB for 15 minutes`.
 
 **Depends on:** Phase 0.
@@ -355,6 +355,8 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 - [x] **3.5** Install Cockpit + Machines through Ansible, bind it only to `10.250.0.1:9090`, use the named `playsay` administrator and system journal audit trail. Public access timed out and a temporary external VPN peer received HTTP 200; evidence: `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 - [ ] **3.6** Implement the minimal edge proxy for prod/dev hostnames without overwriting the separately owned public root site or mail configuration.
 - [ ] **3.7** Reboot the host and verify VPN, firewall, bridge, Cockpit, RAID and monitoring return automatically.
+
+Reboot note: host-level VPN, firewall, Cockpit, RAID, libvirt and SMART monitoring recovery passed after correcting Cockpit startup ordering. Task 3.7 remains open only because the managed `virbr60` bridge does not exist until Phase 4 platform apply.
 
 **Depends on:** Phases 1 and 2.
 **Exit check:** the public Internet cannot reach administrative interfaces; VPN clients can visually inspect the host and libvirt without configuration drift.

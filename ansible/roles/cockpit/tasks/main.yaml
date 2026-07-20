@@ -30,21 +30,52 @@
       ListenStream={{ cockpit_listen_address }}:{{ cockpit_listen_port }}
   register: cockpit_socket_override
 
-- name: Reload systemd after Cockpit socket changes
+- name: Install the VPN-gated Cockpit starter
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/playsay-cockpit-vpn.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Start Cockpit after the Play&Say management VPN
+      Requires=wg-quick@{{ wireguard_interface }}.service
+      After=wg-quick@{{ wireguard_interface }}.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/systemctl start cockpit.socket
+      ExecStop=/usr/bin/systemctl stop cockpit.socket
+
+      [Install]
+      WantedBy=multi-user.target
+  register: cockpit_vpn_starter
+
+- name: Reload systemd after Cockpit unit changes
   ansible.builtin.systemd_service:
     daemon_reload: true
-  when: cockpit_socket_override.changed
+  when: cockpit_socket_override.changed or cockpit_vpn_starter.changed
 
-- name: Keep Cockpit socket disabled until VPN gate passes
+- name: Remove direct Cockpit target enablement
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/sockets.target.wants/cockpit.socket
+    - /etc/systemd/system/multi-user.target.wants/cockpit.socket
+  when: cockpit_enabled | bool
+
+- name: Keep the VPN-gated Cockpit starter disabled until approval
   ansible.builtin.systemd_service:
-    name: cockpit.socket
+    name: playsay-cockpit-vpn.service
     enabled: false
     state: stopped
   when: not cockpit_enabled | bool
 
-- name: Enable Cockpit only after the VPN gate is explicitly approved
+- name: Enable Cockpit through the late VPN-gated starter
   ansible.builtin.systemd_service:
-    name: cockpit.socket
+    name: playsay-cockpit-vpn.service
     enabled: true
     state: started
   when: cockpit_enabled | bool

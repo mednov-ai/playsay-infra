@@ -22,7 +22,7 @@ ansible-playbook \
   playbooks/ax41-host.yaml
 ```
 
-On 2026-07-20 a complete repeat run reported `changed=0`. RAID/SMART, firewall and VPN evidence is recorded at `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
+On 2026-07-20 Ubuntu was updated to kernel `6.8.0-136-generic`; the corrected reboot gate restored RAID, SSH, libvirt, WireGuard, UFW and VPN-only Cockpit automatically. Cockpit uses the `playsay-cockpit-vpn.service` late starter so its address-bound socket starts only after `wg0`; do not directly add an `After=wg-quick@wg0` dependency to `cockpit.socket`, because socket units are ordered before `sockets.target` and that creates a boot ordering cycle. The final complete Ansible run reported `changed=0`. RAID/SMART, firewall, reboot and VPN evidence is recorded at `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 
 The MacBook and phone WireGuard profiles are stored outside Git at `/Users/evgeniymednov/Backups/PlayAndSay/wireguard/macbook.conf` and `phone.conf`. Import each profile into a WireGuard-compatible client and activate it; gray/private client IP addresses are expected because `PersistentKeepalive=25` lets both clients initiate the tunnel to public endpoint `65.109.55.110:51820`. After activation, open `https://10.250.0.1:9090`, sign in as `playsay`, and retrieve its generated password from the macOS Keychain item `PlayAndSay AX41 Cockpit`. The Cockpit certificate is initially self-signed. Confirm a server-side handshake for both peers before disabling public SSH. Do not publish port 9090 in DNS or the public firewall.
 
