@@ -309,7 +309,7 @@ All unchecked tasks are pending. A phase is complete only when its exit check is
 - [x] **0.1** Record the AX41 inventory, Ubuntu/mdadm/ext4 decision and initial `dev 2 vCPU/12 GB`, `prod 8 vCPU/42 GB`, host approximately 8 GiB allocation.
 - [x] **0.2** Record the hostname split, one-public-IP/NAT design, VPN-only ops access and OpenTofu + Cockpit operating model.
 - [x] **0.3** Freeze the initial prod allowlist contract: Maria, six named linked students, 22 materials excluding `hello`, 51 assets and 11 enrichments; exclude dev history.
-- [ ] **0.4** Create a dedicated `playsay-infra` change branch, bring it up to date with `develop`, inventory unrelated working-tree changes and isolate migration work without discarding user changes.
+- [x] **0.4** Create dedicated branch `codex/migrate-ax41-dev-prod`, rebase it onto current `origin/develop`, inventory unrelated working-tree changes and isolate migration work without discarding them. Foundation commit: `d0697fc`; the branch is pushed without `graphify-out`, private inventory, VPN profiles, keys, dumps or state.
 - [ ] **0.5** Choose owners for infrastructure review, prod apply, DNS cutover and rollback; record the exact old-VPS deletion deadline within the remaining three-day paid period, maintenance windows and communication channel.
 - [ ] **0.6** Record the exact current `playsay-platform` and `playsay-infra` revisions, image digests and current DNS answers as the pre-change baseline.
 - [ ] **0.7** Create a migration decision log and evidence directory containing no credentials or personal identifiers.
