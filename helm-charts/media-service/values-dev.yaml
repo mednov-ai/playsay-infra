@@ -59,11 +59,11 @@ storage:
     pathStyleAccess: "true"
     createBucket: "true"
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=50 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=35 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
     cpu: 50m
     memory: 256Mi
   limits:
     cpu: "1"
-    memory: 896Mi
+    memory: 1280Mi
