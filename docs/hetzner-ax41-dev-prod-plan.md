@@ -2,7 +2,7 @@
 
 > **CI/domain follow-up:** задачи по переносу Jenkins в dev из этого исторического плана отменены. Целевая схема использует отдельную `playsay-ci` VM, `key.*` для keyboard trainer и `ops.*/keycloak` для Keycloak. Актуальный исполнимый checklist находится в [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md).
 
-**Status:** implementation in progress; safety bundle verified, AX41 host/VPN baseline active and both empty workload VMs running; application/data/TLS cutover is still pending
+**Status:** technical `honey.school` cutover complete on `release/1.001.01`; owner login/material acceptance, old-VPS shutdown and post-cutover backup/state hardening remain
 **Target host:** `65.109.55.110`, Hetzner AX41 in Finland
 **Audience assumption:** the first production audience is outside Russia; the existing Russian-data production contract in `spec.md` remains mandatory when Russian citizens' personal data is collected.
 
@@ -35,11 +35,12 @@ The RAID must finish initial synchronization and report both members healthy bef
 
 | Workload | vCPU | RAM | Maximum virtual disk | Priority |
 |---|---:|---:|---:|---|
-| `playsay-prod` VM | 8 | 42 GB | 200 GB qcow2 | highest CPU and I/O weight |
-| `playsay-dev` VM | 2 | 12 GB | 120 GB qcow2 | CPU-capped; serialized CI, lower weight than prod |
-| Ubuntu host | shared | approximately 8 GiB remain unassigned | at least 70 GB physical free space | libvirt, networking, proxy, VPN and filesystem cache |
+| `playsay-prod` VM | 8 | 38 GiB | 200 GB qcow2 | highest CPU and I/O weight |
+| `playsay-dev` VM | 2 | 10 GiB | 120 GB qcow2 | product dev workloads only, lower weight than prod |
+| `playsay-ci` VM | 2 | 8 GiB | 100 GB qcow2 | serialized Jenkins controller/agent only |
+| Ubuntu host | shared | approximately 6 GiB remain unassigned | at least 70 GB physical free space | libvirt, networking, proxy, VPN and filesystem cache |
 
-Virtual disks live in a dedicated libvirt storage pool on the existing ext4 filesystem. Sparse qcow2 capacity is not permission to overcommit physical storage: alerts start below 20% free and new writes/deployments stop below 15% free. Ballooning is not used to take guaranteed RAM away from prod. The initial guests declare 10 vCPUs in total, leaving two hardware threads plus scheduler flexibility for the host; prod receives the higher CPU/I/O weight.
+Virtual disks live in a dedicated libvirt storage pool on the existing ext4 filesystem. Sparse qcow2 capacity is not permission to overcommit physical storage: alerts start below 20% free and new writes/deployments stop below 15% free. Ballooning is not used to take guaranteed RAM away from prod. The three guests declare 12 vCPUs in total; CPU scheduling remains weighted in favour of prod and Jenkins permits only one agent.
 
 The dev CPU allocation is based on VictoriaMetrics from the current 4-vCPU/8-GB VPS. During the observed lesson window on 2026-07-20 08:50-09:40 Europe/Moscow:
 
@@ -48,15 +49,15 @@ The dev CPU allocation is based on VictoriaMetrics from the current 4-vCPU/8-GB 
 - memory available averaged only `0.53 GiB`, swap used `1.09 GiB`, and major faults averaged about `3127/s`;
 - all Kubernetes containers used `0.28` cores on average; LiveKit used `0.13`, Play&Say application pods `0.04`, and Jenkins was effectively idle at `0.004` cores.
 
-Across 2026-07-13 through 2026-07-20, host compute p95 was `1.63` cores, p99 `2.77`, and the rare maximum `3.58`; Jenkins itself peaked at about `1.19` cores. Therefore 4 dev vCPUs would reserve unnecessary scheduler capacity. Start at 2 vCPUs/12 GB: normal lessons retain roughly 2x compute headroom, while serialized builds may take longer but cannot crowd prod. The larger RAM allocation and local NVMe RAID1 address the measured paging/I/O bottleneck more directly than extra vCPUs.
+Across 2026-07-13 through 2026-07-20, host compute p95 was `1.63` cores, p99 `2.77`, and the rare maximum `3.58`; Jenkins itself peaked at about `1.19` cores. Therefore 4 dev vCPUs would reserve unnecessary scheduler capacity. Dev starts at 2 vCPUs/10 GiB, while Jenkins receives its own 2-vCPU/8-GiB guest and cannot crowd the dev or prod clusters through Kubernetes scheduling. The larger aggregate RAM allocation and local NVMe RAID1 address the measured paging/I/O bottleneck more directly than extra dev vCPUs.
 
-The dev RAM allocation is also based on VictoriaMetrics working-set data. During the lesson window all Kubernetes containers averaged `5.85 GiB`, with p95 `5.92 GiB` and maximum `5.95 GiB`. Across 2026-07-13 through 2026-07-20 the total Kubernetes working set peaked at `6.24 GiB`; Jenkins was part of that total and independently peaked at `2.69 GiB`. A 12 GB dev guest therefore retains roughly 5 GiB above the observed Kubernetes maximum for the guest OS, filesystem cache and transient build/lesson overlap without reserving 16 GB permanently.
+The dev RAM allocation is also based on VictoriaMetrics working-set data. During the lesson window all Kubernetes containers averaged `5.85 GiB`, with p95 `5.92 GiB` and maximum `5.95 GiB`. Across 2026-07-13 through 2026-07-20 the total Kubernetes working set peaked at `6.24 GiB`; Jenkins was part of that total and independently peaked at `2.69 GiB`. Moving Jenkins out means a 10-GiB dev guest retains practical OS/cache headroom without reserving 16 GiB permanently.
 
-The AX41 exposes approximately 62 GiB usable RAM. Assigning 12 GB to dev and 42 GB to prod leaves approximately 8 GiB for the Ubuntu host. Memory ballooning remains disabled: this is a fixed initial allocation, not an overcommit target. Alert when host `MemAvailable` stays below 4 GiB for 15 minutes, and block non-essential VM starts, backups and build bursts until pressure is resolved; sustained host swap-in or memory-pressure stalls require revisiting the split before increasing either guest.
+The AX41 exposes approximately 62 GiB usable RAM. Assigning 10 GiB to dev, 38 GiB to prod and 8 GiB to CI leaves approximately 6 GiB for the Ubuntu host. Memory ballooning remains disabled: this is a fixed initial allocation, not an overcommit target. Alert when host `MemAvailable` stays below 4 GiB for 15 minutes, and block non-essential VM starts, backups and build bursts until pressure is resolved; sustained host swap-in or memory-pressure stalls require revisiting the split before increasing any guest.
 
 Raise dev from 2 to 3 vCPUs only through a reviewed OpenTofu/Git change when at least one condition is reproduced after migration: compute utilization excluding I/O wait stays above 85% for 15 minutes; serialized Jenkins build duration regresses by more than 30% against the post-migration baseline; or dev LiveKit/API thresholds fail while CPU is saturated. High load caused by I/O wait, memory pressure or a broken build is not by itself a reason to add CPU. A fourth dev vCPU requires a new prod-isolation review.
 
-The current serialized Jenkins agent and capacity guard remain enabled after migration. Resource limits may be relaxed only after a dev build stress test proves that prod latency and LiveKit quality remain within their acceptance thresholds.
+The Jenkins agent remains serialized in `playsay-ci`. Legacy capacity acquire/restore and guard stages are temporary no-op compatibility paths and must be removed after database migrations are redesigned as scoped Jobs inside dev.
 
 ## 3. Network and security
 
@@ -78,10 +79,11 @@ Host SSH, libvirt administration and guest administrative SSH are reachable only
 | LiveKit TCP fallback | `7881` | `7882` |
 | LiveKit UDP media | `50000-50099` | `50100-50149` |
 
-Recommended hostname split:
+Active hostname split:
 
-- prod: `online.play-and-say.ru`, `key.play-and-say.ru`, `ops.play-and-say.ru`;
-- dev: `dev.online.play-and-say.ru`, `dev.key.play-and-say.ru`, `dev.ops.play-and-say.ru`.
+- prod: `online.honey.school`, `key.honey.school`, `ops.honey.school`;
+- dev: `dev.online.honey.school`, `dev.key.honey.school`, `dev.ops.honey.school`;
+- CI/webhooks: VPN-only `jenkins.honey.school` and restricted public POST routes on `hooks.honey.school`.
 
 Actual DNS records, certificates, public-site vhosts and mail records are created in the separately owned domain/site work. The infrastructure contract only publishes required upstream addresses and ports. Ops routes remain VPN-only even when they have DNS names. Existing public-site configuration must not be overwritten.
 
@@ -311,17 +313,17 @@ This is the critical path for the first `honey.school` move. Object Storage is d
 
 - [x] **T1** Apply the Ansible local-state directories, check out the reviewed infra commit on AX41 and make an encrypted off-host copy around every OpenTofu apply. Latest platform/dev/prod bundles were copied off-host and decrypted/verified successfully; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
 - [x] **T2** Plan and apply `platform`, creating NAT-backed `playsay-workloads`/`virbr60` and the libvirt pool; verify no public administrative port is opened. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
-- [x] **T3** Plan and create `playsay-prod` (`10.60.0.20`, 8 vCPU, 42 GB, 200 GB) and `playsay-dev` (`10.60.0.30`, 2 vCPU, 12 GB, 120 GB); verify guest agent, autostart and destroy protection. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
+- [x] **T3** Plan and create prod (`10.60.0.20`, 8 vCPU/38 GiB/200 GB), dev (`10.60.0.30`, 2 vCPU/10 GiB/120 GB) and CI (`10.60.0.40`, 2 vCPU/8 GiB/100 GB); verify guest agent, autostart and destroy protection. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md` and `migrations/ax41/evidence/20260721-ci-vm-and-rebalance.md`.
 - [x] **T4** Bootstrap independent Ubuntu/k3s/ArgoCD environments from Git; dev and prod receive separate CIDRs, secrets, databases, MinIO and Keycloak. Both controllers and the prod PostgreSQL/Keycloak/MinIO data plane are Synced/Healthy from the matching release branch; evidence: `migrations/ax41/evidence/20260720-prod-seed-and-edge.md`.
-- [ ] **T5** Create/protect `release/1.001.00`, build immutable release images and promote only their digests through the matching infra release branch. Do not deploy prod from `develop`, `main` or `hotfix/*`. All addressable release jobs are green, and every deployed prod application is pinned by OCI digest. Web build `web-release-1.001.00-134` uses the prod Keycloak issuer and intentionally does not overwrite dev; branch-protection verification remains an owner-side gate. Email/payment provider workloads remain intentionally disabled until independent prod credentials are supplied.
-- [x] **T6** Configure the host edge and TLS for `online.honey.school`/`key.honey.school` to prod and `dev.online.honey.school`/`dev.key.honey.school` to dev. Keep Cockpit and future ops interfaces VPN-only; do not overwrite separately owned root-site/mail configuration. Exact-host nginx routes, the valid four-name Let's Encrypt certificate, prod `/collab/ws` routing and prod `/livekit/` signaling routing are active.
+- [~] **T5** Build immutable release images from platform `release/1.001.01` and promote only their digests through matching infra `release/1.001.01`. Web/keyboard release builds and manual prod sync passed; repository branch-protection confirmation remains owner-side. Email/payment provider workloads remain intentionally disabled until independent prod credentials are supplied.
+- [x] **T6** Configure edge/TLS for all eight `honey.school` hosts. Exact routes, WireGuard-only ops/Jenkins policy, restricted hooks, collaboration/LiveKit routing and the eight-SAN certificate are active; evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 - [ ] **T7** Restore the full verified bundle into dev and run login, application, material, MinIO and Jenkins/ArgoCD smoke tests. Safety-v3 restore is complete and basic web/Keycloak/runtime checks pass; authenticated login and material-rendering checks remain.
 - [x] **T8** Build the immutable-ID prod allowlist and import only Maria Mednova, her six approved students and 22 materials/51 assets/11 enrichments; refuse `hello`, other dev users and dev history. The protected allowlist is encrypted off Git; prod counts are `7/22/51/11`, `hello=0`, and 51 selected MinIO objects were streamed. Evidence: `migrations/ax41/evidence/20260720-prod-seed-and-edge.md`.
-- [ ] **T9** Verify exact prod counts, Maria and one student login, every material/object, Keycloak redirects, API/WebSocket and LiveKit/TURN before accepting user traffic. SQL counts, exclusion/history/orphan checks, byte-for-byte SHA-256 for all 51 objects, browser redirect to `key.honey.school`, API checks, explicit collaboration/LiveKit edge checks and external forced-TURN relay pass; authenticated Maria/student login and rendered-material checks remain user-operated because passwords were preserved and not reset.
-- [ ] **T10** The resolving prod hostnames now serve AX41 with valid TLS and all prod ArgoCD applications `Synced/Healthy`; retain the old VPS unchanged as rollback and observe HTTP errors, latency, resources and lesson quality through the stabilization window.
+- [~] **T9** Verify exact prod counts, Maria and one student login, every material/object, Keycloak redirects, API/WebSocket and LiveKit/TURN before accepting user traffic. SQL counts, exclusion/history/orphan checks, byte-for-byte SHA-256 for all 51 objects, browser redirects to canonical `ops.honey.school`, API checks, explicit collaboration/LiveKit edge checks and external forced-TURN relay pass; authenticated Maria/student login and rendered-material checks remain user-operated because passwords were preserved and not reset.
+- [~] **T10** Prod hostnames serve AX41 with valid TLS and all 15 prod ArgoCD applications `Synced/Healthy`; webhooks also moved to AX41. Retain the old VPS as rollback through the remaining owner acceptance/stabilization window.
 - [ ] **T11** After stabilization, provision Object Storage, migrate the three OpenTofu states with locking/versioning and configure permanent encrypted off-site dev/prod backups before deleting the old VPS.
 
-Deletion blocker discovered during the final audit: the AX41 environment has all product ArgoCD applications but no dedicated CI VM; the active controller and its credential store still run on the retiring VPS. Before deletion, create `playsay-ci`, install a clean Git-defined Jenkins controller there, inject new/re-authorized GitHub credentials without copying the old PVC, configure scoped dev access and webhooks, run one no-op/affected-target delivery proof, then disable the old webhook/controller. This is independent of the already-working prod application domain but is mandatory for CI continuity.
+The prior CI deletion blocker is resolved: dedicated `playsay-ci`, scoped dev delivery and both new webhooks are verified. Remaining deletion gates are owner-operated Maria/student login and material rendering, a stabilization window, stopping the old controller, a real management-VPN handshake and explicit owner approval. The verified final source bundle is recorded in `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
 ### 7.4 Task checklist
 

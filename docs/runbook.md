@@ -4,19 +4,19 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
-## Planned AX41 Dev/Prod Topology
+## Active AX41 Dev/Prod Topology
 
-The active follow-up plan adds a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The decision-complete status and tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
+The active topology uses a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The current status and remaining tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
 
-AX41 at `65.109.55.110` now serves the first `honey.school` production candidate: the Ubuntu 24.04 physical host, healthy mdadm RAID1/ext4, KVM/QEMU/libvirt, OpenTofu, firewall, WireGuard and VPN-only Cockpit baseline are active. The NAT-backed `playsay-prod` (`10.60.0.20`, 8 vCPU/38 GiB), `playsay-dev` (`10.60.0.30`, 2 vCPU/10 GiB) and `playsay-ci` (`10.60.0.40`, 2 vCPU/8 GiB) guests are active and protected by separate OpenTofu states. Prod/dev run independent k3s, ArgoCD and Sealed Secrets controllers. CI runs only k3s, Sealed Secrets and the Git/JCasC-defined Jenkins controller; it has no product workloads, ArgoCD, Keycloak or MinIO. Evidence and verified state-backup IDs: `migrations/ax41/evidence/20260721-ci-vm-and-rebalance.md`; the first end-to-end dev delivery proof is `migrations/ax41/evidence/20260721-jenkins-delivery-proof.md`. Prod has exactly seven human identities, 22 materials, 51 verified objects and 11 enrichments, with `hello` and dev history absent. All deployed prod ArgoCD apps are `Synced/Healthy`; `online.honey.school`, API, collaboration signaling, LiveKit signaling and forced TURN reach the AX41 successfully. The current `key.honey.school` Keycloak route is transitional and must not be treated as accepted: keyboard returns to `key.*`, while Keycloak moves to `ops.*/keycloak`. Human Maria/student login and rendered-material acceptance remain, so the old VPS stays unchanged as rollback through its paid lifetime. Email/payment provider workloads remain disabled until independent prod credentials are supplied. Object Storage remains a post-stabilization state/backup task, not a blocker to this cutover.
+AX41 at `65.109.55.110` serves `honey.school` production from `release/1.001.01`: the Ubuntu 24.04 physical host, healthy mdadm RAID1/ext4, KVM/QEMU/libvirt, OpenTofu, firewall, WireGuard and VPN-only Cockpit baseline are active. The NAT-backed `playsay-prod` (`10.60.0.20`, 8 vCPU/38 GiB), `playsay-dev` (`10.60.0.30`, 2 vCPU/10 GiB) and `playsay-ci` (`10.60.0.40`, 2 vCPU/8 GiB) guests are active and protected by separate OpenTofu states. Prod/dev run independent k3s, ArgoCD and Sealed Secrets controllers. CI runs only k3s, Sealed Secrets and the Git/JCasC-defined Jenkins controller; it has no product workloads, ArgoCD, Keycloak or MinIO. Prod has exactly seven human identities, 22 materials, 51 verified objects and 11 enrichments, with `hello` and dev history absent. All 15 prod ArgoCD apps are `Synced/Healthy`; web, keyboard, API, collaboration signaling, LiveKit signaling and forced TURN reach AX41. Canonical Keycloak is `ops.*/keycloak`; the explicit `key.*/keycloak` compatibility path remains only until owner-operated login/material acceptance. Both GitHub webhooks now use `hooks.honey.school` and returned HTTP 200 to GitHub ping deliveries. Email/payment provider workloads remain disabled until independent prod credentials are supplied. Object Storage remains a post-stabilization state/backup task, not a blocker to this cutover. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
-The full architecture, OpenSpec-style phased task checklist, rollback contract and acceptance gates are defined in [hetzner-ax41-dev-prod-plan.md](hetzner-ax41-dev-prod-plan.md), section 7. Execute phases in dependency order and mark a task complete only after recording its exact Git commit and non-secret evidence location. Do not treat that document as current runtime state, do not change current DNS/IP examples ahead of cutover, and do not sync new public-IP values through the current ArgoCD controller before it is frozen for migration.
+The full architecture, historical decisions and rollback contract are defined in [hetzner-ax41-dev-prod-plan.md](hetzner-ax41-dev-prod-plan.md), while the current executable checklist is [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md). Mark a task complete only after recording its exact Git revision and non-secret evidence location.
 
-The old VPS has only three paid days remaining. Immediately create and test an encrypted off-host PostgreSQL/Keycloak/MinIO recovery bundle; deletion must not leave the VPS as the only copy even if the full AX41 cutover is still incomplete. Amnezia is not migrated: leave its current containers untouched during the overlap, then accept that the service ends when the owner deletes the old VPS. AX41 administration uses its independent WireGuard management VPN.
+The old VPS has only the short paid overlap remaining. Final source bundle `playsay-final-vps-v2-20260721T083819Z` has been copied off the VPS and fully decrypt/checksum/archive verified. Keep the VPS and old Jenkins available only as rollback through owner acceptance; delete neither without explicit owner approval. Amnezia is not migrated and ends with the VPS. AX41 administration uses its independent WireGuard management VPN.
 
-The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it was rebuilt from Git/JCasC without the old controller PVC, and affected-target build `playsay-collaboration-service-develop/1` reached GHCR, Git and dev ArgoCD successfully. Its scoped kubeconfig can read rollout state and refresh named dev ArgoCD applications but cannot read dev secrets or access prod. Do not delete the old VPS until GitHub webhooks are verified through `hooks.honey.school`, the old webhook/controller is disabled, database migrations are redesigned as in-dev Jobs, and the final encrypted source backup is verified. Never expose the replacement UI publicly; use the management VPN at `jenkins.honey.school`. Only the exact generic-trigger and dev-ArgoCD webhook endpoints on `hooks.honey.school` are public.
+The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it was rebuilt from Git/JCasC without the old controller PVC. Affected-target collaboration delivery and release web/keyboard builds reached GHCR, Git and dev ArgoCD successfully. Its scoped kubeconfig can read rollout state and refresh named dev ArgoCD applications but cannot read dev secrets or access prod. GitHub no longer points at the old controller. Never expose the replacement UI publicly; use the management VPN at `jenkins.honey.school`. Only the exact generic-trigger and dev-ArgoCD webhook endpoints on `hooks.honey.school` are public. Database migrations still require redesign as in-dev Jobs before the temporary no-op capacity compatibility paths are removed.
 
-Authoritative safety capture `playsay-safety-v3-20260720T220404Z` completed on 2026-07-20. It explicitly dumps `playsay`, `keyboard` and full Keycloak PostgreSQL, includes the MinIO archive, Sealed Secrets recovery keys and sanitized inventories, and requires non-empty PostgreSQL 17 table-data catalogs. Transport/payload checksums and a local decrypt/archive verification passed. It was restored into new dev as 47 application tables, 10 keyboard tables, 88 Keycloak public tables and 815 MinIO filesystem entries. The earlier safety-v2 is checksum-valid but is superseded for application recovery because it selected the empty maintenance database. The encrypted files are off-host at `/Users/evgeniymednov/Backups/PlayAndSay/ax41-migration-20260720`; the RSA private key is stored separately at `/Users/evgeniymednov/.ssh/play_and_say_migration_backup_rsa.pem`. Do not delete the private key, place it in Git or copy it next to the bundle. This is a full-dev disaster-recovery capture, not the selective prod seed or final cutoff bundle. Evidence: `migrations/ax41/evidence/20260720-safety-v3.md`.
+Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to rebuild dev and is documented in `migrations/ax41/evidence/20260720-safety-v3.md`. The newer final source cutoff is `playsay-final-vps-v2-20260721T083819Z`: its encrypted files are outside Git under `/Users/evgeniymednov/Backups/PlayAndSay/ax41-final-vps-20260721`, while the RSA private key is stored separately under `/Users/evgeniymednov/Backups/PlayAndSay/keys`. Transport/payload checksums, local RSA/AES decryption, PostgreSQL 17 source catalogs and both archives passed. Never commit or colocate the private key with an off-host copy of the bundle. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
 AX41 host automation is run from the `playsay-infra/ansible` directory so its configured role path is applied:
 
@@ -1113,6 +1113,8 @@ The `playsay-ai-tutor-service-develop` Gradle container follows the same bounded
 
 Jenkins Kubernetes cloud permits exactly one agent pod, enables orphan pod garbage collection with a 300-second timeout, and limits the injected `jnlp` container to `50m/128Mi` request and `300m/384Mi` limit. Module pods have `activeDeadlineSeconds=2400`, a 30-minute pipeline timeout, explicit resources for tools/guard sidecars, and one-CPU Gradle/Node limits. Backend Gradle stages use `ActiveProcessorCount=1`, `--max-workers=1`, and the Kotlin compiler in-process. Gradle containers may share the `jenkins-agent-cache` PVC, but each Gradle-based pipeline must mount a job-specific subPath. Rollout waiting stays centralized in `scripts/ci/wait-for-argocd-rollout.sh`; an optional target that was paused for capacity is restored before its rollout check.
 
+The capacity-manager paragraphs below describe the retiring single-node VPS and explain why CI was separated. On AX41, Jenkins runs in dedicated `playsay-ci`; the legacy capacity acquire/restore and guard stages are inert compatibility no-ops until they are removed from the pipelines. Do not deploy the capacity-manager/watchdog into prod or dev as part of the new topology.
+
 After Sprint 2 app PostgreSQL was added, Jenkins `dev-25` failed in `Backend tests` because Maven Central DNS resolution temporarily failed while the node was overloaded. During Sprint 4, Jenkins `dev-53` was `OOMKilled`. On 2026-06-27, parallel module builds caused OOMs and public outages. On 2026-07-16, even serialized API builds proved unsafe at the grown idle baseline: `api-dev-44` ran for 63 minutes, repeatedly lost its agent and ended with exit `137`; observed load1 reached `142.98`. The retry reached `MemAvailable=1.86%`, swap `1883Mi`, CPU about `100%`, I/O wait `57.97%`, and NodeNotReady.
 
 Every module/full job now runs `scripts/ci/manage-build-capacity.sh acquire` before heavy work. It records replicas in `jenkins/playsay-ci-capacity-state`, owns Lease `playsay-ci-capacity`, and scales these optional deployments to zero: `ai-tutor-service`, `vocabulary-service`, `media-service`, `registration-service`, `email-service`, `payment-service`, `keyboard-app`, `keyboard-service`. It then requires five healthy 30-second samples with `MemAvailable >= 2.5GiB`, load1 `<=4`, I/O wait `<=10%`, and Ready node; after ten minutes it restores and fails closed. Core lesson workloads, identity, data, Jenkins, and monitoring stay running. ArgoCD ignores only `/spec/replicas` for those deployments with `RespectIgnoreDifferences=true`. The web-app job restores these runtime deployments and waits for their rollouts after the web rollout gate but before UI smoke, because Sprint 5 exercises AI Tutor/media/application services that capacity shedding pauses during the heavy build. `post always` remains an idempotent fallback restore for failures before that stage.
@@ -1130,7 +1132,7 @@ CI_CAPACITY_FORCE_RESTORE=true ./scripts/ci/manage-build-capacity.sh restore
 
 Jenkins chart must keep `controller.overwritePlugins=true`. In chart `jenkins-5.9.22`, the rendered `apply_config.sh` can still contain interactive `yes n | cp -i ...` plugin copying; after a controller restart this can leave the init container in `CrashLoopBackOff` and Jenkins will serve `502` through host nginx because the service has no ready endpoints. `deploy-cluster-addons.sh` patches the Jenkins ConfigMap to use non-interactive `cp -f ...` after Helm upgrade and deletes `jenkins-0` only if it is already stuck in init `CrashLoopBackOff`. If `/jenkins/` returns `502` after a VPS reboot, check `kubectl -n jenkins get pod,endpoints` first; healthy Jenkins should be `2/2 Running`, have an endpoint, and return `403 Forbidden` or a login redirect through nginx.
 
-Jenkins UI on the ops route is configured through Helm and JCasC. `deploy-cluster-addons.sh` installs the `dark-theme` plugin, sets `controller.jenkinsUrl=https://ops.play-and-say.ru:18443/jenkins/`, and loads `jenkins/jcasc/playsay-appearance.yaml`, which sets the global Jenkins theme to `dark` while leaving user theme overrides enabled. The host nginx `/jenkins/` proxy must forward `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, `X-Forwarded-Proto`, and `X-Forwarded-Prefix` so Jenkins reverse-proxy diagnostics see the public ops URL instead of the internal service URL.
+Jenkins UI is configured through Helm and JCasC with root URL `https://jenkins.honey.school/`. It runs on dedicated `playsay-ci` and is exposed by AX41 edge nginx only to WireGuard `10.250.0.0/24`; public requests receive 403. The root-host proxy forwards `Host`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-Proto`; it must not set the old `/jenkins` prefix.
 
 The `OpenAPI contract` check lives in `playsay-api-gateway-develop`. Test, `bootJar`, and `:api-gateway:exportOpenApi` run in one Gradle invocation; the following stage only verifies the committed file and archives it. Internal `backend/api-gateway/**` changes trigger API only. A commit that changes `contracts/openapi.yaml` triggers API plus web-app, so frontend generation follows actual contract changes instead of every gateway implementation edit.
 
@@ -1161,20 +1163,23 @@ unset GITHUB_TOKEN
 ```
 
 
-Current GitHub webhook for `playsay-platform`:
+Current GitHub webhook for `playsay-platform` after the AX41 cutover:
 
-- Payload URL: `https://ops.play-and-say.ru:18443/jenkins/generic-webhook-trigger/invoke?token=playsay-platform-develop`
+- Payload URL: `https://hooks.honey.school/generic-webhook-trigger/invoke?token=<secret>`
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
 - Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
-- Secret: the current dev hook uses the Generic Webhook Trigger token in the URL. Before production use, replace it with a generated secret credential and configure the same secret/token in GitHub and Jenkins.
+- Secret: stored in Jenkins credential `github-webhook-token` and Kubernetes secret `playsay-jenkins-credentials:webhook-token`; the value is URL-encoded in GitHub and is never written to Git or evidence.
+- Verification: GitHub ping delivery returned HTTP 200 on 2026-07-21.
 
 Current GitHub webhook for `playsay-infra` -> ArgoCD refresh:
 
-- Payload URL: `https://ops.play-and-say.ru:18443/argocd/api/webhook`
+- Payload URL: `https://hooks.honey.school/argocd/api/webhook`
 - Content type: `application/json`
 - Events: push
+- GitHub hook id: `636710711`
+- Verification: GitHub ping delivery returned HTTP 200 on 2026-07-21.
 - Secret: stored only in Kubernetes as `argocd/argocd-secret` key `webhook.github.secret`. Create or refresh it without printing the value:
 
 ```bash
@@ -1189,38 +1194,32 @@ kubectl -n argocd get secret argocd-secret -o jsonpath='{.data.webhook\.github\.
 
 Use the decoded value only in the GitHub webhook UI/API for `mednov-ai/playsay-infra`. This webhook wakes ArgoCD after Jenkins pushes a `values-dev.yaml` deploy commit, so module jobs normally use `ARGOCD_REFRESH_MODE=webhook`. Use `ARGOCD_REFRESH_MODE=annotate` only as a manual recovery path if the GitHub webhook is broken.
 
-Jenkins first login:
-
-```bash
-ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
-  -o IdentitiesOnly=yes root@146.103.126.15 \
-  "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n jenkins get secret jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
-```
-
 Jenkins URL:
 
 ```text
-https://ops.play-and-say.ru:18443/jenkins/
+https://jenkins.honey.school/
 ```
 
-Jenkins API checks require authentication. If local `kubectl` is not configured for the dev cluster, run the API check through SSH on the VPS and read the Jenkins admin credentials from the in-cluster secret without printing them:
+Jenkins API checks require authentication. Connect to `playsay-ci` through the AX41 jump host, keep credentials in remote shell variables, and use the local NodePort so neither value is printed:
 
 ```bash
 ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
-  -o IdentitiesOnly=yes root@146.103.126.15 '
+  -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 -o IdentitiesOnly=yes -W %h:%p root@65.109.55.110' \
+  playsay@10.60.0.40 '
 set -euo pipefail
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-JENKINS_URL="https://ops.play-and-say.ru:18443/jenkins"
+JENKINS_URL="http://127.0.0.1:32082"
 JENKINS_JOB_NAME="playsay-platform-dispatch-develop"
-JENKINS_USER="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
-JENKINS_PASSWORD="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
-curl -k -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
+JENKINS_USER="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
+JENKINS_PASSWORD="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
+curl -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
   "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json?tree=builds[number,displayName,building,result,timestamp,url]{0,10}" |
   jq -r ".builds[] | \"#\\(.number) \\(.displayName) building=\\(.building) result=\\(.result)\""
+unset JENKINS_USER JENKINS_PASSWORD
 '
 ```
 
-The current agent SSH route is the explicit key and `146.103.126.15` command above. `89.124.113.223` is retired and must not be used for Jenkins or cluster diagnostics. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
+The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.60.0.40` command above. The old `146.103.126.15` controller is rollback-only and no longer receives GitHub webhooks; `89.124.113.223` is retired. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
 
 ## Headlamp Kubernetes UI
 

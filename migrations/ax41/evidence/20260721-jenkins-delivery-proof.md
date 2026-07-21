@@ -40,10 +40,16 @@ The build pushed `ghcr.io/mednov-ai/playsay-collaboration-service:collab-codex-s
 
 During and after the build, the prod node stayed `Ready` and all 15 prod ArgoCD applications stayed `Synced/Healthy`. At the post-build check the prod guest load averages were `0.14`, `0.10`, `0.11`.
 
-## Remaining cutover gates
+## Cutover work completed after this proof
 
-- Publish the eight-host edge/TLS configuration.
-- Switch the Keycloak public issuer from `key.*` to `ops.*` together with the matching backend/frontend configuration.
-- Repoint and verify the GitHub webhooks through `hooks.honey.school`, then disable the old controller/webhooks.
+- The eight-host edge/TLS configuration was published and verified.
+- The canonical Keycloak issuer moved from `key.*` to `ops.*` with matching backend/frontend configuration.
+- Both GitHub webhooks were repointed to `hooks.honey.school` and returned 200 to GitHub ping deliveries.
+- Web and keyboard release builds completed successfully and production was manually promoted through infra `release/1.001.01` without granting Jenkins production access.
+- A final encrypted source-VPS bundle was copied off the VPS and fully decrypted/checksum-verified.
+
+## Remaining gates
+
 - Redesign database migrations as Jobs inside dev before enabling database-backed module jobs on the separate CI cluster.
 - Complete owner-operated Maria/student login and rendered-material checks.
+- Stop the old controller after stabilization and delete the VPS only with explicit owner approval.

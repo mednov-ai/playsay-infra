@@ -33,7 +33,7 @@ done
 [[ -n "$output_dir" ]] || { echo "Output directory is required" >&2; exit 2; }
 [[ "$label" =~ ^[a-zA-Z0-9._-]+$ ]] || { echo "Unsafe label" >&2; exit 2; }
 
-for command_name in kubectl jq openssl sha256sum tar gzip mktemp; do
+for command_name in kubectl jq openssl sha256sum tar gzip mktemp timeout; do
   command -v "$command_name" >/dev/null || { echo "Missing command: $command_name" >&2; exit 1; }
 done
 
@@ -45,8 +45,21 @@ mkdir -p "$output_dir"
 work_dir="$(mktemp -d /var/tmp/playsay-ax41-export.XXXXXX)"
 payload_dir="$work_dir/payload"
 mkdir -p "$payload_dir"
+validation_namespace=""
+validation_pod=""
+validation_container=""
+validation_path=""
+
+cleanup_validation_file() {
+  if [[ -n "$validation_path" ]]; then
+    kubectl -n "$validation_namespace" exec "$validation_pod" -c "$validation_container" -- \
+      unlink "$validation_path" >/dev/null 2>&1 || true
+    validation_path=""
+  fi
+}
 
 cleanup() {
+  cleanup_validation_file
   if [[ -d "$work_dir" ]]; then
     find "$work_dir" -type f -exec chmod u+w {} + 2>/dev/null || true
     rm -rf -- "$work_dir"
@@ -79,13 +92,39 @@ kubectl -n keycloak exec "$keycloak_db_pod" -c postgresql -- sh -lc \
   >"$payload_dir/keycloak-postgresql.dump"
 
 echo "Validating PostgreSQL dump catalogs with source PostgreSQL 17 tools..."
-kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
-  <"$payload_dir/application-postgresql.dump" >"$work_dir/application.catalog"
-kubectl -n playsay-data exec -i "$app_pod" -c postgres -- pg_restore --list \
-  <"$payload_dir/keyboard-postgresql.dump" >"$work_dir/keyboard.catalog"
-kubectl -n keycloak exec -i "$keycloak_db_pod" -c postgresql -- \
-  /opt/bitnami/postgresql/bin/pg_restore --list \
-  <"$payload_dir/keycloak-postgresql.dump" >"$work_dir/keycloak.catalog"
+validate_dump_catalog() {
+  local source_file="$1"
+  local namespace="$2"
+  local pod="$3"
+  local container="$4"
+  local remote_file="$5"
+  local restore_binary="$6"
+  local catalog_file="$7"
+
+  validation_namespace="$namespace"
+  validation_pod="$pod"
+  validation_container="$container"
+  validation_path="$remote_file"
+
+  kubectl cp "$source_file" "$namespace/$pod:$remote_file" -c "$container"
+  timeout 120s kubectl -n "$namespace" exec "$pod" -c "$container" -- \
+    "$restore_binary" --list "$remote_file" >"$catalog_file"
+  cleanup_validation_file
+}
+
+validation_suffix="playsay-backup-validation-$$"
+validate_dump_catalog \
+  "$payload_dir/application-postgresql.dump" playsay-data "$app_pod" postgres \
+  "/controller/run/${validation_suffix}-application.dump" pg_restore \
+  "$work_dir/application.catalog"
+validate_dump_catalog \
+  "$payload_dir/keyboard-postgresql.dump" playsay-data "$app_pod" postgres \
+  "/controller/run/${validation_suffix}-keyboard.dump" pg_restore \
+  "$work_dir/keyboard.catalog"
+validate_dump_catalog \
+  "$payload_dir/keycloak-postgresql.dump" keycloak "$keycloak_db_pod" postgresql \
+  "/tmp/${validation_suffix}-keycloak.dump" /opt/bitnami/postgresql/bin/pg_restore \
+  "$work_dir/keycloak.catalog"
 application_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/application.catalog")"
 keyboard_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/keyboard.catalog")"
 keycloak_table_data_count="$(grep -c ' TABLE DATA ' "$work_dir/keycloak.catalog")"
