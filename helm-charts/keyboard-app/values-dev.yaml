@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-codex-fix-legacy-keycloak-login-7"
+  tag: "key-frontend-release-1.001.04-6"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-codex-fix-legacy-keycloak-login-7
-  number: "7"
-  branch: codex/fix-legacy-keycloak-login
-  branchLabel: key-frontend-codex-fix-legacy-keycloak-login
-  commit: b09ab210564b113ec0e8ef5c402bc2317b72e816
-  commitShort: b09ab210564b
+  name: key-frontend-release-1.001.04-6
+  number: "6"
+  branch: release/1.001.04
+  branchLabel: key-frontend-release-1.001.04
+  commit: 7196ee6dc1678acfb9193c1c71e2a6a21038e4cd
+  commitShort: 7196ee6dc167
 service:
   type: NodePort
   nodePort: 32087

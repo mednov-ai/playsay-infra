@@ -4,7 +4,7 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
-During the AX41 rollback overlap, the legacy app hosts `online.play-and-say.ru` and `key.play-and-say.ru` use the canonical dev issuer `https://dev.ops.honey.school/keycloak/realms/playsay`. Both `api-gateway` and `keyboard-service` dev Helm values must validate that issuer through the cluster-local Keycloak JWKS endpoint; otherwise PKCE succeeds but authenticated `/api/me` returns `401`. Remove this bridge only together with the legacy app-host DNS and old VPS. The root `play-and-say.ru` site is not part of the bridge.
+The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses only `*.honey.school` with issuer `https://ops.honey.school/keycloak/realms/playsay`. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, or ArgoCD target revisions. The root `play-and-say.ru` site is outside both application-auth changes.
 
 ## Vocabulary service
 

@@ -9,7 +9,7 @@ data:
   theme.properties: |-
 {{ .Files.Get "themes/playsay/login/theme.properties" | indent 4 }}
   template.ftl: |-
-{{ .Files.Get "themes/playsay/login/template.ftl" | indent 4 }}
+{{ tpl (.Files.Get "themes/playsay/login/template.ftl") . | indent 4 }}
   messages_en.properties: |-
 {{ .Files.Get "themes/playsay/login/messages/messages_en.properties" | indent 4 }}
   messages_ru.properties: |-

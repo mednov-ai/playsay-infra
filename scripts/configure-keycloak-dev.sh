@@ -248,8 +248,6 @@ ensure_clients() {
       redirectUris: [
         "https://dev.online.honey.school/*",
         "https://dev.key.honey.school/*",
-        "https://online.play-and-say.ru/*",
-        "https://key.play-and-say.ru/*",
         "http://localhost:5173/*",
         "http://localhost:5174/*",
         "http://localhost:5175/*",
@@ -264,8 +262,6 @@ ensure_clients() {
       webOrigins: [
         "https://dev.online.honey.school",
         "https://dev.key.honey.school",
-        "https://online.play-and-say.ru",
-        "https://key.play-and-say.ru",
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
@@ -279,7 +275,7 @@ ensure_clients() {
       ],
       attributes: {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://dev.online.honey.school/*##https://dev.key.honey.school/*##https://online.play-and-say.ru/*##https://key.play-and-say.ru/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:4173/*##http://localhost:4175/*##http://127.0.0.1:5173/*##http://127.0.0.1:5174/*##http://127.0.0.1:5175/*##http://127.0.0.1:4173/*##http://127.0.0.1:4175/*"
+        "post.logout.redirect.uris": "https://dev.online.honey.school/*##https://dev.key.honey.school/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:4173/*##http://localhost:4175/*##http://127.0.0.1:5173/*##http://127.0.0.1:5174/*##http://127.0.0.1:5175/*##http://127.0.0.1:4173/*##http://127.0.0.1:4175/*"
       }
     }
   ')
