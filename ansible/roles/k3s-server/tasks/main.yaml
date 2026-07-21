@@ -93,6 +93,7 @@
       iptables -C INPUT -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT 2>/dev/null \
         || iptables -I INPUT 1 -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT
       {% endfor %}
+  register: public_port_guard_script
 
 - name: Install public port guard service
   ansible.builtin.copy:
@@ -113,10 +114,11 @@
 
       [Install]
       WantedBy=multi-user.target
+  register: public_port_guard_service
 
 - name: Enable public port guard
   ansible.builtin.systemd_service:
     name: playsay-public-port-guard
     enabled: true
-    state: started
+    state: "{{ 'restarted' if (public_port_guard_script.changed or public_port_guard_service.changed) else 'started' }}"
     daemon_reload: true
