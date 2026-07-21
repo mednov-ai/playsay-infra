@@ -1,0 +1,9 @@
+---
+- name: Configure the Play&Say Russian production ingress
+  hosts: rf_edges
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../group_vars/rf_edges.yaml
+  roles:
+    - rf-edge-proxy

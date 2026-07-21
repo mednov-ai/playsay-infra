@@ -1,0 +1,72 @@
+---
+- name: Ensure the Russian ingress dependencies are installed
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - nginx
+    state: present
+    update_cache: false
+
+- name: Verify the Russian ingress variables are available
+  ansible.builtin.assert:
+    that:
+      - rf_edge_acme_webroot is defined
+      - rf_edge_certificate_directory is defined
+      - rf_edge_origin_address is defined
+      - rf_edge_routes is defined
+      - rf_edge_tls_protocols is defined
+
+- name: Create the Russian ingress ACME webroot
+  ansible.builtin.file:
+    path: "{{ rf_edge_acme_webroot }}"
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0755"
+
+- name: Create the Russian ingress certificate directory
+  ansible.builtin.file:
+    path: "{{ rf_edge_certificate_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Check the Russian ingress certificate chain
+  ansible.builtin.stat:
+    path: "{{ rf_edge_certificate_directory }}/fullchain.pem"
+  register: rf_edge_fullchain
+
+- name: Check the Russian ingress private key
+  ansible.builtin.stat:
+    path: "{{ rf_edge_certificate_directory }}/privkey.pem"
+  register: rf_edge_privkey
+
+- name: Require a staged production certificate before enabling the ingress
+  ansible.builtin.assert:
+    that:
+      - rf_edge_fullchain.stat.exists
+      - rf_edge_privkey.stat.exists
+    fail_msg: >-
+      Stage the current honey.school certificate and private key in
+      {{ rf_edge_certificate_directory }} before applying this role.
+
+- name: Render the Russian production ingress routes
+  ansible.builtin.template:
+    src: playsay-honey-rf-edge.conf.j2
+    dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Validate the Russian ingress nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx on the Russian ingress
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

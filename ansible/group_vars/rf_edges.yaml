@@ -1,0 +1,14 @@
+---
+# Russian ingress for the public production browser/auth routes. The ingress
+# terminates client TLS and proxies over verified TLS to the AX41 edge.
+rf_edge_origin_address: 65.109.55.110
+rf_edge_certificate_directory: /etc/playsay/rf-edge-tls
+rf_edge_acme_webroot: /var/www/playsay-honey-acme
+rf_edge_tls_protocols: TLSv1.2
+rf_edge_routes:
+  - hostname: online.honey.school
+    kind: application
+  - hostname: key.honey.school
+    kind: application
+  - hostname: ops.honey.school
+    kind: keycloak

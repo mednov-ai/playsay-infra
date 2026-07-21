@@ -1,0 +1,70 @@
+map $http_upgrade $playsay_rf_connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+{% for route in rf_edge_routes %}
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ route.hostname }};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root {{ rf_edge_acme_webroot }};
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{ route.hostname }};
+
+    ssl_certificate {{ rf_edge_certificate_directory }}/fullchain.pem;
+    ssl_certificate_key {{ rf_edge_certificate_directory }}/privkey.pem;
+    ssl_protocols {{ rf_edge_tls_protocols }};
+    ssl_session_cache shared:PlaySayRFTLS:10m;
+    ssl_session_timeout 1d;
+
+{% if route.kind == 'keycloak' %}
+    location = /keycloak {
+        return 301 /keycloak/;
+    }
+
+    location /keycloak/ {
+{% else %}
+    location / {
+{% endif %}
+        proxy_pass https://{{ rf_edge_origin_address }};
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name {{ route.hostname }};
+        proxy_ssl_protocols TLSv1.2;
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_rf_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_request_buffering off;
+        proxy_buffering off;
+    }
+
+{% if route.kind == 'keycloak' %}
+    location / {
+        return 404;
+    }
+{% endif %}
+}
+{% endfor %}
