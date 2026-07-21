@@ -53,7 +53,7 @@ if ! kubectl -n jenkins get secret playsay-jenkins-credentials >/dev/null 2>&1; 
   exit 1
 fi
 
-for required_key in github-token webhook-token dev-kubeconfig-b64; do
+for required_key in github-token github-username webhook-token dev-kubeconfig-b64; do
   encoded_value="$(kubectl -n jenkins get secret playsay-jenkins-credentials -o "jsonpath={.data.${required_key}}")"
   [[ -n "$encoded_value" ]] || { echo "Missing key in playsay-jenkins-credentials: $required_key" >&2; exit 1; }
 done
