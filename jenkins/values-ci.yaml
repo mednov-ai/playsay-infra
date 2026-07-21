@@ -21,6 +21,8 @@ controller:
       keyName: github-token
     - name: playsay-jenkins-credentials
       keyName: webhook-token
+    - name: playsay-jenkins-credentials
+      keyName: dev-kubeconfig-b64
   JCasC:
     defaultConfig: true
     overwriteConfiguration: true
