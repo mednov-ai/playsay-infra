@@ -17,7 +17,7 @@ database:
   liquibaseEnabled: "false"
   hikariMaxPoolSize: "3"
 openai:
-  enabled: false
+  enabled: true
   existingSecret: playsay-openai
   apiKeyKey: api-key
   baseUrl: https://api.openai.com/v1

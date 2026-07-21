@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/1.001.01
+    targetRevision: release/1.001.02
     path: helm-charts/ai-tutor-service
     helm:
       valueFiles:
