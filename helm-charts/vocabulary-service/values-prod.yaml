@@ -20,9 +20,8 @@ openai:
   enabled: false
   existingSecret: playsay-openai
   apiKeyKey: api-key
-  modelKey: model
   baseUrl: https://api.openai.com/v1
-  model: gpt-5.4-mini
+  model: gpt-5.6-sol
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
