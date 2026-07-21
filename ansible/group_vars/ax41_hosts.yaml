@@ -57,6 +57,11 @@ edge_tls_protocols: TLSv1.2
 # JS/CSS transfers and retried them as tiny byte ranges. Keep ALPN on HTTP/1.1
 # until carrier-network acceptance proves HTTP/2 is safe on the AX41 route.
 edge_http2_enabled: false
+# The RF path to the AX41 drops full-size TCP segments without returning usable
+# ICMP Packet Too Big feedback. Start PLPMTUD at a conservative MSS and probe
+# upward so fresh clients do not wait through repeated 15-30 second RTOs.
+edge_tcp_mtu_probing: 2
+edge_tcp_base_mss: 1024
 edge_routes:
   - hostname: online.honey.school
     kind: online

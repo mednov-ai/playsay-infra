@@ -15,6 +15,23 @@
     group: www-data
     mode: "0755"
 
+- name: Configure TCP Packetization-Layer MTU discovery for the public edge
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/91-playsay-edge-tcp.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      net.ipv4.tcp_mtu_probing = {{ edge_tcp_mtu_probing }}
+      net.ipv4.tcp_base_mss = {{ edge_tcp_base_mss }}
+  register: edge_tcp_sysctl_config
+
+- name: Apply the public edge TCP MTU settings
+  ansible.builtin.command:
+    cmd: sysctl --load=/etc/sysctl.d/91-playsay-edge-tcp.conf
+  when: edge_tcp_sysctl_config.changed
+  changed_when: true
+
 - name: Check whether the shared honey.school certificate exists
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
