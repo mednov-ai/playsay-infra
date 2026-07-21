@@ -318,6 +318,8 @@ This is the critical path for the first `honey.school` move. Object Storage is d
 - [ ] **T10** The resolving prod hostnames now serve AX41 with valid TLS and all prod ArgoCD applications `Synced/Healthy`; retain the old VPS unchanged as rollback and observe HTTP errors, latency, resources and lesson quality through the stabilization window.
 - [ ] **T11** After stabilization, provision Object Storage, migrate the three OpenTofu states with locking/versioning and configure permanent encrypted off-site dev/prod backups before deleting the old VPS.
 
+Deletion blocker discovered during the final audit: the AX41 dev cluster has all product ArgoCD applications but no Jenkins resources; the active controller and its credential store still run on the retiring VPS. Before deletion, install a clean Git-defined Jenkins controller on `playsay-dev`, inject new/re-authorized GitHub credentials without copying the old PVC, configure jobs/webhooks, run one no-op/affected-target delivery proof, then disable the old webhook/controller. This is independent of the already-working prod domain but is mandatory for CI continuity.
+
 ### 7.4 Task checklist
 
 All unchecked tasks are pending. A phase is complete only when its exit check is recorded with the exact Git commit and non-secret evidence location.
