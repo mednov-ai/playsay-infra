@@ -1,11 +1,11 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-release-1.001.01-1"
+  tag: "web-release-1.001.01-2"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-release-1.001.01-1
-  number: "1"
+  name: web-release-1.001.01-2
+  number: "2"
   branch: release/1.001.01
   branchLabel: web-release-1.001.01
   commit: 9b14c726ef33cc3c0d6a069b47b3412d5c1f6d69
