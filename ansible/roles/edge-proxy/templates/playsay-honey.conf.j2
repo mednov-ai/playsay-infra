@@ -99,6 +99,28 @@ server {
         proxy_buffering off;
     }
 {% elif route.kind == 'keyboard' %}
+{% if route.legacy_keycloak_upstream is defined %}
+    # Temporary compatibility path for frontend images built before the
+    # Keycloak issuer moved to ops.*. Remove after the new release is accepted.
+    location = /keycloak {
+        return 301 /keycloak/;
+    }
+
+    location /keycloak/ {
+        proxy_pass http://{{ route.legacy_keycloak_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+{% endif %}
+
     location / {
         proxy_pass http://{{ route.upstream }};
         proxy_http_version 1.1;

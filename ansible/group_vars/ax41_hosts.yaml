@@ -58,6 +58,7 @@ edge_routes:
   - hostname: key.honey.school
     kind: keyboard
     upstream: 10.60.0.20:32087
+    legacy_keycloak_upstream: 10.60.0.20:32084
   - hostname: dev.online.honey.school
     kind: online
     upstream: 10.60.0.30:32083
@@ -65,6 +66,7 @@ edge_routes:
   - hostname: dev.key.honey.school
     kind: keyboard
     upstream: 10.60.0.30:32087
+    legacy_keycloak_upstream: 10.60.0.30:32084
   - hostname: ops.honey.school
     kind: ops
     keycloak_upstream: 10.60.0.20:32084
