@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/1.001.02
+    targetRevision: release/1.001.03
     path: helm-charts/vocabulary-service
     helm:
       valueFiles:
