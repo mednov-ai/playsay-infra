@@ -6,7 +6,7 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Vocabulary service
 
-`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для учебных переводов. Из этого secret Deployment читает `api-key` и `model`; нельзя задавать отдельную hardcoded-модель только для словаря, иначе доступный ключ может получить `model_not_found`/access error. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
+`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` только с чувствительным `api-key`. Модель и reasoning effort являются проверяемой Git-конфигурацией: dev/prod используют `gpt-5.6-sol` и `low` для словарных подсказок. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
 
 Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`. RollingUpdate использует `maxSurge=0`/`maxUnavailable=1`, чтобы single-node dev не запускал две JVM словаря одновременно. Health probes используют `timeoutSeconds=5`, а liveness допускает шесть последовательных сбоев: это не увеличивает память pod, но предотвращает ложный restart Spring JVM при кратковременной перегрузке single-node VPS во время Jenkins build.
 
@@ -1345,46 +1345,42 @@ Sprint 4 material authoring can run in two modes:
 - `PLAYSAY_AI_PROVIDER=stub`: deterministic local draft generator, no external API call.
 - `PLAYSAY_AI_PROVIDER=openai`: `api-gateway` calls the OpenAI Responses API and requests JSON Schema / Structured Outputs for the Play&Say material draft.
 
-The dev Helm values enable OpenAI through Kubernetes secret `playsay-openai` in namespace `playsay-dev`. The secret must contain exactly these data keys:
+The model and reasoning efforts are ordinary environment-specific Git configuration. Both dev and prod use `gpt-5.6-sol`; full material drafts use `high`, while answer suggestions, HTML-game metadata and vocabulary suggestions use `low`. Backend startup rejects any effort outside `none|low|medium|high|xhigh|max`.
 
-- `api-key`: OpenAI Platform API key.
-- `model`: default material draft model, currently `gpt-5.4-mini`.
-
-Create or update the secret from a local terminal without printing the key:
+The Kubernetes secret `playsay-openai` contains only `api-key`. Dev and prod use separate OpenAI Platform projects and keys. Create or update the current environment's secret from an interactive terminal on its VM without printing the key:
 
 ```bash
-ssh -tt root@146.103.126.15 'bash -lc '"'"'
 set -euo pipefail
 
-read -rsp "OpenAI API key: " OPENAI_API_KEY
+read -rsp "OpenAI API key: " PLAYSAY_OPENAI_API_KEY
 echo
 
-KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev create secret generic playsay-openai \
-  --from-literal=api-key="$OPENAI_API_KEY" \
-  --from-literal=model="gpt-5.4-mini" \
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" create secret generic playsay-openai \
+  --from-literal=api-key="$PLAYSAY_OPENAI_API_KEY" \
   --dry-run=client -o yaml | KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl apply -f -
 
-unset OPENAI_API_KEY
+unset PLAYSAY_OPENAI_API_KEY
 
-KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai
-'"'"''
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai
 ```
 
-Expected verification output is `playsay-openai` with `DATA` equal to `2`. Do not decode or paste the secret values into chat, Git, logs, or docs. To verify only key names without decoding values:
+Set `TARGET_NAMESPACE=playsay-dev` on dev or `TARGET_NAMESPACE=playsay-prod` on prod. Expected `DATA` is `1`. Do not decode or paste the secret into chat, Git, logs or docs. Verify only the key name:
 
 ```bash
-ssh root@146.103.126.15 \
-  'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get secret playsay-openai -o jsonpath="{.data}"'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai \
+  -o go-template='{{range $key, $_ := .data}}{{printf "%s\n" $key}}{{end}}'
 ```
 
-After deploying the chart, verify that the pod references the secret without printing values:
+After deploying the chart, verify the non-secret configuration without printing credentials:
 
 ```bash
-ssh root@146.103.126.15 \
-  'KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get deploy api-gateway -o jsonpath="{.spec.template.spec.containers[0].env[?(@.name==\"PLAYSAY_AI_PROVIDER\")].value}"'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get deploy api-gateway \
+  -o jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}' | grep -E 'PLAYSAY_AI_PROVIDER|OPENAI_MODEL|OPENAI_.*REASONING_EFFORT'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get deploy vocabulary-service \
+  -o jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}' | grep -E 'PLAYSAY_VOCABULARY_OPENAI_(MODEL|REASONING_EFFORT)'
 ```
 
-Expected value for dev with real generation enabled: `openai`.
+Expected values are provider `openai`, model `gpt-5.6-sol`, draft effort `high` and all three lightweight efforts `low`. Run authenticated smokes for material draft, answer suggestions, HTML-game metadata and vocabulary suggestions; record no prompt, user content or secret values.
 
 ## Web App Auth
 

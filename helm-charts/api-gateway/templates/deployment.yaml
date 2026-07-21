@@ -53,12 +53,15 @@ spec:
                   name: {{ .Values.ai.openai.existingSecret | quote }}
                   key: {{ .Values.ai.openai.apiKeyKey | quote }}
             - name: OPENAI_MODEL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.ai.openai.existingSecret | quote }}
-                  key: {{ .Values.ai.openai.modelKey | quote }}
+              value: {{ .Values.ai.openai.model | quote }}
             - name: OPENAI_BASE_URL
               value: {{ .Values.ai.openai.baseUrl | quote }}
+            - name: OPENAI_MATERIAL_DRAFT_REASONING_EFFORT
+              value: {{ .Values.ai.openai.reasoning.materialDraft | quote }}
+            - name: OPENAI_ANSWER_SUGGESTION_REASONING_EFFORT
+              value: {{ .Values.ai.openai.reasoning.answerSuggestion | quote }}
+            - name: OPENAI_HTML_GAME_REASONING_EFFORT
+              value: {{ .Values.ai.openai.reasoning.htmlGameMetadata | quote }}
             {{- else }}
             - name: PLAYSAY_AI_PROVIDER
               value: "stub"
