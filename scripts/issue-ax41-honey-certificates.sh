@@ -11,7 +11,11 @@ certbot certonly \
   -d online.honey.school \
   -d key.honey.school \
   -d dev.online.honey.school \
-  -d dev.key.honey.school
+  -d dev.key.honey.school \
+  -d ops.honey.school \
+  -d dev.ops.honey.school \
+  -d jenkins.honey.school \
+  -d hooks.honey.school
 
 nginx -t
 systemctl reload nginx

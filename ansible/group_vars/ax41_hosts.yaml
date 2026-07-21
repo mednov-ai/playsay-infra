@@ -48,15 +48,39 @@ wireguard_peers:
     allowed_ips: 10.250.0.3/32
 
 edge_certificate_name: online.honey.school
+edge_vpn_subnet: 10.250.0.0/24
 edge_routes:
   - hostname: online.honey.school
+    kind: online
     upstream: 10.60.0.20:32083
     collaboration_upstream: 10.60.0.20:32086
     livekit_upstream: 10.60.0.20:7880
   - hostname: key.honey.school
-    upstream: 10.60.0.20:32084
+    kind: keyboard
+    upstream: 10.60.0.20:32087
   - hostname: dev.online.honey.school
+    kind: online
     upstream: 10.60.0.30:32083
     collaboration_upstream: 10.60.0.30:32086
   - hostname: dev.key.honey.school
-    upstream: 10.60.0.30:32084
+    kind: keyboard
+    upstream: 10.60.0.30:32087
+  - hostname: ops.honey.school
+    kind: ops
+    keycloak_upstream: 10.60.0.20:32084
+    argocd_upstream: 10.60.0.20:32080
+    headlamp_upstream: 10.60.0.20:32081
+    victoria_metrics_upstream: 10.60.0.20:32085
+  - hostname: dev.ops.honey.school
+    kind: ops
+    keycloak_upstream: 10.60.0.30:32084
+    argocd_upstream: 10.60.0.30:32080
+    headlamp_upstream: 10.60.0.30:32081
+    victoria_metrics_upstream: 10.60.0.30:32085
+  - hostname: jenkins.honey.school
+    kind: jenkins
+    upstream: 10.60.0.40:32082
+  - hostname: hooks.honey.school
+    kind: hooks
+    jenkins_upstream: 10.60.0.40:32082
+    argocd_upstream: 10.60.0.30:32080
