@@ -20,6 +20,14 @@
     path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
   register: edge_certificate
 
+- name: Enforce the AX41 TLS protocol policy in the nginx HTTP context
+  ansible.builtin.lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^\s*ssl_protocols\s+.*;\s*(?:#.*)?$'
+    line: "\tssl_protocols {{ edge_tls_protocols }};"
+    backup: true
+  notify: reload nginx
+
 - name: Render exact-host AX41 edge routes
   ansible.builtin.template:
     src: playsay-honey.conf.j2

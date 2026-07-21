@@ -49,6 +49,10 @@ wireguard_peers:
 
 edge_certificate_name: online.honey.school
 edge_vpn_subnet: 10.250.0.0/24
+# Russian consumer networks previously failed TLS/SNI handshakes when TLS 1.3
+# was enabled on the old edge. Keep every public honey.school vhost on TLS 1.2
+# until a dedicated MTS/t2/MGTS acceptance pass proves TLS 1.3 is safe.
+edge_tls_protocols: TLSv1.2
 edge_routes:
   - hostname: online.honey.school
     kind: online

@@ -10,5 +10,7 @@
     - libvirt-host
     - wireguard
     - ax41-firewall
-    - edge-proxy
+    - role: edge-proxy
+      tags:
+        - edge-proxy
     - cockpit

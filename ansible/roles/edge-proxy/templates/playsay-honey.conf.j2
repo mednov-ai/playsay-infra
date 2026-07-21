@@ -44,7 +44,7 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ edge_certificate_name }}/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_protocols {{ edge_tls_protocols }};
     ssl_session_cache shared:PlaySayTLS:10m;
     ssl_session_timeout 1d;
 
