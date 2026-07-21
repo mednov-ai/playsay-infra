@@ -37,7 +37,7 @@ chmod 600 "$OUTPUT_FILE"
 
 KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i get deployment -n playsay-dev | grep -qx yes
 KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i patch application/api-gateway -n argocd | grep -qx yes
-KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i get secret -n playsay-data | grep -qx no
-KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i '*' '*' -n playsay-prod | grep -qx no
+[[ "$(KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i get secret -n playsay-data || true)" == "no" ]]
+[[ "$(KUBECONFIG="$OUTPUT_FILE" kubectl auth can-i '*' '*' -n playsay-prod || true)" == "no" ]]
 
 echo "Scoped dev kubeconfig created and negative prod/secret checks passed: $OUTPUT_FILE"
