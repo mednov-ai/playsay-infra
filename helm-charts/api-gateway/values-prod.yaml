@@ -1,0 +1,98 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-api-gateway
+  tag: "api-release-1.001.00-78"
+  digest: "sha256:64c07f1ee9806b3236ba39dbb3dc561b5cd2838fd9541384261755122f4c3c47"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: api-release-1.001.00-78
+  number: "78"
+  branch: release/1.001.00
+  branchLabel: api-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+ingress:
+  enabled: false
+  host: api-gateway.dev.example.com
+auth:
+  issuerUri: https://key.honey.school/keycloak/realms/playsay
+  jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+ai:
+  openai:
+    enabled: false
+    existingSecret: playsay-openai
+    apiKeyKey: api-key
+    modelKey: model
+    baseUrl: https://api.openai.com/v1
+database:
+  existingSecret: playsay-app-db
+  liquibaseEnabled: "false"
+  hikariMaxPoolSize: "3"
+livekit:
+  enabled: true
+  serverUrl: wss://online.honey.school/livekit
+  existingSecret: livekit-keys
+  tokenTtlSeconds: "3600"
+lessonTranslation:
+  enabled: false
+  provider: openai
+  model: gpt-realtime-translate
+  baseUrl: https://api.openai.com/v1
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+collaboration:
+  websocketUrl: wss://online.honey.school/collab/ws
+  existingSecret: playsay-collaboration
+  tokenTtlSeconds: "900"
+storage:
+  provider: s3
+  s3:
+    endpoint: http://minio.storage.svc.cluster.local:9000
+    region: us-east-1
+    bucket: playsay-material-assets
+    existingSecret: playsay-object-storage
+    pathStyleAccess: "true"
+    createBucket: "true"
+mediaService:
+  baseUrl: http://media-service.playsay-prod.svc.cluster.local
+  existingSecret: playsay-media
+  serviceTokenKey: service-token
+  cacheRequestTimeoutSeconds: "660"
+paymentService:
+  baseUrl: http://payment-service.playsay-prod.svc.cluster.local
+  existingSecret: playsay-payment
+  serviceTokenKey: service-token
+registrationService:
+  baseUrl: http://registration-service.playsay-prod.svc.cluster.local
+  existingSecret: playsay-registration
+  serviceTokenKey: service-token
+emailService:
+  baseUrl: http://email-service.playsay-prod.svc.cluster.local
+  existingSecret: playsay-email
+  serviceTokenKey: service-token
+publicAppUrl: https://online.honey.school
+video:
+  youtube:
+    rfRelay:
+      enabled: "false"
+      geoCountryHeader: X-PlaySay-Geo-Country
+      requireGeoCountry: "true"
+    cache:
+      enabled: "true"
+      pollDelayMs: "5000"
+      leaseSeconds: "900"
+      retentionDays: "30"
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 50m
+    memory: 384Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi

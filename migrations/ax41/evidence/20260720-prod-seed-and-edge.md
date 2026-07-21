@@ -18,7 +18,8 @@ Verified infrastructure state:
 - `dev.online.honey.school` and both dev/prod Keycloak discovery endpoints return HTTP 200 with valid TLS; prod discovery advertises issuer `https://key.honey.school/keycloak/realms/playsay`;
 - `online.honey.school` intentionally returns 502 until the release web/API workloads are promoted; it must not be accepted as cut over before T5/T9 pass.
 - Helm application charts support an optional OCI digest and prod values pin every completed `release/1.001.00` candidate by digest; mutable tags are retained only as human-readable build evidence.
-- prod LiveKit values use independent keys, the AX41 public address and the prod API webhook; the reviewed firewall change adds only the prod TURN/TCP/UDP DNAT ranges and remains subject to an external forced-relay smoke gate.
+- prod LiveKit values use independent keys, the AX41 public address and the prod API webhook; prod coturn has an independent shared secret and the AX41 firewall/libvirt hook forwards only TURN `3478`, TURN relay UDP `49160-49200`, LiveKit TCP `7881` and direct UDP `50000-50020` to `10.60.0.20`;
+- external TCP checks pass for `3478` and `7881`; an authenticated forced UDP relay from the retiring VPS passed 6/6 packets with zero loss, about 26 ms average RTT and sub-millisecond jitter;
 - repeated prod SQL verification reports `7/22/51/11`, `hello=0`, zero lesson/chat history and zero orphaned material-owner, asset-material or enrichment-material references.
 
 Remaining gates are completion of the API, collaboration, email and keyboard
