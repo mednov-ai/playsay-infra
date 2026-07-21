@@ -19,7 +19,7 @@ ingress:
   enabled: false
   host: api-gateway.dev.example.com
 auth:
-  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 ai:
   openai:
@@ -34,7 +34,7 @@ database:
   hikariMaxPoolSize: "3"
 livekit:
   enabled: true
-  serverUrl: wss://online.play-and-say.ru/livekit
+  serverUrl: wss://dev.online.honey.school/livekit
   existingSecret: livekit-keys
   tokenTtlSeconds: "3600"
 lessonTranslation:
@@ -45,7 +45,7 @@ lessonTranslation:
   existingSecret: playsay-openai
   apiKeyKey: api-key
 collaboration:
-  websocketUrl: wss://online.play-and-say.ru/collab/ws
+  websocketUrl: wss://dev.online.honey.school/collab/ws
   existingSecret: playsay-collaboration
   tokenTtlSeconds: "900"
 storage:
@@ -74,7 +74,7 @@ emailService:
   baseUrl: http://email-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-email
   serviceTokenKey: service-token
-publicAppUrl: https://online.play-and-say.ru
+publicAppUrl: https://dev.online.honey.school
 video:
   youtube:
     rfRelay:
