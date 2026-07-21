@@ -29,8 +29,12 @@ ai:
     enabled: false
     existingSecret: playsay-openai
     apiKeyKey: api-key
-    model: gpt-5.4-mini
+    model: gpt-5.6-sol
     baseUrl: https://api.openai.com/v1
+    reasoning:
+      materialDraft: high
+      answerSuggestion: low
+      htmlGameMetadata: low
 
 database:
   enabled: true

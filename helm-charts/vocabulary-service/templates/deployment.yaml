@@ -44,6 +44,7 @@ spec:
               valueFrom: { secretKeyRef: { name: {{ .Values.openai.existingSecret | quote }}, key: {{ .Values.openai.apiKeyKey | quote }} } }
             {{- end }}
             - { name: PLAYSAY_VOCABULARY_OPENAI_MODEL, value: {{ .Values.openai.model | quote }} }
+            - { name: PLAYSAY_VOCABULARY_OPENAI_REASONING_EFFORT, value: {{ .Values.openai.reasoningEffort | quote }} }
             {{- if .Values.runtime.javaToolOptions }}
             - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
             {{- end }}

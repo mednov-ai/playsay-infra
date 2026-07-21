@@ -44,7 +44,7 @@ OpenTofu remains the source of truth even though day-to-day operations are visua
 
 ## Vocabulary service
 
-`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` с единственным чувствительным ключом `api-key` для учебных переводов. Название модели не является секретом и задаётся отдельно в environment-specific Helm values: dev использует `gpt-5.4-mini`, а подготовленная production-конфигурация — `gpt-5.6-sol`. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
+`vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` только с чувствительным `api-key`. Модель и reasoning effort являются проверяемой Git-конфигурацией: dev/prod используют `gpt-5.6-sol` и `low` для словарных подсказок. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
 
 Dev pod `vocabulary-service` использует ограниченный профиль `25m / 96Mi` requests и `500m / 384Mi` limits; JVM работает с `InitialRAMPercentage=25` и `MaxRAMPercentage=55`. RollingUpdate использует `maxSurge=0`/`maxUnavailable=1`, чтобы single-node dev не запускал две JVM словаря одновременно. Health probes используют `timeoutSeconds=5`, а liveness допускает шесть последовательных сбоев: это не увеличивает память pod, но предотвращает ложный restart Spring JVM при кратковременной перегрузке single-node VPS во время Jenkins build.
 
@@ -1383,14 +1383,9 @@ Sprint 4 material authoring can run in two modes:
 - `PLAYSAY_AI_PROVIDER=stub`: deterministic local draft generator, no external API call.
 - `PLAYSAY_AI_PROVIDER=openai`: `api-gateway` calls the OpenAI Responses API and requests JSON Schema / Structured Outputs for the Play&Say material draft.
 
-The model is ordinary reviewed configuration in Git, not a credential. Environment-specific Helm values define it independently for material drafts and vocabulary, with matching defaults per environment:
+The model and reasoning efforts are ordinary environment-specific Git configuration. Both dev and prod use `gpt-5.6-sol`; full material drafts use `high`, while answer suggestions, HTML-game metadata and vocabulary suggestions use `low`. Backend startup rejects any effort outside `none|low|medium|high|xhigh|max`.
 
-- dev: `gpt-5.4-mini`;
-- prod: `gpt-5.6-sol`.
-
-The Kubernetes secret `playsay-openai` contains exactly one data key, `api-key`. Dev and prod must use separate OpenAI Platform projects and separate keys; never copy the dev key into prod. The owner confirmed interactive installation of the independent prod key on 2026-07-21. Production root was manually promoted to `release/1.001.02`; `api-gateway` and `vocabulary-service` were synced and reported `Synced/Healthy`. Their live Deployment configuration reports provider `openai` and model `gpt-5.6-sol`. AI Tutor and lesson translation remain unchanged. Functional acceptance still requires one authenticated material-generation smoke and one vocabulary-suggestion smoke.
-
-Create or update the environment's secret from an interactive terminal on the corresponding VM without printing the key. Set `TARGET_NAMESPACE=playsay-dev` on `playsay-dev` or `TARGET_NAMESPACE=playsay-prod` on `playsay-prod`:
+The Kubernetes secret `playsay-openai` contains only `api-key`. Dev and prod use separate OpenAI Platform projects and keys; never copy the dev key into prod. The owner confirmed interactive installation of the independent prod key on 2026-07-21. Create or update the current environment's secret from an interactive terminal on its VM without printing the key:
 
 ```bash
 set -euo pipefail
@@ -1407,38 +1402,23 @@ unset PLAYSAY_OPENAI_API_KEY
 KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai
 ```
 
-Expected verification output is `playsay-openai` with `DATA` equal to `1`. Do not decode or paste the secret value into chat, Git, logs, or docs. To verify only the key name without decoding its value:
+Set `TARGET_NAMESPACE=playsay-dev` on dev or `TARGET_NAMESPACE=playsay-prod` on prod. Expected `DATA` is `1`. Do not decode or paste the secret into chat, Git, logs or docs. Verify only the key name:
 
 ```bash
-KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" \
-  get secret playsay-openai -o go-template='{{range $key, $_ := .data}}{{printf "%s\n" $key}}{{end}}'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai \
+  -o go-template='{{range $key, $_ := .data}}{{printf "%s\n" $key}}{{end}}'
 ```
 
-Before enabling prod, create `release/<version>.<subversion>.<patch>` from the accepted release, set both prod flags below to `true`, run Helm validation, commit the change, then manually sync the two ArgoCD applications:
-
-```yaml
-# helm-charts/api-gateway/values-prod.yaml
-ai:
-  openai:
-    enabled: true
-    model: gpt-5.6-sol
-
-# helm-charts/vocabulary-service/values-prod.yaml
-openai:
-  enabled: true
-  model: gpt-5.6-sol
-```
-
-Do not enable these flags before the prod Secret exists: the deployments intentionally fail closed when `api-key` is missing. After deploying the chart, verify provider and model names without printing credentials:
+After deploying the chart, verify the non-secret configuration without printing credentials:
 
 ```bash
 KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get deploy api-gateway \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="PLAYSAY_AI_PROVIDER")].value}{"\n"}{.spec.template.spec.containers[0].env[?(@.name=="OPENAI_MODEL")].value}{"\n"}'
+  -o jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}' | grep -E 'PLAYSAY_AI_PROVIDER|OPENAI_MODEL|OPENAI_.*REASONING_EFFORT'
 KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get deploy vocabulary-service \
-  -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="PLAYSAY_VOCABULARY_OPENAI_MODEL")].value}{"\n"}'
+  -o jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}' | grep -E 'PLAYSAY_VOCABULARY_OPENAI_(MODEL|REASONING_EFFORT)'
 ```
 
-Expected values after prod activation are `openai`, `gpt-5.6-sol`, and `gpt-5.6-sol`. Run an authenticated material-generation smoke and a vocabulary suggestion smoke, watch provider errors/rate limits, and roll back by setting both flags to `false` in a new release patch if either path is unstable.
+Expected values are provider `openai`, model `gpt-5.6-sol`, draft effort `high` and all three lightweight efforts `low`. Run authenticated smokes for material draft, answer suggestions, HTML-game metadata and vocabulary suggestions; record no prompt, user content or secret values.
 
 ## Web App Auth
 
