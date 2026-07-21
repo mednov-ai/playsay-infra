@@ -1,0 +1,23 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-collaboration-service
+  tag: "collab-release-1.001.00-16"
+  digest: "sha256:12dde06decab44e41b6337ecf80a975933709e3fd50885c7fdfbe2edab32014f"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: collab-release-1.001.00-16
+  number: "16"
+  branch: release/1.001.00
+  branchLabel: collab-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+service:
+  type: ClusterIP
+auth:
+  keycloakJwksUrl: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+apiGateway:
+  baseUrl: http://api-gateway.playsay-prod.svc.cluster.local
+collaboration:
+  existingSecret: playsay-collaboration
+  snapshotIntervalMs: "10000"
+
