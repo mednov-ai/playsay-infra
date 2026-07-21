@@ -97,14 +97,6 @@ server {
         proxy_read_timeout 660s;
         proxy_send_timeout 660s;
         proxy_buffering off;
-        # Temporary RF-access bridge for the current web image: its HTML loads
-        # Google Fonts as a render-blocking stylesheet, and that external edge
-        # negotiates TLS 1.3. Remove these substitutions after the web image
-        # bundles Manrope locally and owner acceptance succeeds without VPN.
-        sub_filter_once on;
-        sub_filter '<link rel="preconnect" href="https://fonts.googleapis.com" />' '';
-        sub_filter '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />' '';
-        sub_filter 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap' 'data:text/css,';
     }
 {% elif route.kind == 'keyboard' %}
 {% if route.legacy_keycloak_upstream is defined %}
