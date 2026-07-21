@@ -1,17 +1,20 @@
 # Hetzner AX41 Dev/Prod Consolidation Plan
 
+> **CI/domain follow-up:** задачи по переносу Jenkins в dev из этого исторического плана отменены. Целевая схема использует отдельную `playsay-ci` VM, `key.*` для keyboard trainer и `ops.*/keycloak` для Keycloak. Актуальный исполнимый checklist находится в [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md).
+
 **Status:** implementation in progress; safety bundle verified, AX41 host/VPN baseline active and both empty workload VMs running; application/data/TLS cutover is still pending
 **Target host:** `65.109.55.110`, Hetzner AX41 in Finland
 **Audience assumption:** the first production audience is outside Russia; the existing Russian-data production contract in `spec.md` remains mandatory when Russian citizens' personal data is collected.
 
 ## 1. Decision and boundaries
 
-The target is the already provisioned Hetzner AX41 dedicated server with two isolated KVM/libvirt virtual machines:
+The target is the already provisioned Hetzner AX41 dedicated server with three isolated KVM/libvirt virtual machines:
 
-- `playsay-dev`: migrated current dev cluster, Jenkins, synthetic data and automatic delivery from `develop`;
+- `playsay-dev`: migrated current dev cluster, synthetic data and automatic delivery target from `develop`;
 - `playsay-prod`: clean production cluster, separate state and integrations, built only from a protected three-part release branch named `release/<version>.<subversion>.<patch>` (for example `release/1.001.00`).
+- `playsay-ci`: shared Jenkins controller and one serialized build agent with scoped deploy access only to dev.
 
-The host keeps its installed Ubuntu 24.04 LTS, mdadm RAID1 and ext4 filesystem. Do not reinstall it with Proxmox and do not replace the working mdadm/ext4 storage with ZFS merely to create the two VMs. Ubuntu's KVM/QEMU/libvirt stack provides the required VM isolation without another hypervisor distribution.
+The host keeps its installed Ubuntu 24.04 LTS, mdadm RAID1 and ext4 filesystem. Do not reinstall it with Proxmox and do not replace the working mdadm/ext4 storage with ZFS merely to create the three VMs. Ubuntu's KVM/QEMU/libvirt stack provides the required VM isolation without another hypervisor distribution.
 
 This is a temporary single physical failure domain. VM separation protects prod from dev cluster mistakes and bounded resource exhaustion, but it does not provide hardware HA. Public-site hosting, DNS, TLS issuance and external mail-domain configuration are owned separately and are not migrated by this plan. The Kubernetes `web-app` and `email-service` remain part of their respective clusters.
 
@@ -190,11 +193,11 @@ Dev:
 - do not copy `/var/lib/rancher/k3s/server`, the old Kubernetes API state or local-path PVC directories as the migration mechanism;
 - let ArgoCD recreate namespaces, operators and workloads from `argocd-apps/dev` and the Helm values in Git;
 - restore a full encrypted dev data bundle: application PostgreSQL, the complete dev Keycloak realm/users with credentials, and the complete MinIO teaching-content bucket;
-- recreate Jenkins from its Helm/JCasC/job definitions in Git; do not restore Jenkins controller state, build history, agent cache or ArgoCD runtime state;
+- recreate Jenkins separately on `playsay-ci` from its Helm/JCasC/job definitions in Git; do not restore Jenkins controller state, build history, agent cache or ArgoCD runtime state;
 - restore or rotate the dev Sealed Secrets key deliberately, then verify every committed SealedSecret can decrypt; the private key remains outside Git;
 - keep current pod/service CIDRs `10.42.0.0/16` and `10.43.0.0/16`;
 - use the new private node address and certificate SANs from Ansible; no legacy local-path node affinity remains after data import;
-- retain Jenkins only in dev;
+- retain Jenkins only in the dedicated CI VM;
 - keep ArgoCD auto-sync from `develop`.
 
 Prod:
@@ -257,7 +260,7 @@ The dev export scripts in Git create:
 
 The export is streamed into an encrypted restic repository; plaintext dumps exist only in a permission-restricted temporary directory on the source host and are removed after upload plus restore verification. The import scripts refuse a bundle whose manifest schema, source commit, checksum or target environment does not match.
 
-Dev restore order is PostgreSQL/Keycloak/MinIO operators and empty services, Keycloak realm, PostgreSQL data, MinIO objects, application workloads, then Jenkins. ArgoCD auto-sync and Jenkins builds remain paused until the restored application passes schema, login, material-rendering and object checks.
+Dev restore order is PostgreSQL/Keycloak/MinIO operators and empty services, Keycloak realm, PostgreSQL data, MinIO objects, then application workloads. Jenkins is recreated separately on `playsay-ci` from Git; ArgoCD auto-sync and Jenkins builds remain paused until the restored application passes schema, login, material-rendering and object checks.
 
 ## 6. Backup and recovery
 
@@ -318,7 +321,7 @@ This is the critical path for the first `honey.school` move. Object Storage is d
 - [ ] **T10** The resolving prod hostnames now serve AX41 with valid TLS and all prod ArgoCD applications `Synced/Healthy`; retain the old VPS unchanged as rollback and observe HTTP errors, latency, resources and lesson quality through the stabilization window.
 - [ ] **T11** After stabilization, provision Object Storage, migrate the three OpenTofu states with locking/versioning and configure permanent encrypted off-site dev/prod backups before deleting the old VPS.
 
-Deletion blocker discovered during the final audit: the AX41 dev cluster has all product ArgoCD applications but no Jenkins resources; the active controller and its credential store still run on the retiring VPS. Before deletion, install a clean Git-defined Jenkins controller on `playsay-dev`, inject new/re-authorized GitHub credentials without copying the old PVC, configure jobs/webhooks, run one no-op/affected-target delivery proof, then disable the old webhook/controller. This is independent of the already-working prod domain but is mandatory for CI continuity.
+Deletion blocker discovered during the final audit: the AX41 environment has all product ArgoCD applications but no dedicated CI VM; the active controller and its credential store still run on the retiring VPS. Before deletion, create `playsay-ci`, install a clean Git-defined Jenkins controller there, inject new/re-authorized GitHub credentials without copying the old PVC, configure scoped dev access and webhooks, run one no-op/affected-target delivery proof, then disable the old webhook/controller. This is independent of the already-working prod application domain but is mandatory for CI continuity.
 
 ### 7.4 Task checklist
 
@@ -400,7 +403,7 @@ Implementation note: the server tunnel and both permanent peer definitions are a
 
 - [ ] **5.1** Implement guest Ansible for Ubuntu hardening, pinned k3s, backup agent and node monitoring.
 - [ ] **5.2** Bootstrap dev k3s with pod/service CIDRs `10.42.0.0/16` and `10.43.0.0/16`; install new or deliberately restored dev Sealed Secrets keys and dev ArgoCD.
-- [ ] **5.3** Recreate dev namespaces, operators, applications, Headlamp and Jenkins only from the pinned Git commit; do not restore Kubernetes or Jenkins controller state.
+- [ ] **5.3** Recreate dev namespaces, operators, applications and Headlamp from the pinned Git commit; recreate Jenkins separately on `playsay-ci`; do not restore Kubernetes or Jenkins controller state.
 - [ ] **5.4** Add complete `argocd-apps/prod` and prod Helm values using independent credentials, storage, Keycloak, LiveKit/TURN and external integrations. Data-plane apps and digest-pinned values for completed release candidates are present; email/payment deployment remains disabled until separate prod provider credentials are supplied.
 - [ ] **5.5** Bootstrap prod k3s with pod/service CIDRs `10.44.0.0/16` and `10.45.0.0/16`, a new prod Sealed Secrets key and independent ArgoCD.
 - [ ] **5.6** Enforce dev auto-sync from `develop`; accept prod candidates only from protected branches matching `release/<numeric>.<numeric>.<numeric>`, use the matching `playsay-infra` release branch with manual ArgoCD sync, and promote immutable digests rather than mutable tags.
@@ -493,7 +496,7 @@ Acceptance requires:
 - KVM hardware acceleration is active and both VMs recover through libvirt autostart;
 - host/libvirt/guest administration is unreachable outside the management VPN;
 - OpenTofu plan contains no unapproved replacement or destroy;
-- a clean-room run from the recorded Git commit creates the host-managed network, both VMs, k3s, ArgoCD applications and Jenkins without undocumented manual configuration;
+- a clean-room run from the recorded Git commit creates the host-managed network, all three VMs, k3s, ArgoCD applications and Jenkins without undocumented manual configuration;
 - no raw dump, Keycloak credential export, private key, kubeconfig, OpenTofu state or MinIO teaching object exists in Git history;
 - encrypted dev/prod bundles match the checksums and source commits recorded by the migration manifests;
 - a verified encrypted source safety bundle exists off the old VPS before its three-day paid period ends and remains restorable after that VPS is deleted;
