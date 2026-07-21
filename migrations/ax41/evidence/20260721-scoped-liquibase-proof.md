@@ -7,6 +7,7 @@ This record contains no credentials or personal data.
 - Platform branch: `codex/separate-jenkins-ci`
 - Platform revision: `a8aded8`
 - Infrastructure branch: `codex/separate-jenkins-ci`
+- Infrastructure revision: `d6a77af`
 - Dev identity: `system:serviceaccount:playsay-ci-access:playsay-ci-deployer`
 - Target namespace: `playsay-dev`
 
@@ -44,3 +45,20 @@ all three contained 39 application changelog rows and one lock row. No
 This closes the technical CI/Liquibase blocker for retiring the old VPS. The
 remaining gates are owner-operated login/material acceptance, real-device VPN
 handshakes, the stabilization window and explicit approval to delete the VPS.
+
+## End-to-end Jenkins proof
+
+After both revisions were pushed, `playsay-api-gateway-develop` build `1` ran
+from platform revision `a8aded849378` and completed `SUCCESS` in 928.260
+seconds. Checkout, test/package, OpenAPI contract, scoped DB migrate, image
+build/push, source tag, GitOps update, ArgoCD rollout wait and post actions all
+succeeded.
+
+- Build label/image tag: `api-codex-separate-jenkins-ci-1`
+- Dev GitOps revision: `ac9ba89da113b0e6fe86fde8b777fcbb329b3800`
+- Dev ArgoCD API application: `Synced/Healthy`
+- Dev API deployment: `1/1` ready on the exact new tag
+- Generated migration Job/ConfigMap after completion: absent
+- CI controller after build: `2/2` ready, zero restarts
+- Prod after build: zero unready pods, zero unhealthy/out-of-sync ArgoCD apps,
+  approximately 31 GiB available RAM
