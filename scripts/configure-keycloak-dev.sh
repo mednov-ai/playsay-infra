@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KEYCLOAK_URL="${KEYCLOAK_URL:-https://ops.play-and-say.ru:18443/keycloak}"
+KEYCLOAK_URL="${KEYCLOAK_URL:-https://dev.ops.honey.school/keycloak}"
 KEYCLOAK_NAMESPACE="${KEYCLOAK_NAMESPACE:-keycloak}"
 KEYCLOAK_ADMIN_SECRET="${KEYCLOAK_ADMIN_SECRET:-keycloak-admin}"
 KEYCLOAK_DEV_USERS_SECRET="${KEYCLOAK_DEV_USERS_SECRET:-keycloak-dev-users}"
@@ -246,6 +246,8 @@ ensure_clients() {
       directAccessGrantsEnabled: true,
       serviceAccountsEnabled: false,
       redirectUris: [
+        "https://dev.online.honey.school/*",
+        "https://dev.key.honey.school/*",
         "https://online.play-and-say.ru/*",
         "https://key.play-and-say.ru/*",
         "http://localhost:5173/*",
@@ -260,6 +262,8 @@ ensure_clients() {
         "http://127.0.0.1:4175/*"
       ],
       webOrigins: [
+        "https://dev.online.honey.school",
+        "https://dev.key.honey.school",
         "https://online.play-and-say.ru",
         "https://key.play-and-say.ru",
         "http://localhost:5173",
@@ -275,7 +279,7 @@ ensure_clients() {
       ],
       attributes: {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://online.play-and-say.ru/*##https://key.play-and-say.ru/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:4173/*##http://localhost:4175/*##http://127.0.0.1:5173/*##http://127.0.0.1:5174/*##http://127.0.0.1:5175/*##http://127.0.0.1:4173/*##http://127.0.0.1:4175/*"
+        "post.logout.redirect.uris": "https://dev.online.honey.school/*##https://dev.key.honey.school/*##https://online.play-and-say.ru/*##https://key.play-and-say.ru/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:4173/*##http://localhost:4175/*##http://127.0.0.1:5173/*##http://127.0.0.1:5174/*##http://127.0.0.1:5175/*##http://127.0.0.1:4173/*##http://127.0.0.1:4175/*"
       }
     }
   ')

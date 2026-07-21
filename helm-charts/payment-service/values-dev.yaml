@@ -23,7 +23,7 @@ database:
   hikariMaxPoolSize: "3"
 paymentService:
   existingSecret: playsay-payment
-  publicBaseUrl: https://online.play-and-say.ru
+  publicBaseUrl: https://dev.online.honey.school
   provider: yookassa
   yookassa:
     apiUrl: https://api.yookassa.ru/v3

@@ -10,7 +10,7 @@ rtc:
   udpPortRangeEnd: 50020
 turn:
   enabled: true
-  host: online.play-and-say.ru
+  host: dev.online.honey.school
   port: 3478
 webhook:
   enabled: true

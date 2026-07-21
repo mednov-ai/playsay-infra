@@ -7,7 +7,7 @@ imagePullSecrets:
 build: {name: ai-tutor-release-1.001.00-23, number: "23", branch: release/1.001.00, branchLabel: ai-tutor-release-1.001.00, commit: "92406096f13b2451086d39021f8febfab855dbdc", commitShort: "92406096f13b"}
 service: {type: ClusterIP}
 auth:
-  issuerUri: https://key.honey.school/keycloak/realms/playsay
+  issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 database:
   existingSecret: playsay-app-db

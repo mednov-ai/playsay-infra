@@ -13,11 +13,9 @@ vmagent:
 
 blackboxExporter:
   targets:
-    - https://key.play-and-say.ru/
-    - https://online.play-and-say.ru/
-    - https://ops.play-and-say.ru:18443/victoria-metrics/vmui/
-    - https://ops.play-and-say.ru:18443/argocd/
-    - https://ops.play-and-say.ru:18443/jenkins/login
+    - https://dev.key.honey.school/
+    - https://dev.online.honey.school/
+    - https://dev.ops.honey.school/keycloak/realms/playsay/.well-known/openid-configuration
 
 alertmanager:
   telegram:

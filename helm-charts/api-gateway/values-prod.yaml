@@ -20,7 +20,7 @@ ingress:
   enabled: false
   host: api-gateway.dev.example.com
 auth:
-  issuerUri: https://key.honey.school/keycloak/realms/playsay
+  issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 ai:
   openai:

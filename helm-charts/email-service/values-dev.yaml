@@ -34,7 +34,7 @@ emailService:
   unisender:
     apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
     userId: "8236338"
-    webhookUrl: https://online.play-and-say.ru/api/webhooks/unisender
+    webhookUrl: https://dev.online.honey.school/api/webhooks/unisender
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=45 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
