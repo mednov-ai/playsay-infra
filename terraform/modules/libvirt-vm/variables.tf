@@ -44,12 +44,31 @@ variable "network_name" {
 }
 
 variable "mac_address" {
-  description = "Stable MAC address matching the platform DHCP reservation."
+  description = "Stable MAC address matching a platform DHCP reservation or the guest static address."
   type        = string
 
   validation {
     condition     = can(regex("^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$", var.mac_address))
     error_message = "mac_address must be a colon-separated MAC address."
+  }
+}
+
+variable "static_ipv4" {
+  description = "Optional cloud-init static IPv4 configuration for guests that must not mutate the shared libvirt network."
+  type = object({
+    address     = string
+    gateway     = string
+    nameservers = list(string)
+  })
+  default = null
+
+  validation {
+    condition = var.static_ipv4 == null || (
+      can(cidrhost(var.static_ipv4.address, 0)) &&
+      can(regex("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$", var.static_ipv4.gateway)) &&
+      length(var.static_ipv4.nameservers) > 0
+    )
+    error_message = "static_ipv4 must contain an IPv4 CIDR, gateway and at least one nameserver."
   }
 }
 

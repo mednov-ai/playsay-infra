@@ -59,6 +59,21 @@ resource "libvirt_cloudinit_disk" "config" {
     instance-id    = var.name
     local-hostname = var.hostname
   })
+  network_config = var.static_ipv4 == null ? null : yamlencode({
+    version = 2
+    ethernets = {
+      ens3 = {
+        match = {
+          macaddress = lower(var.mac_address)
+        }
+        set-name    = "ens3"
+        dhcp4       = false
+        addresses   = [var.static_ipv4.address]
+        routes      = [{ to = "default", via = var.static_ipv4.gateway }]
+        nameservers = { addresses = var.static_ipv4.nameservers }
+      }
+    }
+  })
 }
 
 resource "libvirt_volume" "cloud_init" {

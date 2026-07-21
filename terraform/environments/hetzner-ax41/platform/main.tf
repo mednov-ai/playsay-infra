@@ -55,11 +55,6 @@ resource "libvirt_network" "workloads" {
             name = "playsay-dev"
             mac  = "52:54:00:60:00:30"
             ip   = "10.60.0.30"
-          },
-          {
-            name = "playsay-ci"
-            mac  = "52:54:00:60:00:40"
-            ip   = "10.60.0.40"
           }
         ]
       }
