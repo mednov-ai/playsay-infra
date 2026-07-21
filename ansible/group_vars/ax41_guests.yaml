@@ -14,7 +14,6 @@ k3s_disable_components:
   - traefik
   - servicelb
 k3s_node_taints: []
-k3s_api_allow_cidrs: []
 
 node_exporter_enabled: true
 
