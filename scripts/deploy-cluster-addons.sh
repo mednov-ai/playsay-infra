@@ -132,7 +132,7 @@ fi
 if [[ "$INSTALL_CERT_MANAGER" == "true" ]]; then
   helm repo add jetstack https://charts.jetstack.io >/dev/null
 fi
-helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets >/dev/null
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets >/dev/null
 helm repo add argo https://argoproj.github.io/argo-helm >/dev/null
 if [[ "$INSTALL_JENKINS" == "true" ]]; then
   helm repo add jenkins https://charts.jenkins.io >/dev/null

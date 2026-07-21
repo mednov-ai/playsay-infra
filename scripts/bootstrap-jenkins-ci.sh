@@ -36,7 +36,7 @@ fi
 
 kubectl cluster-info >/dev/null
 
-helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets >/dev/null 2>&1 || true
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets >/dev/null 2>&1 || true
 helm repo add jenkins https://charts.jenkins.io >/dev/null 2>&1 || true
 helm repo update sealed-secrets jenkins >/dev/null
 
