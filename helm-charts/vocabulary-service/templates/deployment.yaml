@@ -42,11 +42,8 @@ spec:
             {{- if .Values.openai.enabled }}
             - name: PLAYSAY_VOCABULARY_OPENAI_API_KEY
               valueFrom: { secretKeyRef: { name: {{ .Values.openai.existingSecret | quote }}, key: {{ .Values.openai.apiKeyKey | quote }} } }
-            - name: PLAYSAY_VOCABULARY_OPENAI_MODEL
-              valueFrom: { secretKeyRef: { name: {{ .Values.openai.existingSecret | quote }}, key: {{ .Values.openai.modelKey | quote }} } }
-            {{- else }}
-            - { name: PLAYSAY_VOCABULARY_OPENAI_MODEL, value: {{ .Values.openai.model | quote }} }
             {{- end }}
+            - { name: PLAYSAY_VOCABULARY_OPENAI_MODEL, value: {{ .Values.openai.model | quote }} }
             {{- if .Values.runtime.javaToolOptions }}
             - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
             {{- end }}

@@ -29,7 +29,7 @@ ai:
     enabled: false
     existingSecret: playsay-openai
     apiKeyKey: api-key
-    modelKey: model
+    model: gpt-5.4-mini
     baseUrl: https://api.openai.com/v1
 
 database:

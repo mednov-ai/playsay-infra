@@ -19,7 +19,6 @@ openai:
   enabled: true
   existingSecret: playsay-openai
   apiKeyKey: api-key
-  modelKey: model
   baseUrl: https://api.openai.com/v1
   model: gpt-5.4-mini
 runtime:
