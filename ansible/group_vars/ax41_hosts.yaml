@@ -51,9 +51,12 @@ edge_certificate_name: online.honey.school
 edge_routes:
   - hostname: online.honey.school
     upstream: 10.60.0.20:32083
+    collaboration_upstream: 10.60.0.20:32086
+    livekit_upstream: 10.60.0.20:7880
   - hostname: key.honey.school
     upstream: 10.60.0.20:32084
   - hostname: dev.online.honey.school
     upstream: 10.60.0.30:32083
+    collaboration_upstream: 10.60.0.30:32086
   - hostname: dev.key.honey.school
     upstream: 10.60.0.30:32084

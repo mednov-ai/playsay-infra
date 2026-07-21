@@ -12,7 +12,8 @@ build:
   commit: 92406096f13b2451086d39021f8febfab855dbdc
   commitShort: "92406096f13b"
 service:
-  type: ClusterIP
+  type: NodePort
+  nodePort: 32086
 auth:
   keycloakJwksUrl: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 apiGateway:
@@ -20,4 +21,3 @@ apiGateway:
 collaboration:
   existingSecret: playsay-collaboration
   snapshotIntervalMs: "10000"
-
