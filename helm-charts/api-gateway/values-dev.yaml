@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-separate-jenkins-ci-1"
+  tag: "api-dev-3"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-separate-jenkins-ci-1
-  number: "1"
-  branch: codex/separate-jenkins-ci
-  branchLabel: api-codex-separate-jenkins-ci
-  commit: a8aded849378d86ae37ff2656a0f264316a3d30a
-  commitShort: "a8aded849378"
+  name: api-dev-3
+  number: "3"
+  branch: develop
+  branchLabel: api-dev
+  commit: fa87820e8a313fce39d9b6adb2d1bd9ec4e6f6b7
+  commitShort: "fa87820e8a31"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
