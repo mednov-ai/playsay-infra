@@ -4,6 +4,8 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
+During the AX41 rollback overlap, the legacy app hosts `online.play-and-say.ru` and `key.play-and-say.ru` use the canonical dev issuer `https://dev.ops.honey.school/keycloak/realms/playsay`. Both `api-gateway` and `keyboard-service` dev Helm values must validate that issuer through the cluster-local Keycloak JWKS endpoint; otherwise PKCE succeeds but authenticated `/api/me` returns `401`. Remove this bridge only together with the legacy app-host DNS and old VPS. The root `play-and-say.ru` site is not part of the bridge.
+
 ## Vocabulary service
 
 `vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` только с чувствительным `api-key`. Модель и reasoning effort являются проверяемой Git-конфигурацией: dev/prod используют `gpt-5.6-sol` и `low` для словарных подсказок. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.
