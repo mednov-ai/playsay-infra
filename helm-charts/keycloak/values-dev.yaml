@@ -8,7 +8,8 @@ keycloak:
   httpEnabled: true
   httpRelativePath: /keycloak/
   proxyHeaders: xforwarded
-  hostnameStrict: false
+  hostname: https://dev.ops.honey.school/keycloak
+  hostnameStrict: true
 
   image:
     repository: bitnamilegacy/keycloak

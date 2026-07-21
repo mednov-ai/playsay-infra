@@ -8,7 +8,7 @@ keycloak:
   httpEnabled: true
   httpRelativePath: /keycloak/
   proxyHeaders: xforwarded
-  hostname: https://key.honey.school/keycloak
+  hostname: https://ops.honey.school/keycloak
   hostnameStrict: true
 
   image:
