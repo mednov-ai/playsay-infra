@@ -255,8 +255,8 @@
                     <#nested "form">
 
                     <div class="playsay-auth-links">
-                        <a href="https://online.play-and-say.ru/register">${msg("noAccount")} ${msg("doRegister")}</a>
-                        <a href="https://online.play-and-say.ru/forgot-password">${msg("doForgotPassword")}</a>
+                        <a href="{{ .Values.theme.appBaseUrl }}/register">${msg("noAccount")} ${msg("doRegister")}</a>
+                        <a href="{{ .Values.theme.appBaseUrl }}/forgot-password">${msg("doForgotPassword")}</a>
                     </div>
 
                     <#if auth?has_content && auth.showTryAnotherWayLink()>

@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: develop
+    targetRevision: legacy/play-and-say-vps
     path: helm-charts/email-service
     helm:
       valueFiles:

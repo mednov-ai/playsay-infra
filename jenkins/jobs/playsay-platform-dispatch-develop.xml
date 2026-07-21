@@ -1,16 +1,10 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job">
-  <description>Play&amp;Say lightweight dispatcher. Receives GitHub push events, detects affected deploy targets, and triggers only the needed downstream jobs.</description>
+  <description>Manual-only dispatcher for the isolated legacy Play&amp;Say VPS. It loads only legacy/play-and-say-vps and triggers only legacy downstream jobs.</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
-        <hudson.model.StringParameterDefinition>
-          <name>BRANCH_NAME</name>
-          <description>Git branch received from GitHub push event.</description>
-          <defaultValue>develop</defaultValue>
-          <trim>true</trim>
-        </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>GITHUB_BEFORE</name>
           <description>GitHub push before SHA.</description>
@@ -53,53 +47,7 @@
       <abortPrevious>false</abortPrevious>
     </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
   </properties>
-  <triggers>
-    <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
-      <spec></spec>
-      <genericVariables>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>BRANCH_NAME</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter>^refs/heads/</regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_REF</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_BEFORE</key>
-          <value>$.before</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_AFTER</key>
-          <value>$.after</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-      </genericVariables>
-      <genericRequestVariables/>
-      <genericHeaderVariables/>
-      <token>playsay-platform-develop</token>
-      <tokenCredentialId></tokenCredentialId>
-      <printPostContent>false</printPostContent>
-      <printContributedVariables>false</printContributedVariables>
-      <causeString>GitHub push to $BRANCH_NAME</causeString>
-      <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
-      <regexpFilterExpression>^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
-      <silentResponse>false</silentResponse>
-      <shouldNotFlatten>false</shouldNotFlatten>
-      <overrideQuietPeriod>false</overrideQuietPeriod>
-    </org.jenkinsci.plugins.gwt.GenericTrigger>
-  </triggers>
+  <triggers/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps">
     <scm class="hudson.plugins.git.GitSCM" plugin="git">
       <configVersion>2</configVersion>
@@ -110,7 +58,7 @@
       </userRemoteConfigs>
       <branches>
         <hudson.plugins.git.BranchSpec>
-          <name>*/${BRANCH_NAME}</name>
+          <name>*/legacy/play-and-say-vps</name>
         </hudson.plugins.git.BranchSpec>
       </branches>
       <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>

@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: develop
+    targetRevision: legacy/play-and-say-vps
     path: helm-charts/ai-tutor-service
     helm:
       valueFiles: [values-dev.yaml]

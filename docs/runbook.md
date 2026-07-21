@@ -4,6 +4,16 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
+## Legacy `play-and-say.ru` VPS isolation
+
+The VPS at `146.103.126.15` is an isolated rollback contour. Its platform source branch is `legacy/play-and-say-vps`, based on platform commit `92406096f13b2451086d39021f8febfab855dbdc`; its GitOps branch has the same name and is based on infra commit `50f1d55adef43b51b7971a98928ca87ca1bef471`. Every dev ArgoCD Application, including `playsay-dev-root`, must use that exact infra branch. Never point this VPS back to `develop`, a `release/*` branch, or an AX41 branch.
+
+The legacy applications authenticate only through `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. They must not use or allow `*.honey.school` issuer, redirect, origin, logout, registration, LiveKit or collaboration URLs. Run `./scripts/verify-legacy-vps-isolation.sh` before every legacy infra push.
+
+The old Jenkins controller is manual-only. Configure it from this branch with `./scripts/configure-jenkins-jobs.sh`: the script creates `playsay-legacy-vps-*` jobs pinned to the legacy platform and infra branches, without webhook triggers or a mutable `BRANCH_NAME`, then disables the replaced `*-develop` jobs. Use the manual dispatcher with an explicit `FORCE_TARGETS`; do not reconnect the old controller to GitHub webhooks.
+
+Initial restoration intentionally reuses the immutable `release/1.001.00` images already built from platform commit `9240609`; a rebuild of identical images is not required. Subsequent hotfix images may be produced only by the manual legacy jobs. Preserve the root `play-and-say.ru` nginx site, Docker and Amnezia while operating this contour.
+
 ## Vocabulary service
 
 `vocabulary-service` разворачивается ArgoCD в `playsay-dev`, использует общий `playsay-app-db`, порт `8088` и secret `playsay-openai` для учебных переводов. Из этого secret Deployment читает `api-key` и `model`; нельзя задавать отдельную hardcoded-модель только для словаря, иначе доступный ключ может получить `model_not_found`/access error. Jenkins job `playsay-vocabulary-service-develop` выполняет идемпотентные `liquibase status/update` на каждом deployable build, собирает `playsay-vocabulary-service` и обновляет `helm-charts/vocabulary-service/values-dev.yaml`. Не добавляйте для vocabulary оптимизацию skip-by-changelog-diff: она может оставить новый namespace/database без таблиц, если первый webhook build не запускал migration. Web и keyboard nginx направляют `/api/vocabulary/**` на ClusterIP `vocabulary-service`; отсутствие OpenAI key не блокирует ручное сохранение карточек. Web UI автоматически запрашивает до трёх уверенных вариантов после ввода слова и позволяет перегенерировать их с пользовательским уточнением и исключением уже показанных переводов.

@@ -1,3 +1,6 @@
+theme:
+  appBaseUrl: https://online.play-and-say.ru
+
 keycloak:
   global:
     security:
@@ -38,7 +41,7 @@ keycloak:
       memory: 900Mi
 
   podAnnotations:
-    checksum/playsay-theme: b2dcb323fbce5388706bea4be61d83bf4cde73c6f9eeaa6c97c51222bb32a8ee
+    checksum/playsay-theme: isolated-legacy-theme-20260721
 
   extraEnvVars:
     - name: KC_SPI_THEME_CACHE_THEMES
