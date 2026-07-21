@@ -28,7 +28,7 @@ Job `playsay-collaboration-service-develop` build `1` ran from platform commit
 Every stage succeeded:
 
 1. Checkout
-2. Reserve build capacity (dedicated-CI no-op compatibility stage)
+2. Reserve build capacity (initial dedicated-CI no-op compatibility stage; removed by later revision `a8aded8`)
 3. Test and build
 4. Build and push image
 5. Tag source commit
@@ -50,6 +50,6 @@ During and after the build, the prod node stayed `Ready` and all 15 prod ArgoCD 
 
 ## Remaining gates
 
-- Redesign database migrations as Jobs inside dev before enabling database-backed module jobs on the separate CI cluster.
+- Database-backed module jobs were enabled by later revision `a8aded8`; the scoped Job proof is recorded separately.
 - Complete owner-operated Maria/student login and rendered-material checks.
 - Stop the old controller after stabilization and delete the VPS only with explicit owner approval.

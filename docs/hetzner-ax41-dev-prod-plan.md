@@ -57,7 +57,7 @@ The AX41 exposes approximately 62 GiB usable RAM. Assigning 10 GiB to dev, 38 Gi
 
 Raise dev from 2 to 3 vCPUs only through a reviewed OpenTofu/Git change when at least one condition is reproduced after migration: compute utilization excluding I/O wait stays above 85% for 15 minutes; serialized Jenkins build duration regresses by more than 30% against the post-migration baseline; or dev LiveKit/API thresholds fail while CPU is saturated. High load caused by I/O wait, memory pressure or a broken build is not by itself a reason to add CPU. A fourth dev vCPU requires a new prod-isolation review.
 
-The Jenkins agent remains serialized in `playsay-ci`. Legacy capacity acquire/restore and guard stages are temporary no-op compatibility paths and must be removed after database migrations are redesigned as scoped Jobs inside dev.
+The Jenkins agent remains serialized in `playsay-ci`. Database migrations run as admission-restricted Jobs inside dev; Jenkins cannot read DB Secrets or create Pods directly. Legacy capacity acquire/restore, guard sidecars and watchdog manifests were removed after the isolated migration Job proof on 2026-07-21.
 
 ## 3. Network and security
 

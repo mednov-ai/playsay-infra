@@ -47,7 +47,7 @@ This record contains no credentials or personal identifiers.
 ## Remaining gates
 
 - Owner-operated Maria login, one reviewed-student login and visual rendering of the transferred materials.
-- Move database migrations into scoped Jobs inside dev and remove the temporary no-op capacity compatibility stages.
+- Scoped dev migration Jobs are implemented and the temporary capacity compatibility stages are removed; see `20260721-scoped-liquibase-proof.md`.
 - Prove real MacBook and phone WireGuard handshakes before closing public SSH.
 - Stop the old Jenkins only after a stabilization window. Delete the old VPS only after explicit owner approval; Amnezia is intentionally not migrated.
 - Configure permanent off-host backups and migrate local OpenTofu states to a versioned and locked remote backend.

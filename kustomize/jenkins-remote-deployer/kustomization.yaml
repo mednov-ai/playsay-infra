@@ -6,3 +6,5 @@ resources:
   - token-secret.yaml
   - argocd-rbac.yaml
   - workload-rbac.yaml
+  - migration-runner.yaml
+  - migration-admission.yaml

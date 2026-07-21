@@ -48,21 +48,6 @@ helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
 
 kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -
 
-# Existing module pod templates still mount the former guard ConfigMap. On the
-# isolated CI node it intentionally does nothing; the platform follow-up removes
-# the sidecar blocks entirely after the first delivery proof.
-kubectl -n jenkins apply -f - <<'EOF'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: playsay-ci-capacity-scripts
-data:
-  guard.sh: |
-    #!/bin/sh
-    set -eu
-    while true; do sleep 3600; done
-EOF
-
 if ! kubectl -n jenkins get secret playsay-jenkins-credentials >/dev/null 2>&1; then
   echo "Missing jenkins/playsay-jenkins-credentials. Transfer or rotate credentials before installing Jenkins." >&2
   exit 1

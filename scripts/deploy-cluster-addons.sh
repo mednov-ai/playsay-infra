@@ -294,28 +294,6 @@ roleRef:
   name: jenkins-dev-rollout-reader
 EOF
 
-  kubectl apply -k "$ROOT_DIR/kustomize/jenkins-capacity-manager"
-  if ! kubectl -n jenkins get configmap playsay-ci-capacity-state >/dev/null 2>&1; then
-    kubectl -n jenkins create configmap playsay-ci-capacity-state \
-      --from-literal=active=false \
-      --from-literal=holder= \
-      --from-literal=agentPod= \
-      --from-literal=deadlineEpoch=0 \
-      --from-literal=replicas= \
-      --from-literal=breachSinceEpoch=0
-  fi
-  if ! kubectl -n jenkins get lease playsay-ci-capacity >/dev/null 2>&1; then
-    kubectl -n jenkins apply -f - <<EOF
-apiVersion: coordination.k8s.io/v1
-kind: Lease
-metadata:
-  name: playsay-ci-capacity
-spec:
-  holderIdentity: ""
-  leaseDurationSeconds: 2400
-EOF
-  fi
-
   helm upgrade --install jenkins jenkins/jenkins \
     --namespace jenkins \
     --set controller.jenkinsUriPrefix=/jenkins \
