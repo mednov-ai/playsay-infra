@@ -25,9 +25,11 @@ The owner confirmed that a separate production OpenAI key was installed interact
 
 ## Post-sync acceptance
 
-- Confirm all production ArgoCD applications are `Synced/Healthy`.
-- Confirm `api-gateway` exposes provider `openai` and model `gpt-5.6-sol` without printing the API key.
-- Confirm `vocabulary-service` exposes model `gpt-5.6-sol` without printing the API key.
+- [x] Owner manually promoted the production root Application to `release/1.001.02`.
+- [x] `api-gateway` reported `Synced/Healthy` and exposed provider `openai` with model `gpt-5.6-sol`.
+- [x] `vocabulary-service` reported `Synced/Healthy` and exposed model `gpt-5.6-sol`.
+- [x] Verification output did not print the API key.
+- [ ] Confirm the remaining production Applications retain their accepted health after the root revision change.
 - Run one authenticated material-generation request and one vocabulary-suggestion request.
 - Record only status, model, latency and provider/rate-limit error class; do not record credentials, prompts, generated lesson content or user data.
 

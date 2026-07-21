@@ -1388,7 +1388,7 @@ The model is ordinary reviewed configuration in Git, not a credential. Environme
 - dev: `gpt-5.4-mini`;
 - prod: `gpt-5.6-sol`.
 
-The Kubernetes secret `playsay-openai` contains exactly one data key, `api-key`. Dev and prod must use separate OpenAI Platform projects and separate keys; never copy the dev key into prod. The owner confirmed interactive installation of the independent prod key on 2026-07-21. Release `1.001.02` enables production material generation and vocabulary suggestions with `gpt-5.6-sol`; the release is not live until the operator manually promotes and syncs the root ArgoCD application.
+The Kubernetes secret `playsay-openai` contains exactly one data key, `api-key`. Dev and prod must use separate OpenAI Platform projects and separate keys; never copy the dev key into prod. The owner confirmed interactive installation of the independent prod key on 2026-07-21. Production root was manually promoted to `release/1.001.02`; `api-gateway` and `vocabulary-service` were synced and reported `Synced/Healthy`. Their live Deployment configuration reports provider `openai` and model `gpt-5.6-sol`. AI Tutor and lesson translation remain unchanged. Functional acceptance still requires one authenticated material-generation smoke and one vocabulary-suggestion smoke.
 
 Create or update the environment's secret from an interactive terminal on the corresponding VM without printing the key. Set `TARGET_NAMESPACE=playsay-dev` on `playsay-dev` or `TARGET_NAMESPACE=playsay-prod` on `playsay-prod`:
 
