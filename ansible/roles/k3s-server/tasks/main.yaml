@@ -87,6 +87,13 @@
       drop_tcp 10250
       drop_udp 8472
 
+      # Insert explicit private management peers above the blanket API drop.
+      # No peer is allowed unless it is present in the Git/Ansible inventory.
+      {% for cidr in k3s_api_allow_cidrs | default([]) %}
+      iptables -C INPUT -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT 2>/dev/null \
+        || iptables -I INPUT 1 -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT
+      {% endfor %}
+
 - name: Install public port guard service
   ansible.builtin.copy:
     dest: /etc/systemd/system/playsay-public-port-guard.service
