@@ -4,7 +4,7 @@ module "dev" {
   name                 = "playsay-dev"
   hostname             = "playsay-dev"
   vcpu                 = 2
-  memory_mib           = 12288
+  memory_mib           = 10240
   disk_gib             = 120
   pool_name            = "playsay"
   network_name         = "playsay-workloads"

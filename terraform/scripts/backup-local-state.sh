@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: backup-local-state.sh --environment platform|dev|prod \
+Usage: backup-local-state.sh --environment platform|dev|prod|ci \
   --public-key PATH --output-dir PATH --infra-commit SHA \
   --plan-sha256 SHA256
 
@@ -31,7 +31,7 @@ while (($#)); do
   esac
 done
 
-[[ "$environment_name" =~ ^(platform|dev|prod)$ ]] || { echo "Invalid environment" >&2; exit 2; }
+[[ "$environment_name" =~ ^(platform|dev|prod|ci)$ ]] || { echo "Invalid environment" >&2; exit 2; }
 [[ -f "$public_key" ]] || { echo "RSA public key not found" >&2; exit 2; }
 [[ -n "$output_dir" ]] || { echo "Output directory is required" >&2; exit 2; }
 [[ "$infra_commit" =~ ^[0-9a-f]{7,40}$ ]] || { echo "Invalid infra commit" >&2; exit 2; }

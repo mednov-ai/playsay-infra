@@ -51,6 +51,6 @@ tar -xzf "$work_dir/payload.tar.gz" -C "$work_dir/payload"
 
 (cd "$work_dir/payload" && shasum -a 256 -c SHA256SUMS)
 jq -e '.version >= 4 and (.serial >= 0) and (.lineage | type == "string")' "$work_dir/payload/terraform.tfstate" >/dev/null
-jq -e '.schemaVersion == "1" and (.environment == "platform" or .environment == "dev" or .environment == "prod") and (.planSha256 | test("^[0-9a-f]{64}$"))' "$work_dir/payload/manifest.json" >/dev/null
+jq -e '.schemaVersion == "1" and (.environment == "platform" or .environment == "dev" or .environment == "prod" or .environment == "ci") and (.planSha256 | test("^[0-9a-f]{64}$"))' "$work_dir/payload/manifest.json" >/dev/null
 
 echo "Encrypted OpenTofu state backup verified successfully: $(basename "$bundle")"

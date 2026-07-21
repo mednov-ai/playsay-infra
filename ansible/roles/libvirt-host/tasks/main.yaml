@@ -66,6 +66,7 @@
     - platform
     - dev
     - prod
+    - ci
 
 - name: Enable libvirt daemon
   ansible.builtin.service:
