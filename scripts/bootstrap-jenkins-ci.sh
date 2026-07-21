@@ -7,10 +7,32 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 export KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 JENKINS_CHART_VERSION="${JENKINS_CHART_VERSION:-5.9.22}"
 JENKINS_NODEPORT_HTTP="${JENKINS_NODEPORT_HTTP:-32082}"
+HELM_VERSION="${HELM_VERSION:-v3.21.0}"
+HELM_LINUX_AMD64_SHA256="${HELM_LINUX_AMD64_SHA256:-0093eb572e3d2380f094df162ddb525e219249de88957afe24cfbb19632acd36}"
+helm_install_dir=""
+jenkins_apply_config_tmp=""
+jenkins_patch_tmp=""
 
-for command_name in kubectl helm curl sed grep mktemp; do
+cleanup() {
+  [[ -z "$helm_install_dir" ]] || rm -rf -- "$helm_install_dir"
+  [[ -z "$jenkins_apply_config_tmp" ]] || rm -f -- "$jenkins_apply_config_tmp"
+  [[ -z "$jenkins_patch_tmp" ]] || rm -f -- "$jenkins_patch_tmp"
+}
+trap cleanup EXIT
+
+for command_name in kubectl curl sed grep mktemp sha256sum tar install; do
   command -v "$command_name" >/dev/null || { echo "Missing command: $command_name" >&2; exit 1; }
 done
+
+if ! command -v helm >/dev/null; then
+  [[ "$(id -u)" -eq 0 ]] || { echo "Run as root to install pinned Helm ${HELM_VERSION}." >&2; exit 1; }
+  helm_install_dir="$(mktemp -d)"
+  helm_archive="helm-${HELM_VERSION}-linux-amd64.tar.gz"
+  curl -fsSL "https://get.helm.sh/${helm_archive}" -o "$helm_install_dir/$helm_archive"
+  printf '%s  %s\n' "$HELM_LINUX_AMD64_SHA256" "$helm_install_dir/$helm_archive" | sha256sum -c -
+  tar -xzf "$helm_install_dir/$helm_archive" -C "$helm_install_dir"
+  install -m 0755 "$helm_install_dir/linux-amd64/helm" /usr/local/bin/helm
+fi
 
 kubectl cluster-info >/dev/null
 
@@ -60,7 +82,6 @@ helm upgrade --install jenkins jenkins/jenkins \
 
 jenkins_apply_config_tmp="$(mktemp)"
 jenkins_patch_tmp="$(mktemp)"
-trap 'rm -f "$jenkins_apply_config_tmp" "$jenkins_patch_tmp"' EXIT
 
 kubectl -n jenkins get configmap jenkins -o jsonpath='{.data.apply_config\.sh}' >"$jenkins_apply_config_tmp"
 if grep -q 'yes n | cp -i /usr/share/jenkins/ref/plugins/\* /var/jenkins_plugins/;' "$jenkins_apply_config_tmp"; then
