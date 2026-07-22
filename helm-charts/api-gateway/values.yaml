@@ -103,6 +103,8 @@ emailService:
   baseUrl: http://email-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-email
   serviceTokenKey: service-token
+  mailjetWebhookUsernameKey: mailjet-webhook-username
+  mailjetWebhookPasswordKey: mailjet-webhook-password
 
 chatEmail:
   initialDelay: PT2M

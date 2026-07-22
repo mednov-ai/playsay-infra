@@ -15,6 +15,22 @@
     group: www-data
     mode: "0755"
 
+- name: Create the honey.school document root
+  ansible.builtin.file:
+    path: "{{ edge_root_site.document_root }}"
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0755"
+
+- name: Render the honey.school landing page
+  ansible.builtin.template:
+    src: honey-school-index.html.j2
+    dest: "{{ edge_root_site.document_root }}/index.html"
+    owner: root
+    group: www-data
+    mode: "0644"
+
 - name: Configure TCP Packetization-Layer MTU discovery for the public edge
   ansible.builtin.copy:
     dest: /etc/sysctl.d/91-playsay-edge-tcp.conf
@@ -37,6 +53,11 @@
     path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
   register: edge_certificate
 
+- name: Check whether the honey.school root certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
+  register: edge_root_certificate
+
 - name: Enforce the AX41 TLS protocol policy in the nginx HTTP context
   ansible.builtin.lineinfile:
     path: /etc/nginx/nginx.conf
@@ -55,6 +76,66 @@
   notify: reload nginx
 
 - name: Validate nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx for the ACME bootstrap route
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Apply the HTTP bootstrap route before requesting the root certificate
+  ansible.builtin.meta: flush_handlers
+
+- name: Issue the dedicated honey.school root certificate
+  ansible.builtin.command:
+    argv:
+      - certbot
+      - certonly
+      - --webroot
+      - --webroot-path
+      - /var/www/playsay-acme
+      - --cert-name
+      - "{{ edge_root_site.certificate_name }}"
+      - --domains
+      - "{{ edge_root_site.hostname }}"
+      - --non-interactive
+      - --keep-until-expiring
+  when:
+    - not edge_root_certificate.stat.exists
+    - not ansible_check_mode
+  register: edge_root_certificate_issue
+  changed_when: edge_root_certificate_issue.rc == 0
+
+- name: Recheck the honey.school root certificate
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
+  register: edge_root_certificate_after
+
+- name: Render HTTPS for honey.school after certificate issuance
+  ansible.builtin.template:
+    src: playsay-honey.conf.j2
+    dest: /etc/nginx/conf.d/playsay-honey.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Install the Certbot nginx reload hook
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      set -eu
+      nginx -t
+      systemctl reload nginx
+
+- name: Validate final nginx configuration
   ansible.builtin.command:
     cmd: nginx -t
   changed_when: false

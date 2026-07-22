@@ -48,6 +48,10 @@ wireguard_peers:
     allowed_ips: 10.250.0.3/32
 
 edge_certificate_name: online.honey.school
+edge_root_site:
+  hostname: honey.school
+  certificate_name: honey.school
+  document_root: /var/www/honey-school
 edge_vpn_subnet: 10.250.0.0/24
 # Russian consumer networks previously failed TLS/SNI handshakes when TLS 1.3
 # was enabled on the old edge. Keep every public honey.school vhost on TLS 1.2

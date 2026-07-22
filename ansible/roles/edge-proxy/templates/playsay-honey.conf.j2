@@ -5,6 +5,57 @@ map $http_upgrade $playsay_connection_upgrade {
 
 limit_req_zone $binary_remote_addr zone=playsay_hooks:10m rate=5r/s;
 
+{% set root_certificate = edge_root_certificate_after | default(edge_root_certificate) %}
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ edge_root_site.hostname }};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/playsay-acme;
+        default_type text/plain;
+    }
+
+{% if root_certificate.stat.exists %}
+    location / {
+        return 301 https://{{ edge_root_site.hostname }}$request_uri;
+    }
+{% else %}
+    root {{ edge_root_site.document_root }};
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+{% endif %}
+}
+
+{% if root_certificate.stat.exists %}
+server {
+    listen 443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
+    listen [::]:443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
+    server_name {{ edge_root_site.hostname }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/privkey.pem;
+    ssl_protocols {{ edge_tls_protocols }};
+    ssl_session_cache shared:PlaySayTLS:10m;
+    ssl_session_timeout 1d;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+
+    root {{ edge_root_site.document_root }};
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+{% endif %}
+
 {% for route in edge_routes %}
 server {
     listen 80;
