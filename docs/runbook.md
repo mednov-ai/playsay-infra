@@ -36,6 +36,8 @@ Branch routing is strict. `develop`, `codex/*`, `feature/*` and `hotfix/*` publi
 
 For a numeric release, Jenkins builds the affected images, records each Kaniko-produced immutable `sha256` digest in `values-prod.yaml`, and pushes the result to the matching `playsay-infra` release branch. If that infra branch does not exist, Jenkins creates it from current `develop`, overlays only the running production `image`/`build` metadata from the branch named in `argocd-apps/prod/current-release.txt` (preserving reviewed current infra configuration from `develop`), and rewrites all prod ArgoCD `targetRevision` values to the new release. Jenkins has no production kubeconfig and cannot sync the prod cluster. After all release module jobs are green, an operator reviews the complete infra release diff, performs the required production database migration approval, switches/syncs prod ArgoCD to that exact branch, runs production smoke, and only then updates `argocd-apps/prod/current-release.txt` on `develop`. Never deploy prod directly from `main`, `develop`, a free-form release name or `hotfix/*`; publish a hotfix through a new numeric release branch.
 
+`playsay-infra` is the desired-state source, not a requirement for one managed server to control another. AX41, its guests and the Selectel RF edge do not receive SSH authority over each other. The Selectel Ansible playbook is run agentlessly over SSH from a trusted control node; currently that node is the maintainer workstation with the ignored inventory/private-key path. Jenkins, `playsay-dev` and `playsay-prod` do not hold the Selectel private key. A future dedicated operations runner is allowed only as a separately approved control plane with equivalent release-branch and credential boundaries.
+
 The approved initial prod seed is selective: Maria Mednova, the six students attached to her at cutoff, 22 Maria-owned materials excluding the test material `hello`, 51 referenced assets/MinIO objects and 11 HTML-game enrichments. Execute imports only from a reviewed protected manifest of immutable Keycloak subjects, application UUIDs, material UUIDs and object checksums; never select by names during the write step. Do not copy other dev users or dev lesson/assignment/submission/chat history. The source remains authoritative until the final cutoff and the detailed plan's count, login, referential-integrity and object-restore gates pass.
 
 Migration is Git-first. Do not cold-copy k3s server state, Jenkins controller state or local-path PVC directories to the AX41. Recreate dev/prod application infrastructure and the separate CI/Jenkins guest from recorded Git commits, then restore only documented application state through the committed export/import scripts. Dev receives a full encrypted PostgreSQL/Keycloak/MinIO bundle; prod receives only the filtered seed above. Raw dumps, Keycloak exports, plaintext secrets, private keys, OpenTofu state and MinIO objects stay outside Git in the encrypted off-host repository. Git contains their manifest schema, expected non-personal counts, bundle checksum and verification code.
@@ -60,14 +62,20 @@ The independent certificates are stored at `/etc/letsencrypt/live/online.honeysc
 
 Final acceptance still requires complete login and application loading from a Russian Chrome/incognito connection without VPN. During initial DNS propagation, Dynadot anycast nodes intermittently alternated the previous `ops.honey.school -> honey.school` CNAME and the new exact A record `ops.honey.school -> 94.102.89.213`, even under the same SOA serial. Before declaring the RF login path accepted, repeat authoritative and public resolver queries until they consistently return the Selectel A record; do not introduce a second issuer as a workaround.
 
-Apply only the Russian ingress role without touching Docker, k3s, Amnezia or the existing `play-and-say.ru` vhost:
+Reconcile only the Russian ingress role without touching Docker, k3s, Amnezia or the existing `play-and-say.ru` vhost. Run it from a clean worktree of the exact pushed numeric release branch. The wrapper rejects `develop`, topic branches, detached/unpushed revisions and production apply without an explicit matching approval variable:
 
 ```bash
-cd playsay-infra/ansible
-ansible-playbook \
-  -i inventories/rf-edge/hosts.yaml \
-  playbooks/rf-edge.yaml
+cd /path/to/playsay-infra-release-worktree
+
+PLAYSAY_RF_EDGE_INVENTORY=/absolute/path/to/ignored/rf-edge/hosts.yaml \
+  scripts/apply-rf-edge-release.sh --check
+
+PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/1.001.05 \
+PLAYSAY_RF_EDGE_INVENTORY=/absolute/path/to/ignored/rf-edge/hosts.yaml \
+  scripts/apply-rf-edge-release.sh --apply
 ```
+
+The default operation is not implicit: the operator must choose `--check` or `--apply`. Always review the complete check-mode diff first. The release branch must contain the Selectel role, landing and routes even though their execution happens from the control node; this keeps the live edge reproducible without creating an AX41-to-Selectel management dependency.
 
 Do not copy the AX41 private certificate key to Selectel. `ops.honey.school` already uses its independent Selectel ACME certificate and unattended HTTP renewal. The Russian aliases use their own Selectel certificates and do not replace or join the AX41 `.school` certificate. Keep the canonical production issuer `https://ops.honey.school/keycloak/realms/playsay`; adding an application alias must not change the issuer string.
 
