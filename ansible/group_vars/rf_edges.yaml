@@ -17,7 +17,7 @@ rf_edge_routes:
     origin_hostname: online.honey.school
     certificate_directory: /etc/letsencrypt/live/online.honeyschool.ru
     kind: application
-    tls_enabled: false
+    tls_enabled: true
     response_replacements:
       - source: https://online.honey.school
         target: https://online.honeyschool.ru
@@ -27,7 +27,7 @@ rf_edge_routes:
     origin_hostname: key.honey.school
     certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
     kind: application
-    tls_enabled: false
+    tls_enabled: true
     response_replacements:
       - source: https://key.honey.school
         target: https://key.honeyschool.ru

@@ -52,23 +52,11 @@ The live stage activated on 2026-07-25 owns `honeyschool.ru`, `www.honeyschool.r
 
 The Dynadot `ops.honey.school` record is an exact A record for `94.102.89.213`. Selectel exposes only the `playsay` realm and Keycloak theme resources: `/keycloak/realms/playsay`, `/keycloak/realms/playsay/` and `/keycloak/resources/`. The root, `/keycloak/admin/` and other realms, including `master`, return 404. The canonical issuer remains `https://ops.honey.school/keycloak/realms/playsay`; clients and tokens must not add or accept a second issuer. The independent certificate is stored at `/etc/letsencrypt/live/ops.honey.school`, expires on 2026-10-23 and renews through the shared HTTP ACME webroot. `certbot renew --dry-run` succeeds for both live certificates, and the deploy hook validates and reloads nginx after renewal.
 
-The direct production origins `online.honey.school` and `key.honey.school` remain on AX41 and must not be changed when the Russian aliases are activated. Selectel has HTTP/ACME-ready proxy routes for `online.honeyschool.ru` and `key.honeyschool.ru`; each preserves the corresponding `.school` Host/SNI upstream, verifies AX41 TLS and rewrites absolute application/websocket URLs back to the `.ru` alias. Forced-resolution smoke returned the complete web JS (`1,157,070` bytes) and keyboard JS (`356,669` bytes). The frontends derive login and logout callbacks from `window.location.origin`, and `scripts/configure-keycloak-prod-rf-aliases.sh` idempotently adds both aliases to the existing production client without changing its issuer. `dev.*`, `jenkins.honey.school` and `hooks.honey.school` remain directly on AX41.
+The direct production origins `online.honey.school` and `key.honey.school` remain on AX41 and must not be changed when the Russian aliases are activated. On 2026-07-25 the exact REG.RU A records `online.honeyschool.ru -> 94.102.89.213` and `key.honeyschool.ru -> 94.102.89.213` became authoritative, and both Selectel proxy routes were activated over HTTPS. Each preserves the corresponding `.school` Host/SNI upstream, verifies AX41 TLS and rewrites absolute application/websocket URLs back to the `.ru` alias. Public full-transfer smoke returned the complete web JS (`1,157,070` bytes), web CSS (`226,388` bytes), keyboard JS (`356,669` bytes) and keyboard CSS (`64,663` bytes). HTTP redirects to HTTPS, TLS 1.2 succeeds and TLS 1.3 is rejected for both aliases.
 
-To activate the two application aliases, add exact REG.RU A records `online -> 94.102.89.213` and `key -> 94.102.89.213` with the zone's five-minute TTL. Do not add or change records in the `honey.school` zone. After both A records resolve to Selectel, issue the independent certificates:
+The independent certificates are stored at `/etc/letsencrypt/live/online.honeyschool.ru` and `/etc/letsencrypt/live/key.honeyschool.ru`; both expire on 2026-10-23. Targeted renewal dry-runs succeed, the Certbot timer and nginx deployment hook are active, and a second Ansible apply returns `changed=0`. The frontends derive login and logout callbacks from `window.location.origin`, and `scripts/configure-keycloak-prod-rf-aliases.sh` idempotently adds both aliases to the existing production client without changing its issuer. PKCE authorization smoke for both `.ru` callbacks returns the Keycloak login page. `dev.*`, `jenkins.honey.school` and `hooks.honey.school` remain directly on AX41.
 
-```bash
-certbot certonly --webroot \
-  -w /var/www/playsay-rf-edge-acme \
-  --cert-name online.honeyschool.ru \
-  -d online.honeyschool.ru
-
-certbot certonly --webroot \
-  -w /var/www/playsay-rf-edge-acme \
-  --cert-name key.honeyschool.ru \
-  -d key.honeyschool.ru
-```
-
-Then set `tls_enabled: true` for both routes in `ansible/group_vars/rf_edges.yaml`, apply `playbooks/rf-edge.yaml`, run targeted `certbot renew --dry-run` for both certificates, and repeat full-bundle plus login acceptance from a Russian Chrome/incognito connection without VPN. The short HTTP-only staging state exists solely so HTTP-01 can succeed before nginx references certificate files.
+Final acceptance still requires complete login and application loading from a Russian Chrome/incognito connection without VPN. During initial DNS propagation, Dynadot anycast nodes intermittently alternated the previous `ops.honey.school -> honey.school` CNAME and the new exact A record `ops.honey.school -> 94.102.89.213`, even under the same SOA serial. Before declaring the RF login path accepted, repeat authoritative and public resolver queries until they consistently return the Selectel A record; do not introduce a second issuer as a workaround.
 
 Apply only the Russian ingress role without touching Docker, k3s, Amnezia or the existing `play-and-say.ru` vhost:
 
