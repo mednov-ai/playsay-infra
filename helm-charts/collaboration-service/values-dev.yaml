@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-codex-separate-jenkins-ci-1"
+  tag: "collab-dev-2"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-codex-separate-jenkins-ci-1
-  number: "1"
-  branch: codex/separate-jenkins-ci
-  branchLabel: collab-codex-separate-jenkins-ci
-  commit: 51c6e225ab9a74b7c6ddff6925a1ca2e6eadd51f
-  commitShort: "51c6e225ab9a"
+  name: collab-dev-2
+  number: "2"
+  branch: develop
+  branchLabel: collab-dev
+  commit: 0b4b30f86d960f68a6e58651b40cf815da0170fc
+  commitShort: "0b4b30f86d96"
 service:
   type: NodePort
   nodePort: 32086
