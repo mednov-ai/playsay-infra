@@ -55,6 +55,14 @@ emailService:
     userId: ""
     apiKeyKey: unisender-api-key
     webhookUrl: ""
+  mailjet:
+    apiBaseUrl: https://api.mailjet.com
+    apiKeyKey: mailjet-api-key
+    secretKeyKey: mailjet-secret-key
+    environment: local
+    webhookUrl: ""
+    webhookUsernameKey: mailjet-webhook-username
+    webhookPasswordKey: mailjet-webhook-password
 
 runtime:
   javaToolOptions: ""

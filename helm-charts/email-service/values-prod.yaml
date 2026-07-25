@@ -24,7 +24,7 @@ database:
   hikariMaxPoolSize: "3"
 emailService:
   existingSecret: playsay-email
-  deliveryProvider: unisender-api
+  deliveryProvider: mailjet-api
   fromName: Play&Say
   defaultReplayTtl: PT72H
   providerTrackingTtl: PT72H
@@ -36,6 +36,9 @@ emailService:
     apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
     userId: "8236338"
     webhookUrl: https://online.honey.school/api/webhooks/unisender
+  mailjet:
+    environment: prod
+    webhookUrl: https://online.honey.school/api/webhooks/mailjet
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=45 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:

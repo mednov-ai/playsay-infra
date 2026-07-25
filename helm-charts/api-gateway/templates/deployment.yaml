@@ -179,6 +179,18 @@ spec:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.serviceTokenKey | quote }}
                   optional: true
+            - name: PLAYSAY_EMAIL_MAILJET_WEBHOOK_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.mailjetWebhookUsernameKey | quote }}
+                  optional: true
+            - name: PLAYSAY_EMAIL_MAILJET_WEBHOOK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.emailService.existingSecret | quote }}
+                  key: {{ .Values.emailService.mailjetWebhookPasswordKey | quote }}
+                  optional: true
             - name: PLAYSAY_CHAT_EMAIL_INITIAL_DELAY
               value: {{ .Values.chatEmail.initialDelay | quote }}
             - name: PLAYSAY_CHAT_EMAIL_COOLDOWN
