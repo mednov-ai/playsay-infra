@@ -3,11 +3,54 @@ map $http_upgrade $playsay_rf_connection_upgrade {
     '' close;
 }
 
+{% macro proxy_to_origin(route, forwarded_proto) %}
+        proxy_pass https://{{ rf_edge_origin_address }};
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name {{ route.origin_tls_hostname | default(route.origin_hostname | default(route.hostname)) }};
+        proxy_ssl_protocols TLSv1.2;
+        proxy_ssl_session_reuse off;
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_set_header Host {{ route.origin_hostname | default(route.hostname) }};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_rf_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_request_buffering off;
+        proxy_buffering off;
+{% endmacro %}
+
+{% macro keycloak_locations(route, forwarded_proto) %}
+    location = /keycloak/realms/{{ route.realm }} {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location ^~ /keycloak/realms/{{ route.realm }}/ {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location ^~ /keycloak/resources/ {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location / {
+        return 404;
+    }
+{% endmacro %}
+
 {% for route in rf_edge_routes %}
+{% set route_server_names = [route.hostname] + (route.aliases | default([])) %}
+{% set route_certificate_directory = route.certificate_directory | default(rf_edge_certificate_directory) %}
 server {
     listen 80;
     listen [::]:80;
-    server_name {{ route.hostname }};
+    server_name {{ route_server_names | join(' ') }};
 
     location ^~ /.well-known/acme-challenge/ {
         root {{ rf_edge_acme_webroot }};
@@ -15,56 +58,38 @@ server {
         try_files $uri =404;
     }
 
+{% if rf_edge_tls_enabled | bool %}
     location / {
         return 301 https://$host$request_uri;
     }
+{% elif route.kind == 'keycloak' %}
+{{ keycloak_locations(route, 'http') }}
+{% else %}
+    location / {
+{{ proxy_to_origin(route, 'http') }}
+    }
+{% endif %}
 }
 
+{% if rf_edge_tls_enabled | bool %}
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name {{ route.hostname }};
+    server_name {{ route_server_names | join(' ') }};
 
-    ssl_certificate {{ rf_edge_certificate_directory }}/fullchain.pem;
-    ssl_certificate_key {{ rf_edge_certificate_directory }}/privkey.pem;
+    ssl_certificate {{ route_certificate_directory }}/fullchain.pem;
+    ssl_certificate_key {{ route_certificate_directory }}/privkey.pem;
     ssl_protocols {{ rf_edge_tls_protocols }};
     ssl_session_cache shared:PlaySayRFTLS:10m;
     ssl_session_timeout 1d;
 
 {% if route.kind == 'keycloak' %}
-    location = /keycloak {
-        return 301 /keycloak/;
-    }
-
-    location /keycloak/ {
+{{ keycloak_locations(route, 'https') }}
 {% else %}
     location / {
-{% endif %}
-        proxy_pass https://{{ rf_edge_origin_address }};
-        proxy_http_version 1.1;
-        proxy_ssl_server_name on;
-        proxy_ssl_name {{ route.hostname }};
-        proxy_ssl_protocols TLSv1.2;
-        proxy_ssl_verify on;
-        proxy_ssl_verify_depth 3;
-        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $playsay_rf_connection_upgrade;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-        proxy_request_buffering off;
-        proxy_buffering off;
-    }
-
-{% if route.kind == 'keycloak' %}
-    location / {
-        return 404;
+{{ proxy_to_origin(route, 'https') }}
     }
 {% endif %}
 }
+{% endif %}
 {% endfor %}

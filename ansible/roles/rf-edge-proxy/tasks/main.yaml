@@ -3,9 +3,13 @@
   ansible.builtin.apt:
     name:
       - ca-certificates
+      - certbot
       - nginx
+      - python3-certbot-nginx
+      - ufw
     state: present
-    update_cache: false
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: Verify the Russian ingress variables are available
   ansible.builtin.assert:
@@ -14,7 +18,18 @@
       - rf_edge_certificate_directory is defined
       - rf_edge_origin_address is defined
       - rf_edge_routes is defined
+      - rf_edge_tls_enabled is defined
       - rf_edge_tls_protocols is defined
+
+- name: Verify every Russian ingress route
+  ansible.builtin.assert:
+    that:
+      - item.hostname is defined
+      - item.kind in ['application', 'keycloak']
+      - item.kind != 'keycloak' or item.realm is defined
+  loop: "{{ rf_edge_routes }}"
+  loop_control:
+    label: "{{ item.hostname | default('undefined') }}"
 
 - name: Create the Russian ingress ACME webroot
   ansible.builtin.file:
@@ -24,32 +39,97 @@
     group: www-data
     mode: "0755"
 
-- name: Create the Russian ingress certificate directory
-  ansible.builtin.file:
-    path: "{{ rf_edge_certificate_directory }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
-
 - name: Check the Russian ingress certificate chain
   ansible.builtin.stat:
-    path: "{{ rf_edge_certificate_directory }}/fullchain.pem"
-  register: rf_edge_fullchain
+    path: "{{ item.certificate_directory | default(rf_edge_certificate_directory) }}/fullchain.pem"
+  loop: "{{ rf_edge_routes }}"
+  loop_control:
+    label: "{{ item.hostname }}"
+  register: rf_edge_fullchains
+  when: rf_edge_tls_enabled | bool
 
 - name: Check the Russian ingress private key
   ansible.builtin.stat:
-    path: "{{ rf_edge_certificate_directory }}/privkey.pem"
-  register: rf_edge_privkey
+    path: "{{ item.certificate_directory | default(rf_edge_certificate_directory) }}/privkey.pem"
+  loop: "{{ rf_edge_routes }}"
+  loop_control:
+    label: "{{ item.hostname }}"
+  register: rf_edge_privkeys
+  when: rf_edge_tls_enabled | bool
 
-- name: Require a staged production certificate before enabling the ingress
+- name: Require every production certificate chain before enabling the ingress
   ansible.builtin.assert:
     that:
-      - rf_edge_fullchain.stat.exists
-      - rf_edge_privkey.stat.exists
+      - item.stat.exists
     fail_msg: >-
-      Stage the current honey.school certificate and private key in
-      {{ rf_edge_certificate_directory }} before applying this role.
+      Obtain the Russian ingress certificate chain for {{ item.item.hostname }} in
+      {{ item.item.certificate_directory | default(rf_edge_certificate_directory) }}
+      before enabling TLS.
+  loop: "{{ rf_edge_fullchains.results }}"
+  loop_control:
+    label: "{{ item.item.hostname }}"
+  when: rf_edge_tls_enabled | bool
+
+- name: Require every production certificate private key before enabling the ingress
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: >-
+      Obtain the Russian ingress certificate key for {{ item.item.hostname }} in
+      {{ item.item.certificate_directory | default(rf_edge_certificate_directory) }}
+      before enabling TLS.
+  loop: "{{ rf_edge_privkeys.results }}"
+  loop_control:
+    label: "{{ item.item.hostname }}"
+  when: rf_edge_tls_enabled | bool
+
+- name: Disable the packaged nginx default site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Allow SSH through the Russian ingress firewall
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Allow public web traffic through the Russian ingress firewall
+  community.general.ufw:
+    rule: allow
+    name: Nginx Full
+
+- name: Enable the Russian ingress firewall
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Enforce the Russian ingress TLS policy in the nginx HTTP context
+  ansible.builtin.lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^\s*ssl_protocols\s+'
+    line: "\tssl_protocols {{ rf_edge_tls_protocols }};"
+    insertafter: '^\s*http\s*\{'
+  notify: reload nginx
+
+- name: Remove the superseded Russian ingress TLS override
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/00-playsay-rf-edge-tls.conf
+    state: absent
+  notify: reload nginx
+
+- name: Reload nginx after certificate renewal
+  ansible.builtin.copy:
+    dest: /etc/letsencrypt/renewal-hooks/deploy/playsay-rf-edge-nginx
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      set -eu
+      /usr/sbin/nginx -t
+      /usr/bin/systemctl reload nginx
 
 - name: Render the Russian production ingress routes
   ansible.builtin.template:
