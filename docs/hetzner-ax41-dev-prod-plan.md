@@ -210,9 +210,9 @@ Prod:
 - use a separate Sealed Secrets private key, ArgoCD instance, PostgreSQL, Keycloak, MinIO, LiveKit, coturn secret and external-provider credentials;
 - read images from GHCR using a prod-only pull credential;
 - deploy only immutable image digests already verified in dev;
-- track the matching protected `release/<version>.<subversion>.<patch>` branch; production sync is manual after the release promotion gate. Neither `main` nor `develop` is a direct production build source.
+- track the matching protected `release/<version>.<subversion>.<patch>` branch; a platform release push prepares only that production GitOps branch, while production sync remains manual after review and migration approval. Neither `main` nor `develop` is a direct production build source.
 
-Changing an image tag is not a production promotion. A release starts from a protected numeric three-part branch such as `release/1.001.00` in `playsay-platform`; Jenkins labels its candidates `rel_1.001.00-N` and publishes immutable digests. After release tests, an explicitly approved promotion records the selected digest in the matching protected `playsay-infra` release branch and manually syncs prod. The deployed release branch remains available while that version is running. `main`, `develop`, free-form `release/*` names and direct `hotfix/*` builds cannot deploy prod; a hotfix must become a new three-part release branch. A prod rollback points the matching release values back to the previous known-good digest or previous retained release branch; images are not rebuilt during rollback.
+Changing an image tag is not a production deployment. A release starts from a protected numeric three-part branch such as `release/1.001.05` in `playsay-platform`; Jenkins labels its builds, publishes immutable digests, and writes only those digests to the matching protected `playsay-infra` release branch. Numeric release builds never update dev. Jenkins has no production cluster or database credentials: an operator reviews the completed infra release diff, approves/runs migrations, manually syncs prod, verifies smoke, and records the accepted version in `argocd-apps/prod/current-release.txt`. The deployed release branch remains available while that version is running. `main`, `develop`, free-form `release/*` names and direct `hotfix/*` builds cannot deploy prod; a hotfix must become a new three-part release branch. A prod rollback points back to the previous known-good digest or previous retained release branch; images are not rebuilt during rollback.
 
 ### 5.1 Selective production seed from dev
 
@@ -408,8 +408,8 @@ Implementation note: the server tunnel and both permanent peer definitions are a
 - [ ] **5.3** Recreate dev namespaces, operators, applications and Headlamp from the pinned Git commit; recreate Jenkins separately on `playsay-ci`; do not restore Kubernetes or Jenkins controller state.
 - [ ] **5.4** Add complete `argocd-apps/prod` and prod Helm values using independent credentials, storage, Keycloak, LiveKit/TURN and external integrations. Data-plane apps and digest-pinned values for completed release candidates are present; email/payment deployment remains disabled until separate prod provider credentials are supplied.
 - [ ] **5.5** Bootstrap prod k3s with pod/service CIDRs `10.44.0.0/16` and `10.45.0.0/16`, a new prod Sealed Secrets key and independent ArgoCD.
-- [ ] **5.6** Enforce dev auto-sync from `develop`; accept prod candidates only from protected branches matching `release/<numeric>.<numeric>.<numeric>`, use the matching `playsay-infra` release branch with manual ArgoCD sync, and promote immutable digests rather than mutable tags.
-- [ ] **5.7** Add branch validation so free-form `release/*`, `main`, `develop` and `hotfix/*` cannot update prod values; a hotfix must be released as a new three-part release branch.
+- [x] **5.6** Enforce environment routing: dev auto-syncs from `develop`; protected branches matching `release/<numeric>.<numeric>.<numeric>` write immutable digests only to the matching `playsay-infra` production branch, with manual ArgoCD sync.
+- [x] **5.7** Validate branch names so free-form `release/*`, `main`, `develop` and `hotfix/*` cannot update prod values; a hotfix must be released as a new three-part release branch.
 - [ ] **5.8** Verify no network path from dev workloads to prod private services except explicitly approved shared egress.
 
 **Depends on:** Phase 4.
@@ -457,7 +457,7 @@ Implementation note: the server tunnel and both permanent peer definitions are a
 - [ ] **9.1** Generate the protected immutable-ID allowlist from a read-only source snapshot and obtain a two-person review of the seven users/material/object scope.
 - [ ] **9.2** Rehearse the filtered seed into a disposable clean prod database/realm/bucket and run every Phase 6 verification without DNS changes.
 - [ ] **9.3** Create the independent break-glass prod administrator and prod-only secrets/integrations; do not copy dev secrets.
-- [ ] **9.4** Build from a protected `release/<version>.<subversion>.<patch>` branch, promote its tested `rel_<version>.<subversion>.<patch>-N` immutable digest through the matching infra release branch, manually sync prod and verify rollback to the previous digest/release.
+- [ ] **9.4** Build from a protected `release/<version>.<subversion>.<patch>` branch, verify Jenkins wrote its immutable digests only to the matching infra release branch, manually sync prod after migration approval, and verify rollback to the previous digest/release.
 - [ ] **9.5** At final cutoff, briefly stop source Keycloak for the offline export, create the final protected bundle, restore the source service and import only into clean prod.
 - [x] **9.6** Verify exactly seven migrated human users, exactly 22 Maria materials, 51 assets and 11 enrichments; verify `hello` and all excluded history are absent. Repeated SQL and referential-integrity checks passed, and all 51 MinIO objects match source SHA-256 bytes.
 - [ ] **9.7** Verify Maria and one reviewed student can sign in with existing credentials, render materials and retrieve every referenced object.

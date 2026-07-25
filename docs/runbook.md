@@ -32,7 +32,9 @@ On 2026-07-20 Ubuntu was updated to kernel `6.8.0-136-generic`; the corrected re
 
 The MacBook and phone WireGuard profiles are stored outside Git at `/Users/evgeniymednov/Backups/PlayAndSay/wireguard/macbook.conf` and `phone.conf`. Import each profile into a WireGuard-compatible client and activate it; gray/private client IP addresses are expected because `PersistentKeepalive=25` lets both clients initiate the tunnel to public endpoint `65.109.55.110:51820`. After activation, open `https://10.250.0.1:9090`, sign in as `playsay`, and retrieve its generated password from the macOS Keychain item `PlayAndSay AX41 Cockpit`. The Cockpit certificate is initially self-signed. Confirm a server-side handshake for both peers before disabling public SSH. Do not publish port 9090 in DNS or the public firewall.
 
-Production is built only from protected numeric three-part branches named `release/<version>.<subversion>.<patch>`, for example `release/1.001.00`. Jenkins produces immutable `rel_1.001.00-N` candidates; after release verification, the selected digest is recorded in the matching `playsay-infra` release branch and manually synced by prod ArgoCD. Never deploy prod directly from `main`, `develop`, a free-form release name or `hotfix/*`; publish a hotfix through a new versioned release branch.
+Branch routing is strict. `develop`, `codex/*`, `feature/*` and `hotfix/*` publish to dev only. A protected numeric three-part branch named `release/<version>.<subversion>.<patch>`, for example `release/1.001.05`, publishes only a production GitOps candidate and never changes `values-dev.yaml`, runs a dev migration, or waits for a dev rollout. Free-form `release/*` names fail before dispatch.
+
+For a numeric release, Jenkins builds the affected images, records each Kaniko-produced immutable `sha256` digest in `values-prod.yaml`, and pushes the result to the matching `playsay-infra` release branch. If that infra branch does not exist, Jenkins creates it from current `develop`, overlays only the running production `image`/`build` metadata from the branch named in `argocd-apps/prod/current-release.txt` (preserving reviewed current infra configuration from `develop`), and rewrites all prod ArgoCD `targetRevision` values to the new release. Jenkins has no production kubeconfig and cannot sync the prod cluster. After all release module jobs are green, an operator reviews the complete infra release diff, performs the required production database migration approval, switches/syncs prod ArgoCD to that exact branch, runs production smoke, and only then updates `argocd-apps/prod/current-release.txt` on `develop`. Never deploy prod directly from `main`, `develop`, a free-form release name or `hotfix/*`; publish a hotfix through a new numeric release branch.
 
 The approved initial prod seed is selective: Maria Mednova, the six students attached to her at cutoff, 22 Maria-owned materials excluding the test material `hello`, 51 referenced assets/MinIO objects and 11 HTML-game enrichments. Execute imports only from a reviewed protected manifest of immutable Keycloak subjects, application UUIDs, material UUIDs and object checksums; never select by names during the write step. Do not copy other dev users or dev lesson/assignment/submission/chat history. The source remains authoritative until the final cutoff and the detailed plan's count, login, referential-integrity and object-restore gates pass.
 
@@ -432,10 +434,10 @@ Keycloak client wiring is managed by:
 
 The `playsay-web` public client must allow `https://key.play-and-say.ru/*`, `http://localhost:5175/*`, `http://localhost:4175/*`, and the same `127.0.0.1` origins. The trainer uses Authorization Code + PKCE for saved progress and does not use local password/JWT auth. Anonymous practice uses bundled frontend chord sets and must not call protected `/api/*` endpoints without a token.
 
-Keyboard deploys run through separate downstream Jenkins jobs. For normal `develop`/`release/*` pushes, `playsay-platform-dispatch-develop` triggers only the affected keyboard job; manual runs can still use the jobs directly with `BRANCH_NAME` and optional `GITHUB_AFTER`:
+Keyboard deploys run through separate downstream Jenkins jobs. For normal `develop`/numeric `release/*` pushes, `playsay-platform-dispatch-develop` triggers only the affected keyboard job; manual runs can still use the jobs directly with `BRANCH_NAME` and optional `GITHUB_AFTER`:
 
-- `playsay-keyboard-backend-develop`: tests `:keyboard-service`, applies XML Liquibase to `keyboard`, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-service`, updates `helm-charts/keyboard-service/values-dev.yaml`, waits for rollout.
-- `playsay-keyboard-frontend-develop`: runs `keyboard-app` lint/test/build, builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-app`, updates `helm-charts/keyboard-app/values-dev.yaml`, waits for rollout, then browser-smokes `https://key.play-and-say.ru`.
+- `playsay-keyboard-backend-develop`: tests `:keyboard-service` and builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-service`; dev branches also apply dev Liquibase, update `values-dev.yaml`, and wait for dev rollout, while numeric release branches pin the digest in matching `values-prod.yaml`.
+- `playsay-keyboard-frontend-develop`: runs `keyboard-app` lint/test/build and builds/pushes `ghcr.io/mednov-ai/playsay-keyboard-app`; dev branches update `values-dev.yaml`, wait for rollout, and browser-smoke dev, while numeric release branches pin the production digest without using dev runtime checks.
 
 Check rollout:
 
@@ -1083,21 +1085,21 @@ Jenkins platform jobs are configured by:
 
 The bootstrap/add-ons script runs it automatically after Jenkins is installed. The configured jobs are:
 
-- `playsay-platform-dispatch-develop`: lightweight Generic Webhook Trigger receiver for `develop` and `release/*`;
-- `playsay-platform-develop`: manual full core rebuild compatibility job; the dispatcher does not call it;
-- `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/api-gateway/values-dev.yaml`, waits for rollout;
-- `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, runs its app DB Liquibase changelog when changed, builds/pushes `playsay-ai-tutor-service`, updates only `helm-charts/ai-tutor-service/values-dev.yaml`, waits for rollout;
-- `playsay-vocabulary-service-develop`: tests/packages `vocabulary-service`, applies its Liquibase changelog, builds/pushes `playsay-vocabulary-service`, updates only `helm-charts/vocabulary-service/values-dev.yaml`, waits for rollout;
-- `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes image, updates only `helm-charts/web-app/values-dev.yaml`, waits for rollout, then runs Sprint 5/Sprint 6 browser smoke;
-- `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes image, updates only `helm-charts/collaboration-service/values-dev.yaml`, waits for rollout;
-- `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes image, updates only `helm-charts/media-service/values-dev.yaml`, waits for rollout;
-- `playsay-payment-service-develop`: tests/packages `payment-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/payment-service/values-dev.yaml`, waits for rollout;
-- `playsay-registration-service-develop`: tests/packages `registration-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/registration-service/values-dev.yaml`, waits for rollout;
-- `playsay-email-service-develop`: tests/packages `email-service`, runs owned app DB migrations when changelogs changed, builds/pushes image, updates only `helm-charts/email-service/values-dev.yaml`, waits for rollout;
+- `playsay-platform-dispatch-develop`: branch-aware Generic Webhook Trigger receiver for `develop` and numeric `release/*`;
+- `playsay-platform-develop`: manual full dev rebuild compatibility job; it rejects release branches and the dispatcher does not call it;
+- `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, builds/pushes the image, then routes its reference to dev or the matching production release;
+- `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-vocabulary-service-develop`: tests/packages `vocabulary-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-payment-service-develop`: tests/packages `payment-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-registration-service-develop`: tests/packages `registration-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-email-service-develop`: tests/packages `email-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-keyboard-backend-develop`: downstream keyboard backend job;
 - `playsay-keyboard-frontend-develop`: downstream keyboard frontend job.
 
-The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, optional `FORCE_TARGETS=all|target1,target2`, and `MAX_PARALLEL_MODULE_JOBS` fixed to `1`. Its analysis stage uses a small temporary agent; the downstream stage has `agent none`, so global Kubernetes cloud `containerCap=1` does not deadlock while the dispatcher waits. Module jobs are manual/dispatcher-only and do not have GitHub webhook triggers. All module jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed. `playsay-platform-develop` stays available as a manual full rebuild safety valve with `AFFECTED_TARGETS=all`, but it is no longer part of automatic dispatch.
+The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, optional `FORCE_TARGETS=all|target1,target2`, and `MAX_PARALLEL_MODULE_JOBS` fixed to `1`. Its analysis stage uses a small temporary agent; the downstream stage has `agent none`, so global Kubernetes cloud `containerCap=1` does not deadlock while the dispatcher waits. Module jobs are manual/dispatcher-only and do not have GitHub webhook triggers. All module jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed. `playsay-platform-develop` stays available as a manual dev-only full rebuild safety valve with `AFFECTED_TARGETS=all`, but it is no longer part of automatic dispatch and rejects `release/*`.
 
 Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefixes:
 
@@ -1113,9 +1115,9 @@ Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefi
 
 Non-`develop` labels prefix the branch with the module name, for example `web-feature-task-1-N` or `api-rel-1.001.00-N`, sanitized for Docker/Git/Kubernetes label safety.
 
-Deployable dev branches are `develop`, `codex/*`, `feature/*`, `release/*`, and `hotfix/*`. Other branches still run build/test stages but skip image publishing, source tagging, DB migrations, and dev image tag updates.
+Deployable dev branches are `develop`, `codex/*`, `feature/*`, and `hotfix/*`. Strict numeric `release/<number>.<number>.<number>` branches publish images and matching `values-prod.yaml` digests only; they never update dev, run dev migrations, or use the dev kubeconfig for rollout. Other branches run build/test stages but skip image publishing, source tagging, and GitOps updates.
 
-The dispatcher uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. It extracts `ref` into `BRANCH_NAME`, reads GitHub `before`/`after`, rejects `refs/tags/*`, and ignores branch deletion events where `after` is forty zeroes. It runs `scripts/ci/detect-affected-targets.mjs` over `GITHUB_BEFORE..GITHUB_AFTER`, starts only the needed downstream jobs sequentially, waits for all results, and marks the dispatcher build failed if any downstream job is not `SUCCESS`. Tag events are intentionally not used for module selection, because Jenkins creates build/deployment tags itself.
+The dispatcher uses Generic Webhook Trigger to run automatically for GitHub push events on `develop` and `release/*`. It extracts `ref` into `BRANCH_NAME`, reads GitHub `before`/`after`, rejects `refs/tags/*`, rejects non-numeric release names, and ignores branch deletion events where `after` is forty zeroes. It runs `scripts/ci/detect-affected-targets.mjs` over `GITHUB_BEFORE..GITHUB_AFTER`, starts only the needed downstream jobs sequentially, waits for all results, and marks the dispatcher build failed if any downstream job is not `SUCCESS`. Tag events are intentionally not used for module selection, because Jenkins creates build/deployment tags itself.
 
 Affected-target policy:
 
@@ -1209,7 +1211,7 @@ Current GitHub webhook for `playsay-platform` after the AX41 cutover:
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
-- Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
+- Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The webhook filter admits `release/*`, while `Jenkinsfile.dispatcher` enforces the stricter numeric three-part release format before any module runs. The job filter remains `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
 - Secret: stored in Jenkins credential `github-webhook-token` and Kubernetes secret `playsay-jenkins-credentials:webhook-token`; the value is URL-encoded in GitHub and is never written to Git or evidence.
 - Verification: GitHub ping delivery returned HTTP 200 on 2026-07-21.
 

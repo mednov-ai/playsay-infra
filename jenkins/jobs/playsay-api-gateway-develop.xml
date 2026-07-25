@@ -7,7 +7,7 @@
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
           <name>BRANCH_NAME</name>
-          <description>Git branch to build and deploy to dev.</description>
+          <description>Git branch to build; dev branches deploy to dev and numeric release branches prepare production.</description>
           <defaultValue>develop</defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
