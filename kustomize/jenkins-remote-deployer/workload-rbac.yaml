@@ -1,0 +1,54 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: playsay-ci-rollout-reader
+  namespace: playsay-dev
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - delete
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: playsay-ci-rollout-reader
+  namespace: playsay-dev
+subjects:
+  - kind: ServiceAccount
+    name: playsay-ci-deployer
+    namespace: playsay-ci-access
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: playsay-ci-rollout-reader

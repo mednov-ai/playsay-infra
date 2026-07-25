@@ -1,6 +1,7 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
   tag: "0.1.0"
+  digest: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

@@ -1,0 +1,101 @@
+keycloak:
+  global:
+    security:
+      allowInsecureImages: true
+
+  replicaCount: 1
+  production: true
+  httpEnabled: true
+  httpRelativePath: /keycloak/
+  proxyHeaders: xforwarded
+  hostname: https://ops.honey.school/keycloak
+  hostnameStrict: true
+
+  image:
+    repository: bitnamilegacy/keycloak
+
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+
+  cache:
+    enabled: false
+
+  service:
+    type: NodePort
+    ports:
+      http: 80
+    nodePorts:
+      http: "32084"
+
+  resourcesPreset: none
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: "2"
+      memory: 1536Mi
+
+  podAnnotations:
+    checksum/playsay-theme: b2dcb323fbce5388706bea4be61d83bf4cde73c6f9eeaa6c97c51222bb32a8ee
+
+  extraEnvVars:
+    - name: KC_SPI_THEME_CACHE_THEMES
+      value: "false"
+    - name: KC_SPI_THEME_CACHE_TEMPLATES
+      value: "false"
+    - name: KC_SPI_THEME_STATIC_MAX_AGE
+      value: "-1"
+
+  extraVolumes:
+    - name: playsay-theme
+      configMap:
+        name: keycloak-playsay-theme
+        items:
+          - key: theme.properties
+            path: login/theme.properties
+          - key: template.ftl
+            path: login/template.ftl
+          - key: messages_en.properties
+            path: login/messages/messages_en.properties
+          - key: messages_ru.properties
+            path: login/messages/messages_ru.properties
+          - key: messages_de.properties
+            path: login/messages/messages_de.properties
+          - key: messages_fr.properties
+            path: login/messages/messages_fr.properties
+          - key: playsay-login.css
+            path: login/resources/css/playsay-login.css
+          - key: logo.jpg
+            path: login/resources/img/logo.jpg
+
+  extraVolumeMounts:
+    - name: playsay-theme
+      mountPath: /opt/bitnami/keycloak/themes/playsay
+      readOnly: true
+
+  postgresql:
+    enabled: true
+    architecture: standalone
+    image:
+      repository: bitnamilegacy/postgresql
+    auth:
+      username: bn_keycloak
+      database: bitnami_keycloak
+      existingSecret: keycloak-postgresql
+      secretKeys:
+        userPasswordKey: password
+    primary:
+      resourcesPreset: none
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 768Mi
+      persistence:
+        enabled: true
+        size: 10Gi

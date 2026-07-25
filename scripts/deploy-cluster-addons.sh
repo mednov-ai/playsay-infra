@@ -132,7 +132,7 @@ fi
 if [[ "$INSTALL_CERT_MANAGER" == "true" ]]; then
   helm repo add jetstack https://charts.jetstack.io >/dev/null
 fi
-helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets >/dev/null
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets >/dev/null
 helm repo add argo https://argoproj.github.io/argo-helm >/dev/null
 if [[ "$INSTALL_JENKINS" == "true" ]]; then
   helm repo add jenkins https://charts.jenkins.io >/dev/null
@@ -293,28 +293,6 @@ roleRef:
   kind: Role
   name: jenkins-dev-rollout-reader
 EOF
-
-  kubectl apply -k "$ROOT_DIR/kustomize/jenkins-capacity-manager"
-  if ! kubectl -n jenkins get configmap playsay-ci-capacity-state >/dev/null 2>&1; then
-    kubectl -n jenkins create configmap playsay-ci-capacity-state \
-      --from-literal=active=false \
-      --from-literal=holder= \
-      --from-literal=agentPod= \
-      --from-literal=deadlineEpoch=0 \
-      --from-literal=replicas= \
-      --from-literal=breachSinceEpoch=0
-  fi
-  if ! kubectl -n jenkins get lease playsay-ci-capacity >/dev/null 2>&1; then
-    kubectl -n jenkins apply -f - <<EOF
-apiVersion: coordination.k8s.io/v1
-kind: Lease
-metadata:
-  name: playsay-ci-capacity
-spec:
-  holderIdentity: ""
-  leaseDurationSeconds: 2400
-EOF
-  fi
 
   helm upgrade --install jenkins jenkins/jenkins \
     --namespace jenkins \

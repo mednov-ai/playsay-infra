@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: playsay-liquibase-runner
+  namespace: playsay-dev
+data:
+  run.sh: |
+    #!/bin/sh
+    set -eu
+    master="$(find /liquibase/changelog -type f -name db.changelog-master.xml -print -quit)"
+    [ -n "$master" ] || {
+      echo "No db.changelog-master.xml found in the reviewed changelog volume." >&2
+      exit 2
+    }
+    changelog_file="${master#/liquibase/changelog/}"
+    common_args="--search-path=/liquibase/changelog --changelog-file=$changelog_file --classpath=/liquibase/lib/postgresql.jar --url=$PLAYSAY_DB_JDBC_URL --username=$PLAYSAY_DB_USERNAME --password=$PLAYSAY_DB_PASSWORD"
+    # shellcheck disable=SC2086
+    liquibase $common_args status --verbose
+    # shellcheck disable=SC2086
+    liquibase $common_args update

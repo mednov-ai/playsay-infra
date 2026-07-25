@@ -1,0 +1,36 @@
+#!/bin/sh
+set -eu
+
+network_name="${1:-}"
+operation="${2:-}"
+
+[ "$network_name" = "playsay-workloads" ] || exit 0
+
+apply_rule() {
+  if ! iptables -C LIBVIRT_FWI "$@" -j ACCEPT 2>/dev/null; then
+    iptables -I LIBVIRT_FWI 1 "$@" -j ACCEPT
+  fi
+}
+
+remove_rule() {
+  while iptables -C LIBVIRT_FWI "$@" -j ACCEPT 2>/dev/null; do
+    iptables -D LIBVIRT_FWI "$@" -j ACCEPT
+  done
+}
+
+case "$operation" in
+  started|reconnect)
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_prod_vm_address }} --dport 3478
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_prod_vm_address }} --dport 7881
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 3478
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 49160:49200
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 50000:50020
+    ;;
+  stopped)
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_prod_vm_address }} --dport 3478
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_prod_vm_address }} --dport 7881
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 3478
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 49160:49200
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport 50000:50020
+    ;;
+esac

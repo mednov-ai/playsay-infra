@@ -1,0 +1,16 @@
+---
+- name: Prepare the Play&Say AX41 virtualization host
+  hosts: ax41_hosts
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  roles:
+    - common
+    - libvirt-host
+    - wireguard
+    - ax41-firewall
+    - role: edge-proxy
+      tags:
+        - edge-proxy
+    - cockpit

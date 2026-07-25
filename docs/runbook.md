@@ -4,7 +4,86 @@
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
-The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses only `*.honey.school` with issuer `https://ops.honey.school/keycloak/realms/playsay`. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, or ArgoCD target revisions. The root `play-and-say.ru` site is outside both application-auth changes.
+## Active AX41 Dev/Prod Topology
+
+The active topology uses a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The current status and remaining tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
+
+AX41 at `65.109.55.110` serves `honey.school` production from `release/1.001.01`: the Ubuntu 24.04 physical host, healthy mdadm RAID1/ext4, KVM/QEMU/libvirt, OpenTofu, firewall, WireGuard and VPN-only Cockpit baseline are active. The NAT-backed `playsay-prod` (`10.60.0.20`, 8 vCPU/38 GiB), `playsay-dev` (`10.60.0.30`, 2 vCPU/10 GiB) and `playsay-ci` (`10.60.0.40`, 2 vCPU/8 GiB) guests are active and protected by separate OpenTofu states. Prod/dev run independent k3s, ArgoCD and Sealed Secrets controllers. CI runs only k3s, Sealed Secrets and the Git/JCasC-defined Jenkins controller; it has no product workloads, ArgoCD, Keycloak or MinIO. Prod has exactly seven human identities, 22 materials, 51 verified objects and 11 enrichments, with `hello` and dev history absent. All 15 prod ArgoCD apps are `Synced/Healthy`; web, keyboard, API, collaboration signaling, LiveKit signaling and forced TURN reach AX41. Canonical Keycloak is `ops.*/keycloak`; the explicit `key.*/keycloak` compatibility path remains only until owner-operated login/material acceptance. Both GitHub webhooks now use `hooks.honey.school` and returned HTTP 200 to GitHub ping deliveries. Email/payment provider workloads remain disabled until independent prod credentials are supplied. Object Storage remains a post-stabilization state/backup task, not a blocker to this cutover. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
+
+The full architecture, historical decisions and rollback contract are defined in [hetzner-ax41-dev-prod-plan.md](hetzner-ax41-dev-prod-plan.md), while the current executable checklist is [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md). Mark a task complete only after recording its exact Git revision and non-secret evidence location.
+
+The old VPS has only the short paid overlap remaining. Final source bundle `playsay-final-vps-v2-20260721T083819Z` has been copied off the VPS and fully decrypt/checksum/archive verified. Keep the VPS and old Jenkins available only as rollback through owner acceptance; delete neither without explicit owner approval. Amnezia is not migrated and ends with the VPS. AX41 administration uses its independent WireGuard management VPN.
+
+The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses direct `*.honey.school` origins plus the Russian `online.honeyschool.ru` and `key.honeyschool.ru` proxy aliases, all with the single issuer `https://ops.honey.school/keycloak/realms/playsay`. The two `.ru` aliases belong to the same production `playsay-web` client and are present in its redirect URIs, web origins and post-logout redirects. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, JWKS, or ArgoCD target revisions. Legacy Jenkins is manual-only and can build only the legacy branch. The root `play-and-say.ru` site is outside both application-auth changes.
+
+The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it was rebuilt from Git/JCasC without the old controller PVC. Affected-target collaboration delivery and release web/keyboard builds reached GHCR, Git and dev ArgoCD successfully. Its scoped kubeconfig can read rollout state and refresh named dev ArgoCD applications but cannot read dev secrets or access prod. GitHub no longer points at the old controller. Never expose the replacement UI publicly; use the management VPN at `jenkins.honey.school`. Only the exact generic-trigger and dev-ArgoCD webhook endpoints on `hooks.honey.school` are public. Database migrations still require redesign as in-dev Jobs before the temporary no-op capacity compatibility paths are removed.
+
+Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to rebuild dev and is documented in `migrations/ax41/evidence/20260720-safety-v3.md`. The newer final source cutoff is `playsay-final-vps-v2-20260721T083819Z`: its encrypted files are outside Git under `/Users/evgeniymednov/Backups/PlayAndSay/ax41-final-vps-20260721`, while the RSA private key is stored separately under `/Users/evgeniymednov/Backups/PlayAndSay/keys`. Transport/payload checksums, local RSA/AES decryption, PostgreSQL 17 source catalogs and both archives passed. Never commit or colocate the private key with an off-host copy of the bundle. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
+
+AX41 host automation is run from the `playsay-infra/ansible` directory so its configured role path is applied:
+
+```bash
+ansible-playbook \
+  -i inventories/hetzner-ax41/hosts.yaml \
+  playbooks/ax41-host.yaml
+```
+
+On 2026-07-20 Ubuntu was updated to kernel `6.8.0-136-generic`; the corrected reboot gate restored RAID, SSH, libvirt, WireGuard, UFW and VPN-only Cockpit automatically. Cockpit uses the `playsay-cockpit-vpn.service` late starter so its address-bound socket starts only after `wg0`; do not directly add an `After=wg-quick@wg0` dependency to `cockpit.socket`, because socket units are ordered before `sockets.target` and that creates a boot ordering cycle. The final complete Ansible run reported `changed=0`. RAID/SMART, firewall, reboot and VPN evidence is recorded at `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
+
+The MacBook and phone WireGuard profiles are stored outside Git at `/Users/evgeniymednov/Backups/PlayAndSay/wireguard/macbook.conf` and `phone.conf`. Import each profile into a WireGuard-compatible client and activate it; gray/private client IP addresses are expected because `PersistentKeepalive=25` lets both clients initiate the tunnel to public endpoint `65.109.55.110:51820`. After activation, open `https://10.250.0.1:9090`, sign in as `playsay`, and retrieve its generated password from the macOS Keychain item `PlayAndSay AX41 Cockpit`. The Cockpit certificate is initially self-signed. Confirm a server-side handshake for both peers before disabling public SSH. Do not publish port 9090 in DNS or the public firewall.
+
+Production is built only from protected numeric three-part branches named `release/<version>.<subversion>.<patch>`, for example `release/1.001.00`. Jenkins produces immutable `rel_1.001.00-N` candidates; after release verification, the selected digest is recorded in the matching `playsay-infra` release branch and manually synced by prod ArgoCD. Never deploy prod directly from `main`, `develop`, a free-form release name or `hotfix/*`; publish a hotfix through a new versioned release branch.
+
+The approved initial prod seed is selective: Maria Mednova, the six students attached to her at cutoff, 22 Maria-owned materials excluding the test material `hello`, 51 referenced assets/MinIO objects and 11 HTML-game enrichments. Execute imports only from a reviewed protected manifest of immutable Keycloak subjects, application UUIDs, material UUIDs and object checksums; never select by names during the write step. Do not copy other dev users or dev lesson/assignment/submission/chat history. The source remains authoritative until the final cutoff and the detailed plan's count, login, referential-integrity and object-restore gates pass.
+
+Migration is Git-first. Do not cold-copy k3s server state, Jenkins controller state or local-path PVC directories to the AX41. Recreate dev/prod application infrastructure and the separate CI/Jenkins guest from recorded Git commits, then restore only documented application state through the committed export/import scripts. Dev receives a full encrypted PostgreSQL/Keycloak/MinIO bundle; prod receives only the filtered seed above. Raw dumps, Keycloak exports, plaintext secrets, private keys, OpenTofu state and MinIO objects stay outside Git in the encrypted off-host repository. Git contains their manifest schema, expected non-personal counts, bundle checksum and verification code.
+
+Object Storage is not a prerequisite for the accelerated first `honey.school` cutover. Until the S3 backend is provisioned, run OpenTofu only on AX41 as `playsay`, never from Jenkins or a second session, with separate `0700` local states in `/var/lib/playsay-opentofu-state/{platform,dev,prod,ci}`. Capture an encrypted off-host copy before and after every apply. Do not copy plaintext state to the workstation or Git. After the first production stabilization window, migrate each state with `tofu init -migrate-state`, verify remote versioning/locking, then remove local plaintext state only after a tested pull/restore.
+
+The AX41 edge is generated by the `edge-proxy` Ansible role. It owns the eight exact hosts `online`, `key`, `dev.online`, `dev.key`, `ops`, `dev.ops`, `jenkins` and `hooks` below `honey.school`; it must not claim the root domain or mail. `key.*` routes to keyboard NodePort `32087`; until frontend release images use the new issuer, only the explicit `/keycloak/` path remains as a temporary compatibility proxy and must be removed after acceptance. `ops.*/keycloak/` is the canonical public OIDC route, while ops UIs on those hosts and all of `jenkins.honey.school` are limited to the WireGuard subnet. `hooks.honey.school` allows only the exact Jenkins and dev-ArgoCD POST endpoints with request/rate limits. Prod routes `/collab/ws` directly to collaboration NodePort `32086` and strips `/livekit/` before proxying signaling to prod VM port `7880`; the generic online route continues to web NodePort `32083`. Keep explicit realtime/auth/webhook locations before generic locations. Certificates and the renewal deployment hook must cover every owned hostname.
+
+The AX41 edge is TLS 1.2-only for all eight managed `honey.school` hostnames. On 2026-07-21, `TLSv1.3` was found enabled in the generated nginx vhosts while the same Russian-network accessibility symptom previously seen on MTS, t2 and MGTS was reported again: Keycloak did not load without VPN. The Ansible source of truth now sets `edge_tls_protocols: TLSv1.2` and enforces it both in the nginx HTTP context and in every generated TLS vhost. The HTTP-context setting is required because TLS version negotiation happens before SNI selects a named vhost. Do not re-enable TLS 1.3 before a dedicated acceptance pass from those networks. Validate every public hostname after an edge apply: `openssl s_client -tls1_2` must negotiate TLS 1.2, while `openssl s_client -tls1_3` must fail with a protocol-version alert. This policy includes the canonical public OIDC routes at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`.
+
+The same RF-access incident showed a fresh Chrome/incognito client receiving HTML but leaving the large application JS/CSS transfers pending over both HTTP/2 and HTTP/1.1. Live TCP state showed repeated full-size segment loss, a collapsed congestion window and 15–30 second retransmission backoff. AX41 TCP PLPMTUD (`net.ipv4.tcp_mtu_probing=2`, `net.ipv4.tcp_base_mss=1024`) did not resolve the user's external no-VPN test, so direct Hetzner ingress is not an accepted production browser/auth path for affected Russian consumer networks.
+
+The accepted replacement for the temporary old-VPS workaround is a dedicated Selectel Russian ingress at `94.102.89.213`, managed by `ansible/playbooks/rf-edge.yaml`. It is an Ubuntu 24.04 VM with 1 vCPU, 2 GiB RAM and a 25 GiB system disk. Host nginx, Certbot and UFW are the only required edge services; the firewall permits only SSH and public HTTP/HTTPS. The nginx HTTP context and every generated TLS vhost remain TLS 1.2-only. Client traffic is proxied over certificate-verified TLS 1.2 to the AX41 address `65.109.55.110`.
+
+The live stage activated on 2026-07-25 owns `honeyschool.ru`, `www.honeyschool.ru` and the public Keycloak ingress at `ops.honey.school`. The REG.RU A records for `honeyschool.ru` and `www` point to Selectel. The root now serves an independent Russian-only static landing from `/var/www/honeyschool.ru`, managed by the `rf-edge-proxy` role, with two actions for `online.honeyschool.ru` and `key.honeyschool.ru`; it no longer proxies the AX41 `honey.school` landing. Its independent Let's Encrypt certificate is stored at `/etc/letsencrypt/live/honeyschool.ru` and expires on 2026-10-23.
+
+The Dynadot `ops.honey.school` record is an exact A record for `94.102.89.213`. Selectel exposes only the `playsay` realm and Keycloak theme resources: `/keycloak/realms/playsay`, `/keycloak/realms/playsay/` and `/keycloak/resources/`. The root, `/keycloak/admin/` and other realms, including `master`, return 404. The canonical issuer remains `https://ops.honey.school/keycloak/realms/playsay`; clients and tokens must not add or accept a second issuer. The independent certificate is stored at `/etc/letsencrypt/live/ops.honey.school`, expires on 2026-10-23 and renews through the shared HTTP ACME webroot. `certbot renew --dry-run` succeeds for both live certificates, and the deploy hook validates and reloads nginx after renewal.
+
+The direct production origins `online.honey.school` and `key.honey.school` remain on AX41 and must not be changed when the Russian aliases are activated. On 2026-07-25 the exact REG.RU A records `online.honeyschool.ru -> 94.102.89.213` and `key.honeyschool.ru -> 94.102.89.213` became authoritative, and both Selectel proxy routes were activated over HTTPS. Each preserves the corresponding `.school` Host/SNI upstream, verifies AX41 TLS and rewrites absolute application/websocket URLs back to the `.ru` alias. Public full-transfer smoke returned the complete web JS (`1,157,070` bytes), web CSS (`226,388` bytes), keyboard JS (`356,669` bytes) and keyboard CSS (`64,663` bytes). HTTP redirects to HTTPS, TLS 1.2 succeeds and TLS 1.3 is rejected for both aliases.
+
+The independent certificates are stored at `/etc/letsencrypt/live/online.honeyschool.ru` and `/etc/letsencrypt/live/key.honeyschool.ru`; both expire on 2026-10-23. Targeted renewal dry-runs succeed, the Certbot timer and nginx deployment hook are active, and a second Ansible apply returns `changed=0`. The frontends derive login and logout callbacks from `window.location.origin`, and `scripts/configure-keycloak-prod-rf-aliases.sh` idempotently adds both aliases to the existing production client without changing its issuer. PKCE authorization smoke for both `.ru` callbacks returns the Keycloak login page. `dev.*`, `jenkins.honey.school` and `hooks.honey.school` remain directly on AX41.
+
+Final acceptance still requires complete login and application loading from a Russian Chrome/incognito connection without VPN. During initial DNS propagation, Dynadot anycast nodes intermittently alternated the previous `ops.honey.school -> honey.school` CNAME and the new exact A record `ops.honey.school -> 94.102.89.213`, even under the same SOA serial. Before declaring the RF login path accepted, repeat authoritative and public resolver queries until they consistently return the Selectel A record; do not introduce a second issuer as a workaround.
+
+Apply only the Russian ingress role without touching Docker, k3s, Amnezia or the existing `play-and-say.ru` vhost:
+
+```bash
+cd playsay-infra/ansible
+ansible-playbook \
+  -i inventories/rf-edge/hosts.yaml \
+  playbooks/rf-edge.yaml
+```
+
+Do not copy the AX41 private certificate key to Selectel. `ops.honey.school` already uses its independent Selectel ACME certificate and unattended HTTP renewal. The Russian aliases use their own Selectel certificates and do not replace or join the AX41 `.school` certificate. Keep the canonical production issuer `https://ops.honey.school/keycloak/realms/playsay`; adding an application alias must not change the issuer string.
+
+Production frontend release `release/1.001.04` permanently removes the render-blocking Google Fonts request: web bundles Manrope, while keyboard bundles Manrope and Roboto Flex. The promoted immutable digests are web `sha256:8a8eaf71c7fbca52553e39ce32572532213201b94fe6462afcf991af0ba9f71b` and keyboard `sha256:598b52ba9327142903dcfd44c49c801c2f076895f4d607805cc9c50f7d0734ca`. A cache-disabled Chrome reload observed only local `.woff2` resources over TLS 1.2 and no request to `fonts.googleapis.com` or `fonts.gstatic.com`; the temporary AX41 HTML substitutions were therefore removed. Keep the local-font test coverage and do not reintroduce render-blocking third-party font delivery.
+
+For an edge-only reconciliation that does not run the host, virtualization, firewall, WireGuard or Cockpit roles:
+
+```bash
+cd playsay-infra/ansible
+ansible-playbook \
+  -i inventories/hetzner-ax41/hosts.yaml \
+  playbooks/ax41-host.yaml \
+  --tags edge-proxy
+```
+
+The target AX41 split is prod 8 vCPU/38 GiB, dev 2 vCPU/10 GiB and CI 2 vCPU/8 GiB, leaving approximately 6 GiB of the host's 62 GiB usable RAM for Ubuntu, KVM/libvirt, edge routing, VPN and filesystem cache. On 2026-07-20 08:50-09:40 Europe/Moscow the old combined VPS used `0.87` compute cores on average (p95 `0.95`, max `0.98`) while `43.9%` average iowait, `0.53 GiB` available memory and active swap made headline CPU/load look much worse. Kubernetes working set was at most `5.95 GiB` in that lesson window and `6.24 GiB` across 2026-07-13 through 2026-07-20, including Jenkins. With Jenkins moved out, 10 GiB is the initial dev allocation. Keep Jenkins serialized on CI. Increase dev or CI CPU/RAM only through a reviewed OpenTofu change after post-migration evidence; diagnose I/O and memory pressure separately. Do not enable memory ballooning; alert if host `MemAvailable` remains below 4 GiB for 15 minutes and do not increase a guest until sustained swap or memory pressure is ruled out.
+
+OpenTofu remains the source of truth even though day-to-day operations are visual. Cockpit with the Machines/libvirt view is available only through the management VPN for host/VM status, graphs, storage, console and routine start/stop/reboot; Headlamp shows Kubernetes, and ArgoCD/Jenkins show delivery state. Do not create/delete VMs or change CPU, RAM, disks, networks or autostart in Cockpit: submit the change to Git, inspect the OpenTofu plan and apply it after review. Production apply is always a separate manual approval. If an emergency requires a direct Cockpit/`virsh` change, reconcile it into Git immediately and require a clean drift plan afterward.
 
 ## Vocabulary service
 
@@ -1081,7 +1160,7 @@ AX41 Jenkins runs on the dedicated `playsay-ci` VM. The former shared-node capac
 
 Jenkins chart must keep `controller.overwritePlugins=true`. In chart `jenkins-5.9.22`, the rendered `apply_config.sh` can still contain interactive `yes n | cp -i ...` plugin copying; after a controller restart this can leave the init container in `CrashLoopBackOff` and Jenkins will serve `502` through host nginx because the service has no ready endpoints. `deploy-cluster-addons.sh` patches the Jenkins ConfigMap to use non-interactive `cp -f ...` after Helm upgrade and deletes `jenkins-0` only if it is already stuck in init `CrashLoopBackOff`. If `/jenkins/` returns `502` after a VPS reboot, check `kubectl -n jenkins get pod,endpoints` first; healthy Jenkins should be `2/2 Running`, have an endpoint, and return `403 Forbidden` or a login redirect through nginx.
 
-Jenkins UI on the ops route is configured through Helm and JCasC. `deploy-cluster-addons.sh` installs the `dark-theme` plugin, sets `controller.jenkinsUrl=https://ops.play-and-say.ru:18443/jenkins/`, and loads `jenkins/jcasc/playsay-appearance.yaml`, which sets the global Jenkins theme to `dark` while leaving user theme overrides enabled. The host nginx `/jenkins/` proxy must forward `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, `X-Forwarded-Proto`, and `X-Forwarded-Prefix` so Jenkins reverse-proxy diagnostics see the public ops URL instead of the internal service URL.
+Jenkins UI is configured through Helm and JCasC with root URL `https://jenkins.honey.school/`. It runs on dedicated `playsay-ci` and is exposed by AX41 edge nginx only to WireGuard `10.250.0.0/24`; public requests receive 403. The root-host proxy forwards `Host`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-Proto`; it must not set the old `/jenkins` prefix.
 
 The `OpenAPI contract` check lives in `playsay-api-gateway-develop`. Test, `bootJar`, and `:api-gateway:exportOpenApi` run in one Gradle invocation; the following stage only verifies the committed file and archives it. Internal `backend/api-gateway/**` changes trigger API only. A commit that changes `contracts/openapi.yaml` triggers API plus web-app, so frontend generation follows actual contract changes instead of every gateway implementation edit.
 
@@ -1091,7 +1170,7 @@ The JPA services `api-gateway`, `payment-service`, `registration-service`, and `
 
 The dev `api-gateway`, `media-service`, `payment-service`, `registration-service`, and `email-service` charts give Spring Boot memory headroom while keeping CPU scheduling pressure low on the single-node dev VPS: `api-gateway` requests `50m / 384Mi`, `media-service` requests `50m / 256Mi`, `registration-service` uses the aggressive dev profile `25m / 96Mi` requests, `500m / 384Mi` limits, and `JAVA_TOOL_OPTIONS` with `InitialRAMPercentage=25` plus `MaxRAMPercentage=55`. Lower-priority `payment-service` and `email-service` are tighter: `25m / 64Mi` requests, `500m / 320Mi` limits, and `JAVA_TOOL_OPTIONS` with `InitialRAMPercentage=15`, `MaxRAMPercentage=45`, `MaxMetaspaceSize=128m`, `ReservedCodeCacheSize=32m`, and `ActiveProcessorCount=1`. If any low-priority service is `OOMKilled`, raise only that service to `128Mi` request and `512Mi` limit before deeper investigation. Dev JPA services plus `keyboard-service` set `SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=3`; app PostgreSQL currently has `max_connections=50`, so keeping runtime pools small leaves connection headroom for Jenkins Liquibase migrations and ad-hoc diagnostics. Their dev strategy is `RollingUpdate` with `maxSurge=0/maxUnavailable=1`, accepting a short backend replacement window in dev to avoid a Jenkins `Wait for dev rollout` deadlock where the agent pod waits for a rollout that cannot schedule until the agent exits; re-check node memory/swap and PostgreSQL connection counts after Jenkins builds before raising the limits further. CloudNativePG keeps the same `50m/128Mi` requests and `500m/384Mi` limits, but its explicit liveness/readiness probes use 5-second timeouts and six failures at a 10-second period; `stopDelay=300` with `smartShutdownTimeout=60` prevents a transient Jenkins load spike from killing PostgreSQL after only three probe misses and prevents a failed smart shutdown from blocking recovery for the default 30 minutes.
 
-The `Sprint 5 UI smoke` and `Sprint 6 Homework smoke` stages now live in `playsay-web-app-develop` after `web-app` rollout. They use `scripts/ci/run-ui-smoke.sh`, `mcr.microsoft.com/playwright:v1.56.1-noble`, install only the matching `playwright` Node package into `/tmp/playsay-ui-smoke`, reuse the browser binaries already in the image, and run `scripts/smoke/sprint5-ui-smoke.mjs` plus `scripts/smoke/sprint6-homework-smoke.mjs` against `https://online.play-and-say.ru`. The Sprint 5 classroom flow enters through `[data-testid='classroom-prejoin-join']`; when headless media checks remain incomplete, it accepts the explicit second-click warning before waiting for the live material surface, including after the classroom reload used by the reconnect check. The stages read only the required demo passwords from the Jenkins credential source and set `PLAY_SAY_SMOKE_FETCH_PASSWORDS=false`, so Jenkins never SSHes to the dev VM or prints secret values. Keyboard frontend keeps its own browser smoke against `https://key.play-and-say.ru`.
+The `Sprint 5 UI smoke` and `Sprint 6 Homework smoke` stages now live in `playsay-web-app-develop` after `web-app` rollout and the explicit runtime-capacity restore/readiness gate. They use `scripts/ci/run-ui-smoke.sh`, `mcr.microsoft.com/playwright:v1.56.1-noble`, install only the matching `playwright` Node package into `/tmp/playsay-ui-smoke`, reuse the browser binaries already in the image, and run `scripts/smoke/sprint5-ui-smoke.mjs` plus `scripts/smoke/sprint6-homework-smoke.mjs` against `https://online.play-and-say.ru`. The Sprint 5 classroom flow enters through `[data-testid='classroom-prejoin-join']`; when headless media checks remain incomplete, it accepts the explicit second-click warning before waiting for the live material surface, including after the classroom reload used by the reconnect check. The stages read only the required demo passwords from the `keycloak-dev-users` secret in the `jenkins` namespace and set `PLAY_SAY_SMOKE_FETCH_PASSWORDS=false`, so Jenkins never SSHes to the VPS or prints secret values. Keyboard frontend keeps its own browser smoke against `https://key.play-and-say.ru`.
 
 The Sprint 6 homework/progress smoke creates a temporary published private material, creates standalone group homework for `student-demo` + `student-demo-2`, creates a single-student homework, verifies teacher UI due date/instructions and `0/N scored` without an initial `10/10`, verifies the single-student assignment has no group indicator, submits wrong answers as one student and correct answers as the other, verifies teacher group progress uses score/errors rather than status labels, resubmits improved answers, then creates homework from a completed lesson and confirms the completed live lesson is not joinable while the homework remains visible. The smoke pins demo profile `locale=en` before UI assertions and opens the compact workspace switcher through `data-testid="workspace-switcher-trigger"` before selecting a role-available `data-tab-id`; it does not depend on localized tab labels or assume that collapsed section cards are mounted. If `GET /api/assignments` returns `MATERIAL_NOT_FOUND`, check for active homework rows whose material was archived during prior smoke cleanup; current `api-gateway` must skip those rows in list endpoints so one stale assignment cannot break the teacher/student homework panels. Detail endpoints for such assignments may still return `404`.
 
@@ -1112,20 +1191,23 @@ unset GITHUB_TOKEN
 ```
 
 
-Current GitHub webhook for `playsay-platform`:
+Current GitHub webhook for `playsay-platform` after the AX41 cutover:
 
-- Payload URL: `https://ops.play-and-say.ru:18443/jenkins/generic-webhook-trigger/invoke?token=playsay-platform-develop`
+- Payload URL: `https://hooks.honey.school/generic-webhook-trigger/invoke?token=<secret>`
 - Content type: `application/json`
 - Events: push
 - GitHub hook id: `632315512`
 - Status: branch-aware affected-target dispatch for `develop` and `release/*` is configured through Generic Webhook Trigger on `playsay-platform-dispatch-develop`. The job filter must remain `^refs/heads/(develop|release/.+) (?!0{40}$)[0-9a-f]{40}$` over `$GITHUB_REF $GITHUB_AFTER`.
-- Secret: the current dev hook uses the Generic Webhook Trigger token in the URL. Before production use, replace it with a generated secret credential and configure the same secret/token in GitHub and Jenkins.
+- Secret: stored in Jenkins credential `github-webhook-token` and Kubernetes secret `playsay-jenkins-credentials:webhook-token`; the value is URL-encoded in GitHub and is never written to Git or evidence.
+- Verification: GitHub ping delivery returned HTTP 200 on 2026-07-21.
 
 Current GitHub webhook for `playsay-infra` -> ArgoCD refresh:
 
-- Payload URL: `https://ops.play-and-say.ru:18443/argocd/api/webhook`
+- Payload URL: `https://hooks.honey.school/argocd/api/webhook`
 - Content type: `application/json`
 - Events: push
+- GitHub hook id: `636710711`
+- Verification: GitHub ping delivery returned HTTP 200 on 2026-07-21.
 - Secret: stored only in Kubernetes as `argocd/argocd-secret` key `webhook.github.secret`. Create or refresh it without printing the value:
 
 ```bash
@@ -1140,38 +1222,32 @@ kubectl -n argocd get secret argocd-secret -o jsonpath='{.data.webhook\.github\.
 
 Use the decoded value only in the GitHub webhook UI/API for `mednov-ai/playsay-infra`. This webhook wakes ArgoCD after Jenkins pushes a `values-dev.yaml` deploy commit, so module jobs normally use `ARGOCD_REFRESH_MODE=webhook`. Use `ARGOCD_REFRESH_MODE=annotate` only as a manual recovery path if the GitHub webhook is broken.
 
-Jenkins first login:
-
-```bash
-ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
-  -o IdentitiesOnly=yes root@146.103.126.15 \
-  "KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n jenkins get secret jenkins -o jsonpath='{.data.jenkins-admin-password}' | base64 -d"
-```
-
 Jenkins URL:
 
 ```text
-https://ops.play-and-say.ru:18443/jenkins/
+https://jenkins.honey.school/
 ```
 
-Jenkins API checks require authentication. If local `kubectl` is not configured for the dev cluster, run the API check through SSH on the VPS and read the Jenkins admin credentials from the in-cluster secret without printing them:
+Jenkins API checks require authentication. Connect to `playsay-ci` through the AX41 jump host, keep credentials in remote shell variables, and use the local NodePort so neither value is printed:
 
 ```bash
 ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
-  -o IdentitiesOnly=yes root@146.103.126.15 '
+  -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 -o IdentitiesOnly=yes -W %h:%p root@65.109.55.110' \
+  playsay@10.60.0.40 '
 set -euo pipefail
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-JENKINS_URL="https://ops.play-and-say.ru:18443/jenkins"
+JENKINS_URL="http://127.0.0.1:32082"
 JENKINS_JOB_NAME="playsay-platform-dispatch-develop"
-JENKINS_USER="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
-JENKINS_PASSWORD="$(kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
-curl -k -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
+JENKINS_USER="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
+JENKINS_PASSWORD="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
+curl -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
   "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json?tree=builds[number,displayName,building,result,timestamp,url]{0,10}" |
   jq -r ".builds[] | \"#\\(.number) \\(.displayName) building=\\(.building) result=\\(.result)\""
+unset JENKINS_USER JENKINS_PASSWORD
 '
 ```
 
-The current agent SSH route is the explicit key and `146.103.126.15` command above. `89.124.113.223` is retired and must not be used for Jenkins or cluster diagnostics. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
+The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.60.0.40` command above. The old `146.103.126.15` controller is rollback-only and no longer receives GitHub webhooks; `89.124.113.223` is retired. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
 
 ## Headlamp Kubernetes UI
 
@@ -1309,20 +1385,20 @@ Dev runtime configuration is passed through the Helm chart:
 
 ```yaml
 auth:
-  issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+  issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 ai:
   openai:
     enabled: true
     existingSecret: playsay-openai
     apiKeyKey: api-key
-    modelKey: model
+    model: gpt-5.6-sol
     baseUrl: https://api.openai.com/v1
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
 livekit:
-  serverUrl: wss://online.play-and-say.ru/livekit
+  serverUrl: wss://dev.online.honey.school/livekit
   existingSecret: livekit-keys
   tokenTtlSeconds: "3600"
 ```
@@ -1338,7 +1414,9 @@ Sprint 4 material authoring can run in two modes:
 
 The model and reasoning efforts are ordinary environment-specific Git configuration. Both dev and prod use `gpt-5.6-sol`; full material drafts use `high`, while answer suggestions, HTML-game metadata and vocabulary suggestions use `low`. Backend startup rejects any effort outside `none|low|medium|high|xhigh|max`.
 
-The Kubernetes secret `playsay-openai` contains only `api-key`. Dev and prod use separate OpenAI Platform projects and keys. Create or update the current environment's secret from an interactive terminal on its VM without printing the key:
+The Kubernetes secret `playsay-openai` contains only `api-key`. Dev and prod use separate OpenAI Platform projects and keys.
+
+Create or update the environment's secret from an interactive terminal on the corresponding VM without printing the key. Set `TARGET_NAMESPACE=playsay-dev` on `playsay-dev` or `TARGET_NAMESPACE=playsay-prod` on `playsay-prod`:
 
 ```bash
 set -euo pipefail
@@ -1355,11 +1433,11 @@ unset PLAYSAY_OPENAI_API_KEY
 KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai
 ```
 
-Set `TARGET_NAMESPACE=playsay-dev` on dev or `TARGET_NAMESPACE=playsay-prod` on prod. Expected `DATA` is `1`. Do not decode or paste the secret into chat, Git, logs or docs. Verify only the key name:
+Expected verification output is `playsay-openai` with `DATA` equal to `1`. Do not decode or paste the secret value into chat, Git, logs, or docs. To verify only the key name without decoding its value:
 
 ```bash
-KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get secret playsay-openai \
-  -o go-template='{{range $key, $_ := .data}}{{printf "%s\n" $key}}{{end}}'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" \
+  get secret playsay-openai -o go-template='{{range $key, $_ := .data}}{{printf "%s\n" $key}}{{end}}'
 ```
 
 After deploying the chart, verify the non-secret configuration without printing credentials:
@@ -1380,7 +1458,7 @@ Expected values are provider `openai`, model `gpt-5.6-sol`, draft effort `high` 
 Dev defaults:
 
 ```text
-VITE_AUTH_ISSUER=https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+VITE_AUTH_ISSUER=https://dev.ops.honey.school/keycloak/realms/playsay
 VITE_AUTH_CLIENT_ID=playsay-web
 VITE_AUTH_REDIRECT_PATH=/auth/callback
 ```
@@ -1564,6 +1642,8 @@ The command must exit `0`, coturn logs must not contain `Cannot find credentials
 For a functional check, log in to `https://online.play-and-say.ru` as a teacher, create or reuse a scheduled lesson with `student-demo`, `student-demo-2`, and `student-demo-3` as participants, and enter the classroom. Before students open the room, teacher/admin must see one persistent placeholder tile per assigned student with “not connected yet”; a student must never receive that presence map. Log in as each student in a separate browser profile and confirm the teacher tile changes `OFFLINE → ONLINE`. Open the classroom URL as a student: the branded pre-join must appear without creating a LiveKit participant, and the teacher tile must change to “checking connection”. Allow camera/microphone permissions, verify the camera preview and choose the intended input/output. Hold the sound button for `0.3–5` seconds, speak, release it, listen to the automatically played recording and confirm “yes, I hear”; the live meter is informational and background noise alone must not mark the microphone ready. Where supported, verify playback follows the selected output; otherwise it must use the system output. Changing either audio device must reset the check. A short/failed/skipped recording must show a warning and still allow the explicit second-click entry. Device choices survive reload, while pre-join appears before every entry.
 
 Repeat pre-join at `1280×720`, `1440×900`, and a phone viewport. At `1280×720`, the join button must remain visible, the result area must not resize when the hearing confirmation appears, and the page must not jump upward. Only after entry confirmation may the room-token request run and LiveKit connect. The teacher’s placeholder must then be replaced by the real LiveKit participant with no duplicate; in an individual lesson the absent student is the main tile and local teacher video is PiP, while a group lesson shows every assigned student. In the room, verify microphone/camera device menus can switch inputs without leaving, the page does not scroll, and controls expose microphone/camera/screen share according to participant permissions. Finally close/reopen the student WebSocket and confirm `ONLINE` is restored; with two student tabs, one tab in pre-join keeps the aggregated state at `CHECKING_DEVICES` until it leaves.
+
+For screen-share audio, use macOS 14.2+ and a current Chrome/Edge profile. Start sharing with audio enabled in the browser picker: the first full system-audio capture must request the macOS `Screen & System Audio Recording` permission, the remote participant must hear shared media once while microphone audio remains independent, and the remote voice must not loop back as echo. Repeat with browser audio sharing disabled and confirm the localized no-audio warning appears, then stop sharing and confirm both screen video/audio publications and the warning disappear. In Safari, confirm video-only sharing continues and shows the Safari-specific Chrome/Edge recommendation. At `1280×720` and `1440×900`, the warning must stay above the controls without resizing the classroom or covering the primary video.
 
 ## Application PostgreSQL
 

@@ -1,0 +1,66 @@
+---
+- name: Install the minimal AX41 edge packages
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - certbot
+    state: present
+    update_cache: true
+
+- name: Create the ACME webroot
+  ansible.builtin.file:
+    path: /var/www/playsay-acme
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0755"
+
+- name: Configure TCP Packetization-Layer MTU discovery for the public edge
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/91-playsay-edge-tcp.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      net.ipv4.tcp_mtu_probing = {{ edge_tcp_mtu_probing }}
+      net.ipv4.tcp_base_mss = {{ edge_tcp_base_mss }}
+  register: edge_tcp_sysctl_config
+
+- name: Apply the public edge TCP MTU settings
+  ansible.builtin.command:
+    cmd: sysctl --load=/etc/sysctl.d/91-playsay-edge-tcp.conf
+  when: edge_tcp_sysctl_config.changed
+  changed_when: true
+
+- name: Check whether the shared honey.school certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
+  register: edge_certificate
+
+- name: Enforce the AX41 TLS protocol policy in the nginx HTTP context
+  ansible.builtin.lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^\s*ssl_protocols\s+.*;\s*(?:#.*)?$'
+    line: "\tssl_protocols {{ edge_tls_protocols }};"
+    backup: true
+  notify: reload nginx
+
+- name: Render exact-host AX41 edge routes
+  ansible.builtin.template:
+    src: playsay-honey.conf.j2
+    dest: /etc/nginx/conf.d/playsay-honey.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Enable and start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

@@ -1,0 +1,70 @@
+image:
+  repository: ghcr.io/mednov-ai/playsay-media-service
+  tag: "media-release-1.001.00-18"
+  digest: "sha256:e5b3bed96c6ed48433a30e00cd19587b958e45e9f9e9db8aab9775ba0ec232c4"
+imagePullSecrets:
+  - name: ghcr-pull-secret
+build:
+  name: media-release-1.001.00-18
+  number: "18"
+  branch: release/1.001.00
+  branchLabel: media-release-1.001.00
+  commit: 92406096f13b2451086d39021f8febfab855dbdc
+  commitShort: "92406096f13b"
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+service:
+  type: ClusterIP
+mediaService:
+  existingSecret: playsay-media
+  sessionTtlSeconds: "900"
+  maxUpstreamRangeBytes: "1048576"
+  maxThumbnailBytes: "5242880"
+  ytdlpPath: /usr/local/bin/yt-dlp
+  ytdlpPluginDirectory: /usr/local/lib
+  ytdlpJsRuntime: deno:/usr/local/bin/deno
+  ffmpegPath: /usr/local/bin/ffmpeg
+  youtubeCacheEnabled: "true"
+  cacheDownloadTimeoutSeconds: "600"
+  cacheMaxVideoBytes: "262144000"
+  cacheTempDirectory: /tmp/playsay-media-cache
+youtubePot:
+  enabled: true
+  providerBaseUrl: http://127.0.0.1:4416
+  allowedVideoIds: "WX8HmogNyCY,8ChQVaEAKsk,BwHMMZQGFoM,OsuWvoBWOnA,FkL8j0wIRf8"
+  playerClients: mweb
+  sleepRequestsSeconds: "1"
+  provider:
+    image: brainicism/bgutil-ytdlp-pot-provider@sha256:1fd724c0a987a1eaa7e0875667a55770f954d8634fdbba96d858072f4a655afe
+    pullPolicy: IfNotPresent
+    port: 4416
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 384Mi
+cacheTempStorage:
+  sizeLimit: 1Gi
+storage:
+  provider: s3
+  s3:
+    endpoint: http://minio.storage.svc.cluster.local:9000
+    region: us-east-1
+    bucket: playsay-material-assets
+    existingSecret: playsay-object-storage
+    pathStyleAccess: "true"
+    createBucket: "true"
+runtime:
+  javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=35 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1280Mi

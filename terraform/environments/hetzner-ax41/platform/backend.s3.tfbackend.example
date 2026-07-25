@@ -1,0 +1,9 @@
+bucket       = "playsay-opentofu-state"
+key          = "hetzner-ax41/platform.tfstate"
+region       = "eu-central-1"
+use_lockfile = true
+encrypt      = true
+
+# Supply endpoint and credentials at runtime. Never commit real values.
+# endpoints = { s3 = "https://s3.example.invalid" }
+# use_path_style = true

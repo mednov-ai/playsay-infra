@@ -1,0 +1,122 @@
+map $http_upgrade $playsay_rf_connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+{% macro proxy_to_origin(route, forwarded_proto) %}
+        proxy_pass https://{{ rf_edge_origin_address }};
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name {{ route.origin_tls_hostname | default(route.origin_hostname | default(route.hostname)) }};
+        proxy_ssl_protocols TLSv1.2;
+        proxy_ssl_session_reuse off;
+        proxy_ssl_verify on;
+        proxy_ssl_verify_depth 3;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_set_header Host {{ route.origin_hostname | default(route.hostname) }};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_rf_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_request_buffering off;
+        proxy_buffering off;
+{% if route.response_replacements is defined %}
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once off;
+        sub_filter_types application/json application/javascript text/javascript text/css;
+{% for replacement in route.response_replacements %}
+        sub_filter '{{ replacement.source }}' '{{ replacement.target }}';
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{% macro keycloak_locations(route, forwarded_proto) %}
+    location = /keycloak/realms/{{ route.realm }} {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location ^~ /keycloak/realms/{{ route.realm }}/ {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location ^~ /keycloak/resources/ {
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+
+    location / {
+        return 404;
+    }
+{% endmacro %}
+
+{% macro landing_location(route) %}
+    root {{ route.document_root }};
+    index index.html;
+
+    add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+{% endmacro %}
+
+{% for route in rf_edge_routes %}
+{% set route_server_names = [route.hostname] + (route.aliases | default([])) %}
+{% set route_certificate_directory = route.certificate_directory | default(rf_edge_certificate_directory) %}
+{% set route_tls_enabled = route.tls_enabled | default(rf_edge_tls_enabled) | bool %}
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ route_server_names | join(' ') }};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root {{ rf_edge_acme_webroot }};
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+{% if route_tls_enabled %}
+    location / {
+        return 301 https://$host$request_uri;
+    }
+{% elif route.kind == 'keycloak' %}
+{{ keycloak_locations(route, 'http') }}
+{% elif route.kind == 'landing' %}
+{{ landing_location(route) }}
+{% else %}
+    location / {
+{{ proxy_to_origin(route, 'http') }}
+    }
+{% endif %}
+}
+
+{% if route_tls_enabled %}
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{ route_server_names | join(' ') }};
+
+    ssl_certificate {{ route_certificate_directory }}/fullchain.pem;
+    ssl_certificate_key {{ route_certificate_directory }}/privkey.pem;
+    ssl_protocols {{ rf_edge_tls_protocols }};
+    ssl_session_cache shared:PlaySayRFTLS:10m;
+    ssl_session_timeout 1d;
+
+{% if route.kind == 'keycloak' %}
+{{ keycloak_locations(route, 'https') }}
+{% elif route.kind == 'landing' %}
+{{ landing_location(route) }}
+{% else %}
+    location / {
+{{ proxy_to_origin(route, 'https') }}
+    }
+{% endif %}
+}
+{% endif %}
+{% endfor %}

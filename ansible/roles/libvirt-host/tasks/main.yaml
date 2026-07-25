@@ -1,0 +1,123 @@
+---
+- name: Assert an amd64 AX41 host
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.architecture == "x86_64"
+      - ansible_facts.memtotal_mb >= 63000
+      - ansible_facts.processor_vcpus >= 12
+    fail_msg: Refusing to configure an unexpected host as the AX41 hypervisor.
+
+- name: Install KVM, libvirt and host diagnostics
+  ansible.builtin.apt:
+    name:
+      - bridge-utils
+      - cloud-image-utils
+      - dnsmasq-base
+      - genisoimage
+      - libguestfs-tools
+      - libvirt-clients
+      - libvirt-daemon-system
+      - nvme-cli
+      - python3-libvirt
+      - qemu-kvm
+      - qemu-utils
+      - smartmontools
+      - unzip
+      - virtinst
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Verify KVM device exists
+  ansible.builtin.stat:
+    path: /dev/kvm
+  register: kvm_device
+
+- name: Refuse software-emulated virtualization
+  ansible.builtin.assert:
+    that:
+      - kvm_device.stat.exists
+    fail_msg: /dev/kvm is missing; hardware acceleration must be fixed before VM creation.
+
+- name: Add administrator to libvirt groups
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups:
+      - kvm
+      - libvirt
+    append: true
+
+- name: Create dedicated libvirt storage directory
+  ansible.builtin.file:
+    path: "{{ libvirt_storage_path }}"
+    state: directory
+    owner: libvirt-qemu
+    group: kvm
+    mode: "0711"
+
+- name: Create temporary local OpenTofu state directories
+  ansible.builtin.file:
+    path: "{{ opentofu_local_state_path }}/{{ item }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0700"
+  loop:
+    - platform
+    - dev
+    - prod
+    - ci
+
+- name: Enable libvirt daemon
+  ansible.builtin.service:
+    name: libvirtd
+    enabled: true
+    state: started
+
+- name: Enable SMART monitoring
+  ansible.builtin.service:
+    name: smartmontools
+    enabled: true
+    state: started
+  failed_when: false
+
+- name: Download pinned OpenTofu archive
+  ansible.builtin.get_url:
+    url: "https://github.com/opentofu/opentofu/releases/download/v{{ opentofu_version }}/tofu_{{ opentofu_version }}_linux_amd64.zip"
+    dest: "/var/cache/tofu_{{ opentofu_version }}_linux_amd64.zip"
+    mode: "0644"
+    checksum: "sha256:{{ opentofu_linux_amd64_sha256 }}"
+
+- name: Install pinned OpenTofu binary
+  ansible.builtin.unarchive:
+    src: "/var/cache/tofu_{{ opentofu_version }}_linux_amd64.zip"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - tofu
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Read installed OpenTofu version
+  ansible.builtin.command:
+    cmd: tofu version
+  register: tofu_version_output
+  changed_when: false
+
+- name: Assert pinned OpenTofu is installed
+  ansible.builtin.assert:
+    that:
+      - "('OpenTofu v' ~ opentofu_version) in tofu_version_output.stdout"
+
+- name: Read libvirt capabilities
+  ansible.builtin.command:
+    cmd: virsh -c qemu:///system capabilities
+  register: libvirt_capabilities
+  changed_when: false
+
+- name: Assert KVM domains are supported
+  ansible.builtin.assert:
+    that:
+      - "\"domain type='kvm'\" in libvirt_capabilities.stdout"
+    fail_msg: libvirt does not advertise KVM domain support.

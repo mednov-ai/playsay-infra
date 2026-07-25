@@ -1,0 +1,20 @@
+image:
+  repository: livekit/livekit-server
+  tag: "v1.11.0"
+imagePullSecrets: []
+secret:
+  existingName: livekit-keys
+rtc:
+  nodeIp: "65.109.55.110"
+  udpPortRangeStart: 50000
+  udpPortRangeEnd: 50020
+turn:
+  enabled: true
+  host: online.honey.school
+  port: 3478
+webhook:
+  enabled: true
+  url: http://api-gateway.playsay-prod.svc.cluster.local/livekit/webhook
+metrics:
+  enabled: true
+  port: 6789

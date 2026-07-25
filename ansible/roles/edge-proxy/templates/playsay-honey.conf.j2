@@ -1,0 +1,242 @@
+map $http_upgrade $playsay_connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+limit_req_zone $binary_remote_addr zone=playsay_hooks:10m rate=5r/s;
+
+{% for route in edge_routes %}
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ route.hostname }};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/playsay-acme;
+        default_type text/plain;
+    }
+
+{% if edge_certificate.stat.exists %}
+    location / {
+        return 301 https://$host$request_uri;
+    }
+{% elif route.kind in ['online', 'keyboard'] %}
+    location / {
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto http;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+{% else %}
+    location / {
+        return 503;
+    }
+{% endif %}
+}
+
+{% if edge_certificate.stat.exists %}
+server {
+    listen 443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
+    listen [::]:443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
+    server_name {{ route.hostname }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ edge_certificate_name }}/privkey.pem;
+    ssl_protocols {{ edge_tls_protocols }};
+    ssl_session_cache shared:PlaySayTLS:10m;
+    ssl_session_timeout 1d;
+
+{% if route.kind == 'online' %}
+{% if route.livekit_upstream is defined %}
+    location = /livekit {
+        return 301 /livekit/;
+    }
+
+    location /livekit/ {
+        proxy_pass http://{{ route.livekit_upstream }}/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+{% endif %}
+
+{% if route.collaboration_upstream is defined %}
+    location = /collab/ws {
+        proxy_pass http://{{ route.collaboration_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+{% endif %}
+
+    location / {
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+{% elif route.kind == 'keyboard' %}
+{% if route.legacy_keycloak_upstream is defined %}
+    # Temporary compatibility path for frontend images built before the
+    # Keycloak issuer moved to ops.*. Remove after the new release is accepted.
+    location = /keycloak {
+        return 301 /keycloak/;
+    }
+
+    location /keycloak/ {
+        proxy_pass http://{{ route.legacy_keycloak_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+{% endif %}
+
+    location / {
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+{% elif route.kind == 'ops' %}
+    location = /keycloak {
+        return 301 /keycloak/;
+    }
+
+    location /keycloak/ {
+        proxy_pass http://{{ route.keycloak_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+
+    location /argocd/ {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass http://{{ route.argocd_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+    }
+
+    location /headlamp/ {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass http://{{ route.headlamp_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+    }
+
+    location /victoria-metrics/ {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass http://{{ route.victoria_metrics_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        return 404;
+    }
+{% elif route.kind == 'jenkins' %}
+    location / {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+{% elif route.kind == 'hooks' %}
+    location = /generic-webhook-trigger/invoke {
+        limit_except POST { deny all; }
+        limit_req zone=playsay_hooks burst=20 nodelay;
+        client_max_body_size 2m;
+        proxy_pass http://{{ route.jenkins_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 60s;
+    }
+
+    location = /argocd/api/webhook {
+        limit_except POST { deny all; }
+        limit_req zone=playsay_hooks burst=20 nodelay;
+        client_max_body_size 2m;
+        proxy_pass http://{{ route.argocd_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 60s;
+    }
+
+    location / {
+        return 404;
+    }
+{% endif %}
+}
+{% endif %}
+{% endfor %}

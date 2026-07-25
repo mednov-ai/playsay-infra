@@ -1,6 +1,7 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-payment-service
   tag: "0.1.0"
+  digest: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

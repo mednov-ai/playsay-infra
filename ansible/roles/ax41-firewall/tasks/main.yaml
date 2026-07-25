@@ -1,0 +1,116 @@
+---
+- name: Set default deny policy for incoming traffic
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set default allow policy for outgoing traffic
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Set default deny policy for forwarded traffic
+  community.general.ufw:
+    direction: routed
+    policy: deny
+
+- name: Allow required public TCP services
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ax41_public_tcp_ports }}"
+
+- name: Allow required public UDP services
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: udp
+  loop: "{{ ax41_public_udp_ports }}"
+
+- name: Trust authenticated WireGuard management traffic to the host
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: "{{ wireguard_interface }}"
+
+- name: Allow management VPN traffic to the VM bridge
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ wireguard_interface }}"
+    interface_out: virbr60
+
+- name: Allow VM replies to the management VPN
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: virbr60
+    interface_out: "{{ wireguard_interface }}"
+
+- name: Install prod LiveKit destination NAT rules
+  ansible.builtin.blockinfile:
+    path: /etc/ufw/before.rules
+    insertbefore: '^\*filter'
+    marker: "# {mark} ANSIBLE MANAGED PLAY&SAY PROD LIVEKIT NAT"
+    block: |
+      *nat
+      :PREROUTING ACCEPT [0:0]
+      -A PREROUTING -i {{ ax41_public_interface }} -p tcp --dport 3478 -j DNAT --to-destination {{ ax41_prod_vm_address }}:3478
+      -A PREROUTING -i {{ ax41_public_interface }} -p tcp --dport 7881 -j DNAT --to-destination {{ ax41_prod_vm_address }}:7881
+      -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 3478 -j DNAT --to-destination {{ ax41_prod_vm_address }}:3478
+      -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 49160:49200 -j DNAT --to-destination {{ ax41_prod_vm_address }}
+      -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport 50000:50020 -j DNAT --to-destination {{ ax41_prod_vm_address }}
+      COMMIT
+  notify: Reload UFW
+
+- name: Install the persistent libvirt ingress hook
+  ansible.builtin.template:
+    src: libvirt-network-hook.sh.j2
+    dest: /etc/libvirt/hooks/network
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Apply the libvirt ingress hook to the running workloads network
+  ansible.builtin.command:
+    cmd: /etc/libvirt/hooks/network playsay-workloads started -
+  changed_when: false
+
+- name: Allow routed prod LiveKit TCP traffic
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ ax41_public_interface }}"
+    interface_out: virbr60
+    to_ip: "{{ ax41_prod_vm_address }}"
+    to_port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ax41_prod_livekit_tcp_ports }}"
+
+- name: Allow routed prod LiveKit UDP traffic
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ ax41_public_interface }}"
+    interface_out: virbr60
+    to_ip: "{{ ax41_prod_vm_address }}"
+    to_port: "{{ item }}"
+    proto: udp
+  loop: "{{ ax41_prod_livekit_udp_ports }}"
+
+- name: Enable the AX41 firewall after allow rules exist
+  community.general.ufw:
+    state: enabled
+
+- name: Read effective firewall policy
+  ansible.builtin.command:
+    cmd: ufw status verbose
+  register: ax41_ufw_status
+  changed_when: false
+
+- name: Assert the firewall is active
+  ansible.builtin.assert:
+    that:
+      - "'Status: active' in ax41_ufw_status.stdout"
+      - "'51820/udp' in ax41_ufw_status.stdout"

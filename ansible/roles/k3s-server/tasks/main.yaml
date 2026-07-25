@@ -11,12 +11,14 @@
 - name: Install k3s server
   ansible.builtin.shell: |
     set -euo pipefail
-    curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL="{{ k3s_version }}" sh -s - server \
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server \
       {{ k3s_disable_flags }} \
       --write-kubeconfig-mode 0640 \
-      --node-ip "{{ public_ipv4 | default(ansible_host) }}" \
-      --tls-san "{{ public_ipv4 | default(ansible_host) }}" \
-      --kube-proxy-arg "nodeport-addresses=127.0.0.0/8"
+      --node-ip "{{ k3s_node_ip | default(public_ipv4 | default(ansible_host)) }}" \
+      --tls-san "{{ k3s_api_address | default(k3s_node_ip | default(public_ipv4 | default(ansible_host))) }}" \
+      --cluster-cidr "{{ k3s_cluster_cidr }}" \
+      --service-cidr "{{ k3s_service_cidr }}" \
+      --kube-proxy-arg "nodeport-addresses={{ k3s_nodeport_addresses | default('127.0.0.0/8') }}"
   args:
     executable: /bin/bash
   when: not k3s_binary.stat.exists
@@ -46,7 +48,7 @@
 - name: Write admin kubeconfig with public server address
   ansible.builtin.shell: |
     set -euo pipefail
-    sed "s/127.0.0.1/{{ public_ipv4 | default(ansible_host) }}/g" /etc/rancher/k3s/k3s.yaml > "/home/{{ admin_user }}/.kube/config"
+    sed "s/127.0.0.1/{{ k3s_api_address | default(k3s_node_ip | default(public_ipv4 | default(ansible_host))) }}/g" /etc/rancher/k3s/k3s.yaml > "/home/{{ admin_user }}/.kube/config"
     chown "{{ admin_user }}:{{ admin_user }}" "/home/{{ admin_user }}/.kube/config"
     chmod 0600 "/home/{{ admin_user }}/.kube/config"
   args:
@@ -85,6 +87,14 @@
       drop_tcp 10250
       drop_udp 8472
 
+      # Insert explicit private management peers above the blanket API drop.
+      # No peer is allowed unless it is present in the Git/Ansible inventory.
+      {% for cidr in k3s_api_allow_cidrs | default([]) %}
+      iptables -C INPUT -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT 2>/dev/null \
+        || iptables -I INPUT 1 -i "$public_iface" -s "{{ cidr }}" -p tcp --dport 6443 -j ACCEPT
+      {% endfor %}
+  register: public_port_guard_script
+
 - name: Install public port guard service
   ansible.builtin.copy:
     dest: /etc/systemd/system/playsay-public-port-guard.service
@@ -104,10 +114,11 @@
 
       [Install]
       WantedBy=multi-user.target
+  register: public_port_guard_service
 
 - name: Enable public port guard
   ansible.builtin.systemd_service:
     name: playsay-public-port-guard
     enabled: true
-    state: started
+    state: "{{ 'restarted' if (public_port_guard_script.changed or public_port_guard_service.changed) else 'started' }}"
     daemon_reload: true

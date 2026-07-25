@@ -1,0 +1,24 @@
+---
+timezone: Europe/Moscow
+admin_user: playsay
+ssh_port: 22
+
+manage_ssh_hardening: true
+manage_ufw: false
+install_docker: false
+swap_file_path: /swapfile
+swap_file_size: 2G
+
+k3s_version: v1.35.5+k3s1
+k3s_disable_components:
+  - traefik
+  - servicelb
+k3s_node_taints: []
+
+node_exporter_enabled: true
+
+coturn_listening_port: 3478
+coturn_min_port: 49160
+coturn_max_port: 49200
+coturn_external_ip: 65.109.55.110/10.60.0.20
+coturn_realm: online.honey.school

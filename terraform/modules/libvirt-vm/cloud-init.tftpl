@@ -1,0 +1,29 @@
+#cloud-config
+hostname: ${hostname}
+manage_etc_hosts: true
+timezone: UTC
+ssh_pwauth: false
+disable_root: true
+package_update: true
+packages:
+  - qemu-guest-agent
+  - ca-certificates
+  - curl
+  - jq
+  - vim
+users:
+  - default
+  - name: playsay
+    gecos: PlaySay administrator
+    groups:
+      - adm
+      - sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${admin_ssh_public_key}
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent]
+  - [systemctl, disable, --now, multipathd.service]
+final_message: "Play&Say guest bootstrap complete"

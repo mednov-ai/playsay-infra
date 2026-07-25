@@ -1,0 +1,38 @@
+---
+# Russian ingress for the public production browser/auth routes. The Selectel
+# ingress terminates client TLS and proxies over verified TLS to the AX41 edge.
+rf_edge_origin_address: 65.109.55.110
+rf_edge_certificate_directory: /etc/letsencrypt/live/honeyschool.ru
+rf_edge_acme_webroot: /var/www/playsay-rf-edge-acme
+rf_edge_tls_protocols: TLSv1.2
+rf_edge_tls_enabled: true
+rf_edge_routes:
+  - hostname: honeyschool.ru
+    aliases:
+      - www.honeyschool.ru
+    document_root: /var/www/honeyschool.ru
+    landing_source: honeyschool-landing/index.html
+    kind: landing
+  - hostname: online.honeyschool.ru
+    origin_hostname: online.honey.school
+    certificate_directory: /etc/letsencrypt/live/online.honeyschool.ru
+    kind: application
+    tls_enabled: true
+    response_replacements:
+      - source: https://online.honey.school
+        target: https://online.honeyschool.ru
+      - source: wss://online.honey.school
+        target: wss://online.honeyschool.ru
+  - hostname: key.honeyschool.ru
+    origin_hostname: key.honey.school
+    certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
+    kind: application
+    tls_enabled: true
+    response_replacements:
+      - source: https://key.honey.school
+        target: https://key.honeyschool.ru
+  - hostname: ops.honey.school
+    origin_hostname: ops.honey.school
+    certificate_directory: /etc/letsencrypt/live/ops.honey.school
+    kind: keycloak
+    realm: playsay

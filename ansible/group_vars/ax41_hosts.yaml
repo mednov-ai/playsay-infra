@@ -1,0 +1,101 @@
+---
+timezone: UTC
+admin_user: playsay
+ssh_port: 22
+
+manage_ssh_hardening: false
+manage_ufw: false
+install_docker: false
+swap_file_size: ""
+
+opentofu_version: 1.12.4
+opentofu_linux_amd64_sha256: f5d2ae8a0efcddd3722546b3e0f2f2f0648ce5e5a3e411176041adcb7dccc1e8
+libvirt_storage_path: /var/lib/libvirt/playsay
+opentofu_local_state_path: /var/lib/playsay-opentofu-state
+
+# Cockpit is bound to the WireGuard address only. The external tunnel gate was
+# verified from the retiring VPS before this flag was enabled.
+cockpit_enabled: true
+cockpit_listen_address: 10.250.0.1
+cockpit_listen_port: 9090
+
+ax41_public_tcp_ports:
+  - "22"
+  - "80"
+  - "443"
+ax41_public_udp_ports:
+  - "51820"
+
+ax41_public_interface: enp41s0
+ax41_prod_vm_address: 10.60.0.20
+ax41_prod_livekit_tcp_ports:
+  - "3478"
+  - "7881"
+ax41_prod_livekit_udp_ports:
+  - "3478"
+  - "49160:49200"
+  - "50000:50020"
+
+wireguard_interface: wg0
+wireguard_address: 10.250.0.1/24
+wireguard_listen_port: 51820
+wireguard_peers:
+  - name: macbook
+    public_key: w4rvjztoiLljaOe/enYBtOzQgiXPPVxE6L6S5kUg1Wg=
+    allowed_ips: 10.250.0.2/32
+  - name: phone
+    public_key: XOHhYpu0HaHcy9qe1viPg1RHoeoiALGnjJw0gO4J60Y=
+    allowed_ips: 10.250.0.3/32
+
+edge_certificate_name: online.honey.school
+edge_vpn_subnet: 10.250.0.0/24
+# Russian consumer networks previously failed TLS/SNI handshakes when TLS 1.3
+# was enabled on the old edge. Keep every public honey.school vhost on TLS 1.2
+# until a dedicated MTS/t2/MGTS acceptance pass proves TLS 1.3 is safe.
+edge_tls_protocols: TLSv1.2
+# Fresh Chrome sessions on affected RF paths repeatedly aborted large HTTP/2
+# JS/CSS transfers and retried them as tiny byte ranges. Keep ALPN on HTTP/1.1
+# until carrier-network acceptance proves HTTP/2 is safe on the AX41 route.
+edge_http2_enabled: false
+# The RF path to the AX41 drops full-size TCP segments without returning usable
+# ICMP Packet Too Big feedback. Start PLPMTUD at a conservative MSS and probe
+# upward so fresh clients do not wait through repeated 15-30 second RTOs.
+edge_tcp_mtu_probing: 2
+edge_tcp_base_mss: 1024
+edge_routes:
+  - hostname: online.honey.school
+    kind: online
+    upstream: 10.60.0.20:32083
+    collaboration_upstream: 10.60.0.20:32086
+    livekit_upstream: 10.60.0.20:7880
+  - hostname: key.honey.school
+    kind: keyboard
+    upstream: 10.60.0.20:32087
+    legacy_keycloak_upstream: 10.60.0.20:32084
+  - hostname: dev.online.honey.school
+    kind: online
+    upstream: 10.60.0.30:32083
+    collaboration_upstream: 10.60.0.30:32086
+  - hostname: dev.key.honey.school
+    kind: keyboard
+    upstream: 10.60.0.30:32087
+    legacy_keycloak_upstream: 10.60.0.30:32084
+  - hostname: ops.honey.school
+    kind: ops
+    keycloak_upstream: 10.60.0.20:32084
+    argocd_upstream: 10.60.0.20:32080
+    headlamp_upstream: 10.60.0.20:32081
+    victoria_metrics_upstream: 10.60.0.20:32085
+  - hostname: dev.ops.honey.school
+    kind: ops
+    keycloak_upstream: 10.60.0.30:32084
+    argocd_upstream: 10.60.0.30:32080
+    headlamp_upstream: 10.60.0.30:32081
+    victoria_metrics_upstream: 10.60.0.30:32085
+  - hostname: jenkins.honey.school
+    kind: jenkins
+    upstream: 10.60.0.40:32082
+  - hostname: hooks.honey.school
+    kind: hooks
+    jenkins_upstream: 10.60.0.40:32082
+    argocd_upstream: 10.60.0.30:32080

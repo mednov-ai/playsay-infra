@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Play&amp;Say — онлайн-занятия английским языком и клавиатурный тренажёр."
+    >
+    <meta name="theme-color" content="#fffaf5">
+    <title>Play&amp;Say — английский с удовольствием</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --background: #fffaf5;
+        --surface: rgba(255, 255, 255, 0.92);
+        --ink: #111111;
+        --muted: #62666f;
+        --line: #ece6df;
+        --orange: #ff5c00;
+        --orange-dark: #df4100;
+        --mint: #dff9ec;
+        --yellow: #fff0ad;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        background: var(--background);
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 9% 18%, var(--yellow) 0, transparent 24rem),
+          radial-gradient(circle at 92% 84%, var(--mint) 0, transparent 28rem),
+          var(--background);
+        font-family:
+          Manrope,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        width: min(1120px, calc(100% - 40px));
+        min-height: 100vh;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 28px 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 12px;
+        color: white;
+        background: var(--orange);
+        font-size: 21px;
+        line-height: 1;
+        transform: rotate(-4deg);
+      }
+
+      .header-note {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .main {
+        display: grid;
+        align-content: center;
+        padding: 40px 0 76px;
+      }
+
+      .hero {
+        max-width: 760px;
+        margin-bottom: 42px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        margin: 0 0 22px;
+        padding: 7px 13px;
+        border: 1px solid rgba(255, 92, 0, 0.24);
+        border-radius: 999px;
+        color: var(--orange-dark);
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        font-weight: 750;
+      }
+
+      h1 {
+        max-width: 720px;
+        margin: 0;
+        font-size: clamp(44px, 7.2vw, 84px);
+        font-weight: 850;
+        letter-spacing: -0.065em;
+        line-height: 0.98;
+      }
+
+      h1 span {
+        color: var(--orange);
+      }
+
+      .lead {
+        max-width: 630px;
+        margin: 26px 0 0;
+        color: var(--muted);
+        font-size: clamp(18px, 2.2vw, 22px);
+        line-height: 1.55;
+      }
+
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .choice {
+        display: flex;
+        min-height: 210px;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--surface);
+        box-shadow: 0 18px 60px rgba(82, 46, 17, 0.08);
+        text-decoration: none;
+        transition:
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
+      }
+
+      .choice:hover {
+        border-color: rgba(255, 92, 0, 0.42);
+        box-shadow: 0 22px 70px rgba(82, 46, 17, 0.13);
+        transform: translateY(-3px);
+      }
+
+      .choice:focus-visible {
+        outline: 4px solid rgba(255, 92, 0, 0.22);
+        outline-offset: 3px;
+      }
+
+      .choice-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .choice-label {
+        margin: 0;
+        font-size: clamp(23px, 3vw, 32px);
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+      }
+
+      .choice-copy {
+        max-width: 360px;
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .choice-arrow {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        place-items: center;
+        border-radius: 50%;
+        color: white;
+        background: var(--orange);
+        font-size: 23px;
+        transition: background 160ms ease;
+      }
+
+      .choice:hover .choice-arrow {
+        background: var(--orange-dark);
+      }
+
+      .choice-action {
+        margin-top: 30px;
+        color: var(--orange-dark);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 24px 0 30px;
+        border-top: 1px solid rgba(236, 230, 223, 0.9);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100% - 28px, 560px);
+        }
+
+        .header {
+          padding: 20px 0;
+        }
+
+        .header-note {
+          display: none;
+        }
+
+        .main {
+          padding: 34px 0 50px;
+        }
+
+        .hero {
+          margin-bottom: 32px;
+        }
+
+        h1 {
+          font-size: clamp(42px, 14vw, 64px);
+        }
+
+        .choices {
+          grid-template-columns: 1fr;
+        }
+
+        .choice {
+          min-height: 184px;
+          padding: 24px;
+        }
+
+        .footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .choice,
+        .choice-arrow {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <a class="brand" href="/" aria-label="Play&amp;Say — главная">
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span>Play&amp;Say</span>
+        </a>
+        <span class="header-note">Английский для детей и взрослых</span>
+      </header>
+
+      <main class="main">
+        <section class="hero" aria-labelledby="hero-title">
+          <p class="eyebrow">Добро пожаловать</p>
+          <h1 id="hero-title">Учимся говорить <span>уверенно.</span></h1>
+          <p class="lead">
+            Выберите нужный раздел — онлайн-школу для занятий или тренажёр
+            слепой печати на английском языке.
+          </p>
+        </section>
+
+        <nav class="choices" aria-label="Разделы Play&amp;Say">
+          <a class="choice" href="https://online.honeyschool.ru/">
+            <span class="choice-top">
+              <span>
+                <span class="choice-label">Онлайн-школа</span>
+                <span class="choice-copy">
+                  Уроки, материалы, расписание и личный кабинет.
+                </span>
+              </span>
+              <span class="choice-arrow" aria-hidden="true">→</span>
+            </span>
+            <span class="choice-action">Войти в онлайн-школу</span>
+          </a>
+
+          <a class="choice" href="https://key.honeyschool.ru/">
+            <span class="choice-top">
+              <span>
+                <span class="choice-label">Тренажёр печати</span>
+                <span class="choice-copy">
+                  Практика английской раскладки и набор текстов.
+                </span>
+              </span>
+              <span class="choice-arrow" aria-hidden="true">→</span>
+            </span>
+            <span class="choice-action">Открыть тренажёр</span>
+          </a>
+        </nav>
+      </main>
+
+      <footer class="footer">
+        <span>© 2026 Play&amp;Say</span>
+        <span>Учитесь в своём темпе</span>
+      </footer>
+    </div>
+  </body>
+</html>
