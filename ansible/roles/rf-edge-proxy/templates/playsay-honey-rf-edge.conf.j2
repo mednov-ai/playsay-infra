@@ -24,6 +24,14 @@ map $http_upgrade $playsay_rf_connection_upgrade {
         proxy_send_timeout 3600s;
         proxy_request_buffering off;
         proxy_buffering off;
+{% if route.response_replacements is defined %}
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once off;
+        sub_filter_types application/json application/javascript text/javascript text/css;
+{% for replacement in route.response_replacements %}
+        sub_filter '{{ replacement.source }}' '{{ replacement.target }}';
+{% endfor %}
+{% endif %}
 {% endmacro %}
 
 {% macro keycloak_locations(route, forwarded_proto) %}
@@ -44,9 +52,24 @@ map $http_upgrade $playsay_rf_connection_upgrade {
     }
 {% endmacro %}
 
+{% macro landing_location(route) %}
+    root {{ route.document_root }};
+    index index.html;
+
+    add_header Cache-Control "no-cache";
+    add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+{% endmacro %}
+
 {% for route in rf_edge_routes %}
 {% set route_server_names = [route.hostname] + (route.aliases | default([])) %}
 {% set route_certificate_directory = route.certificate_directory | default(rf_edge_certificate_directory) %}
+{% set route_tls_enabled = route.tls_enabled | default(rf_edge_tls_enabled) | bool %}
 server {
     listen 80;
     listen [::]:80;
@@ -58,12 +81,14 @@ server {
         try_files $uri =404;
     }
 
-{% if rf_edge_tls_enabled | bool %}
+{% if route_tls_enabled %}
     location / {
         return 301 https://$host$request_uri;
     }
 {% elif route.kind == 'keycloak' %}
 {{ keycloak_locations(route, 'http') }}
+{% elif route.kind == 'landing' %}
+{{ landing_location(route) }}
 {% else %}
     location / {
 {{ proxy_to_origin(route, 'http') }}
@@ -71,7 +96,7 @@ server {
 {% endif %}
 }
 
-{% if rf_edge_tls_enabled | bool %}
+{% if route_tls_enabled %}
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -85,6 +110,8 @@ server {
 
 {% if route.kind == 'keycloak' %}
 {{ keycloak_locations(route, 'https') }}
+{% elif route.kind == 'landing' %}
+{{ landing_location(route) }}
 {% else %}
     location / {
 {{ proxy_to_origin(route, 'https') }}

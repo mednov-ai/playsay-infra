@@ -10,9 +10,27 @@ rf_edge_routes:
   - hostname: honeyschool.ru
     aliases:
       - www.honeyschool.ru
-    origin_hostname: honey.school
-    origin_tls_hostname: online.honey.school
+    document_root: /var/www/honeyschool.ru
+    landing_source: honeyschool-landing/index.html
+    kind: landing
+  - hostname: online.honeyschool.ru
+    origin_hostname: online.honey.school
+    certificate_directory: /etc/letsencrypt/live/online.honeyschool.ru
     kind: application
+    tls_enabled: false
+    response_replacements:
+      - source: https://online.honey.school
+        target: https://online.honeyschool.ru
+      - source: wss://online.honey.school
+        target: wss://online.honeyschool.ru
+  - hostname: key.honeyschool.ru
+    origin_hostname: key.honey.school
+    certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
+    kind: application
+    tls_enabled: false
+    response_replacements:
+      - source: https://key.honey.school
+        target: https://key.honeyschool.ru
   - hostname: ops.honey.school
     origin_hostname: ops.honey.school
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
