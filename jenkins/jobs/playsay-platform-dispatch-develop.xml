@@ -1,6 +1,6 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job">
-  <description>Play&amp;Say develop dispatcher. Receives develop pushes, validates changes, and triggers only affected downstream jobs.</description>
+  <description>Play&amp;Say internal develop dispatcher. Receives validated parameters from the webhook router or an operator, validates changes, and triggers only affected downstream jobs.</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
@@ -53,53 +53,7 @@
       <abortPrevious>true</abortPrevious>
     </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
   </properties>
-  <triggers>
-    <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
-      <spec></spec>
-      <genericVariables>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>BRANCH_NAME</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter>^refs/heads/</regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_REF</key>
-          <value>$.ref</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_BEFORE</key>
-          <value>$.before</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-        <org.jenkinsci.plugins.gwt.GenericVariable>
-          <key>GITHUB_AFTER</key>
-          <value>$.after</value>
-          <expressionType>JSONPath</expressionType>
-          <regexpFilter></regexpFilter>
-          <defaultValue></defaultValue>
-        </org.jenkinsci.plugins.gwt.GenericVariable>
-      </genericVariables>
-      <genericRequestVariables/>
-      <genericHeaderVariables/>
-      <token></token>
-      <tokenCredentialId>github-webhook-token</tokenCredentialId>
-      <printPostContent>false</printPostContent>
-      <printContributedVariables>false</printContributedVariables>
-      <causeString>GitHub push to $BRANCH_NAME</causeString>
-      <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
-      <regexpFilterExpression>^refs/heads/develop (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
-      <silentResponse>false</silentResponse>
-      <shouldNotFlatten>false</shouldNotFlatten>
-      <overrideQuietPeriod>false</overrideQuietPeriod>
-    </org.jenkinsci.plugins.gwt.GenericTrigger>
-  </triggers>
+  <triggers/>
   <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps">
     <scm class="hudson.plugins.git.GitSCM" plugin="git">
       <configVersion>2</configVersion>

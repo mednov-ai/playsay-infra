@@ -1,0 +1,154 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>Play&amp;Say GitHub push webhook router. Owns the shared Generic Webhook Trigger token and forwards each accepted branch event to exactly one internal dispatcher.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH_NAME</name>
+          <description>Git branch received from GitHub push event.</description>
+          <defaultValue>develop</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>GITHUB_BEFORE</name>
+          <description>GitHub push before SHA.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>GITHUB_AFTER</name>
+          <description>GitHub push after SHA.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FORCE_TARGETS</name>
+          <description>Optional manual override forwarded to the internal dispatcher.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>MAX_PARALLEL_MODULE_JOBS</name>
+          <description>Maximum downstream module jobs forwarded to the internal dispatcher; allowed range is 1..4.</description>
+          <defaultValue>4</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>30</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+        <removeLastBuild>false</removeLastBuild>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
+      <abortPrevious>false</abortPrevious>
+    </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
+  </properties>
+  <triggers>
+    <org.jenkinsci.plugins.gwt.GenericTrigger plugin="generic-webhook-trigger">
+      <spec></spec>
+      <genericVariables>
+        <org.jenkinsci.plugins.gwt.GenericVariable>
+          <key>BRANCH_NAME</key>
+          <value>$.ref</value>
+          <expressionType>JSONPath</expressionType>
+          <regexpFilter>^refs/heads/</regexpFilter>
+          <defaultValue></defaultValue>
+        </org.jenkinsci.plugins.gwt.GenericVariable>
+        <org.jenkinsci.plugins.gwt.GenericVariable>
+          <key>GITHUB_REF</key>
+          <value>$.ref</value>
+          <expressionType>JSONPath</expressionType>
+          <regexpFilter></regexpFilter>
+          <defaultValue></defaultValue>
+        </org.jenkinsci.plugins.gwt.GenericVariable>
+        <org.jenkinsci.plugins.gwt.GenericVariable>
+          <key>GITHUB_BEFORE</key>
+          <value>$.before</value>
+          <expressionType>JSONPath</expressionType>
+          <regexpFilter></regexpFilter>
+          <defaultValue></defaultValue>
+        </org.jenkinsci.plugins.gwt.GenericVariable>
+        <org.jenkinsci.plugins.gwt.GenericVariable>
+          <key>GITHUB_AFTER</key>
+          <value>$.after</value>
+          <expressionType>JSONPath</expressionType>
+          <regexpFilter></regexpFilter>
+          <defaultValue></defaultValue>
+        </org.jenkinsci.plugins.gwt.GenericVariable>
+      </genericVariables>
+      <genericRequestVariables/>
+      <genericHeaderVariables/>
+      <token></token>
+      <tokenCredentialId>github-webhook-token</tokenCredentialId>
+      <printPostContent>false</printPostContent>
+      <printContributedVariables>false</printContributedVariables>
+      <causeString>GitHub push routed for $BRANCH_NAME</causeString>
+      <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
+      <regexpFilterExpression>^refs/heads/(develop|release/[0-9]+\.[0-9]+\.[0-9]+) (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
+      <silentResponse>false</silentResponse>
+      <shouldNotFlatten>false</shouldNotFlatten>
+      <overrideQuietPeriod>false</overrideQuietPeriod>
+    </org.jenkinsci.plugins.gwt.GenericTrigger>
+  </triggers>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script><![CDATA[pipeline {
+  agent none
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+    skipDefaultCheckout(true)
+    timeout(time: 10, unit: 'MINUTES')
+  }
+
+  stages {
+    stage('Route webhook') {
+      steps {
+        script {
+          def requestedBranch = params.BRANCH_NAME?.trim()
+          def requestedBefore = params.GITHUB_BEFORE?.trim() ?: ''
+          def requestedAfter = params.GITHUB_AFTER?.trim()
+          def requestedTargets = params.FORCE_TARGETS?.trim() ?: ''
+          def requestedParallelism = params.MAX_PARALLEL_MODULE_JOBS?.trim() ?: '4'
+
+          if (!(requestedAfter ==~ /^[0-9a-f]{40}$/) || requestedAfter ==~ /^0{40}$/) {
+            error 'Webhook router requires a non-zero 40-character GITHUB_AFTER.'
+          }
+          if (!(requestedParallelism ==~ /^[1-4]$/)) {
+            error 'MAX_PARALLEL_MODULE_JOBS must be between 1 and 4.'
+          }
+
+          def targetJob
+          if (requestedBranch == 'develop') {
+            targetJob = 'playsay-platform-dispatch-develop'
+          } else if (requestedBranch ==~ /^release\/[0-9]+\.[0-9]+\.[0-9]+$/) {
+            targetJob = 'playsay-platform-dispatch-release'
+          } else {
+            error "Webhook router does not support branch: ${requestedBranch ?: '(empty)'}"
+          }
+
+          currentBuild.displayName = "route-${env.BUILD_NUMBER}"
+          currentBuild.description = "${requestedBranch} @ ${requestedAfter.take(12)} -> ${targetJob}"
+          echo "Routing ${requestedBranch} @ ${requestedAfter} to ${targetJob}"
+          build job: targetJob, parameters: [
+            string(name: 'BRANCH_NAME', value: requestedBranch),
+            string(name: 'GITHUB_BEFORE', value: requestedBefore),
+            string(name: 'GITHUB_AFTER', value: requestedAfter),
+            string(name: 'FORCE_TARGETS', value: requestedTargets),
+            string(name: 'MAX_PARALLEL_MODULE_JOBS', value: requestedParallelism)
+          ], wait: false, propagate: false
+        }
+      }
+    }
+  }
+}]]></script>
+    <sandbox>true</sandbox>
+  </definition>
+  <disabled>false</disabled>
+</flow-definition>

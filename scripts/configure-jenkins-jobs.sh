@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}/jenkins}"
 DEFAULT_JOB_NAMES=(
+  playsay-platform-dispatch-webhook
   playsay-platform-dispatch-develop
   playsay-platform-dispatch-release
   playsay-platform-develop
@@ -22,6 +23,7 @@ DEFAULT_JOB_NAMES=(
   playsay-keyboard-frontend-develop
 )
 DEFAULT_JOB_CONFIGS=(
+  "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-webhook.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-release.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml"
