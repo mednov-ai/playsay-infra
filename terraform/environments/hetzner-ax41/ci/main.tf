@@ -3,7 +3,7 @@ module "ci" {
 
   name         = "playsay-ci"
   hostname     = "playsay-ci"
-  vcpu         = 2
+  vcpu         = 4
   memory_mib   = 8192
   disk_gib     = 100
   pool_name    = "playsay"

@@ -37,8 +37,8 @@ controller:
       memory: 2Gi
 
 agent:
-  containerCap: 1
-  instanceCap: 1
+  containerCap: 4
+  instanceCap: 4
   garbageCollection:
     enabled: true
     namespaces: jenkins

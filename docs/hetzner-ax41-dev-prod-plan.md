@@ -12,7 +12,7 @@ The target is the already provisioned Hetzner AX41 dedicated server with three i
 
 - `playsay-dev`: migrated current dev cluster, synthetic data and automatic delivery target from `develop`;
 - `playsay-prod`: clean production cluster, separate state and integrations, built only from a protected three-part release branch named `release/<version>.<subversion>.<patch>` (for example `release/1.001.00`).
-- `playsay-ci`: shared Jenkins controller and one serialized build agent with scoped deploy access only to dev.
+- `playsay-ci`: shared Jenkins controller and up to four one-CPU build agents with scoped deploy access only to dev.
 
 The host keeps its installed Ubuntu 24.04 LTS, mdadm RAID1 and ext4 filesystem. Do not reinstall it with Proxmox and do not replace the working mdadm/ext4 storage with ZFS merely to create the three VMs. Ubuntu's KVM/QEMU/libvirt stack provides the required VM isolation without another hypervisor distribution.
 
@@ -37,10 +37,10 @@ The RAID must finish initial synchronization and report both members healthy bef
 |---|---:|---:|---:|---|
 | `playsay-prod` VM | 8 | 38 GiB | 200 GB qcow2 | highest CPU and I/O weight |
 | `playsay-dev` VM | 2 | 10 GiB | 120 GB qcow2 | product dev workloads only, lower weight than prod |
-| `playsay-ci` VM | 2 | 8 GiB | 100 GB qcow2 | serialized Jenkins controller/agent only |
+| `playsay-ci` VM | 4 | 8 GiB | 100 GB qcow2 | Jenkins controller and up to four one-CPU agents |
 | Ubuntu host | shared | approximately 6 GiB remain unassigned | at least 70 GB physical free space | libvirt, networking, proxy, VPN and filesystem cache |
 
-Virtual disks live in a dedicated libvirt storage pool on the existing ext4 filesystem. Sparse qcow2 capacity is not permission to overcommit physical storage: alerts start below 20% free and new writes/deployments stop below 15% free. Ballooning is not used to take guaranteed RAM away from prod. The three guests declare 12 vCPUs in total; CPU scheduling remains weighted in favour of prod and Jenkins permits only one agent.
+Virtual disks live in a dedicated libvirt storage pool on the existing ext4 filesystem. Sparse qcow2 capacity is not permission to overcommit physical storage: alerts start below 20% free and new writes/deployments stop below 15% free. Ballooning is not used to take guaranteed RAM away from prod. The three guests declare 14 vCPUs on 12 logical host CPUs (`1.17×` overcommit); Jenkins permits up to four one-CPU agents, and the operator reduces dispatcher fan-out if host or production health degrades.
 
 The dev CPU allocation is based on VictoriaMetrics from the current 4-vCPU/8-GB VPS. During the observed lesson window on 2026-07-20 08:50-09:40 Europe/Moscow:
 
@@ -49,15 +49,15 @@ The dev CPU allocation is based on VictoriaMetrics from the current 4-vCPU/8-GB 
 - memory available averaged only `0.53 GiB`, swap used `1.09 GiB`, and major faults averaged about `3127/s`;
 - all Kubernetes containers used `0.28` cores on average; LiveKit used `0.13`, Play&Say application pods `0.04`, and Jenkins was effectively idle at `0.004` cores.
 
-Across 2026-07-13 through 2026-07-20, host compute p95 was `1.63` cores, p99 `2.77`, and the rare maximum `3.58`; Jenkins itself peaked at about `1.19` cores. Therefore 4 dev vCPUs would reserve unnecessary scheduler capacity. Dev starts at 2 vCPUs/10 GiB, while Jenkins receives its own 2-vCPU/8-GiB guest and cannot crowd the dev or prod clusters through Kubernetes scheduling. The larger aggregate RAM allocation and local NVMe RAID1 address the measured paging/I/O bottleneck more directly than extra dev vCPUs.
+Across 2026-07-13 through 2026-07-20, host compute p95 was `1.63` cores, p99 `2.77`, and the rare maximum `3.58`; Jenkins itself peaked at about `1.19` cores. Therefore 4 dev vCPUs would reserve unnecessary scheduler capacity. Dev starts at 2 vCPUs/10 GiB, while Jenkins receives its own 4-vCPU/8-GiB guest and cannot crowd the dev or prod clusters through Kubernetes scheduling. The resulting 14 guest vCPUs moderately overcommit 12 logical host CPUs, so four-agent CI is accepted only while host and production health gates remain green. The larger aggregate RAM allocation and local NVMe RAID1 address the measured paging/I/O bottleneck more directly than extra dev vCPUs.
 
 The dev RAM allocation is also based on VictoriaMetrics working-set data. During the lesson window all Kubernetes containers averaged `5.85 GiB`, with p95 `5.92 GiB` and maximum `5.95 GiB`. Across 2026-07-13 through 2026-07-20 the total Kubernetes working set peaked at `6.24 GiB`; Jenkins was part of that total and independently peaked at `2.69 GiB`. Moving Jenkins out means a 10-GiB dev guest retains practical OS/cache headroom without reserving 16 GiB permanently.
 
 The AX41 exposes approximately 62 GiB usable RAM. Assigning 10 GiB to dev, 38 GiB to prod and 8 GiB to CI leaves approximately 6 GiB for the Ubuntu host. Memory ballooning remains disabled: this is a fixed initial allocation, not an overcommit target. Alert when host `MemAvailable` stays below 4 GiB for 15 minutes, and block non-essential VM starts, backups and build bursts until pressure is resolved; sustained host swap-in or memory-pressure stalls require revisiting the split before increasing any guest.
 
-Raise dev from 2 to 3 vCPUs only through a reviewed OpenTofu/Git change when at least one condition is reproduced after migration: compute utilization excluding I/O wait stays above 85% for 15 minutes; serialized Jenkins build duration regresses by more than 30% against the post-migration baseline; or dev LiveKit/API thresholds fail while CPU is saturated. High load caused by I/O wait, memory pressure or a broken build is not by itself a reason to add CPU. A fourth dev vCPU requires a new prod-isolation review.
+Raise dev from 2 to 3 vCPUs only through a reviewed OpenTofu/Git change when compute utilization excluding I/O wait stays above 85% for 15 minutes or dev LiveKit/API thresholds fail while CPU is saturated. High load caused by I/O wait, memory pressure or a broken build is not by itself a reason to add CPU. A fourth dev vCPU requires a new prod-isolation review; CI build regression is diagnosed and scaled independently inside `playsay-ci`.
 
-The Jenkins agent remains serialized in `playsay-ci`. Database migrations run as admission-restricted Jobs inside dev; Jenkins cannot read DB Secrets or create Pods directly. Legacy capacity acquire/restore, guard sidecars and watchdog manifests were removed after the isolated migration Job proof on 2026-07-21.
+Jenkins permits at most four one-CPU agents in `playsay-ci`; the dispatcher override may reduce fan-out to `1` or `2` immediately if resource gates fail. Database migrations run as admission-restricted Jobs inside dev; Jenkins cannot read DB Secrets or create Pods directly. Legacy capacity acquire/restore, guard sidecars and watchdog manifests were removed after the isolated migration Job proof on 2026-07-21.
 
 ## 3. Network and security
 
@@ -313,7 +313,7 @@ This is the critical path for the first `honey.school` move. Object Storage is d
 
 - [x] **T1** Apply the Ansible local-state directories, check out the reviewed infra commit on AX41 and make an encrypted off-host copy around every OpenTofu apply. Latest platform/dev/prod bundles were copied off-host and decrypted/verified successfully; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
 - [x] **T2** Plan and apply `platform`, creating NAT-backed `playsay-workloads`/`virbr60` and the libvirt pool; verify no public administrative port is opened. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
-- [x] **T3** Plan and create prod (`10.60.0.20`, 8 vCPU/38 GiB/200 GB), dev (`10.60.0.30`, 2 vCPU/10 GiB/120 GB) and CI (`10.60.0.40`, 2 vCPU/8 GiB/100 GB); verify guest agent, autostart and destroy protection. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md` and `migrations/ax41/evidence/20260721-ci-vm-and-rebalance.md`.
+- [x] **T3** Plan and create prod (`10.60.0.20`, 8 vCPU/38 GiB/200 GB), dev (`10.60.0.30`, 2 vCPU/10 GiB/120 GB) and CI (`10.60.0.40`, initially 2 and then 4 vCPU/8 GiB/100 GB); verify guest agent, autostart and destroy protection. Evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md` and `migrations/ax41/evidence/20260721-ci-vm-and-rebalance.md`.
 - [x] **T4** Bootstrap independent Ubuntu/k3s/ArgoCD environments from Git; dev and prod receive separate CIDRs, secrets, databases, MinIO and Keycloak. Both controllers and the prod PostgreSQL/Keycloak/MinIO data plane are Synced/Healthy from the matching release branch; evidence: `migrations/ax41/evidence/20260720-prod-seed-and-edge.md`.
 - [~] **T5** Build immutable release images from platform `release/1.001.01` and promote only their digests through matching infra `release/1.001.01`. Web/keyboard release builds and manual prod sync passed; repository branch-protection confirmation remains owner-side. Email/payment provider workloads remain intentionally disabled until independent prod credentials are supplied.
 - [x] **T6** Configure edge/TLS for all eight `honey.school` hosts. Exact routes, WireGuard-only ops/Jenkins policy, restricted hooks, collaboration/LiveKit routing and the eight-SAN certificate are active; evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
@@ -394,7 +394,7 @@ Implementation note: the server tunnel and both permanent peer definitions are a
 - [x] **4.1** Produce clean reviewed `platform` plans and apply the libvirt pool plus NAT network. The NAT addition deliberately replaced only the still-empty network with both guests shut down; evidence: `migrations/ax41/evidence/20260720-opentofu-vms.md`.
 - [x] **4.2** Create `playsay-dev` at `10.60.0.30`, Ubuntu 24.04, 2 vCPU, 12 GB RAM and maximum 120-GB qcow2; SSH, cloud-init, guest agent and autostart pass.
 - [x] **4.3** Create `playsay-prod` at `10.60.0.20`, Ubuntu 24.04, 8 vCPU, 42 GB RAM and maximum 200-GB qcow2; SSH, cloud-init, guest agent, autostart and lifecycle protection pass.
-- [x] **4.4** Apply CPU/I/O priorities so prod wins contention (I/O weights 900 versus 300); keep dev CI serialized.
+- [x] **4.4** Apply I/O priorities so prod wins storage contention (I/O weights 900 versus 300); keep CI bounded to four one-CPU agents with an operator rollback to one or two.
 - [ ] **4.5** Reboot the host with both guests enabled and verify independent recovery, correct addresses and no startup-order dependency.
 - [ ] **4.6** Run a controlled dev CPU/memory/disk stress test and confirm host reserve, prod responsiveness and storage thresholds.
 
