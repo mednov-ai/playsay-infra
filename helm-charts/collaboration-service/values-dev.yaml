@@ -1,12 +1,12 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-dev-17"
-  digest: sha256:1742ee0da7a61d3c01cc87f5b98e9e5f1c1728692a1cce9024bb9e2fc5d8fafa
+  tag: "collab-dev-18"
+  digest: sha256:cb4f540073770db4c72162fbb228db0ae98ed4d1641bcd38a4cb680a380c21cc
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-dev-17
-  number: "17"
+  name: collab-dev-18
+  number: "18"
   branch: develop
   branchLabel: collab-dev
   commit: c9aa97157e3fad27b8cccf0c5ff085aab272d01f
