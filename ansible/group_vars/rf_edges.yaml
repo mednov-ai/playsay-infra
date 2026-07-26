@@ -23,6 +23,8 @@ rf_edge_routes:
         target: https://online.honeyschool.ru
       - source: wss://online.honey.school
         target: wss://online.honeyschool.ru
+      - source: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+        target: https://ops.honey.school/keycloak/realms/playsay
   - hostname: key.honeyschool.ru
     origin_hostname: key.honey.school
     certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
@@ -31,6 +33,8 @@ rf_edge_routes:
     response_replacements:
       - source: https://key.honey.school
         target: https://key.honeyschool.ru
+      - source: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
+        target: https://ops.honey.school/keycloak/realms/playsay
   - hostname: ops.honey.school
     origin_hostname: ops.honey.school
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
