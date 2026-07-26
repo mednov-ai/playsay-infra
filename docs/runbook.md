@@ -1111,6 +1111,8 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 
 The dispatcher has `BRANCH_NAME`, `GITHUB_BEFORE`, `GITHUB_AFTER`, optional `FORCE_TARGETS=all|target1,target2`, and `MAX_PARALLEL_MODULE_JOBS` in the range `1..4` with default `4`. Its analysis stage uses a small temporary agent and releases it before the downstream stage. Affected module jobs then run in bounded batches of at most four; Kubernetes cloud `containerCap=4` and `instanceCap=4` enforce the same ceiling. Module jobs are manual/dispatcher-only and do not have GitHub webhook triggers. All module jobs checkout `GITHUB_AFTER` when it is provided, so they build the same source commit the dispatcher analyzed. `playsay-platform-develop` stays available as a manual dev-only full rebuild safety valve with `AFFECTED_TARGETS=all`, but it is no longer part of automatic dispatch and rejects `release/*`.
 
+Parallel module jobs may update different chart files on `playsay-infra/develop` at the same time. A rejected non-fast-forward GitOps push is expected in that race: `scripts/ci/update-environment-image.sh` must return to its stable workspace, remove the stale temporary clone, clone the latest infra branch again, reapply only the owned chart update, and retry up to five times. Do not interpret the first rejected push as a missing `develop` branch, and do not serialize the dispatcher merely to avoid this recoverable Git race.
+
 Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefixes:
 
 - `api-gateway`: `api-dev-N` on `develop`;
