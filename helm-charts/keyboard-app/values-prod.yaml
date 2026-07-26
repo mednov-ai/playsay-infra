@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-release-1.001.00-64"
-  digest: "sha256:694ded2361c6126a1e7ffc9c6366f2cce3fa5345f5e30b2b80349584074924c4"
+  tag: "key-frontend-release-1.001.06-11"
+  digest: "sha256:562fa4eeb1718052a101668472c06e8dbd192512518ee89a2f574e80aa335e36"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-release-1.001.00-64
-  number: "64"
-  branch: release/1.001.00
-  branchLabel: key-frontend-release-1.001.00
-  commit: 92406096f13b2451086d39021f8febfab855dbdc
-  commitShort: 92406096f13b
+  name: key-frontend-release-1.001.06-11
+  number: "11"
+  branch: release/1.001.06
+  branchLabel: key-frontend-release-1.001.06
+  commit: 99b6432fa065cbc4976233166f8d5f2966706035
+  commitShort: 99b6432fa065
 service:
   type: NodePort
   nodePort: 32087
