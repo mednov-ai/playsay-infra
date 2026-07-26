@@ -1,5 +1,5 @@
 schemaVersion: 1
-status: building
+status: ready
 releaseBranch: "release/1.001.07"
 baseRelease: "release/1.001.06"
 basePlatformCommit: "cc457ec808066f827174c5cc4b5554ca2df6cf12"
@@ -11,4 +11,4 @@ validationSuites:
 dispatcher:
   job: "codex-manual-release-recovery"
   build: "jenkins-3-4-agent-loss"
-updatedAt: "2026-07-26T20:27:24Z"
+updatedAt: "2026-07-26T20:27:52Z"
