@@ -1100,7 +1100,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, builds/pushes the image, then routes its reference to dev or the matching production release;
 - `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-vocabulary-service-develop`: tests/packages `vocabulary-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
-- `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, tests/packages `browser-extension` and archives `frontend/browser-extension/playsay-browser-extension.zip`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-payment-service-develop`: tests/packages `payment-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
@@ -1134,6 +1134,7 @@ Affected-target policy:
 - `frontend/keyboard-app/**` -> `playsay-keyboard-frontend-develop`;
 - `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
 - `frontend/web-app/**` -> `playsay-web-app-develop`;
+- `frontend/browser-extension/**` -> `playsay-web-app-develop`;
 - `backend/api-gateway/**` -> `playsay-api-gateway-develop`;
 - `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
 - `backend/ai-tutor-service/**` or `contracts/ai-tutor-openapi.yaml` -> `playsay-ai-tutor-service-develop` and `playsay-web-app-develop`;
