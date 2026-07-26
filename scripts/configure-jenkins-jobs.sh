@@ -7,6 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}/jenkins}"
 DEFAULT_JOB_NAMES=(
   playsay-platform-dispatch-develop
+  playsay-platform-dispatch-release
   playsay-platform-develop
   playsay-api-gateway-develop
   playsay-ai-tutor-service-develop
@@ -22,6 +23,7 @@ DEFAULT_JOB_NAMES=(
 )
 DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-platform-dispatch-release.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-platform-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-api-gateway-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-ai-tutor-service-develop.xml"

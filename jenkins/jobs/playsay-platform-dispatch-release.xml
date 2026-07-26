@@ -1,14 +1,14 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <flow-definition plugin="workflow-job">
-  <description>Play&amp;Say develop dispatcher. Receives develop pushes, validates changes, and triggers only affected downstream jobs.</description>
+  <description>Play&amp;Say production-candidate dispatcher. Receives protected numeric release pushes, prepares the matching infra candidate, and triggers only affected module jobs.</description>
   <keepDependencies>false</keepDependencies>
   <properties>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
           <name>BRANCH_NAME</name>
-          <description>Git branch received from GitHub push event.</description>
-          <defaultValue>develop</defaultValue>
+          <description>Numeric release branch received from GitHub push event.</description>
+          <defaultValue></defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
@@ -50,7 +50,7 @@
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
     <org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
-      <abortPrevious>true</abortPrevious>
+      <abortPrevious>false</abortPrevious>
     </org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty>
   </properties>
   <triggers>
@@ -92,9 +92,9 @@
       <tokenCredentialId>github-webhook-token</tokenCredentialId>
       <printPostContent>false</printPostContent>
       <printContributedVariables>false</printContributedVariables>
-      <causeString>GitHub push to $BRANCH_NAME</causeString>
+      <causeString>GitHub numeric release push to $BRANCH_NAME</causeString>
       <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
-      <regexpFilterExpression>^refs/heads/develop (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
+      <regexpFilterExpression>^refs/heads/release/[0-9]+\.[0-9]+\.[0-9]+ (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
       <silentResponse>false</silentResponse>
       <shouldNotFlatten>false</shouldNotFlatten>
       <overrideQuietPeriod>false</overrideQuietPeriod>
