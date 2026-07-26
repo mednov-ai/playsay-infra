@@ -1,15 +1,15 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-15"
+  tag: "web-dev-16"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-15
-  number: "15"
+  name: web-dev-16
+  number: "16"
   branch: develop
   branchLabel: web-dev
-  commit: 79abf78c8accd38d7ec9cbeec584204f53769901
-  commitShort: "79abf78c8acc"
+  commit: 70579f037f032fb961ae79ad18882f6725fe357b
+  commitShort: "70579f037f03"
 service:
   type: NodePort
   nodePort: 32083
