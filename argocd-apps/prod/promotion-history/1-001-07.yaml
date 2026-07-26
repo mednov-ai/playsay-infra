@@ -1,0 +1,11 @@
+schemaVersion: 1
+operation: legacy-promotion
+releaseBranch: "release/1.001.07"
+previousRelease: "release/1.001.06"
+platformSha: "1c068b10c8c435a8ae20f9f9621d70a865f9cc9c"
+infraSha: "84ac3295ab47cec4f3aaf429bbd25e0c843caf18"
+workflow: "manual-transition"
+requestedBy: "operator"
+backupPrefix: "/var/backups/playsay/release-1.001.07-20260726T203004Z"
+smokeResult: passed
+promotedAt: "2026-07-26T20:38:21Z"

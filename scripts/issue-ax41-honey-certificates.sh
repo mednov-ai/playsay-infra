@@ -8,6 +8,7 @@ certbot certonly \
   --cert-name online.honey.school \
   --non-interactive --agree-tos --register-unsafely-without-email \
   --keep-until-expiring \
+  --expand \
   -d online.honey.school \
   -d key.honey.school \
   -d dev.online.honey.school \
@@ -15,6 +16,7 @@ certbot certonly \
   -d ops.honey.school \
   -d dev.ops.honey.school \
   -d jenkins.honey.school \
+  -d workflows.honey.school \
   -d hooks.honey.school
 
 nginx -t

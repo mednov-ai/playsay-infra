@@ -1,0 +1,525 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: playsay-production-promotion
+  namespace: playsay-release-system
+  labels:
+    app.kubernetes.io/name: playsay-production-promotion
+    app.kubernetes.io/part-of: playsay-release
+spec:
+  serviceAccountName: release-orchestrator
+  entrypoint: promote
+  onExit: recover-on-failure
+  synchronization:
+    mutexes:
+      - name: playsay-production-operation
+  activeDeadlineSeconds: 14400
+  arguments:
+    parameters:
+      - name: releaseBranch
+      - name: expectedInfraHead
+      - name: requestedBy
+      - name: dryRun
+        value: "false"
+      - name: releaseOpsImage
+        value: ghcr.io/mednov-ai/playsay-release-ops:bootstrap-pending
+  volumes:
+    - name: release-tools
+      configMap:
+        name: playsay-release-tools
+        defaultMode: 365
+    - name: github-app
+      secret:
+        secretName: playsay-release-github
+  templates:
+    - name: promote
+      dag:
+        tasks:
+          - name: validate
+            template: validate-candidate
+          - name: dry-run-complete
+            depends: validate.Succeeded
+            when: "{{workflow.parameters.dryRun}} == true"
+            template: dry-run-report
+          - name: approve-backup
+            depends: validate.Succeeded
+            when: "{{workflow.parameters.dryRun}} == false"
+            template: approval
+          - name: backup-application
+            depends: approve-backup.Succeeded
+            template: backup-application
+          - name: backup-keyboard
+            depends: approve-backup.Succeeded
+            template: backup-keyboard
+          - name: backup-keycloak
+            depends: approve-backup.Succeeded
+            template: backup-keycloak
+          - name: backup-minio
+            depends: approve-backup.Succeeded
+            template: backup-minio
+          - name: approve-deploy
+            depends: backup-application.Succeeded && backup-keyboard.Succeeded && backup-keycloak.Succeeded && backup-minio.Succeeded
+            template: approval
+          - name: mark-deploying
+            depends: approve-deploy.Succeeded
+            template: update-candidate
+            arguments:
+              parameters:
+                - name: status
+                  value: deploying
+                - name: backupApprovedBy
+                  value: "{{tasks.approve-backup.outputs.parameters.approvedBy}}"
+                - name: deployApprovedBy
+                  value: "{{tasks.approve-deploy.outputs.parameters.approvedBy}}"
+                - name: smokeResult
+                  value: pending
+                - name: currentReleasePr
+                  value: ""
+          - name: migrate
+            depends: mark-deploying.Succeeded
+            template: migrate
+          - name: sync
+            depends: migrate.Succeeded
+            template: sync
+            arguments:
+              parameters:
+                - name: targetRelease
+                  value: "{{workflow.parameters.releaseBranch}}"
+          - name: smoke
+            depends: sync.Succeeded
+            template: smoke
+            arguments:
+              parameters:
+                - name: expectedRelease
+                  value: "{{workflow.parameters.releaseBranch}}"
+          - name: update-current-release
+            depends: smoke.Succeeded
+            template: update-current-release
+          - name: mark-promoted
+            depends: update-current-release.Succeeded
+            template: update-candidate
+            arguments:
+              parameters:
+                - name: status
+                  value: promoted
+                - name: backupApprovedBy
+                  value: "{{tasks.approve-backup.outputs.parameters.approvedBy}}"
+                - name: deployApprovedBy
+                  value: "{{tasks.approve-deploy.outputs.parameters.approvedBy}}"
+                - name: smokeResult
+                  value: passed
+                - name: currentReleasePr
+                  value: "{{tasks.update-current-release.outputs.parameters.pullRequest}}"
+
+    - name: validate-candidate
+      serviceAccountName: release-validator
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command:
+          - /scripts/validate-candidate.sh
+        env:
+          - name: RELEASE_BRANCH
+            value: "{{workflow.parameters.releaseBranch}}"
+          - name: EXPECTED_INFRA_HEAD
+            value: "{{workflow.parameters.expectedInfraHead}}"
+          - name: OUTPUT_DIR
+            value: /tmp/outputs
+          - name: GITHUB_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: playsay-release-github
+                key: app-id
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom:
+              secretKeyRef:
+                name: playsay-release-github
+                key: installation-id
+          - name: GITHUB_APP_PRIVATE_KEY_PATH
+            value: /github-app/private-key.pem
+        volumeMounts:
+          - name: release-tools
+            mountPath: /scripts
+            readOnly: true
+          - name: github-app
+            mountPath: /github-app
+            readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 96Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+      outputs:
+        parameters:
+          - name: baseRelease
+            globalName: playsay-base-release
+            valueFrom:
+              path: /tmp/outputs/base-release
+          - name: platformSha
+            globalName: playsay-platform-sha
+            valueFrom:
+              path: /tmp/outputs/platform-sha
+          - name: migrationTargets
+            globalName: playsay-migration-targets
+            valueFrom:
+              path: /tmp/outputs/migration-targets
+
+    - name: approval
+      suspend: {}
+      outputs:
+        parameters:
+          - name: approvedBy
+            valueFrom:
+              supplied: {}
+
+    - name: dry-run-report
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command:
+          - /bin/bash
+          - -ec
+        args:
+          - >-
+            echo "Dry-run validated {{workflow.parameters.releaseBranch}};
+            no backup, migration, ArgoCD sync or Git write was performed."
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+
+    - name: backup-application
+      serviceAccountName: release-backup
+      resource:
+        action: create
+        setOwnerReference: false
+        successCondition: status.succeeded > 0
+        failureCondition: status.failed > 0
+        manifest: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            generateName: release-backup-application-
+            namespace: playsay-data
+            labels:
+              app.kubernetes.io/name: playsay-release-backup
+              app.kubernetes.io/component: application-db
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 3600
+            ttlSecondsAfterFinished: 86400
+            template:
+              spec:
+                automountServiceAccountToken: false
+                restartPolicy: Never
+                containers:
+                  - name: backup
+                    image: "{{workflow.parameters.releaseOpsImage}}"
+                    command: [playsay-release-backup]
+                    env:
+                      - {name: BACKUP_KIND, value: application-db}
+                      - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+                      - {name: PGHOST, valueFrom: {secretKeyRef: {name: playsay-postgres-app, key: host}}}
+                      - {name: PGPORT, valueFrom: {secretKeyRef: {name: playsay-postgres-app, key: port}}}
+                      - {name: PGUSER, valueFrom: {secretKeyRef: {name: playsay-postgres-app, key: username}}}
+                      - {name: PGPASSWORD, valueFrom: {secretKeyRef: {name: playsay-postgres-app, key: password}}}
+                      - {name: PGDATABASE, valueFrom: {secretKeyRef: {name: playsay-postgres-app, key: dbname}}}
+                      - {name: PLAYSAY_BACKUP_ENDPOINT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: endpoint}}}
+                      - {name: PLAYSAY_BACKUP_REGION, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: region}}}
+                      - {name: PLAYSAY_BACKUP_BUCKET, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: bucket}}}
+                      - {name: PLAYSAY_BACKUP_ACCESS_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: access-key}}}
+                      - {name: PLAYSAY_BACKUP_SECRET_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: secret-key}}}
+                      - {name: PLAYSAY_BACKUP_AGE_RECIPIENT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: age-recipient}}}
+
+    - name: backup-keyboard
+      serviceAccountName: release-backup
+      resource:
+        action: create
+        setOwnerReference: false
+        successCondition: status.succeeded > 0
+        failureCondition: status.failed > 0
+        manifest: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            generateName: release-backup-keyboard-
+            namespace: playsay-data
+            labels:
+              app.kubernetes.io/name: playsay-release-backup
+              app.kubernetes.io/component: keyboard-db
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 3600
+            ttlSecondsAfterFinished: 86400
+            template:
+              spec:
+                automountServiceAccountToken: false
+                restartPolicy: Never
+                containers:
+                  - name: backup
+                    image: "{{workflow.parameters.releaseOpsImage}}"
+                    command: [playsay-release-backup]
+                    env:
+                      - {name: BACKUP_KIND, value: keyboard-db}
+                      - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+                      - {name: PGHOST, value: playsay-postgres-rw.playsay-data.svc.cluster.local}
+                      - {name: PGPORT, value: "5432"}
+                      - {name: PGUSER, valueFrom: {secretKeyRef: {name: playsay-postgres-keyboard, key: username}}}
+                      - {name: PGPASSWORD, valueFrom: {secretKeyRef: {name: playsay-postgres-keyboard, key: password}}}
+                      - {name: PGDATABASE, value: keyboard}
+                      - {name: PLAYSAY_BACKUP_ENDPOINT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: endpoint}}}
+                      - {name: PLAYSAY_BACKUP_REGION, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: region}}}
+                      - {name: PLAYSAY_BACKUP_BUCKET, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: bucket}}}
+                      - {name: PLAYSAY_BACKUP_ACCESS_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: access-key}}}
+                      - {name: PLAYSAY_BACKUP_SECRET_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: secret-key}}}
+                      - {name: PLAYSAY_BACKUP_AGE_RECIPIENT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: age-recipient}}}
+
+    - name: backup-keycloak
+      serviceAccountName: release-backup
+      resource:
+        action: create
+        setOwnerReference: false
+        successCondition: status.succeeded > 0
+        failureCondition: status.failed > 0
+        manifest: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            generateName: release-backup-keycloak-
+            namespace: keycloak
+            labels:
+              app.kubernetes.io/name: playsay-release-backup
+              app.kubernetes.io/component: keycloak-db
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 3600
+            ttlSecondsAfterFinished: 86400
+            template:
+              spec:
+                automountServiceAccountToken: false
+                restartPolicy: Never
+                containers:
+                  - name: backup
+                    image: "{{workflow.parameters.releaseOpsImage}}"
+                    command: [playsay-release-backup]
+                    env:
+                      - {name: BACKUP_KIND, value: keycloak-db}
+                      - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+                      - {name: PGHOST, value: keycloak-postgresql.keycloak.svc.cluster.local}
+                      - {name: PGPORT, value: "5432"}
+                      - {name: PGUSER, value: bn_keycloak}
+                      - {name: PGPASSWORD, valueFrom: {secretKeyRef: {name: keycloak-postgresql, key: password}}}
+                      - {name: PGDATABASE, value: bitnami_keycloak}
+                      - {name: PLAYSAY_BACKUP_ENDPOINT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: endpoint}}}
+                      - {name: PLAYSAY_BACKUP_REGION, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: region}}}
+                      - {name: PLAYSAY_BACKUP_BUCKET, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: bucket}}}
+                      - {name: PLAYSAY_BACKUP_ACCESS_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: access-key}}}
+                      - {name: PLAYSAY_BACKUP_SECRET_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: secret-key}}}
+                      - {name: PLAYSAY_BACKUP_AGE_RECIPIENT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: age-recipient}}}
+
+    - name: backup-minio
+      serviceAccountName: release-backup
+      resource:
+        action: create
+        setOwnerReference: false
+        successCondition: status.succeeded > 0
+        failureCondition: status.failed > 0
+        manifest: |
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            generateName: release-backup-minio-
+            namespace: storage
+            labels:
+              app.kubernetes.io/name: playsay-release-backup
+              app.kubernetes.io/component: minio
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 7200
+            ttlSecondsAfterFinished: 86400
+            template:
+              spec:
+                automountServiceAccountToken: false
+                restartPolicy: Never
+                containers:
+                  - name: backup
+                    image: "{{workflow.parameters.releaseOpsImage}}"
+                    command: [playsay-release-backup]
+                    env:
+                      - {name: BACKUP_KIND, value: minio}
+                      - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+                      - {name: MINIO_ENDPOINT, value: http://minio.storage.svc.cluster.local:9000}
+                      - {name: MINIO_BUCKET, value: playsay-material-assets}
+                      - {name: MINIO_ACCESS_KEY, valueFrom: {secretKeyRef: {name: playsay-object-storage, key: access-key}}}
+                      - {name: MINIO_SECRET_KEY, valueFrom: {secretKeyRef: {name: playsay-object-storage, key: secret-key}}}
+                      - {name: PLAYSAY_BACKUP_ENDPOINT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: endpoint}}}
+                      - {name: PLAYSAY_BACKUP_REGION, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: region}}}
+                      - {name: PLAYSAY_BACKUP_BUCKET, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: bucket}}}
+                      - {name: PLAYSAY_BACKUP_ACCESS_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: access-key}}}
+                      - {name: PLAYSAY_BACKUP_SECRET_KEY, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: secret-key}}}
+                      - {name: PLAYSAY_BACKUP_AGE_RECIPIENT, valueFrom: {secretKeyRef: {name: playsay-release-backup, key: age-recipient}}}
+
+    - name: update-candidate
+      serviceAccountName: release-git-updater
+      inputs:
+        parameters:
+          - name: status
+          - name: backupApprovedBy
+          - name: deployApprovedBy
+          - name: smokeResult
+          - name: currentReleasePr
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/bin/bash, -ec]
+        args:
+          - >-
+            /scripts/update-candidate-status.sh;
+            if [[ "{{inputs.parameters.status}}" == "deploying" ]]; then
+              mkdir -p /tmp/outputs;
+              printf true > /tmp/outputs/deployment-started;
+            fi
+        env:
+          - {name: RELEASE_BRANCH, value: "{{workflow.parameters.releaseBranch}}"}
+          - {name: CANDIDATE_STATUS, value: "{{inputs.parameters.status}}"}
+          - {name: WORKFLOW_NAME, value: "{{workflow.name}}"}
+          - {name: REQUESTED_BY, value: "{{workflow.parameters.requestedBy}}"}
+          - {name: BACKUP_APPROVED_BY, value: "{{inputs.parameters.backupApprovedBy}}"}
+          - {name: DEPLOY_APPROVED_BY, value: "{{inputs.parameters.deployApprovedBy}}"}
+          - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+          - {name: SMOKE_RESULT, value: "{{inputs.parameters.smokeResult}}"}
+          - {name: CURRENT_RELEASE_PR, value: "{{inputs.parameters.currentReleasePr}}"}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+      outputs:
+        parameters:
+          - name: deploymentStarted
+            globalName: playsay-deployment-started
+            valueFrom:
+              path: /tmp/outputs/deployment-started
+              default: "false"
+
+    - name: migrate
+      serviceAccountName: release-migrator
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/run-prod-migrations.sh]
+        env:
+          - {name: RELEASE_BRANCH, value: "{{workflow.parameters.releaseBranch}}"}
+          - {name: PLATFORM_SHA, value: "{{workflow.outputs.parameters.playsay-platform-sha}}"}
+          - {name: MIGRATION_TARGETS, value: "{{workflow.outputs.parameters.playsay-migration-targets}}"}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: sync
+      serviceAccountName: release-argocd
+      inputs:
+        parameters:
+          - name: targetRelease
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/sync-argocd.sh]
+        env:
+          - {name: TARGET_RELEASE, value: "{{inputs.parameters.targetRelease}}"}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: smoke
+      serviceAccountName: release-smoke
+      inputs:
+        parameters:
+          - name: expectedRelease
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/smoke-prod.sh]
+        env:
+          - {name: EXPECTED_RELEASE, value: "{{inputs.parameters.expectedRelease}}"}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: update-current-release
+      serviceAccountName: release-git-updater
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/update-current-release.sh]
+        env:
+          - {name: RELEASE_BRANCH, value: "{{workflow.parameters.releaseBranch}}"}
+          - {name: PLATFORM_SHA, value: "{{workflow.outputs.parameters.playsay-platform-sha}}"}
+          - {name: WORKFLOW_NAME, value: "{{workflow.name}}"}
+          - {name: REQUESTED_BY, value: "{{workflow.parameters.requestedBy}}"}
+          - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+          - {name: OUTPUT_DIR, value: /tmp/outputs}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+      outputs:
+        parameters:
+          - name: pullRequest
+            valueFrom:
+              path: /tmp/outputs/current-release-pr
+
+    - name: recover-on-failure
+      steps:
+        - - name: rollback
+            when: "{{workflow.status}} != Succeeded && {{workflow.parameters.dryRun}} == false"
+            template: rollback-on-failure
+
+    - name: rollback-on-failure
+      serviceAccountName: release-recovery
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/rollback-on-failure.sh]
+        env:
+          - {name: RELEASE_BRANCH, value: "{{workflow.parameters.releaseBranch}}"}
+          - {name: PREVIOUS_RELEASE, value: "{{workflow.outputs.parameters.playsay-base-release}}"}
+          - {name: WORKFLOW_NAME, value: "{{workflow.name}}"}
+          - {name: REQUESTED_BY, value: "{{workflow.parameters.requestedBy}}"}
+          - {name: BACKUP_PREFIX, value: "releases/{{workflow.parameters.releaseBranch}}/{{workflow.uid}}"}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}

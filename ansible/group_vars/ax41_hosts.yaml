@@ -99,6 +99,9 @@ edge_routes:
   - hostname: jenkins.honey.school
     kind: jenkins
     upstream: 10.60.0.40:32082
+  - hostname: workflows.honey.school
+    kind: workflows
+    upstream: 10.60.0.20:32088
   - hostname: hooks.honey.school
     kind: hooks
     jenkins_upstream: 10.60.0.40:32082

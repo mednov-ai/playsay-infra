@@ -1,0 +1,77 @@
+singleNamespace: false
+
+workflow:
+  serviceAccount:
+    create: false
+  rbac:
+    create: false
+
+controller:
+  workflowNamespaces:
+    - playsay-release-system
+  workflowRestrictions:
+    templateReferencing: Secure
+  parallelism: 8
+  podGC:
+    strategy: OnWorkflowCompletion
+  workflowDefaults:
+    spec:
+      ttlStrategy:
+        secondsAfterCompletion: 7776000
+      podGC:
+        strategy: OnWorkflowCompletion
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  metricsConfig:
+    enabled: true
+  telemetryConfig:
+    enabled: true
+
+server:
+  authModes:
+    - sso
+  secure: false
+  serviceType: NodePort
+  serviceNodePort: 32088
+  clusterWorkflowTemplates:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+  sso:
+    enabled: true
+    issuer: https://ops.honey.school/keycloak/realms/playsay
+    clientId:
+      name: playsay-release-sso
+      key: client-id
+    clientSecret:
+      name: playsay-release-sso
+      key: client-secret
+    redirectUrl: https://workflows.honey.school/oauth2/callback
+    scopes:
+      - openid
+      - profile
+      - email
+      - groups
+    customGroupClaimName: groups
+    filterGroupsRegex:
+      - ^release-operators$
+    sessionExpiry: 8h
+    rbac:
+      enabled: true
+      secretWhitelist:
+        - release-operator-ui.service-account-token
+
+useStaticCredentials: true
+
+artifactRepository:
+  archiveLogs: false

@@ -1,0 +1,190 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: playsay-production-rollback
+  namespace: playsay-release-system
+  labels:
+    app.kubernetes.io/name: playsay-production-rollback
+    app.kubernetes.io/part-of: playsay-release
+spec:
+  serviceAccountName: release-orchestrator
+  entrypoint: rollback
+  onExit: recover-original-release
+  synchronization:
+    mutexes:
+      - name: playsay-production-operation
+  activeDeadlineSeconds: 7200
+  arguments:
+    parameters:
+      - name: targetRelease
+      - name: requestedBy
+      - name: reason
+      - name: dryRun
+        value: "false"
+      - name: releaseOpsImage
+        value: ghcr.io/mednov-ai/playsay-release-ops:bootstrap-pending
+  volumes:
+    - name: release-tools
+      configMap:
+        name: playsay-release-tools
+        defaultMode: 365
+    - name: github-app
+      secret:
+        secretName: playsay-release-github
+  templates:
+    - name: rollback
+      dag:
+        tasks:
+          - name: validate
+            template: validate
+          - name: approve
+            depends: validate.Succeeded
+            when: "{{workflow.parameters.dryRun}} == false"
+            template: approval
+          - name: dry-run-complete
+            depends: validate.Succeeded
+            when: "{{workflow.parameters.dryRun}} == true"
+            template: dry-run-report
+          - name: sync
+            depends: approve.Succeeded
+            template: sync
+            arguments:
+              parameters:
+                - name: release
+                  value: "{{workflow.parameters.targetRelease}}"
+          - name: smoke
+            depends: sync.Succeeded
+            template: smoke
+            arguments:
+              parameters:
+                - name: release
+                  value: "{{workflow.parameters.targetRelease}}"
+          - name: record
+            depends: smoke.Succeeded
+            template: record
+
+    - name: validate
+      serviceAccountName: release-validator
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/validate-rollback-target.sh]
+        env:
+          - {name: TARGET_RELEASE, value: "{{workflow.parameters.targetRelease}}"}
+          - {name: OUTPUT_DIR, value: /tmp/outputs}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+      outputs:
+        parameters:
+          - name: platformSha
+            globalName: playsay-rollback-platform-sha
+            valueFrom: {path: /tmp/outputs/platform-sha}
+          - name: originalRelease
+            globalName: playsay-rollback-original-release
+            valueFrom: {path: /tmp/outputs/current-release}
+
+    - name: approval
+      suspend: {}
+      outputs:
+        parameters:
+          - name: approvedBy
+            valueFrom:
+              supplied: {}
+
+    - name: dry-run-report
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/bin/sh, -ec]
+        args:
+          - echo "Rollback dry-run validation passed; no sync, smoke or Git write was performed."
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: sync
+      serviceAccountName: release-argocd
+      inputs:
+        parameters:
+          - name: release
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/sync-argocd.sh]
+        env:
+          - {name: TARGET_RELEASE, value: "{{inputs.parameters.release}}"}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: smoke
+      serviceAccountName: release-smoke
+      inputs:
+        parameters:
+          - name: release
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/smoke-prod.sh]
+        env:
+          - {name: EXPECTED_RELEASE, value: "{{inputs.parameters.release}}"}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: record
+      serviceAccountName: release-git-updater
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/scripts/update-current-release.sh]
+        env:
+          - {name: OPERATION_MODE, value: rollback}
+          - {name: RELEASE_BRANCH, value: "{{workflow.parameters.targetRelease}}"}
+          - {name: PLATFORM_SHA, value: "{{workflow.outputs.parameters.playsay-rollback-platform-sha}}"}
+          - {name: WORKFLOW_NAME, value: "{{workflow.name}}"}
+          - {name: REQUESTED_BY, value: "{{workflow.parameters.requestedBy}}"}
+          - {name: ROLLBACK_REASON, value: "{{workflow.parameters.reason}}"}
+          - {name: BACKUP_PREFIX, value: not-applicable}
+          - name: GITHUB_APP_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: app-id}}
+          - name: GITHUB_APP_INSTALLATION_ID
+            valueFrom: {secretKeyRef: {name: playsay-release-github, key: installation-id}}
+          - {name: GITHUB_APP_PRIVATE_KEY_PATH, value: /github-app/private-key.pem}
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+          - {name: github-app, mountPath: /github-app, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+
+    - name: recover-original-release
+      steps:
+        - - name: recover
+            when: "{{workflow.status}} != Succeeded && {{workflow.parameters.dryRun}} == false"
+            template: recover
+
+    - name: recover
+      serviceAccountName: release-recovery
+      container:
+        image: "{{workflow.parameters.releaseOpsImage}}"
+        command: [/bin/bash, -ec]
+        args:
+          - >-
+            TARGET_RELEASE="{{workflow.outputs.parameters.playsay-rollback-original-release}}"
+            /scripts/sync-argocd.sh;
+            EXPECTED_RELEASE="{{workflow.outputs.parameters.playsay-rollback-original-release}}"
+            /scripts/smoke-prod.sh
+        volumeMounts:
+          - {name: release-tools, mountPath: /scripts, readOnly: true}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}

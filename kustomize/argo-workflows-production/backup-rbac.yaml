@@ -1,0 +1,89 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-backup-jobs
+  namespace: playsay-data
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-backup-jobs
+  namespace: playsay-data
+subjects:
+  - kind: ServiceAccount
+    name: release-backup
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-backup-jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-backup-jobs
+  namespace: keycloak
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-backup-jobs
+  namespace: keycloak
+subjects:
+  - kind: ServiceAccount
+    name: release-backup
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-backup-jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-backup-jobs
+  namespace: storage
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - watch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-backup-jobs
+  namespace: storage
+subjects:
+  - kind: ServiceAccount
+    name: release-backup
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-backup-jobs

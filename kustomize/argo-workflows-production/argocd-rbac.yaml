@@ -1,0 +1,47 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-argocd-operator
+  namespace: argocd
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - applications
+    resourceNames:
+      - playsay-prod-root
+      - ai-tutor-service
+      - api-gateway
+      - app-postgres
+      - cloudnative-pg
+      - collaboration-service
+      - keyboard-app
+      - keyboard-service
+      - keycloak
+      - livekit
+      - media-service
+      - minio
+      - registration-service
+      - vocabulary-service
+      - web-app
+    verbs:
+      - get
+      - patch
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-argocd-operator
+  namespace: argocd
+subjects:
+  - kind: ServiceAccount
+    name: release-argocd
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-recovery
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-argocd-operator

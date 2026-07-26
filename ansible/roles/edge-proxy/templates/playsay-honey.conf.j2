@@ -241,7 +241,7 @@ server {
     location / {
         return 404;
     }
-{% elif route.kind == 'jenkins' %}
+{% elif route.kind in ['jenkins', 'workflows'] %}
     location / {
         allow {{ edge_vpn_subnet }};
         deny all;
@@ -256,6 +256,9 @@ server {
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
         proxy_buffering off;
+{% if route.kind == 'workflows' %}
+        client_max_body_size 8m;
+{% endif %}
     }
 {% elif route.kind == 'hooks' %}
     location = /generic-webhook-trigger/invoke {

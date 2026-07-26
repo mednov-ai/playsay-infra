@@ -1,0 +1,103 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: workflow-executor
+  namespace: playsay-release-system
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtaskresults
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workflow-executors
+  namespace: playsay-release-system
+subjects:
+  - kind: ServiceAccount
+    name: release-orchestrator
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-validator
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-backup
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-migrator
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-argocd
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-git-updater
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-smoke
+    namespace: playsay-release-system
+  - kind: ServiceAccount
+    name: release-recovery
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workflow-executor
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-operator-ui
+  namespace: playsay-release-system
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - patch
+      - update
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtemplates
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-operator-ui
+  namespace: playsay-release-system
+subjects:
+  - kind: ServiceAccount
+    name: release-operator-ui
+    namespace: playsay-release-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-operator-ui

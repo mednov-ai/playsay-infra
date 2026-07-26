@@ -1,0 +1,81 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: playsay-release-migration-jobs
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - batch
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - DELETE
+        resources:
+          - jobs
+  matchConditions:
+    - name: release-migrator
+      expression: >-
+        request.userInfo.username == 'system:serviceaccount:playsay-release-system:release-migrator'
+  validations:
+    - expression: >-
+        request.operation == 'CREATE' ? object.metadata.namespace == 'playsay-prod' && object.metadata.name.startsWith('playsay-prod-migrate-') : oldObject.metadata.namespace == 'playsay-prod' && oldObject.metadata.name.startsWith('playsay-prod-migrate-')
+      message: The release migrator may manage only named production migration Jobs.
+    - expression: >-
+        request.operation != 'CREATE' || object.metadata.labels['app.kubernetes.io/name'] == 'playsay-db-migration' && object.metadata.labels['app.kubernetes.io/managed-by'] == 'argo-workflows'
+      message: Production migration Job labels are required.
+    - expression: >-
+        request.operation != 'CREATE' || object.spec.backoffLimit == 0 && object.spec.activeDeadlineSeconds <= 600 && object.spec.template.spec.restartPolicy == 'Never' && object.spec.template.spec.automountServiceAccountToken == false
+      message: Production migrations must be bounded and receive no Kubernetes API token.
+    - expression: >-
+        request.operation != 'CREATE' || object.spec.template.spec.containers.size() == 1 && object.spec.template.spec.initContainers.size() == 1 && object.spec.template.spec.containers[0].image == 'liquibase/liquibase:5.0.3' && object.spec.template.spec.initContainers[0].image == 'curlimages/curl:8.12.1'
+      message: Production migration container images are fixed.
+    - expression: >-
+        request.operation != 'CREATE' || object.spec.template.spec.containers[0].env.all(e, e.name in ['PLAYSAY_DB_JDBC_URL', 'PLAYSAY_DB_USERNAME', 'PLAYSAY_DB_PASSWORD'] && has(e.valueFrom.secretKeyRef) && e.valueFrom.secretKeyRef.name in ['playsay-app-db', 'playsay-keyboard-db'])
+      message: Production migrations may consume only approved database secret keys.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: playsay-release-migration-jobs
+spec:
+  policyName: playsay-release-migration-jobs
+  validationActions:
+    - Deny
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: playsay-release-migration-configmaps
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - DELETE
+        resources:
+          - configmaps
+  matchConditions:
+    - name: release-migrator
+      expression: >-
+        request.userInfo.username == 'system:serviceaccount:playsay-release-system:release-migrator'
+  validations:
+    - expression: >-
+        request.operation == 'CREATE' ? object.metadata.namespace == 'playsay-prod' && object.metadata.name.startsWith('playsay-prod-migration-') : oldObject.metadata.namespace == 'playsay-prod' && oldObject.metadata.name.startsWith('playsay-prod-migration-')
+      message: The release migrator may manage only generated production migration ConfigMaps.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: playsay-release-migration-configmaps
+spec:
+  policyName: playsay-release-migration-configmaps
+  validationActions:
+    - Deny

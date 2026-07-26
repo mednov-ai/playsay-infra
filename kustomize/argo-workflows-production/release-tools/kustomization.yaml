@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: playsay-release-system
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: playsay-release-tools
+    files:
+      - github-app-token.sh=../../../scripts/argo-workflows/github-app-token.sh
+      - validate-candidate.sh=../../../scripts/argo-workflows/validate-candidate.sh
+      - validate-rollback-target.sh=../../../scripts/argo-workflows/validate-rollback-target.sh
+      - update-candidate-status.sh=../../../scripts/argo-workflows/update-candidate-status.sh
+      - run-prod-migrations.sh=../../../scripts/argo-workflows/run-prod-migrations.sh
+      - launch-liquibase-job.sh=../../../scripts/argo-workflows/launch-liquibase-job.sh
+      - sync-argocd.sh=../../../scripts/argo-workflows/sync-argocd.sh
+      - smoke-prod.sh=../../../scripts/argo-workflows/smoke-prod.sh
+      - update-current-release.sh=../../../scripts/argo-workflows/update-current-release.sh
+      - rollback-on-failure.sh=../../../scripts/argo-workflows/rollback-on-failure.sh
