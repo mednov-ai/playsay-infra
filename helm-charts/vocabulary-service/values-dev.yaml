@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: "vocabulary-dev-24"
-  digest: sha256:518fa69def33693691bdbb1e79617e3bc103c5dead1d28b0ba3440d60fe7283d
+  tag: "vocabulary-dev-25"
+  digest: sha256:a9501ef45e916badcd3f98e9401a095d5ee1b2fb66eed0e645786021eb550d30
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-dev-24, number: "24", branch: develop, branchLabel: vocabulary-dev, commit: b65e40f4b1a2097dc291c9529669889b740351b5, commitShort: b65e40f4b1a2}
+build: {name: vocabulary-dev-25, number: "25", branch: develop, branchLabel: vocabulary-dev, commit: c9aa97157e3fad27b8cccf0c5ff085aab272d01f, commitShort: c9aa97157e3f}
 service: {type: ClusterIP}
 updateStrategy:
   type: RollingUpdate
