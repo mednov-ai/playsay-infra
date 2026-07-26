@@ -24,11 +24,15 @@ auth:
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 ai:
   openai:
-    enabled: false
+    enabled: true
     existingSecret: playsay-openai
     apiKeyKey: api-key
     model: gpt-5.6-sol
     baseUrl: https://api.openai.com/v1
+    reasoning:
+      materialDraft: high
+      answerSuggestion: low
+      htmlGameMetadata: low
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
