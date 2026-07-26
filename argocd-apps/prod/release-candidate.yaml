@@ -1,0 +1,14 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/1.001.07"
+baseRelease: "release/1.001.06"
+basePlatformCommit: "cc457ec808066f827174c5cc4b5554ca2df6cf12"
+baseInfraCommit: "8c348a5b4141a1fb8b526d12a60d922dec439a2c"
+platformCommit: "1c068b10c8c435a8ae20f9f9621d70a865f9cc9c"
+affectedTargets:
+validationSuites:
+  - "ci-contracts"
+dispatcher:
+  job: "codex-manual-release-recovery"
+  build: "jenkins-3-4-agent-loss"
+updatedAt: "2026-07-26T20:27:24Z"
