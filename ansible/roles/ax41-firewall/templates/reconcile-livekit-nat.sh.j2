@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+
+delete_rule() {
+  while iptables -w -t nat -C PREROUTING "$@" 2>/dev/null; do
+    iptables -w -t nat -D PREROUTING "$@"
+  done
+}
+
+add_rule() {
+  if ! iptables -w -t nat -C PREROUTING "$@" 2>/dev/null; then
+    iptables -w -t nat -A PREROUTING "$@"
+  fi
+}
+
+{% for port in ax41_prod_livekit_tcp_ports %}
+delete_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
+{% if ':' not in port %}
+delete_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}:{{ port }}
+{% endif %}
+{% endfor %}
+{% for port in ax41_prod_livekit_udp_ports + ax41_prod_livekit_legacy_udp_ports %}
+delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
+{% if ':' not in port %}
+delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}:{{ port }}
+{% endif %}
+{% endfor %}
+
+{% for port in ax41_prod_livekit_tcp_ports %}
+add_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
+{% endfor %}
+{% for port in ax41_prod_livekit_udp_ports %}
+add_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
+{% endfor %}

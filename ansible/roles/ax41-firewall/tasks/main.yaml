@@ -48,22 +48,38 @@
     interface_in: virbr60
     interface_out: "{{ wireguard_interface }}"
 
-- name: Install prod LiveKit destination NAT rules
+- name: Remove obsolete UFW-managed prod LiveKit destination NAT rules
   ansible.builtin.blockinfile:
     path: /etc/ufw/before.rules
-    insertbefore: '^\*filter'
     marker: "# {mark} ANSIBLE MANAGED PLAY&SAY PROD LIVEKIT NAT"
-    block: |
-      *nat
-      :PREROUTING ACCEPT [0:0]
-      {% for port in ax41_prod_livekit_tcp_ports %}
-      -A PREROUTING -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
-      {% endfor %}
-      {% for port in ax41_prod_livekit_udp_ports %}
-      -A PREROUTING -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
-      {% endfor %}
-      COMMIT
+    state: absent
   notify: Reload UFW
+
+- name: Install idempotent prod LiveKit destination NAT reconciler
+  ansible.builtin.template:
+    src: reconcile-livekit-nat.sh.j2
+    dest: /usr/local/sbin/playsay-reconcile-livekit-nat
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Reload UFW
+
+- name: Install prod LiveKit destination NAT service
+  ansible.builtin.template:
+    src: playsay-livekit-nat.service.j2
+    dest: /etc/systemd/system/playsay-livekit-nat.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload UFW
+
+- name: Enable and start prod LiveKit destination NAT service
+  ansible.builtin.systemd_service:
+    name: playsay-livekit-nat.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not ansible_check_mode
 
 - name: Install the persistent libvirt ingress hook
   ansible.builtin.template:
@@ -109,6 +125,7 @@
     cmd: ufw status verbose
   register: ax41_ufw_status
   changed_when: false
+  check_mode: false
 
 - name: Assert the firewall is active
   ansible.builtin.assert:

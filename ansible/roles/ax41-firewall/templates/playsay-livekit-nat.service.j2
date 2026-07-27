@@ -1,0 +1,12 @@
+[Unit]
+Description=Reconcile Play&Say production LiveKit DNAT
+After=network-online.target ufw.service libvirtd.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/playsay-reconcile-livekit-nat
+
+[Install]
+WantedBy=multi-user.target
