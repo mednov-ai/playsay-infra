@@ -92,5 +92,3 @@ keycloak:
       persistence:
         enabled: true
         size: 10Gi
-image: null
-build: null

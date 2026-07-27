@@ -40,5 +40,3 @@ databases:
     owner: keyboard_app
     ensure: present
     reclaimPolicy: retain
-image: null
-build: null

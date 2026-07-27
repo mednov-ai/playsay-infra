@@ -29,4 +29,3 @@ resources:
   limits:
     cpu: "6"
     memory: 4Gi
-build: null
