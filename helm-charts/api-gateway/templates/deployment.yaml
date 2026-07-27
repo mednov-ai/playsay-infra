@@ -134,6 +134,8 @@ spec:
                   key: {{ .Values.collaboration.serviceTokenKey | quote }}
             - name: PLAYSAY_COLLABORATION_TOKEN_TTL_SECONDS
               value: {{ .Values.collaboration.tokenTtlSeconds | quote }}
+            - name: PLAYSAY_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS
+              value: {{ join "," .Values.websocket.allowedOriginPatterns | quote }}
             - name: PLAYSAY_STORAGE_PROVIDER
               value: {{ .Values.storage.provider | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_BASE_URL

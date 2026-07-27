@@ -19,6 +19,11 @@ updateStrategy:
 ingress:
   enabled: false
   host: api-gateway.dev.example.com
+websocket:
+  allowedOriginPatterns:
+    - https://online.honey.school
+    - https://online.honeyschool.ru
+    - https://honeyschool.ru
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
