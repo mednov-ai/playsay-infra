@@ -45,6 +45,8 @@ keycloak:
     checksum/playsay-theme: isolated-prod-theme-20260721
 
   extraEnvVars:
+    - name: JAVA_OPTS_KC_HEAP
+      value: "-Xms512m -Xmx768m"
     - name: KC_SPI_THEME_CACHE_THEMES
       value: "false"
     - name: KC_SPI_THEME_CACHE_TEMPLATES

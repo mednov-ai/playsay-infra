@@ -36,7 +36,7 @@ ai:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
-  hikariMaxPoolSize: "3"
+  hikariMaxPoolSize: "10"
 livekit:
   enabled: true
   serverUrl: wss://online.honey.school/livekit
@@ -92,11 +92,11 @@ video:
       leaseSeconds: "900"
       retentionDays: "30"
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
-    cpu: 50m
-    memory: 384Mi
-  limits:
-    cpu: "1"
+    cpu: 500m
     memory: 768Mi
+  limits:
+    cpu: "2"
+    memory: 1536Mi

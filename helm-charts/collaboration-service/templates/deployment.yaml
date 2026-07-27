@@ -50,6 +50,14 @@ spec:
                   key: {{ .Values.collaboration.serviceTokenKey | quote }}
             - name: SNAPSHOT_INTERVAL_MS
               value: {{ .Values.collaboration.snapshotIntervalMs | quote }}
+            - name: WEBSOCKET_SOFT_LIMIT_BYTES
+              value: {{ .Values.collaboration.websocket.softLimitBytes | quote }}
+            - name: WEBSOCKET_HARD_LIMIT_BYTES
+              value: {{ .Values.collaboration.websocket.hardLimitBytes | quote }}
+            - name: WEBSOCKET_MAX_PAYLOAD_BYTES
+              value: {{ .Values.collaboration.websocket.maxPayloadBytes | quote }}
+            - name: NODE_OPTIONS
+              value: {{ .Values.runtime.nodeOptions | quote }}
           readinessProbe:
             httpGet:
               path: /healthz

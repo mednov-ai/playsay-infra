@@ -8,7 +8,9 @@
   roles:
     - common
     - libvirt-host
+    - ax41-vm-scheduling
     - wireguard
+    - realtime-network
     - ax41-firewall
     - role: edge-proxy
       tags:

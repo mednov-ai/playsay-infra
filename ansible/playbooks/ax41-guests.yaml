@@ -29,5 +29,7 @@
     - common
     - k3s-server
     - monitoring-agent
+    - role: realtime-network
+      when: inventory_hostname == 'playsay-prod'
     - role: coturn
       when: inventory_hostname == 'playsay-prod'

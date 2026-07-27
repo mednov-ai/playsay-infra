@@ -33,6 +33,13 @@ collaboration:
   tokenSecretKey: token-secret
   serviceTokenKey: service-token
   snapshotIntervalMs: "10000"
+  websocket:
+    softLimitBytes: "1048576"
+    hardLimitBytes: "4194304"
+    maxPayloadBytes: "4194304"
+
+runtime:
+  nodeOptions: "--max-old-space-size=512"
 
 resources:
   requests:

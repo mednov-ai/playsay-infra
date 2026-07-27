@@ -20,6 +20,10 @@ rtc:
   udpPortRangeStart: 50000
   udpPortRangeEnd: 50020
   nodeIp: ""
+  batchIo:
+    enabled: false
+    batchSize: 128
+    maxFlushInterval: 2ms
 
 turn:
   enabled: false

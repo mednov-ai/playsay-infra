@@ -40,11 +40,11 @@ emailService:
     environment: prod
     webhookUrl: https://online.honey.school/api/webhooks/mailjet
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=15 -XX:MaxRAMPercentage=45 -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-Xms96m -Xmx192m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
     cpu: 25m
-    memory: 64Mi
+    memory: 256Mi
   limits:
     cpu: 500m
-    memory: 320Mi
+    memory: 512Mi

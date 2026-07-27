@@ -18,7 +18,13 @@ k3s_node_taints: []
 node_exporter_enabled: true
 
 coturn_listening_port: 3478
-coturn_min_port: 49160
-coturn_max_port: 49200
+coturn_min_port: 49152
+coturn_max_port: 49999
 coturn_external_ip: 65.109.55.110/10.60.0.20
 coturn_realm: online.honey.school
+
+realtime_udp_receive_buffer_max: 16777216
+realtime_udp_send_buffer_max: 16777216
+realtime_network_backlog: 10000
+realtime_conntrack_max: 524288
+realtime_reserved_ports: "3478,7881,49152-50511"

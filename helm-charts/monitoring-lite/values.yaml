@@ -1,6 +1,9 @@
 global:
   imagePullPolicy: IfNotPresent
 
+environment:
+  name: dev
+
 victoriaMetrics:
   image:
     repository: victoriametrics/victoria-metrics
@@ -35,6 +38,9 @@ vmagent:
     - jobName: playsay-media-service
       metricsPath: /actuator/prometheus
       target: media-service.playsay-dev.svc.cluster.local:80
+    - jobName: playsay-collaboration-service
+      metricsPath: /metrics
+      target: collaboration-service.playsay-dev.svc.cluster.local:80
   hostNetwork: true
   hostNodeExporter:
     enabled: true
@@ -117,11 +123,19 @@ alertmanager:
       memory: 128Mi
 
 alerts:
+  kubernetes:
+    namespaceRegex: "playsay-dev|livekit|keycloak|jenkins|playsay-data"
   node:
     memoryAvailableRatio: 0.25
     memoryCriticalRatio: 0.15
     rootDiskAvailableRatio: 0.15
     swapUsedBytes: 536870912
+  capacity:
+    enabled: false
+    livekitCpuRatio: 0.80
+    livekitMemoryRatio: 0.80
+    networkBitsPerSecond: 700000000
+    conntrackRatio: 0.70
   livekit:
     enabled: true
   blackbox:

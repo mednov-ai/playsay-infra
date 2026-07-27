@@ -33,8 +33,22 @@ ax41_prod_livekit_tcp_ports:
   - "7881"
 ax41_prod_livekit_udp_ports:
   - "3478"
-  - "49160:49200"
-  - "50000:50020"
+  - "49152:49999"
+  - "50000:50511"
+
+realtime_udp_receive_buffer_max: 16777216
+realtime_udp_send_buffer_max: 16777216
+realtime_network_backlog: 10000
+realtime_conntrack_max: 524288
+realtime_reserved_ports: "3478,7881,49152-50511"
+
+ax41_vm_cpu_shares:
+  - name: playsay-prod
+    shares: 2048
+  - name: playsay-dev
+    shares: 512
+  - name: playsay-ci
+    shares: 512
 
 wireguard_interface: wg0
 wireguard_address: 10.250.0.1/24

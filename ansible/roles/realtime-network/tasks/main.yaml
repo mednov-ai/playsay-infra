@@ -1,0 +1,31 @@
+---
+- name: Validate realtime network capacity settings
+  ansible.builtin.assert:
+    that:
+      - realtime_udp_receive_buffer_max | int >= 16777216
+      - realtime_udp_send_buffer_max | int >= 16777216
+      - realtime_network_backlog | int >= 10000
+      - realtime_conntrack_max | int >= 524288
+      - realtime_reserved_ports | length > 0
+    fail_msg: Realtime network settings must preserve the validated 100-lesson capacity floor.
+
+- name: Configure realtime UDP and conntrack capacity
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/92-playsay-realtime-udp.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible for the Play&Say 100-concurrent-lesson media profile.
+      net.core.rmem_max={{ realtime_udp_receive_buffer_max }}
+      net.core.wmem_max={{ realtime_udp_send_buffer_max }}
+      net.core.netdev_max_backlog={{ realtime_network_backlog }}
+      net.netfilter.nf_conntrack_max={{ realtime_conntrack_max }}
+      net.ipv4.ip_local_reserved_ports={{ realtime_reserved_ports }}
+  register: realtime_network_sysctl
+
+- name: Apply realtime UDP and conntrack capacity
+  ansible.builtin.command:
+    cmd: sysctl --load=/etc/sysctl.d/92-playsay-realtime-udp.conf
+  when: realtime_network_sysctl.changed
+  changed_when: true

@@ -33,11 +33,11 @@ registrationService:
     baseUrl: http://email-service.playsay-prod.svc.cluster.local
     existingSecret: playsay-email
 runtime:
-  javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: "-Xms128m -Xmx256m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
   requests:
     cpu: 25m
-    memory: 96Mi
+    memory: 384Mi
   limits:
     cpu: 500m
-    memory: 384Mi
+    memory: 512Mi

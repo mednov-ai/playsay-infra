@@ -1,0 +1,47 @@
+---
+- name: Validate AX41 VM CPU shares
+  ansible.builtin.assert:
+    that:
+      - ax41_vm_cpu_shares | length > 0
+      - item.name | length > 0
+      - item.shares | int >= 2
+      - item.shares | int <= 262144
+  loop: "{{ ax41_vm_cpu_shares }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Apply live AX41 VM CPU shares
+  ansible.builtin.shell: |
+    set -euo pipefail
+    domain={{ item.name | quote }}
+    target={{ item.shares | int }}
+    current="$(virsh --connect qemu:///system schedinfo "$domain" --live | awk '$1 == "cpu_shares" {print $3}')"
+    if [ "$current" != "$target" ]; then
+      virsh --connect qemu:///system schedinfo "$domain" --live --set "cpu_shares=$target" >/dev/null
+      echo CHANGED
+    fi
+  args:
+    executable: /bin/bash
+  loop: "{{ ax41_vm_cpu_shares }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: ax41_live_cpu_shares
+  changed_when: "'CHANGED' in ax41_live_cpu_shares.stdout"
+
+- name: Persist AX41 VM CPU shares
+  ansible.builtin.shell: |
+    set -euo pipefail
+    domain={{ item.name | quote }}
+    target={{ item.shares | int }}
+    current="$(virsh --connect qemu:///system schedinfo "$domain" --config | awk '$1 == "cpu_shares" {print $3}')"
+    if [ "$current" != "$target" ]; then
+      virsh --connect qemu:///system schedinfo "$domain" --config --set "cpu_shares=$target" >/dev/null
+      echo CHANGED
+    fi
+  args:
+    executable: /bin/bash
+  loop: "{{ ax41_vm_cpu_shares }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: ax41_persistent_cpu_shares
+  changed_when: "'CHANGED' in ax41_persistent_cpu_shares.stdout"

@@ -20,6 +20,32 @@ The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it
 
 Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to rebuild dev and is documented in `migrations/ax41/evidence/20260720-safety-v3.md`. The newer final source cutoff is `playsay-final-vps-v2-20260721T083819Z`: its encrypted files are outside Git under `/Users/evgeniymednov/Backups/PlayAndSay/ax41-final-vps-20260721`, while the RSA private key is stored separately under `/Users/evgeniymednov/Backups/PlayAndSay/keys`. Transport/payload checksums, local RSA/AES decryption, PostgreSQL 17 source catalogs and both archives passed. Never commit or colocate the private key with an off-host copy of the bundle. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
+## Production 100-Lesson Capacity Profile
+
+The committed desired state supports a capacity gate for 100 simultaneous individual lessons (200 bidirectional 720p/30fps participants, 30% TURN), but it is not certified until the maintenance-window test in `docs/capacity-100-lessons.md` passes. Single-node prod has no HA; LiveKit/coturn rollout disconnects active media.
+
+The source-of-truth ranges are LiveKit UDP `50000:50511`, coturn relay UDP `49152:49999`, TURN `3478` TCP/UDP and LiveKit fallback `7881` TCP. They must match `ansible/group_vars/ax41_hosts.yaml`, `ansible/group_vars/ax41_guests.yaml`, AX41 UFW/DNAT/libvirt hook and `helm-charts/livekit/values-prod.yaml`. Both host and prod guest reserve `3478,7881,49152-50511` and apply 16 MiB UDP buffer maxima, backlog `10000` and conntrack `524288`. Prod/dev/CI libvirt CPU shares are `2048/512/512`.
+
+Before rollout:
+
+```bash
+cd /Users/evgeniymednov/Documents/Projects/Play\&Say/playsay-infra
+scripts/validate-100-lesson-capacity.sh
+cd ansible
+ansible-playbook --syntax-check playbooks/ax41-host.yaml
+ansible-playbook --syntax-check playbooks/ax41-guests.yaml
+```
+
+Apply in this order during a window with zero active lessons:
+
+1. Run AX41 host Ansible in check mode, review widened firewall/DNAT, sysctl and CPU-share changes, then apply.
+2. Run AX41 guests Ansible in check mode, then apply only after confirming coturn restart is acceptable.
+3. Promote/sync the release containing LiveKit, collaboration, JVM resource and prod monitoring changes.
+4. Verify LiveKit config/ranges, pod requests/limits, coturn listeners, sysctl values, monitoring targets and alerts.
+5. Execute and archive the capacity gate. Do not label the target supported merely because manifests render.
+
+Do not narrow UDP ranges while ICE/TURN allocations exist. If sustained LiveKit CPU or NIC exceeds the acceptance limit, stop the gate and plan a dedicated 10 Gbit/s media node rather than raising AX41 limits.
+
 AX41 host automation is run from the `playsay-infra/ansible` directory so its configured role path is applied:
 
 ```bash

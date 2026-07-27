@@ -15,7 +15,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "Play&Say dev VPS: мало свободной RAM"
+              summary: "Play&Say {{ .Values.environment.name }}: мало свободной RAM"
               description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryAvailableRatio 100.0 }}% больше 5 минут."
 
           - alert: PlaySayNodeMemoryCritical
@@ -24,7 +24,7 @@ data:
             labels:
               severity: critical
             annotations:
-              summary: "Play&Say dev VPS: критически мало RAM"
+              summary: "Play&Say {{ .Values.environment.name }}: критически мало RAM"
               description: "MemAvailable меньше {{ mulf .Values.alerts.node.memoryCriticalRatio 100.0 }}% больше 2 минут."
 
           - alert: PlaySayNodeSwapHigh
@@ -33,7 +33,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "Play&Say dev VPS: активно используется swap"
+              summary: "Play&Say {{ .Values.environment.name }}: активно используется swap"
               description: "Использование swap выше 512Mi больше 10 минут."
 
           - alert: PlaySayNodeMemoryPressureStall
@@ -42,7 +42,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "Play&Say dev VPS: memory PSI pressure"
+              summary: "Play&Say {{ .Values.environment.name }}: memory PSI pressure"
               description: "Процессы ждут память больше 5% времени."
 
           - alert: PlaySayNodeIoPressureStall
@@ -51,7 +51,7 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "Play&Say dev VPS: I/O PSI pressure"
+              summary: "Play&Say {{ .Values.environment.name }}: I/O PSI pressure"
               description: "Процессы ждут I/O больше 20% времени."
 
           - alert: PlaySayJenkinsAgentStartedWithoutHeadroom
@@ -69,13 +69,13 @@ data:
             labels:
               severity: warning
             annotations:
-              summary: "Play&Say dev VPS: мало места на /"
+              summary: "Play&Say {{ .Values.environment.name }}: мало места на /"
               description: "На корневом разделе осталось меньше {{ mulf .Values.alerts.node.rootDiskAvailableRatio 100.0 }}%."
 
       - name: playsay-kubernetes
         rules:
           - alert: PlaySayPodRestarted
-            expr: increase(kube_pod_container_status_restarts_total{namespace=~"playsay-dev|livekit|keycloak|jenkins|playsay-data"}[10m]) > 0
+            expr: increase(kube_pod_container_status_restarts_total{namespace=~{{ .Values.alerts.kubernetes.namespaceRegex | quote }}}[10m]) > 0
             for: 0m
             labels:
               severity: warning
@@ -84,7 +84,7 @@ data:
               description: "За последние 10 минут был restart container в namespace {{ "{{" }} $labels.namespace {{ "}}" }}."
 
           - alert: PlaySayPodNotReady
-            expr: kube_pod_status_ready{namespace=~"playsay-dev|livekit|keycloak|jenkins|playsay-data",condition="true"} == 0
+            expr: kube_pod_status_ready{namespace=~{{ .Values.alerts.kubernetes.namespaceRegex | quote }},condition="true"} == 0
             for: 10m
             labels:
               severity: warning
@@ -116,4 +116,99 @@ data:
             annotations:
               summary: "LiveKit metrics недоступны"
               description: "vmagent не может читать LiveKit Prometheus endpoint больше 3 минут."
+      {{- end }}
+
+      {{- if .Values.alerts.capacity.enabled }}
+      - name: playsay-capacity
+        rules:
+          - alert: PlaySayLiveKitCpuHigh
+            expr: |
+              sum(rate(container_cpu_usage_seconds_total{namespace="livekit",container="livekit"}[5m]))
+              /
+              sum(kube_pod_container_resource_limits{namespace="livekit",container="livekit",resource="cpu",unit="core"})
+              > {{ .Values.alerts.capacity.livekitCpuRatio }}
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "LiveKit использует больше 80% CPU limit"
+              description: "У media-node заканчивается CPU headroom для 100 параллельных уроков."
+
+          - alert: PlaySayLiveKitMemoryHigh
+            expr: |
+              sum(container_memory_working_set_bytes{namespace="livekit",container="livekit"})
+              /
+              sum(kube_pod_container_resource_limits{namespace="livekit",container="livekit",resource="memory",unit="byte"})
+              > {{ .Values.alerts.capacity.livekitMemoryRatio }}
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "LiveKit использует больше 80% memory limit"
+              description: "У media-node заканчивается RAM headroom для 100 параллельных уроков."
+
+          - alert: PlaySayNetworkCapacityHigh
+            expr: |
+              max(
+                rate(node_network_receive_bytes_total{device!~"lo|cni.*|flannel.*|veth.*"}[5m])
+                or
+                rate(node_network_transmit_bytes_total{device!~"lo|cni.*|flannel.*|veth.*"}[5m])
+              ) * 8 > {{ .Values.alerts.capacity.networkBitsPerSecond }}
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Сетевой трафик prod-VM выше 700 Mbps"
+              description: "Достигнут эксплуатационный предел 1 Gbit/s NIC для realtime media."
+
+          - alert: PlaySayUdpBufferErrors
+            expr: |
+              increase(node_netstat_Udp_RcvbufErrors[5m]) > 0
+              or
+              increase(node_netstat_Udp_SndbufErrors[5m]) > 0
+            for: 0m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Ядро теряет UDP-пакеты"
+              description: "Обнаружены UDP receive/send buffer errors на media-node."
+
+          - alert: PlaySayConntrackHigh
+            expr: node_nf_conntrack_entries / node_nf_conntrack_entries_limit > {{ .Values.alerts.capacity.conntrackRatio }}
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Conntrack заполнен больше чем на 70%"
+              description: "Сетевой state table приближается к пределу."
+
+          - alert: PlaySayApiDatabasePoolWaiting
+            expr: hikaricp_connections_pending{job="playsay-api-gateway"} > 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "API ожидает соединения PostgreSQL"
+              description: "Hikari pool API исчерпан больше двух минут."
+
+          - alert: PlaySayCollaborationBackpressure
+            expr: |
+              increase(playsay_collaboration_backpressure_forced_closes_total[5m]) > 0
+              or
+              increase(playsay_collaboration_backpressure_dropped_total[5m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Collaboration применил backpressure"
+              description: "Есть отброшенные ephemeral-события или reconnect медленного клиента."
+
+          - alert: PlaySayCollaborationSnapshotRetry
+            expr: increase(playsay_collaboration_snapshot_flush_duration_seconds_count{outcome="retry"}[5m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Collaboration повторяет сохранение snapshot"
+              description: "API или PostgreSQL не приняли snapshot с первой попытки."
       {{- end }}
