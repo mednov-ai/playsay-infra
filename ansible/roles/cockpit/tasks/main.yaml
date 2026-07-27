@@ -18,6 +18,28 @@
     group: root
     mode: "0755"
 
+- name: Create Cockpit configuration directory
+  ansible.builtin.file:
+    path: /etc/cockpit
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Trust only the WireGuard edge reverse-proxy origin
+  ansible.builtin.copy:
+    dest: /etc/cockpit/cockpit.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [WebService]
+      Origins = {{ cockpit_public_origin }} {{ cockpit_public_origin | regex_replace('^https:', 'wss:') }}
+      ProtocolHeader = X-Forwarded-Proto
+      ForwardedForHeader = X-Forwarded-For
+      LoginTo = false
+  register: cockpit_proxy_config
+
 - name: Bind Cockpit only to the WireGuard management address
   ansible.builtin.copy:
     dest: /etc/systemd/system/cockpit.socket.d/10-playsay-vpn-only.conf
@@ -86,7 +108,7 @@
     state: restarted
   when:
     - cockpit_enabled | bool
-    - cockpit_socket_override.changed
+    - cockpit_socket_override.changed or cockpit_proxy_config.changed
 
 - name: Read Cockpit listeners
   ansible.builtin.command:

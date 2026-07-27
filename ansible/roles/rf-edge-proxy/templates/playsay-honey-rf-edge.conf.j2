@@ -35,13 +35,15 @@ map $http_upgrade $playsay_rf_connection_upgrade {
 {% endmacro %}
 
 {% macro keycloak_locations(route, forwarded_proto) %}
-    location = /keycloak/realms/{{ route.realm }} {
+{% for realm in route.realms %}
+    location = /keycloak/realms/{{ realm }} {
 {{ proxy_to_origin(route, forwarded_proto) }}
     }
 
-    location ^~ /keycloak/realms/{{ route.realm }}/ {
+    location ^~ /keycloak/realms/{{ realm }}/ {
 {{ proxy_to_origin(route, forwarded_proto) }}
     }
+{% endfor %}
 
     location ^~ /keycloak/resources/ {
 {{ proxy_to_origin(route, forwarded_proto) }}

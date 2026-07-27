@@ -6,7 +6,7 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Active AX41 Dev/Prod Topology
 
-The active topology uses a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The current status and remaining tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
+The active topology uses a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.ops.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. The legacy `jenkins.honey.school` name only redirects VPN clients to the canonical hostname. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The current status and remaining tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
 
 AX41 at `65.109.55.110` serves `honey.school` production from `release/1.001.07`: the Ubuntu 24.04 physical host, healthy mdadm RAID1/ext4, KVM/QEMU/libvirt, OpenTofu, firewall, WireGuard and VPN-only Cockpit baseline are active. The NAT-backed `playsay-prod` (`10.60.0.20`, 8 vCPU/38 GiB), `playsay-dev` (`10.60.0.30`, 2 vCPU/10 GiB) and `playsay-ci` (`10.60.0.40`, 4 vCPU/8 GiB) guests are active and protected by separate OpenTofu states. The 14 declared guest vCPUs moderately overcommit the host's 12 logical CPUs, while fixed guest memory remains 56 GiB and leaves about 6 GiB for the host. Prod/dev run independent k3s, ArgoCD and Sealed Secrets controllers. CI runs only k3s, Sealed Secrets and the Git/JCasC-defined Jenkins controller; it has no product workloads, ArgoCD, Keycloak or MinIO. Prod has exactly seven human identities, 22 materials, 51 verified objects and 11 enrichments, with `hello` and dev history absent. All 15 prod ArgoCD apps are `Synced/Healthy`; web, keyboard, API, collaboration signaling, LiveKit signaling and forced TURN reach AX41. Canonical Keycloak is `ops.*/keycloak`; the explicit `key.*/keycloak` compatibility path remains only until owner-operated login/material acceptance. Both GitHub webhooks now use `hooks.honey.school` and returned HTTP 200 to GitHub ping deliveries. Email/payment provider workloads remain disabled until independent prod credentials are supplied. Object Storage remains a post-stabilization state/backup task, not a blocker to this cutover. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
@@ -16,7 +16,7 @@ The old VPS has only the short paid overlap remaining. Final source bundle `play
 
 The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses direct `*.honey.school` origins plus the Russian `online.honeyschool.ru` and `key.honeyschool.ru` proxy aliases, all with the single issuer `https://ops.honey.school/keycloak/realms/playsay`. The two `.ru` aliases belong to the same production `playsay-web` client and are present in its redirect URIs, web origins and post-logout redirects. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, JWKS, or ArgoCD target revisions. Legacy Jenkins is manual-only and can build only the legacy branch. The root `play-and-say.ru` site is outside both application-auth changes.
 
-The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it was rebuilt from Git/JCasC without the old controller PVC. Affected-target collaboration delivery and release web/keyboard builds reached GHCR, Git and dev ArgoCD successfully. Its scoped kubeconfig can read rollout state and refresh named dev ArgoCD applications but cannot read dev secrets or access prod. GitHub no longer points at the old controller. Never expose the replacement UI publicly; use the management VPN at `jenkins.honey.school`. Only the exact generic-trigger and dev-ArgoCD webhook endpoints on `hooks.honey.school` are public. Database migrations still require redesign as in-dev Jobs before the temporary no-op capacity compatibility paths are removed.
+The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it was rebuilt from Git/JCasC without the old controller PVC. Affected-target collaboration delivery and release web/keyboard builds reached GHCR, Git and dev ArgoCD successfully. Its scoped kubeconfig can read rollout state and refresh named dev ArgoCD applications but cannot read dev secrets or access prod. GitHub no longer points at the old controller. Never expose the replacement UI publicly; use the management VPN at `jenkins.ops.honey.school`. Only the exact generic-trigger and dev-ArgoCD webhook endpoints on `hooks.honey.school` are public. Database migrations still require redesign as in-dev Jobs before the temporary no-op capacity compatibility paths are removed.
 
 Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to rebuild dev and is documented in `migrations/ax41/evidence/20260720-safety-v3.md`. The newer final source cutoff is `playsay-final-vps-v2-20260721T083819Z`: its encrypted files are outside Git under `/Users/evgeniymednov/Backups/PlayAndSay/ax41-final-vps-20260721`, while the RSA private key is stored separately under `/Users/evgeniymednov/Backups/PlayAndSay/keys`. Transport/payload checksums, local RSA/AES decryption, PostgreSQL 17 source catalogs and both archives passed. Never commit or colocate the private key with an off-host copy of the bundle. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
@@ -50,7 +50,7 @@ Migration is Git-first. Do not cold-copy k3s server state, Jenkins controller st
 
 Object Storage is not a prerequisite for the accelerated first `honey.school` cutover. Until the S3 backend is provisioned, run OpenTofu only on AX41 as `playsay`, never from Jenkins or a second session, with separate `0700` local states in `/var/lib/playsay-opentofu-state/{platform,dev,prod,ci}`. Capture an encrypted off-host copy before and after every apply. Do not copy plaintext state to the workstation or Git. After the first production stabilization window, migrate each state with `tofu init -migrate-state`, verify remote versioning/locking, then remove local plaintext state only after a tested pull/restore.
 
-The AX41 edge is generated by the `edge-proxy` Ansible role. It owns the nine exact application/ops hosts `online`, `key`, `dev.online`, `dev.key`, `ops`, `dev.ops`, `jenkins`, `hooks` and `workflows` below `honey.school`, plus the exact root `honey.school` static landing; it must not claim mail. The root landing lives at `/var/www/honey-school`, contains no external scripts/fonts, links only to the product SPA at `online.honey.school` and keyboard trainer at `key.honey.school`, and uses its own `/etc/letsencrypt/live/honey.school` certificate because three production application names terminate on the separate RF ingress. Never expand the shared nine-SAN certificate merely to add the root. `key.*` routes to keyboard NodePort `32087`; until frontend release images use the new issuer, only the explicit `/keycloak/` path remains as a temporary compatibility proxy and must be removed after acceptance. `ops.*/keycloak/` is the canonical public OIDC route, while ops UIs on those hosts, `jenkins.honey.school` and `workflows.honey.school` are limited to the WireGuard subnet. `hooks.honey.school` allows only the exact Jenkins and dev-ArgoCD POST endpoints with request/rate limits. Prod routes `/collab/ws` directly to collaboration NodePort `32086` and strips `/livekit/` before proxying signaling to prod VM port `7880`; the generic online route continues to web NodePort `32083`. Keep explicit realtime/auth/webhook locations before generic locations. Certificates and the renewal deployment hook must cover every owned hostname.
+The AX41 edge is generated by the `edge-proxy` Ansible role. It owns exact application hosts, public Keycloak routes, restricted webhook routes and the VPN-only ops hostnames listed in the Workforce SSO section below, plus the exact root `honey.school` static landing; it must not claim mail. The root landing lives at `/var/www/honey-school`, contains no external scripts/fonts, links only to the product SPA at `online.honey.school` and keyboard trainer at `key.honey.school`, and uses its own `/etc/letsencrypt/live/honey.school` certificate. `key.*` routes to keyboard NodePort `32087`; until frontend release images use the new issuer, only the explicit `/keycloak/` path remains as a temporary compatibility proxy and must be removed after acceptance. `ops.*/keycloak/` is the canonical public OIDC route, while every product-specific ops hostname is limited to WireGuard `10.250.0.0/24`. `hooks.honey.school` allows only the exact Jenkins and dev-ArgoCD POST endpoints with request/rate limits. Prod routes `/collab/ws` directly to collaboration NodePort `32086` and strips `/livekit/` before proxying signaling to prod VM port `7880`; the generic online route continues to web NodePort `32083`. Keep explicit realtime/auth/webhook locations before generic locations. Certificates and the renewal deployment hook must cover every active hostname.
 
 The AX41 edge is TLS 1.2-only for the root landing and all eight managed application/ops `honey.school` hostnames. On 2026-07-21, `TLSv1.3` was found enabled in the generated nginx vhosts while the same Russian-network accessibility symptom previously seen on MTS, t2 and MGTS was reported again: Keycloak did not load without VPN. The Ansible source of truth now sets `edge_tls_protocols: TLSv1.2` and enforces it both in the nginx HTTP context and in every generated TLS vhost. The HTTP-context setting is required because TLS version negotiation happens before SNI selects a named vhost. Do not re-enable TLS 1.3 before a dedicated acceptance pass from those networks. Validate every public hostname after an edge apply: `openssl s_client -tls1_2` must negotiate TLS 1.2, while `openssl s_client -tls1_3` must fail with a protocol-version alert. This policy includes the canonical public OIDC routes at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`.
 
@@ -60,11 +60,11 @@ The accepted replacement for the temporary old-VPS workaround is a dedicated Sel
 
 The live stage activated on 2026-07-25 owns `honeyschool.ru`, `www.honeyschool.ru` and the public Keycloak ingress at `ops.honey.school`. The REG.RU A records for `honeyschool.ru` and `www` point to Selectel. The root now serves an independent Russian-only static landing from `/var/www/honeyschool.ru`, managed by the `rf-edge-proxy` role, with two actions for `online.honeyschool.ru` and `key.honeyschool.ru`; it no longer proxies the AX41 `honey.school` landing. Its independent Let's Encrypt certificate is stored at `/etc/letsencrypt/live/honeyschool.ru` and expires on 2026-10-23.
 
-The Dynadot `ops.honey.school` record is an exact A record for `94.102.89.213`. Selectel exposes only the `playsay` realm and Keycloak theme resources: `/keycloak/realms/playsay`, `/keycloak/realms/playsay/` and `/keycloak/resources/`. The root, `/keycloak/admin/` and other realms, including `master`, return 404. The canonical issuer remains `https://ops.honey.school/keycloak/realms/playsay`; clients and tokens must not add or accept a second issuer. The independent certificate is stored at `/etc/letsencrypt/live/ops.honey.school`, expires on 2026-10-23 and renews through the shared HTTP ACME webroot. `certbot renew --dry-run` succeeds for both live certificates, and the deploy hook validates and reloads nginx after renewal.
+The Dynadot `ops.honey.school` record is an exact A record for `94.102.89.213`. Selectel exposes only the product `playsay` realm, the staff `workforce` realm and Keycloak theme resources: exact `/keycloak/realms/{playsay,workforce}` paths and `/keycloak/resources/`. The root, `/keycloak/admin/`, `master` and all other realms return 404. The canonical issuers remain `https://ops.honey.school/keycloak/realms/playsay` for production users and `https://ops.honey.school/keycloak/realms/workforce` for staff; clients must not invent a second issuer for either realm. The independent certificate is stored at `/etc/letsencrypt/live/ops.honey.school`, expires on 2026-10-23 and renews through the shared HTTP ACME webroot. `certbot renew --dry-run` succeeds for the live certificates, and the deploy hook validates and reloads nginx after renewal.
 
 The direct production origins `online.honey.school` and `key.honey.school` remain on AX41 and must not be changed when the Russian aliases are activated. On 2026-07-25 the exact REG.RU A records `online.honeyschool.ru -> 94.102.89.213` and `key.honeyschool.ru -> 94.102.89.213` became authoritative, and both Selectel proxy routes were activated over HTTPS. Each preserves the corresponding `.school` Host/SNI upstream, verifies AX41 TLS and rewrites absolute application/websocket URLs back to the `.ru` alias. Public full-transfer smoke returned the complete web JS (`1,157,070` bytes), web CSS (`226,388` bytes), keyboard JS (`356,669` bytes) and keyboard CSS (`64,663` bytes). HTTP redirects to HTTPS, TLS 1.2 succeeds and TLS 1.3 is rejected for both aliases.
 
-The independent certificates are stored at `/etc/letsencrypt/live/online.honeyschool.ru` and `/etc/letsencrypt/live/key.honeyschool.ru`; both expire on 2026-10-23. Targeted renewal dry-runs succeed, the Certbot timer and nginx deployment hook are active, and a second Ansible apply returns `changed=0`. The frontends derive login and logout callbacks from `window.location.origin`, and `scripts/configure-keycloak-prod-rf-aliases.sh` idempotently adds both aliases to the existing production client without changing its issuer. PKCE authorization smoke for both `.ru` callbacks returns the Keycloak login page. `dev.*`, `jenkins.honey.school` and `hooks.honey.school` remain directly on AX41.
+The independent certificates are stored at `/etc/letsencrypt/live/online.honeyschool.ru` and `/etc/letsencrypt/live/key.honeyschool.ru`; both expire on 2026-10-23. Targeted renewal dry-runs succeed, the Certbot timer and nginx deployment hook are active, and a second Ansible apply returns `changed=0`. The frontends derive login and logout callbacks from `window.location.origin`, and `scripts/configure-keycloak-prod-rf-aliases.sh` idempotently adds both aliases to the existing production client without changing its issuer. PKCE authorization smoke for both `.ru` callbacks returns the Keycloak login page. `dev.*`, all VPN-only `*.ops.honey.school` tools and `hooks.honey.school` remain directly on AX41; legacy Jenkins/Workflows names are redirects only.
 
 Final acceptance still requires complete login and application loading from a Russian Chrome/incognito connection without VPN. During initial DNS propagation, Dynadot anycast nodes intermittently alternated the previous `ops.honey.school -> honey.school` CNAME and the new exact A record `ops.honey.school -> 94.102.89.213`, even under the same SOA serial. Before declaring the RF login path accepted, repeat authoritative and public resolver queries until they consistently return the Selectel A record; do not introduce a second issuer as a workaround.
 
@@ -91,6 +91,179 @@ Production release `release/1.001.06` promotes platform commit `991dae044e5354f4
 
 Production release `release/1.001.07` promotes platform branch HEAD `1c068b10c8c435a8ae20f9f9621d70a865f9cc9c`; its product images were built from the last behavior-changing commit `a171a7eda31f9faf8252cc5081a8435f3a12012e`, while the later commits only harden CI routing and release finalization. The original complete 11-module dispatcher succeeded and produced immutable production digests. Release dispatchers 3 and 4 subsequently lost their dynamic Kubernetes agents (`ClosedChannelException`/agent removal) before completing the candidate gate, so the operator ran the same committed `validate-ci-contracts.sh`, `prepare-release-candidate.sh` and `finalize-release-candidate.sh` scripts locally against the unchanged protected branch SHA; all 29 CI contract tests and all Helm render/digest invariants passed, and infra candidate `84ac3295ab47cec4f3aaf429bbd25e0c843caf18` reached `status: ready`. The promoted runtime digests are API `sha256:6feb06d55d3dca9b5324475c9eb0ad25a01c4c9a6767a3f7260d6821858af76e`, web `sha256:b5ed74c790d33bb501185275672e027667c3fde4a0eda89e90092c25c75f49f7`, keyboard frontend `sha256:7eedcb455b1fcbd5eafc0c19ada34141d7819dccb0eb5e939a4c840626fb5c18`, keyboard backend `sha256:251600a2e9b2607daf18385e8ede7f97b73ba89eca18e5252d587b8e8ff803b5`, collaboration `sha256:cb3848db09141107446eb563f1244f1e8c68d63046203526e25679d47389c2f0`, media `sha256:26bdc82b5bbc3a6813595938ad29e470a24098ce5325f854ba85d57e504147ec`, registration `sha256:b72b368101e2b5967dae8c656489e29082c1f579f3bf3c0688a34d63254f834a`, vocabulary `sha256:28eb75fca7630e653e8844b52cb700cc61d9305c833a8b5f74b03ea2c6b1fd6a` and AI tutor `sha256:0b0137ba630ca92789f036ee0b8631ac444e641ee8b53269885c7d5ce8226e6d`. There were no Liquibase or SQL changes. Pre-release logical backup `/var/backups/playsay/release-1.001.07-20260726T203004Z` passed archive-list and checksum validation. All 15 ArgoCD applications reached `Synced/Healthy` at the candidate revision, all running workload images exactly matched the candidate digests, and no pod remained unready. Direct and RF application/API endpoints returned HTTP 200 and API `UP`; the RF bundle differed from the direct bundle only by the approved legacy-issuer rewrite. Headless Chromium loaded `online` and `key` on both `.school` and `.ru` without page errors and every sign-in flow reached only `https://ops.honey.school/keycloak/realms/playsay` with the origin-specific callback. Roll back by returning the production root to `release/1.001.06`; do not rebuild images.
 
+## Workforce SSO And VPN Access
+
+The Git implementation for unified staff access is present, but the feature is not
+considered active until DNS/certificate changes, Keycloak configuration, secret
+distribution, scheduled k3s restarts and both runtime validation commands have
+passed. Do not describe an individual tool as SSO-enabled merely because its
+manifest is committed.
+
+Staff use one central Keycloak realm:
+`https://ops.honey.school/keycloak/realms/workforce`. It is deliberately separate
+from both product realms. Production product users continue to authenticate only
+against production `playsay`. Dev `playsay` brokers `workforce`, so staff can enter
+the dev product with the same identity; production `playsay` must never contain that
+broker. The supported workforce groups are:
+
+- `developers`: read/build Jenkins, read/sync dev ArgoCD, read dev/prod Headlamp and
+  read production ArgoCD;
+- `release-operators`: the same read access plus permission to submit/resume
+  production Workflows;
+- `platform-admins`: Jenkins administration and dev ArgoCD/Kubernetes
+  administration, but still read-only in production ArgoCD/Headlamp.
+
+Authentication is passkey/WebAuthn-passwordless first. Password plus TOTP from
+Google Authenticator, 1Password or another standards-compatible app is the recovery
+path. TOTP alone is not a passwordless factor and is not accepted without the
+password. Every workforce user enrolls both a passkey and TOTP during bootstrap.
+Keep at least two passkeys on separate devices before removing a temporary password.
+
+Canonical VPN-only URLs are:
+
+- `https://argocd.ops.honey.school/` and
+  `https://argocd.dev.ops.honey.school/`;
+- `https://headlamp.ops.honey.school/` and
+  `https://headlamp.dev.ops.honey.school/`;
+- `https://metrics.dev.ops.honey.school/`;
+- `https://jenkins.ops.honey.school/`;
+- `https://workflows.ops.honey.school/`;
+- `https://cockpit.ops.honey.school/`.
+
+`metrics.ops.honey.school` is reserved but not routed because production monitoring
+has not been deployed. The old `/argocd`, `/headlamp` and dev
+`/victoria-metrics` paths redirect to canonical hosts. The old
+`jenkins.honey.school` and `workflows.honey.school` names redirect only for VPN
+clients. Cockpit is the explicit v1 exception: it stays behind WireGuard but uses
+the local Linux/PAM `playsay` account, not Keycloak. Do not pretend that an OIDC
+reverse proxy authenticates Cockpit host sessions; full Cockpit SSO requires a
+separate Kerberos/PAM design.
+
+### How A Developer Connects
+
+The WireGuard private key is never committed or pasted into chat. The current owner
+profiles live outside Git under
+`/Users/evgeniymednov/Backups/PlayAndSay/wireguard/`. A new developer asks a
+`platform-admins` member for a separately generated peer profile delivered through
+an approved secret channel. Never copy another person's profile.
+
+1. Install the WireGuard application, import the assigned `.conf` profile and turn
+   the tunnel on.
+2. Verify the management route with `ping 10.250.0.1` or open one canonical ops URL.
+   A request without the tunnel must receive `403`.
+3. Open the required URL. ArgoCD, Headlamp, Jenkins, Workflows and dev metrics
+   redirect to the workforce realm and share the same Keycloak browser session.
+4. On first login, use the one-time password delivered out of band, set a permanent
+   password, enroll a passkey and scan the TOTP QR code. The administrator deletes
+   the Kubernetes bootstrap Secret immediately after confirmation.
+5. Dev product login offers `Play&Say Workforce`; production product login does
+   not. Dev group mapping grants `TEACHER` to `developers` and `TEACHER+ADMIN` to
+   `platform-admins`.
+
+Break-glass access is local and tool-specific. Keep the Jenkins escape-hatch
+credential, ArgoCD local `admin` recovery secret, Keycloak master admin and the
+Cockpit Linux account in the owner-controlled secret manager. They are for an IdP
+outage only, are never normal shared accounts and must be rotated after use.
+
+### Activation Sequence
+
+Run the contract test before touching a cluster:
+
+```bash
+./scripts/test-workforce-sso-contract.sh
+```
+
+Create the realm and OIDC clients in production Keycloak, then bootstrap the first
+owner. Subsequent developers should normally receive only `developers`:
+
+```bash
+KUBECONFIG=/secure/prod-kubeconfig \
+  ./scripts/configure-keycloak-workforce.sh
+
+KUBECONFIG=/secure/prod-kubeconfig \
+WORKFORCE_USERNAME='<owner-login>' \
+WORKFORCE_EMAIL='<owner-email>' \
+WORKFORCE_GROUPS='developers,release-operators,platform-admins' \
+  ./scripts/bootstrap-keycloak-workforce-user.sh
+```
+
+Retrieve the temporary password without printing it to logs, deliver it out of band,
+complete enrollment, then delete
+`keycloak/workforce-bootstrap-<owner-login>`. For another developer, omit
+`WORKFORCE_GROUPS` so the safe `developers` default is used.
+
+Distribute each client secret from the source cluster directly to the destination
+cluster. The helper never prints a client secret:
+
+```bash
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/prod-kubeconfig \
+CLIENT=argocd-prod ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/prod-kubeconfig \
+CLIENT=headlamp-prod ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/prod-kubeconfig \
+CLIENT=workflows ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/dev-kubeconfig \
+CLIENT=argocd-dev ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/dev-kubeconfig \
+CLIENT=headlamp-dev ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/dev-kubeconfig \
+CLIENT=metrics-dev ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/dev-kubeconfig \
+CLIENT=dev-broker ./scripts/sync-workforce-oidc-client-secret.sh
+
+SOURCE_KUBECONFIG=/secure/prod-kubeconfig \
+TARGET_KUBECONFIG=/secure/ci-kubeconfig \
+CLIENT=jenkins ./scripts/sync-workforce-oidc-client-secret.sh
+```
+
+Configure only the dev broker:
+
+```bash
+KUBECONFIG=/secure/dev-kubeconfig \
+  ./scripts/configure-keycloak-dev-workforce-broker.sh
+```
+
+Apply the reviewed Ansible changes in a maintenance window. The guest play changes
+k3s API OIDC arguments and restarts dev/prod k3s, so run it only after confirming
+product availability and rollback access. Add exact A records for the canonical ops
+hosts to AX41 `65.109.55.110`, issue the expanded certificate with
+`scripts/issue-ax41-honey-certificates.sh`, then apply `edge-proxy`. Do not point the
+workforce issuer away from Selectel: the public `ops.honey.school` route already
+exposes only the exact `playsay`/`workforce` realm paths and theme resources.
+
+Upgrade ArgoCD/Headlamp and install the dev metrics authentication proxy:
+
+```bash
+KUBECONFIG=/secure/prod-kubeconfig ENVIRONMENT=prod \
+  ./scripts/configure-workforce-sso-cluster.sh
+KUBECONFIG=/secure/dev-kubeconfig ENVIRONMENT=dev \
+  ./scripts/configure-workforce-sso-cluster.sh
+
+KUBECONFIG=/secure/prod-kubeconfig ENVIRONMENT=prod \
+  ./scripts/validate-workforce-sso.sh
+KUBECONFIG=/secure/dev-kubeconfig ENVIRONMENT=dev \
+  ./scripts/validate-workforce-sso.sh
+```
+
+Jenkins is upgraded separately on `playsay-ci` with
+`scripts/bootstrap-jenkins-ci.sh`; its JCasC uses the pinned `oic-auth` and
+`matrix-auth` plugins, PKCE, workforce groups and an escape hatch. Synchronize the
+`jenkins` client first. Argo Workflows uses the same workforce realm and admits only
+`release-operators`.
+
 ## Production Releases With Argo Workflows
 
 `release/1.001.07` is the accepted legacy baseline. Its immutable promotion record is
@@ -103,7 +276,7 @@ The production control plane is intentionally not installed until every activati
 gate below passes. This prevents a partially configured workflow from obtaining
 production authority:
 
-1. `workflows.honey.school` resolves directly to AX41 `65.109.55.110`, is included in
+1. `workflows.ops.honey.school` resolves directly to AX41 `65.109.55.110`, is included in
    the AX41 certificate, and is reachable only from WireGuard through NodePort `32088`.
 2. The release-ops image is built from reviewed Git, published to GHCR and supplied by
    immutable `@sha256:` digest. A mutable tag is rejected.
@@ -123,7 +296,7 @@ Controllers/UI live in `argo-workflows-system`; WorkflowTemplates and executions
 in `playsay-release-system`. `templateReferencing: Secure` is mandatory. Separate
 service accounts restrict candidate reads, backup Jobs, migration Jobs, named
 production ArgoCD Applications, GitHub updates, smoke and recovery. Promotion and
-rollback share the `playsay-production-release` mutex.
+rollback share the `playsay-production-operation` mutex.
 
 Create the release-ops image from a committed clean checkout after authenticating
 Docker to GHCR. Save the printed immutable reference:
@@ -1325,7 +1498,7 @@ AX41 Jenkins runs on the dedicated `playsay-ci` VM. The former shared-node capac
 
 Jenkins chart must keep `controller.overwritePlugins=true`. In chart `jenkins-5.9.22`, the rendered `apply_config.sh` can still contain interactive `yes n | cp -i ...` plugin copying; after a controller restart this can leave the init container in `CrashLoopBackOff` and Jenkins will serve `502` through host nginx because the service has no ready endpoints. `deploy-cluster-addons.sh` patches the Jenkins ConfigMap to use non-interactive `cp -f ...` after Helm upgrade and deletes `jenkins-0` only if it is already stuck in init `CrashLoopBackOff`. If `/jenkins/` returns `502` after a VPS reboot, check `kubectl -n jenkins get pod,endpoints` first; healthy Jenkins should be `2/2 Running`, have an endpoint, and return `403 Forbidden` or a login redirect through nginx.
 
-Jenkins UI is configured through Helm and JCasC with root URL `https://jenkins.honey.school/`. It runs on dedicated `playsay-ci` and is exposed by AX41 edge nginx only to WireGuard `10.250.0.0/24`; public requests receive 403. The root-host proxy forwards `Host`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-Proto`; it must not set the old `/jenkins` prefix.
+Jenkins UI is configured through Helm and JCasC with root URL `https://jenkins.ops.honey.school/`. It runs on dedicated `playsay-ci`, authenticates staff through the workforce realm and is exposed by AX41 edge nginx only to WireGuard `10.250.0.0/24`; public requests receive 403. `developers` and `release-operators` can read/build/cancel jobs, while only `platform-admins` administer Jenkins. The root-host proxy forwards `Host`, `X-Forwarded-Host`, `X-Forwarded-Port` and `X-Forwarded-Proto`; it must not set the old `/jenkins` prefix. `jenkins.honey.school` is a VPN-only compatibility redirect.
 
 The `OpenAPI contract` check lives in `playsay-api-gateway-develop`. Test, `bootJar`, and `:api-gateway:exportOpenApi` run in one Gradle invocation; the following stage only verifies the committed file and archives it. Internal `backend/api-gateway/**` changes trigger API only. A commit that changes `contracts/openapi.yaml` triggers API plus web-app, so frontend generation follows actual contract changes instead of every gateway implementation edit.
 
@@ -1392,10 +1565,10 @@ Use the decoded value only in the GitHub webhook UI/API for `mednov-ai/playsay-i
 Jenkins URL:
 
 ```text
-https://jenkins.honey.school/
+https://jenkins.ops.honey.school/
 ```
 
-Jenkins API checks require authentication. Connect to `playsay-ci` through the AX41 jump host, keep credentials in remote shell variables, and use the local NodePort so neither value is printed:
+Jenkins API checks require authentication. Normal people use OIDC in the browser and create Jenkins API tokens for automation. Break-glass diagnostics connect to `playsay-ci` through the AX41 jump host, keep credentials in remote shell variables, and use the local NodePort so neither value is printed:
 
 ```bash
 ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
@@ -1405,8 +1578,8 @@ ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
 set -euo pipefail
 JENKINS_URL="http://127.0.0.1:32082"
 JENKINS_JOB_NAME="playsay-platform-dispatch-develop"
-JENKINS_USER="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-user}" | base64 -d)"
-JENKINS_PASSWORD="$(sudo kubectl -n jenkins get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 -d)"
+JENKINS_USER="$(sudo kubectl -n jenkins get secret playsay-workforce-jenkins-oidc -o jsonpath="{.data.escape-hatch-username}" | base64 -d)"
+JENKINS_PASSWORD="$(sudo kubectl -n jenkins get secret playsay-workforce-jenkins-oidc -o jsonpath="{.data.escape-hatch-secret}" | base64 -d)"
 curl -g -fsS -u "$JENKINS_USER:$JENKINS_PASSWORD" \
   "$JENKINS_URL/job/$JENKINS_JOB_NAME/api/json?tree=builds[number,displayName,building,result,timestamp,url]{0,10}" |
   jq -r ".builds[] | \"#\\(.number) \\(.displayName) building=\\(.building) result=\\(.result)\""
@@ -1418,20 +1591,18 @@ The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.
 
 ## Headlamp Kubernetes UI
 
-Headlamp is installed at:
+After Workforce SSO activation, Headlamp is available only through WireGuard:
 
 ```text
-https://ops.play-and-say.ru:18443/headlamp/
+https://headlamp.ops.honey.school/
+https://headlamp.dev.ops.honey.school/
 ```
 
-Get the dev-admin login token:
-
-```bash
-ssh root@<server-ip> \
-  "kubectl -n headlamp get secret headlamp-admin-token -o jsonpath='{.data.token}' | base64 -d"
-```
-
-This token is cluster-admin for the dev cluster. Keep Headlamp dev-only and do not reuse this pattern for staging/prod without proper OIDC/RBAC.
+Headlamp uses the workforce ID token directly against the matching k3s API. Prod
+binds all three workforce groups to Kubernetes `view`; dev binds `developers` and
+`release-operators` to `view` and `platform-admins` to `cluster-admin`. Do not issue
+or share the historical long-lived dev-admin browser token. The local k3s admin
+kubeconfig remains break-glass recovery outside the normal browser flow.
 
 ## Keycloak Dev Instance
 

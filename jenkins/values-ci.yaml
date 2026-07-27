@@ -1,5 +1,5 @@
 controller:
-  jenkinsUrl: https://jenkins.honey.school/
+  jenkinsUrl: https://jenkins.ops.honey.school/
   serviceType: NodePort
   nodePort: 32082
   servicePort: 8080
@@ -15,6 +15,8 @@ controller:
     - pipeline-stage-view
     - generic-webhook-trigger
     - dark-theme
+    - oic-auth:4.715.vf202e4229f61
+    - matrix-auth:3.3
   overwritePlugins: true
   additionalExistingSecrets:
     - name: playsay-jenkins-credentials
@@ -25,6 +27,14 @@ controller:
       keyName: webhook-token
     - name: playsay-jenkins-credentials
       keyName: dev-kubeconfig-b64
+    - name: playsay-workforce-jenkins-oidc
+      keyName: client-id
+    - name: playsay-workforce-jenkins-oidc
+      keyName: client-secret
+    - name: playsay-workforce-jenkins-oidc
+      keyName: escape-hatch-username
+    - name: playsay-workforce-jenkins-oidc
+      keyName: escape-hatch-secret
   JCasC:
     defaultConfig: true
     overwriteConfiguration: true

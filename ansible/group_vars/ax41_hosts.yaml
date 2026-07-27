@@ -18,6 +18,7 @@ opentofu_local_state_path: /var/lib/playsay-opentofu-state
 cockpit_enabled: true
 cockpit_listen_address: 10.250.0.1
 cockpit_listen_port: 9090
+cockpit_public_origin: https://cockpit.ops.honey.school
 
 ax41_public_tcp_ports:
   - "22"
@@ -87,21 +88,44 @@ edge_routes:
   - hostname: ops.honey.school
     kind: ops
     keycloak_upstream: 10.60.0.20:32084
-    argocd_upstream: 10.60.0.20:32080
-    headlamp_upstream: 10.60.0.20:32081
-    victoria_metrics_upstream: 10.60.0.20:32085
+    argocd_redirect: https://argocd.ops.honey.school/
+    headlamp_redirect: https://headlamp.ops.honey.school/
   - hostname: dev.ops.honey.school
     kind: ops
     keycloak_upstream: 10.60.0.30:32084
-    argocd_upstream: 10.60.0.30:32080
-    headlamp_upstream: 10.60.0.30:32081
-    victoria_metrics_upstream: 10.60.0.30:32085
-  - hostname: jenkins.honey.school
+    argocd_redirect: https://argocd.dev.ops.honey.school/
+    headlamp_redirect: https://headlamp.dev.ops.honey.school/
+    victoria_metrics_redirect: https://metrics.dev.ops.honey.school/
+  - hostname: argocd.ops.honey.school
+    kind: argocd
+    upstream: 10.60.0.20:32080
+  - hostname: argocd.dev.ops.honey.school
+    kind: argocd
+    upstream: 10.60.0.30:32080
+  - hostname: headlamp.ops.honey.school
+    kind: headlamp
+    upstream: 10.60.0.20:32081
+  - hostname: headlamp.dev.ops.honey.school
+    kind: headlamp
+    upstream: 10.60.0.30:32081
+  - hostname: metrics.dev.ops.honey.school
+    kind: metrics
+    upstream: 10.60.0.30:32089
+  - hostname: jenkins.ops.honey.school
     kind: jenkins
     upstream: 10.60.0.40:32082
-  - hostname: workflows.honey.school
+  - hostname: jenkins.honey.school
+    kind: redirect
+    redirect: https://jenkins.ops.honey.school
+  - hostname: workflows.ops.honey.school
     kind: workflows
     upstream: 10.60.0.20:32088
+  - hostname: workflows.honey.school
+    kind: redirect
+    redirect: https://workflows.ops.honey.school
+  - hostname: cockpit.ops.honey.school
+    kind: cockpit
+    upstream: 10.250.0.1:9090
   - hostname: hooks.honey.school
     kind: hooks
     jenkins_upstream: 10.60.0.40:32082

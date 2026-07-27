@@ -6,14 +6,14 @@ set -Eeuo pipefail
 KUBECONFIG_PATH="${KUBECONFIG_PATH:-/etc/rancher/k3s/k3s.yaml}"
 KEYCLOAK_NAMESPACE="${KEYCLOAK_NAMESPACE:-keycloak}"
 KEYCLOAK_ADMIN_SECRET="${KEYCLOAK_ADMIN_SECRET:-keycloak-admin}"
-KEYCLOAK_REALM="${KEYCLOAK_REALM:-playsay}"
+KEYCLOAK_REALM="${KEYCLOAK_REALM:-workforce}"
 KEYCLOAK_CONTAINER="${KEYCLOAK_CONTAINER:-keycloak}"
 KEYCLOAK_SERVER="${KEYCLOAK_SERVER:-http://localhost:8080/keycloak}"
 KCADM_PATH="${KCADM_PATH:-/opt/bitnami/keycloak/bin/kcadm.sh}"
 KCADM_CONFIG="${KCADM_CONFIG:-/tmp/kcadm-argo-workflows.config}"
 WORKFLOWS_CLIENT_ID="${WORKFLOWS_CLIENT_ID:-playsay-release-workflows}"
 WORKFLOWS_GROUP="${WORKFLOWS_GROUP:-release-operators}"
-WORKFLOWS_ORIGIN="${WORKFLOWS_ORIGIN:-https://workflows.honey.school}"
+WORKFLOWS_ORIGIN="${WORKFLOWS_ORIGIN:-https://workflows.ops.honey.school}"
 WORKFLOWS_SECRET_NAMESPACE="${WORKFLOWS_SECRET_NAMESPACE:-argo-workflows-system}"
 WORKFLOWS_SECRET_NAME="${WORKFLOWS_SECRET_NAME:-playsay-release-sso}"
 
@@ -81,25 +81,43 @@ client_payload="$(
       implicitFlowEnabled:false,
       directAccessGrantsEnabled:false,
       serviceAccountsEnabled:false,
+      consentRequired:false,
+      frontchannelLogout:true,
       redirectUris:[($origin + "/oauth2/callback")],
       webOrigins:[$origin],
+      defaultClientScopes:["web-origins","acr","profile","roles","email"],
+      optionalClientScopes:[],
       attributes:{
         "pkce.code.challenge.method":"S256",
         "post.logout.redirect.uris":($origin + "/*")
       },
-      protocolMappers:[{
-        name:"release-operator-groups",
-        protocol:"openid-connect",
-        protocolMapper:"oidc-group-membership-mapper",
-        consentRequired:false,
-        config:{
-          "full.path":"false",
-          "id.token.claim":"true",
-          "access.token.claim":"true",
-          "userinfo.token.claim":"true",
-          "claim.name":"groups"
+      protocolMappers:[
+        {
+          name:"release-operator-groups",
+          protocol:"openid-connect",
+          protocolMapper:"oidc-group-membership-mapper",
+          consentRequired:false,
+          config:{
+            "full.path":"false",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "userinfo.token.claim":"true",
+            "claim.name":"groups"
+          }
+        },
+        {
+          name:"client-audience",
+          protocol:"openid-connect",
+          protocolMapper:"oidc-audience-mapper",
+          consentRequired:false,
+          config:{
+            "included.client.audience":$clientId,
+            "id.token.claim":"false",
+            "access.token.claim":"true",
+            "introspection.token.claim":"true"
+          }
         }
-      }]
+      ]
     }'
 )"
 if [[ -n "${client_id}" ]]; then

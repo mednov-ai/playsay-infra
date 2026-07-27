@@ -39,4 +39,6 @@ rf_edge_routes:
     origin_hostname: ops.honey.school
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
     kind: keycloak
-    realm: playsay
+    realms:
+      - playsay
+      - workforce

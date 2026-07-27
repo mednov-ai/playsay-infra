@@ -1,0 +1,7 @@
+kube-apiserver-arg+:
+  - "oidc-issuer-url={{ k3s_workforce_oidc_issuer }}"
+  - "oidc-client-id={{ k3s_workforce_oidc_client_ids[inventory_hostname] }}"
+  - "oidc-username-claim={{ k3s_workforce_oidc_username_claim }}"
+  - "oidc-username-prefix={{ k3s_workforce_oidc_username_prefix }}"
+  - "oidc-groups-claim={{ k3s_workforce_oidc_groups_claim }}"
+  - "oidc-groups-prefix={{ k3s_workforce_oidc_groups_prefix }}"

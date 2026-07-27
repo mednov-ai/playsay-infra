@@ -1,0 +1,23 @@
+config:
+  inCluster: true
+  inClusterContextName: development
+  baseURL: ""
+  sessionTTL: 28800
+  enableHelm: false
+  oidc:
+    secret:
+      create: false
+    externalSecret:
+      enabled: true
+      name: workforce-oidc
+      hasScopes: true
+    callbackURL: https://headlamp.dev.ops.honey.school/oidc-callback
+    usePKCE: true
+    useCookie: true
+
+service:
+  type: NodePort
+  nodePort: 32081
+
+ingress:
+  enabled: false

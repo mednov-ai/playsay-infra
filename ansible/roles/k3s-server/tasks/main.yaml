@@ -23,11 +23,33 @@
     executable: /bin/bash
   when: not k3s_binary.stat.exists
 
+- name: Ensure k3s config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/config.yaml.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: inventory_hostname in (k3s_workforce_oidc_client_ids | default({}))
+
+- name: Configure workforce OIDC for Kubernetes API
+  ansible.builtin.template:
+    src: workforce-oidc.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml.d/20-workforce-oidc.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s for workforce OIDC
+  when: inventory_hostname in (k3s_workforce_oidc_client_ids | default({}))
+
 - name: Ensure k3s service is enabled and running
   ansible.builtin.service:
     name: k3s
     enabled: true
     state: started
+
+- name: Apply pending k3s configuration before API checks
+  ansible.builtin.meta: flush_handlers
 
 - name: Wait for Kubernetes API
   ansible.builtin.command: k3s kubectl get nodes

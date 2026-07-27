@@ -207,41 +207,29 @@ server {
     location /argocd/ {
         allow {{ edge_vpn_subnet }};
         deny all;
-        proxy_pass http://{{ route.argocd_upstream }};
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $playsay_connection_upgrade;
+        return 308 {{ route.argocd_redirect }};
     }
 
     location /headlamp/ {
         allow {{ edge_vpn_subnet }};
         deny all;
-        proxy_pass http://{{ route.headlamp_upstream }};
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $playsay_connection_upgrade;
+        return 308 {{ route.headlamp_redirect }};
     }
 
     location /victoria-metrics/ {
         allow {{ edge_vpn_subnet }};
         deny all;
-        proxy_pass http://{{ route.victoria_metrics_upstream }};
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+{% if route.victoria_metrics_redirect is defined %}
+        return 308 {{ route.victoria_metrics_redirect }};
+{% else %}
+        return 404;
+{% endif %}
     }
 
     location / {
         return 404;
     }
-{% elif route.kind in ['jenkins', 'workflows'] %}
+{% elif route.kind in ['argocd', 'headlamp', 'metrics', 'jenkins', 'workflows'] %}
     location / {
         allow {{ edge_vpn_subnet }};
         deny all;
@@ -259,6 +247,29 @@ server {
 {% if route.kind == 'workflows' %}
         client_max_body_size 8m;
 {% endif %}
+    }
+{% elif route.kind == 'cockpit' %}
+    location / {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass https://{{ route.upstream }};
+        proxy_ssl_verify off;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+{% elif route.kind == 'redirect' %}
+    location / {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        return 308 {{ route.redirect }}$request_uri;
     }
 {% elif route.kind == 'hooks' %}
     location = /generic-webhook-trigger/invoke {
@@ -278,7 +289,7 @@ server {
         limit_except POST { deny all; }
         limit_req zone=playsay_hooks burst=20 nodelay;
         client_max_body_size 2m;
-        proxy_pass http://{{ route.argocd_upstream }};
+        proxy_pass http://{{ route.argocd_upstream }}/api/webhook;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Host $host;

@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 ARGO_WORKFLOWS_CHART_VERSION="1.0.23"
 ARGO_WORKFLOWS_CHART_SHA256="a20365b94f3c286eed01c1ca7bd1ec428efa002f5610f140dd4c933322d6bc6d"
-WORKFLOWS_HOST="${WORKFLOWS_HOST:-workflows.honey.school}"
+WORKFLOWS_HOST="${WORKFLOWS_HOST:-workflows.ops.honey.school}"
 EXPECTED_EDGE_IP="${EXPECTED_EDGE_IP:-65.109.55.110}"
 : "${RELEASE_OPS_IMAGE:?Set RELEASE_OPS_IMAGE to ghcr.io/mednov-ai/playsay-release-ops@sha256:<digest>}"
 

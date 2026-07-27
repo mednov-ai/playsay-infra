@@ -79,7 +79,8 @@ helm template argo-workflows argo/argo-workflows \
   > "${work_dir}/helm.yaml"
 grep -q 'templateReferencing: Secure' "${work_dir}/helm.yaml"
 grep -q 'nodePort: 32088' "${work_dir}/helm.yaml"
-grep -q 'https://workflows.honey.school/oauth2/callback' "${work_dir}/helm.yaml"
+grep -q 'https://workflows.ops.honey.school/oauth2/callback' "${work_dir}/helm.yaml"
+grep -q 'https://ops.honey.school/keycloak/realms/workforce' "${work_dir}/helm.yaml"
 
 if rg -n '^(data|stringData):' "${ROOT_DIR}/kustomize/argo-workflows-production" |
   grep -v 'prod-liquibase-runner.yaml'; then

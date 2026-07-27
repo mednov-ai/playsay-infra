@@ -14,6 +14,14 @@ k3s_disable_components:
   - traefik
   - servicelb
 k3s_node_taints: []
+k3s_workforce_oidc_issuer: https://ops.honey.school/keycloak/realms/workforce
+k3s_workforce_oidc_client_ids:
+  playsay-prod: ops-headlamp-prod
+  playsay-dev: ops-headlamp-dev
+k3s_workforce_oidc_username_claim: sub
+k3s_workforce_oidc_username_prefix: "workforce:"
+k3s_workforce_oidc_groups_claim: groups
+k3s_workforce_oidc_groups_prefix: "workforce:"
 
 node_exporter_enabled: true
 

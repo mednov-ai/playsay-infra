@@ -1,0 +1,46 @@
+jenkins:
+  securityRealm:
+    oic:
+      serverConfiguration:
+        wellKnown:
+          wellKnownOpenIDConfigurationUrl: "https://ops.honey.school/keycloak/realms/workforce/.well-known/openid-configuration"
+          scopesOverride: "openid profile email groups"
+      clientId: "${playsay-workforce-jenkins-oidc-client-id}"
+      clientSecret: "${playsay-workforce-jenkins-oidc-client-secret}"
+      userNameField: "preferred_username"
+      groupsFieldName: "groups"
+      fullNameFieldName: "name"
+      emailFieldName: "email"
+      logoutFromOpenidProvider: true
+      postLogoutRedirectUrl: "https://jenkins.ops.honey.school/"
+      allowTokenAccessWithoutOicSession: true
+      disableSslVerification: false
+      properties:
+        - "pkce"
+        - escapeHatch:
+            username: "${playsay-workforce-jenkins-oidc-escape-hatch-username}"
+            secret: "${playsay-workforce-jenkins-oidc-escape-hatch-secret}"
+            group: "platform-admins"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - group:
+            name: "developers"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+              - "Job/Build"
+              - "Job/Cancel"
+              - "View/Read"
+        - group:
+            name: "release-operators"
+            permissions:
+              - "Overall/Read"
+              - "Job/Read"
+              - "Job/Build"
+              - "Job/Cancel"
+              - "View/Read"
+        - group:
+            name: "platform-admins"
+            permissions:
+              - "Overall/Administer"

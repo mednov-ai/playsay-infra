@@ -20,7 +20,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for command_name in kubectl curl sed grep mktemp sha256sum tar install; do
+for command_name in kubectl curl sed grep mktemp sha256sum tar install base64; do
   command -v "$command_name" >/dev/null || { echo "Missing command: $command_name" >&2; exit 1; }
 done
 
@@ -58,6 +58,16 @@ for required_key in github-token github-username webhook-token dev-kubeconfig-b6
   [[ -n "$encoded_value" ]] || { echo "Missing key in playsay-jenkins-credentials: $required_key" >&2; exit 1; }
 done
 
+if ! kubectl -n jenkins get secret playsay-workforce-jenkins-oidc >/dev/null 2>&1; then
+  echo "Missing jenkins/playsay-workforce-jenkins-oidc. Synchronize the workforce OIDC client before installing Jenkins." >&2
+  exit 1
+fi
+
+for required_key in client-id client-secret escape-hatch-username escape-hatch-secret; do
+  encoded_value="$(kubectl -n jenkins get secret playsay-workforce-jenkins-oidc -o "jsonpath={.data.${required_key}}")"
+  [[ -n "$encoded_value" ]] || { echo "Missing key in playsay-workforce-jenkins-oidc: $required_key" >&2; exit 1; }
+done
+
 kubectl -n jenkins apply -f - <<'EOF'
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -77,6 +87,7 @@ helm upgrade --install jenkins jenkins/jenkins \
   --values "$REPO_ROOT/jenkins/values-ci.yaml" \
   --set-file controller.JCasC.configScripts.playsay-appearance="$REPO_ROOT/jenkins/jcasc/playsay-appearance.yaml" \
   --set-file controller.JCasC.configScripts.playsay-credentials="$REPO_ROOT/jenkins/jcasc/playsay-credentials.yaml" \
+  --set-file controller.JCasC.configScripts.playsay-workforce-sso="$REPO_ROOT/jenkins/jcasc/playsay-workforce-sso.yaml" \
   --wait \
   --timeout 15m
 
@@ -95,8 +106,21 @@ if grep -q 'yes n | cp -i /usr/share/jenkins/ref/plugins/\* /var/jenkins_plugins
 fi
 
 kubectl -n jenkins rollout status statefulset/jenkins --timeout=15m
+jenkins_breakglass_user="$(
+  kubectl -n jenkins get secret playsay-workforce-jenkins-oidc \
+    -o jsonpath='{.data.escape-hatch-username}' |
+    base64 -d
+)"
+jenkins_breakglass_password="$(
+  kubectl -n jenkins get secret playsay-workforce-jenkins-oidc \
+    -o jsonpath='{.data.escape-hatch-secret}' |
+    base64 -d
+)"
 JENKINS_URL="http://127.0.0.1:${JENKINS_NODEPORT_HTTP}" \
   JENKINS_NODEPORT_HTTP="$JENKINS_NODEPORT_HTTP" \
+  JENKINS_USER="$jenkins_breakglass_user" \
+  JENKINS_PASSWORD="$jenkins_breakglass_password" \
   "$REPO_ROOT/scripts/configure-jenkins-jobs.sh"
+unset jenkins_breakglass_user jenkins_breakglass_password
 
 kubectl -n jenkins get statefulset,pod,service,pvc

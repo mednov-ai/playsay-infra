@@ -16,7 +16,15 @@ certbot certonly \
   -d ops.honey.school \
   -d dev.ops.honey.school \
   -d jenkins.honey.school \
+  -d argocd.ops.honey.school \
+  -d argocd.dev.ops.honey.school \
+  -d headlamp.ops.honey.school \
+  -d headlamp.dev.ops.honey.school \
+  -d metrics.dev.ops.honey.school \
+  -d jenkins.ops.honey.school \
+  -d workflows.ops.honey.school \
   -d workflows.honey.school \
+  -d cockpit.ops.honey.school \
   -d hooks.honey.school
 
 nginx -t

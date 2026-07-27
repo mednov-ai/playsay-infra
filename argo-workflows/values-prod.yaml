@@ -49,14 +49,14 @@ server:
       memory: 384Mi
   sso:
     enabled: true
-    issuer: https://ops.honey.school/keycloak/realms/playsay
+    issuer: https://ops.honey.school/keycloak/realms/workforce
     clientId:
       name: playsay-release-sso
       key: client-id
     clientSecret:
       name: playsay-release-sso
       key: client-secret
-    redirectUrl: https://workflows.honey.school/oauth2/callback
+    redirectUrl: https://workflows.ops.honey.school/oauth2/callback
     scopes:
       - openid
       - profile

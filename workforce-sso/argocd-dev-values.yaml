@@ -1,0 +1,39 @@
+configs:
+  cm:
+    url: https://argocd.dev.ops.honey.school
+    oidc.config: |
+      name: Play&Say Workforce
+      issuer: https://ops.honey.school/keycloak/realms/workforce
+      clientID: ops-argocd-dev
+      clientSecret: $oidc.workforce.clientSecret
+      requestedScopes:
+        - openid
+        - profile
+        - email
+        - groups
+  params:
+    server.insecure: true
+    server.basehref: /
+    server.rootpath: /
+  rbac:
+    policy.default: role:workforce-deny
+    scopes: "[groups]"
+    policy.csv: |
+      p, role:workforce-deny, applications, get, __no_access__/*, allow
+      p, role:workforce-developer, applications, get, */*, allow
+      p, role:workforce-developer, applications, sync, */*, allow
+      p, role:workforce-developer, projects, get, *, allow
+      p, role:workforce-developer, repositories, get, *, allow
+      p, role:workforce-developer, clusters, get, *, allow
+      p, role:workforce-developer, logs, get, */*, allow
+      p, role:workforce-platform-admin, *, *, *, allow
+      g, developers, role:workforce-developer
+      g, release-operators, role:workforce-developer
+      g, platform-admins, role:workforce-platform-admin
+
+server:
+  service:
+    type: NodePort
+    nodePortHttp: 32080
+  ingress:
+    enabled: false
