@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-game-adapter-service
-  tag: "0.1.0"
-  digest: ""
+  tag: "game-adapter-dev-3"
+  digest: "sha256:a44d35ef506f121b0d59923173e34d93d2ed40d77f645b3932c3d7e754454f15"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: local-0
-  number: "0"
+  name: game-adapter-dev-3
+  number: "3"
   branch: develop
   branchLabel: game-adapter-dev
-  commit: unknown
-  commitShort: unknown
+  commit: 7d3dd7779aa80b87aad2eac701caae364e328d3d
+  commitShort: 7d3dd7779aa8
 adapter:
   model: gpt-5.6-sol
   reasoningEffort: medium
