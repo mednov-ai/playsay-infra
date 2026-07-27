@@ -147,6 +147,17 @@ spec:
                   key: {{ .Values.mediaService.serviceTokenKey | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_CACHE_REQUEST_TIMEOUT_SECONDS
               value: {{ .Values.mediaService.cacheRequestTimeoutSeconds | quote }}
+            - name: PLAYSAY_GAME_ADAPTER_SERVICE_BASE_URL
+              value: {{ .Values.gameAdapterService.baseUrl | quote }}
+            - name: PLAYSAY_GAME_ADAPTER_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gameAdapterService.existingSecret | quote }}
+                  key: {{ .Values.gameAdapterService.serviceTokenKey | quote }}
+            - name: PLAYSAY_GAME_ADAPTER_ENABLED
+              value: {{ .Values.gameAdapterService.enabled | quote }}
+            - name: PLAYSAY_GAME_ADAPTER_POLL_DELAY_MS
+              value: {{ .Values.gameAdapterService.pollDelayMs | quote }}
             - name: PLAYSAY_PAYMENT_SERVICE_BASE_URL
               value: {{ .Values.paymentService.baseUrl | quote }}
             - name: PLAYSAY_PAYMENT_SERVICE_TOKEN

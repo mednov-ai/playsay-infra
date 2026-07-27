@@ -1142,6 +1142,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-api-gateway-develop`: tests/packages `api-gateway`, checks OpenAPI, builds/pushes the image, then routes its reference to dev or the matching production release;
 - `playsay-ai-tutor-service-develop`: tests/packages `ai-tutor-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-vocabulary-service-develop`: tests/packages `vocabulary-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-game-adapter-service-develop`: tests/builds the public `@playsay/game-sync` package and stateless `game-adapter-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-web-app-develop`: generates the API client, lints/tests/builds `web-app`, tests/packages `browser-extension` and archives `frontend/browser-extension/playsay-browser-extension.zip`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-collaboration-service-develop`: tests/builds `collaboration-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-media-service-develop`: tests/packages `media-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
@@ -1160,6 +1161,7 @@ Module jobs have a `BRANCH_NAME` parameter and module-specific build label prefi
 - `api-gateway`: `api-dev-N` on `develop`;
 - `web-app`: `web-dev-N`;
 - `collaboration-service`: `collab-dev-N`;
+- `game-adapter-service`: `game-adapter-dev-N`;
 - `media-service`: `media-dev-N`;
 - `payment-service`: `payment-dev-N`;
 - `registration-service`: `registration-dev-N`;
@@ -1178,6 +1180,8 @@ Affected-target policy:
 - `frontend/keyboard-app/**` -> `playsay-keyboard-frontend-develop`;
 - `backend/keyboard-service/**` -> `playsay-keyboard-backend-develop`;
 - `frontend/web-app/**` -> `playsay-web-app-develop`;
+- `frontend/game-adapter-service/**` -> `playsay-game-adapter-service-develop`;
+- `frontend/game-sync-sdk/**` -> `playsay-game-adapter-service-develop` and `playsay-web-app-develop`;
 - `frontend/browser-extension/**` -> `playsay-web-app-develop`;
 - `backend/api-gateway/**` -> `playsay-api-gateway-develop`;
 - `contracts/openapi.yaml` -> `playsay-api-gateway-develop` and `playsay-web-app-develop`;
@@ -1192,7 +1196,7 @@ Affected-target policy:
 - `backend/email-service/**` -> `playsay-email-service-develop`;
 - `collaboration-service/**` -> `playsay-collaboration-service-develop`;
 - shared backend config/code -> all backend targets including `keyboard-service`;
-- shared frontend config/lockfile -> `web-app` and `keyboard-app`;
+- shared frontend config/lockfile -> `web-app`, `game-adapter-service`, and `keyboard-app`;
 - the matching module `Jenkinsfile.*` -> only that module;
 - dispatcher/common CI files -> `ci-contracts` validation without product image builds;
 - smoke scripts -> `smoke-syntax` validation without product image builds;
@@ -2002,6 +2006,39 @@ git push
 ```
 
 ArgoCD will sync the reverted state.
+
+## Game Adapter Service
+
+`game-adapter-service` is a stateless internal Node.js service deployed by ArgoCD from `helm-charts/game-adapter-service`. It has no database and no public ingress. `api-gateway` calls `http://game-adapter-service` with the shared token from secret `playsay-game-adapter`; the adapter reads the OpenAI key from the existing `playsay-openai` secret. Default reviewed configuration is model `gpt-5.6-sol` with reasoning effort `medium`. Do not place either secret value in Helm values, Jenkins parameters, logs, or chat.
+
+Create or reconcile the service token before the first ArgoCD sync:
+
+```bash
+cd playsay-infra
+./scripts/sync-game-adapter-secret.sh
+```
+
+The script preserves an existing token and updates only the named modern cluster namespace. It must not be run against the legacy VPS or either protected `legacy/play-and-say-vps` branch. The application is internal-only, so no nginx route, DNS record, browser CORS origin, or WebSocket permission is required. Classroom collaboration continues over `wss://dev.online.honey.school/collab/ws`, direct production `wss://online.honey.school/collab/ws`, and the Selectel production alias `wss://online.honeyschool.ru/collab/ws`; the root `honeyschool.ru` landing does not host classroom WebSockets.
+
+Install/update the Jenkins job after the infra commit is present:
+
+```bash
+./scripts/configure-jenkins-jobs.sh
+```
+
+`playsay-game-adapter-service-develop` tests and builds `@playsay/game-sync` first, then tests/builds the adapter, builds the runtime image and updates `helm-charts/game-adapter-service/values-dev.yaml` with an immutable digest. Changes in `frontend/game-sync-sdk/**` intentionally route to both the adapter and web-app because the iframe bridge and injected SDK must use the same protocol. Changes in `frontend/game-adapter-service/**` route only to the adapter.
+
+After rollout, verify only resource presence and health; never print secret data:
+
+```bash
+kubectl -n playsay-dev get secret playsay-game-adapter playsay-openai
+kubectl -n playsay-dev rollout status deploy/game-adapter-service
+kubectl -n playsay-dev get svc game-adapter-service
+kubectl -n playsay-dev port-forward svc/game-adapter-service 18088:80
+curl -fsS http://127.0.0.1:18088/actuator/health
+```
+
+If OpenAI is unavailable, new adaptation jobs retry and then fail without affecting existing games. Do not stop the classroom, collaboration service, Docker, Amnezia, or any public site as a recovery action. Existing `SDK_V1` and legacy fallback games continue to run because AI is never used during a lesson. Roll back the service through the infra Git commit/digest; an applied game adaptation is rolled back independently from the material editor, which restores the original immutable asset.
 
 ## AI Tutor Service
 

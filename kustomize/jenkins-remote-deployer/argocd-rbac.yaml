@@ -16,6 +16,7 @@ rules:
       - keyboard-app
       - keyboard-service
       - media-service
+      - game-adapter-service
       - payment-service
       - registration-service
       - vocabulary-service

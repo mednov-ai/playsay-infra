@@ -70,6 +70,12 @@ mediaService:
   existingSecret: playsay-media
   serviceTokenKey: service-token
   cacheRequestTimeoutSeconds: "660"
+gameAdapterService:
+  baseUrl: http://game-adapter-service.playsay-dev.svc.cluster.local
+  existingSecret: playsay-game-adapter
+  serviceTokenKey: service-token
+  enabled: "true"
+  pollDelayMs: "3000"
 paymentService:
   baseUrl: http://payment-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-payment
