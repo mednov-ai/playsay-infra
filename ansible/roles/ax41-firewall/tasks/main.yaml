@@ -55,7 +55,7 @@
     state: absent
   notify: Reload UFW
 
-- name: Install idempotent prod LiveKit destination NAT reconciler
+- name: Install idempotent LiveKit destination NAT reconciler
   ansible.builtin.template:
     src: reconcile-livekit-nat.sh.j2
     dest: /usr/local/sbin/playsay-reconcile-livekit-nat
@@ -64,7 +64,7 @@
     mode: "0755"
   notify: Reload UFW
 
-- name: Install prod LiveKit destination NAT service
+- name: Install LiveKit destination NAT service
   ansible.builtin.template:
     src: playsay-livekit-nat.service.j2
     dest: /etc/systemd/system/playsay-livekit-nat.service
@@ -73,7 +73,7 @@
     mode: "0644"
   notify: Reload UFW
 
-- name: Enable and start prod LiveKit destination NAT service
+- name: Enable and start LiveKit destination NAT service
   ansible.builtin.systemd_service:
     name: playsay-livekit-nat.service
     enabled: true
@@ -115,6 +115,28 @@
     to_port: "{{ item }}"
     proto: udp
   loop: "{{ ax41_prod_livekit_udp_ports }}"
+
+- name: Allow routed dev LiveKit TCP traffic
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ ax41_public_interface }}"
+    interface_out: virbr60
+    to_ip: "{{ ax41_dev_vm_address }}"
+    to_port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ax41_dev_livekit_tcp_ports }}"
+
+- name: Allow routed dev LiveKit UDP traffic
+  community.general.ufw:
+    rule: allow
+    route: true
+    interface_in: "{{ ax41_public_interface }}"
+    interface_out: virbr60
+    to_ip: "{{ ax41_dev_vm_address }}"
+    to_port: "{{ item }}"
+    proto: udp
+  loop: "{{ ax41_dev_livekit_udp_ports }}"
 
 - name: Enable the AX41 firewall after allow rules exist
   community.general.ufw:

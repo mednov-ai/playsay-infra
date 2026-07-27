@@ -10,8 +10,12 @@
     - libvirt-host
     - ax41-vm-scheduling
     - wireguard
-    - realtime-network
-    - ax41-firewall
+    - role: realtime-network
+      tags:
+        - realtime-network
+    - role: ax41-firewall
+      tags:
+        - ax41-firewall
     - role: edge-proxy
       tags:
         - edge-proxy

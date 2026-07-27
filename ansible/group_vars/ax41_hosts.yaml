@@ -38,12 +38,20 @@ ax41_prod_livekit_udp_ports:
 ax41_prod_livekit_legacy_udp_ports:
   - "49160:49200"
   - "50000:50020"
+ax41_dev_vm_address: 10.60.0.30
+ax41_dev_livekit_tcp_ports:
+  - "3479"
+  - "7882"
+ax41_dev_livekit_udp_ports:
+  - "3479"
+  - "50600:50999"
+  - "51000:51049"
 
 realtime_udp_receive_buffer_max: 16777216
 realtime_udp_send_buffer_max: 16777216
 realtime_network_backlog: 10000
 realtime_conntrack_max: 524288
-realtime_reserved_ports: "3478,7881,49152-50511"
+realtime_reserved_ports: "3478-3479,7881-7882,49152-51049"
 
 ax41_vm_cpu_shares:
   - name: playsay-prod
@@ -97,6 +105,7 @@ edge_routes:
     kind: online
     upstream: 10.60.0.30:32083
     collaboration_upstream: 10.60.0.30:32086
+    livekit_upstream: 10.60.0.30:7880
   - hostname: dev.key.honey.school
     kind: keyboard
     upstream: 10.60.0.30:32087

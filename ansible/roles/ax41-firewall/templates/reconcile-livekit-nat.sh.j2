@@ -25,10 +25,28 @@ delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --t
 delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}:{{ port }}
 {% endif %}
 {% endfor %}
+{% for port in ax41_dev_livekit_tcp_ports %}
+delete_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}
+{% if ':' not in port %}
+delete_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}:{{ port }}
+{% endif %}
+{% endfor %}
+{% for port in ax41_dev_livekit_udp_ports %}
+delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}
+{% if ':' not in port %}
+delete_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}:{{ port }}
+{% endif %}
+{% endfor %}
 
 {% for port in ax41_prod_livekit_tcp_ports %}
 add_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
 {% endfor %}
 {% for port in ax41_prod_livekit_udp_ports %}
 add_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_prod_vm_address }}
+{% endfor %}
+{% for port in ax41_dev_livekit_tcp_ports %}
+add_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}
+{% endfor %}
+{% for port in ax41_dev_livekit_udp_ports %}
+add_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}
 {% endfor %}

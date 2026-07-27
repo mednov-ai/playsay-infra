@@ -30,6 +30,18 @@
     - k3s-server
     - monitoring-agent
     - role: realtime-network
-      when: inventory_hostname == 'playsay-prod'
+      when: inventory_hostname in ['playsay-prod', 'playsay-dev']
+      tags:
+        - realtime-network
+      vars:
+        realtime_reserved_ports: "{{ realtime_guest_profiles[inventory_hostname].reserved_ports }}"
     - role: coturn
-      when: inventory_hostname == 'playsay-prod'
+      when: inventory_hostname in ['playsay-prod', 'playsay-dev']
+      tags:
+        - coturn
+      vars:
+        coturn_listening_port: "{{ realtime_guest_profiles[inventory_hostname].coturn_listening_port }}"
+        coturn_min_port: "{{ realtime_guest_profiles[inventory_hostname].coturn_min_port }}"
+        coturn_max_port: "{{ realtime_guest_profiles[inventory_hostname].coturn_max_port }}"
+        coturn_external_ip: "{{ realtime_guest_profiles[inventory_hostname].coturn_external_ip }}"
+        coturn_realm: "{{ realtime_guest_profiles[inventory_hostname].coturn_realm }}"

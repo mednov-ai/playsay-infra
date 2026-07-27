@@ -24,6 +24,12 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
+          <name>ACCEPTED_DEV_COMMIT</name>
+          <description>Exact dev-accepted platform SHA for release ancestry validation; unused on develop.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
           <name>FORCE_TARGETS</name>
           <description>Optional manual override: all or comma-separated deploy targets.</description>
           <defaultValue></defaultValue>

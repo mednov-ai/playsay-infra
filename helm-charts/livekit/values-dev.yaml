@@ -5,13 +5,14 @@ imagePullSecrets: []
 secret:
   existingName: livekit-keys
 rtc:
-  nodeIp: "146.103.126.15"
-  udpPortRangeStart: 50000
-  udpPortRangeEnd: 50020
+  nodeIp: "65.109.55.110"
+  tcpPort: 7882
+  udpPortRangeStart: 51000
+  udpPortRangeEnd: 51049
 turn:
   enabled: true
   host: dev.online.honey.school
-  port: 3478
+  port: 3479
 webhook:
   enabled: true
   url: http://api-gateway.playsay-dev.svc.cluster.local/livekit/webhook

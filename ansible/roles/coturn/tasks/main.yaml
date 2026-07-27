@@ -30,6 +30,17 @@
   ansible.builtin.slurp:
     src: /etc/playsay/coturn-auth-secret
   register: coturn_secret_value
+  when: coturn_secret_file.stat.exists or not ansible_check_mode
+  no_log: true
+
+- name: Resolve coturn shared secret for configuration
+  ansible.builtin.set_fact:
+    coturn_shared_secret: >-
+      {{
+        (coturn_secret_value.content | b64decode | trim)
+        if coturn_secret_value.content is defined
+        else 'check-mode-secret-placeholder'
+      }}
   no_log: true
 
 - name: Configure coturn
@@ -48,7 +59,7 @@
       fingerprint
       lt-cred-mech
       use-auth-secret
-      static-auth-secret={{ coturn_secret_value.content | b64decode | trim }}
+      static-auth-secret={{ coturn_shared_secret }}
       no-multicast-peers
       no-cli
       no-tlsv1
@@ -72,3 +83,4 @@
     name: coturn
     enabled: true
     state: started
+  when: not ansible_check_mode

@@ -26,6 +26,12 @@ case "$operation" in
 {% for port in ax41_prod_livekit_udp_ports %}
     apply_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport {{ port }}
 {% endfor %}
+{% for port in ax41_dev_livekit_tcp_ports %}
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_dev_vm_address }} --dport {{ port }}
+{% endfor %}
+{% for port in ax41_dev_livekit_udp_ports %}
+    apply_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_dev_vm_address }} --dport {{ port }}
+{% endfor %}
     ;;
   stopped)
 {% for port in ax41_prod_livekit_tcp_ports %}
@@ -33,6 +39,12 @@ case "$operation" in
 {% endfor %}
 {% for port in ax41_prod_livekit_udp_ports %}
     remove_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_prod_vm_address }} --dport {{ port }}
+{% endfor %}
+{% for port in ax41_dev_livekit_tcp_ports %}
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p tcp -d {{ ax41_dev_vm_address }} --dport {{ port }}
+{% endfor %}
+{% for port in ax41_dev_livekit_udp_ports %}
+    remove_rule -i {{ ax41_public_interface }} -o virbr60 -p udp -d {{ ax41_dev_vm_address }} --dport {{ port }}
 {% endfor %}
     ;;
 esac

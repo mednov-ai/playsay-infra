@@ -24,6 +24,12 @@
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
+          <name>ACCEPTED_DEV_COMMIT</name>
+          <description>Optional exact dev-accepted platform SHA forwarded to a numeric release dispatcher.</description>
+          <defaultValue></defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
           <name>FORCE_TARGETS</name>
           <description>Optional manual override forwarded to the internal dispatcher.</description>
           <defaultValue></defaultValue>
@@ -114,6 +120,7 @@
           def requestedBranch = params.BRANCH_NAME?.trim()
           def requestedBefore = params.GITHUB_BEFORE?.trim() ?: ''
           def requestedAfter = params.GITHUB_AFTER?.trim()
+          def acceptedDevCommit = params.ACCEPTED_DEV_COMMIT?.trim() ?: ''
           def requestedTargets = params.FORCE_TARGETS?.trim() ?: ''
           def requestedParallelism = params.MAX_PARALLEL_MODULE_JOBS?.trim() ?: '4'
 
@@ -140,6 +147,7 @@
             string(name: 'BRANCH_NAME', value: requestedBranch),
             string(name: 'GITHUB_BEFORE', value: requestedBefore),
             string(name: 'GITHUB_AFTER', value: requestedAfter),
+            string(name: 'ACCEPTED_DEV_COMMIT', value: acceptedDevCommit),
             string(name: 'FORCE_TARGETS', value: requestedTargets),
             string(name: 'MAX_PARALLEL_MODULE_JOBS', value: requestedParallelism)
           ], wait: false, propagate: false
