@@ -1,11 +1,9 @@
 theme:
   appBaseUrl: https://online.honey.school
-
 keycloak:
   global:
     security:
       allowInsecureImages: true
-
   replicaCount: 1
   production: true
   httpEnabled: true
@@ -13,25 +11,20 @@ keycloak:
   proxyHeaders: xforwarded
   hostname: https://ops.honey.school/keycloak
   hostnameStrict: true
-
   image:
     repository: bitnamilegacy/keycloak
-
   auth:
     adminUser: admin
     existingSecret: keycloak-admin
     passwordSecretKey: admin-password
-
   cache:
     enabled: false
-
   service:
     type: NodePort
     ports:
       http: 80
     nodePorts:
       http: "32084"
-
   resourcesPreset: none
   resources:
     requests:
@@ -40,10 +33,8 @@ keycloak:
     limits:
       cpu: "2"
       memory: 1536Mi
-
   podAnnotations:
     checksum/playsay-theme: isolated-prod-theme-20260721
-
   extraEnvVars:
     - name: JAVA_OPTS_KC_HEAP
       value: "-Xms512m -Xmx768m"
@@ -53,7 +44,6 @@ keycloak:
       value: "false"
     - name: KC_SPI_THEME_STATIC_MAX_AGE
       value: "-1"
-
   extraVolumes:
     - name: playsay-theme
       configMap:
@@ -75,12 +65,10 @@ keycloak:
             path: login/resources/css/playsay-login.css
           - key: logo.jpg
             path: login/resources/img/logo.jpg
-
   extraVolumeMounts:
     - name: playsay-theme
       mountPath: /opt/bitnami/keycloak/themes/playsay
       readOnly: true
-
   postgresql:
     enabled: true
     architecture: standalone
@@ -104,3 +92,5 @@ keycloak:
       persistence:
         enabled: true
         size: 10Gi
+image: null
+build: null

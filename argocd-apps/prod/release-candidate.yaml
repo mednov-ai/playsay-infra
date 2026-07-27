@@ -1,0 +1,15 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/1.001.08"
+baseRelease: "release/1.001.07"
+basePlatformCommit: "1c068b10c8c435a8ae20f9f9621d70a865f9cc9c"
+baseInfraCommit: "c61659005f8a8090d02ffbe62d3d10b36293eb75"
+platformCommit: "27776832d320eaf38546347ab913b90f1020935a"
+affectedTargets:
+  - "web-app"
+  - "collaboration-service"
+validationSuites:
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "5"
+updatedAt: "2026-07-27T14:36:24Z"

@@ -1,6 +1,5 @@
 persistence:
   size: 50Gi
-
 resources:
   requests:
     cpu: 100m
@@ -8,3 +7,5 @@ resources:
   limits:
     cpu: "1"
     memory: 1Gi
+image: null
+build: null
