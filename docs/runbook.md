@@ -24,7 +24,7 @@ Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to r
 
 The committed desired state supports a capacity gate for 100 simultaneous individual lessons (200 bidirectional 720p/30fps participants, 30% TURN), but it is not certified until the maintenance-window test in `docs/capacity-100-lessons.md` passes. Single-node prod has no HA; LiveKit/coturn rollout disconnects active media.
 
-The source-of-truth ranges are LiveKit UDP `50000:50511`, coturn relay UDP `49152:49999`, TURN `3478` TCP/UDP and LiveKit fallback `7881` TCP. They must match `ansible/group_vars/ax41_hosts.yaml`, `ansible/group_vars/ax41_guests.yaml`, AX41 UFW/DNAT/libvirt hook and `helm-charts/livekit/values-prod.yaml`. Both host and prod guest reserve `3478,7881,49152-50511` and apply 16 MiB UDP buffer maxima, backlog `10000` and conntrack `524288`. Prod/dev/CI libvirt CPU shares are `2048/512/512`.
+The source-of-truth ranges are LiveKit UDP `50000:50511`, coturn relay UDP `49152:49999`, TURN `3478` TCP/UDP and LiveKit fallback `7881` TCP. They must match `ansible/group_vars/ax41_hosts.yaml`, `ansible/group_vars/ax41_guests.yaml`, AX41 UFW/DNAT/libvirt hook and `helm-charts/livekit/values-prod.yaml`. Both host and prod guest reserve `3478,7881,49152-50511` and apply 16 MiB UDP buffer maxima, backlog `10000` and conntrack `524288`. Prod/dev/CI libvirt CPU shares are `2048/512/512`. AX41 DNAT is reconciled by `playsay-livekit-nat.service`, not appended by UFW: the oneshot removes historical/current duplicates before installing exactly one rule per required port. After every firewall apply, verify `iptables-save -t nat` contains one copy of each required DNAT rule and none of the former `49160:49200` or `50000:50020` ranges.
 
 Before rollout:
 

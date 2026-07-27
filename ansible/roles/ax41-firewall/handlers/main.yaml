@@ -3,3 +3,9 @@
   ansible.builtin.command:
     cmd: ufw reload
   changed_when: true
+  notify: Reconcile prod LiveKit destination NAT
+
+- name: Reconcile prod LiveKit destination NAT
+  ansible.builtin.systemd_service:
+    name: playsay-livekit-nat.service
+    state: restarted

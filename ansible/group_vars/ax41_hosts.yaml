@@ -35,6 +35,9 @@ ax41_prod_livekit_udp_ports:
   - "3478"
   - "49152:49999"
   - "50000:50511"
+ax41_prod_livekit_legacy_udp_ports:
+  - "49160:49200"
+  - "50000:50020"
 
 realtime_udp_receive_buffer_max: 16777216
 realtime_udp_send_buffer_max: 16777216
