@@ -24,6 +24,8 @@ database:
   hikariMaxPoolSize: "3"
 runtime:
   javaToolOptions: "-Xms256m -Xmx512m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+vocabularyIntegration:
+  baseUrl: http://vocabulary-service.playsay-prod.svc.cluster.local
 resources:
   requests:
     cpu: 50m

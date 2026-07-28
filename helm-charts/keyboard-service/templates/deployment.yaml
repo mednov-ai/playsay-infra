@@ -68,6 +68,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.userData.existingSecret | quote }}
                   key: {{ .Values.userData.serviceTokenKey | quote }}
+            - name: PLAYSAY_VOCABULARY_SERVICE_BASE_URL
+              value: {{ .Values.vocabularyIntegration.baseUrl | quote }}
             {{- if .Values.database.hikariMaxPoolSize }}
             - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
               value: {{ .Values.database.hikariMaxPoolSize | quote }}

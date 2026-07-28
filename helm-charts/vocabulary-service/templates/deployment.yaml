@@ -38,6 +38,7 @@ spec:
             - { name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE, value: {{ .Values.database.hikariMaxPoolSize | quote }} }
             - { name: PLAYSAY_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS, value: {{ .Values.websocket.allowedOriginPatterns | quote }} }
             - { name: PLAYSAY_VOCABULARY_OPENAI_BASE_URL, value: {{ .Values.openai.baseUrl | quote }} }
+            - { name: PLAYSAY_API_GATEWAY_SERVICE_BASE_URL, value: {{ .Values.assignmentIntegration.gatewayBaseUrl | quote }} }
             - name: PLAYSAY_USER_DATA_SERVICE_TOKEN
               valueFrom: { secretKeyRef: { name: {{ .Values.userData.existingSecret | quote }}, key: {{ .Values.userData.serviceTokenKey | quote }} } }
             {{- if .Values.openai.enabled }}

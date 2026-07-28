@@ -1127,6 +1127,32 @@ Do not store the token in `playsay-infra` or `playsay-platform`.
 
 If you prefer CLI later, pass secrets only through a local untracked file such as `.env.local` or an interactive prompt.
 
+## Vocabulary Practice Internal Callbacks
+
+Personal vocabulary practice uses retryable service-to-service callbacks; there is no distributed transaction between assignments, vocabulary, and Key.
+
+- `api-gateway` calls `vocabulary-service` through `PLAYSAY_VOCABULARY_SERVICE_BASE_URL`.
+- `vocabulary-service` reports assignment progress through `PLAYSAY_API_GATEWAY_SERVICE_BASE_URL`.
+- `keyboard-service` reports session-specific spelling results through `PLAYSAY_VOCABULARY_SERVICE_BASE_URL`.
+- All internal endpoints require the existing `X-PlaySay-Service-Token`; never expose or print it.
+- Dev chart values use namespace-qualified `*.playsay-dev.svc.cluster.local` addresses and prod values use `*.playsay-prod.svc.cluster.local`. Do not route these callbacks through public nginx.
+- Assignment preparation, assignment progress, and Key results are durable outbox operations. A temporary peer outage should leave retryable rows and must not create duplicate sessions or attempts after recovery.
+
+The dev web build enables `VITE_VOCABULARY_PRACTICE_ENABLED`, `VITE_VOCABULARY_HOMEWORK_ENABLED`, `VITE_VOCABULARY_LIVE_ENABLED`, and `VITE_VOCABULARY_KEY_ENABLED`. Production defaults remain disabled until each stage is accepted. UI rollback changes only these build flags; do not roll back or delete the compatible Liquibase tables.
+
+After rollout, verify without printing payloads:
+
+```bash
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev get deploy \
+  api-gateway vocabulary-service keyboard-service web-app
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev rollout status deploy/vocabulary-service --timeout=5m
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev rollout status deploy/keyboard-service --timeout=5m
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev rollout status deploy/api-gateway --timeout=5m
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev rollout status deploy/web-app --timeout=5m
+```
+
+If callbacks accumulate, inspect only row counts, retry timestamps, and sanitized error classes. Do not select vocabulary snapshot, answer, or outbox payload columns into terminal output.
+
 ## Jenkins Branch Builds and Build Labels
 
 Jenkins platform jobs are configured by:
