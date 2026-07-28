@@ -46,6 +46,9 @@ userData:
   existingSecret: playsay-registration
   serviceTokenKey: service-token
 
+vocabularyIntegration:
+  baseUrl: http://vocabulary-service.playsay-dev.svc.cluster.local
+
 resources:
   requests:
     cpu: 50m

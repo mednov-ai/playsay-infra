@@ -27,3 +27,5 @@ database:
   hikariMaxPoolSize: "3"
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=50 -XX:MaxRAMPercentage=75 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+vocabularyIntegration:
+  baseUrl: http://vocabulary-service.playsay-dev.svc.cluster.local

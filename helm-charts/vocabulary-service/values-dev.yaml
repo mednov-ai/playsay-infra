@@ -25,6 +25,8 @@ openai:
   baseUrl: https://api.openai.com/v1
   model: gpt-5.6-sol
   reasoningEffort: low
+assignmentIntegration:
+  gatewayBaseUrl: http://api-gateway.playsay-dev.svc.cluster.local
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:
