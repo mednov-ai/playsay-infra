@@ -60,6 +60,15 @@ spec:
               value: {{ .Values.adapter.baseUrl | quote }}
             - name: OPENAI_REASONING_EFFORT
               value: {{ .Values.adapter.reasoningEffort | quote }}
+            - name: CHROMIUM_EXECUTABLE_PATH
+              value: /usr/bin/chromium
+            - name: HOME
+              value: /tmp/playsay
+            - name: TMPDIR
+              value: /tmp/playsay
+          volumeMounts:
+            - name: runtime-tmp
+              mountPath: /tmp/playsay
           readinessProbe:
             httpGet: { path: /actuator/health, port: http }
             initialDelaySeconds: 2
@@ -70,3 +79,7 @@ spec:
             periodSeconds: 20
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: runtime-tmp
+          emptyDir:
+            sizeLimit: 256Mi
