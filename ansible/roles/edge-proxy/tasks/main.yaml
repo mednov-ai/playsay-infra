@@ -31,6 +31,16 @@
     group: www-data
     mode: "0644"
 
+# Temporary: remove this task and the deployed file after Mailjet marks
+# honey.school Active and support confirms that account activation is complete.
+- name: Publish the temporary Mailjet domain validation file
+  ansible.builtin.copy:
+    dest: "{{ edge_root_site.document_root }}/c13ef19e66138a6862298ea788218111.txt"
+    owner: root
+    group: www-data
+    mode: "0644"
+    content: ""
+
 - name: Configure TCP Packetization-Layer MTU discovery for the public edge
   ansible.builtin.copy:
     dest: /etc/sysctl.d/91-playsay-edge-tcp.conf
