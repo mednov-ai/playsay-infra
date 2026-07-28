@@ -16,6 +16,8 @@ database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
   hikariMaxPoolSize: "3"
+websocket:
+  allowedOriginPatterns: "https://dev.online.honey.school"
 openai:
   enabled: true
   existingSecret: playsay-openai

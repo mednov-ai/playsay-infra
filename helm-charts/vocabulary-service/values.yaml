@@ -20,6 +20,8 @@ database:
   passwordKey: password
   liquibaseEnabled: "false"
   hikariMaxPoolSize: "3"
+websocket:
+  allowedOriginPatterns: "http://localhost:[*],http://127.0.0.1:[*]"
 openai:
   enabled: false
   existingSecret: playsay-openai
