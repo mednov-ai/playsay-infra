@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-93"
-  digest: sha256:6b9066b8032e496d25e667b337043081f87e8d5fe3c54b478a5c9a14d6dbbe2b
+  tag: "api-dev-95"
+  digest: sha256:2d6404669c357ca74f982a817952af3c49f33117bd5ef5dc7f88601afe1615f7
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-93
-  number: "93"
+  name: api-dev-95
+  number: "95"
   branch: develop
   branchLabel: api-dev
-  commit: dc04a1a315507486c5a41b66d3f5b6d1397aa2b9
-  commitShort: "dc04a1a31550"
+  commit: a22de4c861ba03e4dd818b04eb1dcf767ce5dd01
+  commitShort: "a22de4c861ba"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
