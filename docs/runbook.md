@@ -2039,7 +2039,7 @@ ArgoCD will sync the reverted state.
 
 `game-adapter-service` is a stateless internal Node.js service deployed by ArgoCD from `helm-charts/game-adapter-service`. It has no database and no public ingress. `api-gateway` calls `http://game-adapter-service` with the shared token from secret `playsay-game-adapter`; the adapter reads the OpenAI key from the existing `playsay-openai` secret. Default reviewed configuration is model `gpt-5.6-sol` with reasoning effort `medium`. Do not place either secret value in Helm values, Jenkins parameters, logs, or chat.
 
-The runtime image includes system Chromium and `playwright-core`. Each generated game is checked in a fresh offline browser context before it can become `READY_FOR_REVIEW`; validation requires the SDK manifest/hello/ready lifecycle, declared semantic actions, DOM changes, no external requests/runtime errors, and bounded action traffic. The pod runs as UID/GID `10001` with a read-only root filesystem; Chromium writes only to the `runtime-tmp` `emptyDir` mounted at `/tmp/playsay`. Keep the default runtime request `250m/256Mi`, limit `1 CPU/1Gi`, and `emptyDir.sizeLimit=256Mi` unless measurements justify a change. Building the Debian+Chromium layer requires the dedicated Game Adapter Kaniko container request `512Mi` and limit `2Gi`; the previous `1Gi` limit was OOM-killed while snapshotting the installed Chromium packages.
+The runtime image includes system Chromium and `playwright-core`. Each generated game is checked fail-closed before it can become `READY_FOR_REVIEW`: original and candidate run offline with the same seed/viewport, each physical validation input must emit exactly one declared semantic action, observable DOM/control state must remain equivalent, source CSS declarations must not change, and runtime/network/action-rate checks must pass. The current validator version is `mechanics-v2`. The pod runs as UID/GID `10001` with a read-only root filesystem; Chromium writes only to the `runtime-tmp` `emptyDir` mounted at `/tmp/playsay`. Keep the default runtime request `250m/256Mi`, limit `1 CPU/1Gi`, and `emptyDir.sizeLimit=256Mi` unless measurements justify a change. Building the Debian+Chromium layer requires the dedicated Game Adapter Kaniko container request `512Mi` and limit `2Gi`; the previous `1Gi` limit was OOM-killed while snapshotting the installed Chromium packages.
 
 Create or reconcile the service token before the first ArgoCD sync:
 
@@ -2068,11 +2068,11 @@ kubectl -n playsay-dev port-forward svc/game-adapter-service 18088:80
 curl -fsS http://127.0.0.1:18088/actuator/health
 ```
 
-For a rollout smoke, inspect the pod without printing environment values, then submit one known fixture through `api-gateway` and confirm that the job reaches `READY_FOR_REVIEW` only after its report lists manifest, hello, lifecycle-ready, interactive-actions, DOM-state-change, offline-runtime, and action-rate checks. A malformed manifest or runtime action is terminal (`FAILED`) and must not be automatically retried; OpenAI 429/5xx and unavailable Chromium are retryable. Check validator failures with:
+For a rollout smoke, inspect the pod without printing environment values, then submit one known fixture through `api-gateway` and confirm that the job reaches `READY_FOR_REVIEW` only with `mechanicsValidation=PASSED`, `validatorVersion=mechanics-v2`, matching source hash, and report checks including `one-action-per-intent` and `source-differential`. Submit a fixture that changes a score/lane delta or CSS animation duration and confirm terminal `GAME_ADAPTER_MECHANICS_CHANGED`. A malformed manifest/runtime action or mechanics divergence is terminal (`FAILED`) and must not be automatically retried; OpenAI 429/5xx and unavailable Chromium are retryable. Existing rows without `mechanics-v2` must show `REVALIDATION_REQUIRED`; use the material editor revalidate action, which creates a new job from the original immutable asset without replacing the current block. Check validator failures with:
 
 ```bash
 kubectl -n playsay-dev get pod -l app.kubernetes.io/name=game-adapter-service
-kubectl -n playsay-dev logs deploy/game-adapter-service --since=15m | grep -E 'VALIDATION|RUNTIME_VALIDATOR|ACTION_RATE'
+kubectl -n playsay-dev logs deploy/game-adapter-service --since=15m | grep -E 'VALIDATION|RUNTIME_VALIDATOR|ACTION_RATE|GAME_MECHANICS_CHANGED|ACTION_CARDINALITY'
 kubectl -n playsay-dev describe pod -l app.kubernetes.io/name=game-adapter-service | grep -E 'OOMKilled|Evicted|runtime-tmp'
 ```
 
