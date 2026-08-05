@@ -12,9 +12,11 @@ AX41 at `65.109.55.110` serves `honey.school` production from `release/1.001.08`
 
 The full architecture, historical decisions and rollback contract are defined in [hetzner-ax41-dev-prod-plan.md](hetzner-ax41-dev-prod-plan.md), while the current executable checklist is [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md). Mark a task complete only after recording its exact Git revision and non-secret evidence location.
 
-The old VPS has only the short paid overlap remaining. Final source bundle `playsay-final-vps-v2-20260721T083819Z` has been copied off the VPS and fully decrypt/checksum/archive verified. Keep the VPS and old Jenkins available only as rollback through owner acceptance; delete neither without explicit owner approval. Amnezia is not migrated and ends with the VPS. AX41 administration uses its independent WireGuard management VPN.
+The old VPS has only the short paid overlap remaining. Final source bundle `playsay-final-vps-v2-20260721T083819Z` has been copied off the VPS and fully decrypt/checksum/archive verified. Keep the VPS and old Jenkins available only as rollback through owner acceptance; delete neither without explicit owner approval. The old hosts `146.103.126.15` and `89.124.113.223` are never a current dev target: agents must not connect to, diagnose, restart, build on or deploy to them unless the owner explicitly requests a named legacy rollback action in the current chat. Amnezia is not migrated and ends with the VPS. AX41 administration uses its independent WireGuard management VPN.
 
 The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses direct `*.honey.school` origins plus the Russian `online.honeyschool.ru` and `key.honeyschool.ru` proxy aliases, all with the single issuer `https://ops.honey.school/keycloak/realms/playsay`. The two `.ru` aliases belong to the same production `playsay-web` client and are present in its redirect URIs, web origins and post-logout redirects. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, JWKS, or ArgoCD target revisions. Legacy Jenkins is manual-only and can build only the legacy branch. The root `play-and-say.ru` site is outside both application-auth changes.
+
+Legacy Jenkins was reconciled on 2026-08-05 after an agent followed stale local guidance and manually retried current `develop` on the old controller. Erroneous `playsay-api-gateway-develop` build `#87` was aborted; protected infra branch `legacy/play-and-say-vps` at `33d7e9a3a6533be1431a3ba624b10e1d8b3af04` was reapplied with `scripts/configure-jenkins-jobs.sh`. The only enabled jobs are the 13 `playsay-legacy-vps-*` jobs, each hard-pinned to `*/legacy/play-and-say-vps` with an empty trigger set. Every job without that prefix, including `playsay-game-adapter-service-develop`, must remain disabled. Modern retries and Jenkins configuration belong only to the AX41 `playsay-ci` guest; never pass `develop`, feature or release parameters to VDSina Jenkins.
 
 Current API lesson/chat WebSockets are fail-closed through `PLAYSAY_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS`. The api-gateway Helm values must render exactly `https://dev.online.honey.school` for dev and `https://online.honey.school,https://online.honeyschool.ru,https://honeyschool.ru` for production; local chart defaults contain only localhost/127.0.0.1 wildcard ports. Do not add `www.honeyschool.ru`, wildcard domains or `online.play-and-say.ru` to the current chart. This policy change belongs only to AX41/Selectel Honey School contours and must not trigger an old-VPS apply, legacy Jenkins build or legacy branch edit.
 
@@ -939,7 +941,7 @@ Fast rollback: set `helm-charts/api-gateway/values-dev.yaml` `video.youtube.rfRe
 
 ## Lightweight Monitoring
 
-Dev monitoring uses a lightweight VictoriaMetrics GitOps app instead of full `kube-prometheus-stack`, because the current dev VPS has `4 vCPU / 8 GB RAM` and Jenkins + Keycloak + PostgreSQL + LiveKit already consume a meaningful baseline. The ArgoCD app is `monitoring-lite`, deployed to namespace `monitoring` from `helm-charts/monitoring-lite`.
+Dev monitoring uses a lightweight VictoriaMetrics GitOps app instead of full `kube-prometheus-stack`. The current dev is the AX41 guest `playsay-dev` (`10.60.0.30`, 2 vCPU/10 GiB); Jenkins runs separately on `playsay-ci` (`10.60.0.40`) and is not part of the dev workload baseline. The ArgoCD app is `monitoring-lite`, deployed to namespace `monitoring` from `helm-charts/monitoring-lite`.
 
 Components:
 
@@ -950,7 +952,7 @@ Components:
 - `vmalert`: evaluates alert rules against VictoriaMetrics;
 - `alertmanager`: routes alerts to Telegram if Telegram secret exists.
 
-The Ansible-managed host `prometheus-node-exporter` remains bound to `127.0.0.1:9100`. Do not deploy a second node-exporter DaemonSet on the dev VPS. `vmagent` runs with `hostNetwork: true` and scrapes the existing host exporter through localhost. Its own HTTP listener is bound to `127.0.0.1` inside host networking and is not exposed publicly.
+The Ansible-managed guest `prometheus-node-exporter` remains bound to `127.0.0.1:9100` on `playsay-dev`. Do not deploy a second node-exporter DaemonSet in the dev guest. `vmagent` runs with `hostNetwork: true` and scrapes the existing guest exporter through localhost. Its own HTTP listener is bound to `127.0.0.1` inside guest networking and is not exposed publicly.
 
 LiveKit metrics are enabled in the `livekit` chart with `prometheus_port: 6789`; vmagent scrapes `livekit.livekit.svc.cluster.local:6789`.
 
@@ -1138,7 +1140,14 @@ Personal vocabulary practice uses retryable service-to-service callbacks; there 
 - Dev chart values use namespace-qualified `*.playsay-dev.svc.cluster.local` addresses and prod values use `*.playsay-prod.svc.cluster.local`. Do not route these callbacks through public nginx.
 - Assignment preparation, assignment progress, and Key results are durable outbox operations. A temporary peer outage should leave retryable rows and must not create duplicate sessions or attempts after recovery.
 
-The dev web build enables `VITE_VOCABULARY_PRACTICE_ENABLED`, `VITE_VOCABULARY_HOMEWORK_ENABLED`, `VITE_VOCABULARY_LIVE_ENABLED`, and `VITE_VOCABULARY_KEY_ENABLED`. Production defaults remain disabled until each stage is accepted. UI rollback changes only these build flags; do not roll back or delete the compatible Liquibase tables.
+The dev web build enables `VITE_VOCABULARY_PRACTICE_ENABLED`, `VITE_VOCABULARY_HOMEWORK_ENABLED`, `VITE_VOCABULARY_LIVE_ENABLED`, `VITE_VOCABULARY_KEY_ENABLED`, and the composer/rail cutover flag `VITE_PERSONAL_PRACTICE_V2_ENABLED`. The web pipeline also sets `VITE_KEYBOARD_ORIGIN=https://dev.key.honey.school` for dev and `VITE_KEYBOARD_ORIGIN=https://key.honey.school` for production; do not replace these with a source-code hardcode. Production keeps the V2 cutover disabled for the first compatible backend release. UI rollback changes only the cutover/build flags or restores the previous web image; do not roll back or delete the compatible Liquibase tables.
+
+Roll out Personal Practice V2 in this order:
+
+1. Deploy `vocabulary-service` migrations/backend and compatible `api-gateway`; verify practice-plan tables and internal callback health.
+2. Deploy `web-app` with `VITE_PERSONAL_PRACTICE_V2_ENABLED=true` in dev, then `keyboard-app`/`keyboard-service`.
+3. Verify preview `planId + revision` publication, one live run per lesson, presence-aware recipients, reconnect recovery, homework progress, and the exact Key session set.
+4. If the UI must be rolled back, disable the V2 build flag or restore the previous web image. Keep plan/item-v2 columns in place so in-flight sessions remain readable.
 
 After rollout, verify without printing payloads:
 
@@ -1369,7 +1378,7 @@ unset JENKINS_USER JENKINS_PASSWORD
 '
 ```
 
-The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.60.0.40` command above. The old `146.103.126.15` controller is rollback-only and no longer receives GitHub webhooks; `89.124.113.223` is retired. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
+The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.60.0.40` command above. Current dev Kubernetes diagnostics use the same jump host with destination `playsay@10.60.0.30`. The old `146.103.126.15` controller is rollback-only and no longer receives GitHub webhooks; `89.124.113.223` is retired. Do not connect to either old address without an explicit owner request naming the legacy contour. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
 
 ## Headlamp Kubernetes UI
 
@@ -1649,6 +1658,10 @@ Host nginx config is generated with a `/collab/ws` location under `online.play-a
 - Kubernetes service: `collaboration-service` in `playsay-dev`.
 
 The frontend receives short-lived room tokens from api-gateway, then opens `/collab/ws?room=<yjsDocumentId>&token=<token>`. The websocket service validates that the room query exactly matches token claims before joining the Yjs room. Snapshot persistence uses `PUT /schedule/lessons/{lessonId}/collaboration-documents/{documentId}/snapshot` with header `X-PlaySay-Collaboration-Service-Token`.
+
+SDK v1 HTML games may open a second connection to the same URL with subprotocol `playsay-game-v1`. It is a separate TCP/TLS queue and accepts only the bounded game protocol; normal sockets reject game frames and game sockets never receive Yjs sync or awareness. Configure it with `collaboration.gameRealtimeMode`, rendered as `GAME_REALTIME_MODE=off|shadow|primary`: production/default remains `off`; AX41 dev starts in `shadow`, where the browser dual-publishes with event-id deduplication, and moves to `primary` only after the teacher/student comparison passes. `primary` uses the fast lane while open and the existing ephemeral path on negotiation failure or disconnect. Roll back without data changes by setting the dev value to `off`, committing only that values change and waiting for the collaboration ArgoCD application to become `Synced/Healthy`.
+
+Monitor `playsay_collaboration_game_active_connections`, `playsay_collaboration_game_messages_total`, `playsay_collaboration_game_bytes_total`, `playsay_collaboration_game_relay_duration_seconds`, the existing buffered-bytes/backpressure metrics, pod restarts and memory. The in-process relay p95 target is below `5 ms`; ordered game messages are not dropped at the soft backpressure limit and a hard-limit close uses `1013` so the browser falls back and resynchronizes from the checkpoint. For a performance smoke, open the same original/adapted game in isolated teacher/student sessions, add `gameSyncTrace=1`, test both directions and compare p50/p95/p99 in idle and under annotation/viewport load. Require zero duplicate/missing/out-of-order click/key actions, no visual or DOM/style change, no more than 5% idle p95 regression and at least 20% p95 improvement under collaboration load before switching dev from `shadow` to `primary`.
 
 Smoke checks:
 

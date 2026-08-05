@@ -50,6 +50,8 @@ spec:
                   key: {{ .Values.collaboration.serviceTokenKey | quote }}
             - name: SNAPSHOT_INTERVAL_MS
               value: {{ .Values.collaboration.snapshotIntervalMs | quote }}
+            - name: GAME_REALTIME_MODE
+              value: {{ .Values.collaboration.gameRealtimeMode | quote }}
             - name: WEBSOCKET_SOFT_LIMIT_BYTES
               value: {{ .Values.collaboration.websocket.softLimitBytes | quote }}
             - name: WEBSOCKET_HARD_LIMIT_BYTES
