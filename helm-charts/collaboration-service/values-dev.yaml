@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-dev-28"
-  digest: sha256:2a9b3a5aad4358448cd624ac94b1ae67fb0551a0aaea9e67d9d86e89023d29ec
+  tag: "collab-dev-29"
+  digest: sha256:a7fc6eb800b22fcd9430f0e25bb31a65b1beae06f984c77c3196232ed3139bfd
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-dev-28
-  number: "28"
+  name: collab-dev-29
+  number: "29"
   branch: develop
   branchLabel: collab-dev
-  commit: faf03a85aa8d5862f66483bbfbe1c21c3e4b961f
-  commitShort: "faf03a85aa8d"
+  commit: 63e50fd032de07423cd285ff2f12bfc05d6bc007
+  commitShort: "63e50fd032de"
 service:
   type: NodePort
   nodePort: 32086
@@ -20,4 +20,3 @@ collaboration:
   existingSecret: playsay-collaboration
   gameRealtimeMode: shadow
   snapshotIntervalMs: "10000"
-
