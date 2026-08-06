@@ -1,6 +1,6 @@
 apiVersion: v2
 name: playsay-keycloak
-description: Play&Say Keycloak deployment wrapper with the Play&Say login theme.
+description: Honey School Keycloak deployment wrapper with the Honey School login theme.
 type: application
 version: 0.1.0
 appVersion: "26.3.2"

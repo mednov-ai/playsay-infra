@@ -35,7 +35,7 @@ emailService:
   deliveryProvider: smtp
   serviceTokenKey: service-token
   fromAddressKey: from-address
-  fromName: Play&Say
+  fromName: Honey School
   replayEncryptionKeyKey: replay-encryption-key
   defaultReplayTtl: PT72H
   providerTrackingTtl: PT72H

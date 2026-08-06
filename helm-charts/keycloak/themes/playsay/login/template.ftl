@@ -1,25 +1,9 @@
 <#import "footer.ftl" as loginFooter>
 <#macro playsayLogoSvg className clipId shineId>
-<svg class="${className}" role="img" aria-label="${msg("playsayLoginLogoAlt")}" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <clipPath id="${clipId}">
-            <path d="M74 38C117 21 187 25 239 30C310 37 365 61 386 111C410 168 397 252 371 310C344 370 281 404 203 401C123 398 57 367 33 307C10 250 23 169 35 113C45 69 53 47 74 38Z" />
-        </clipPath>
-        <linearGradient id="${shineId}" x1="-30%" x2="130%" y1="0%" y2="100%">
-            <stop offset="0%" stop-color="#ff5c00" stop-opacity="0" />
-            <stop offset="35%" stop-color="#ffd84d" stop-opacity="0.1" />
-            <stop offset="50%" stop-color="#ffffff" stop-opacity="0.72" />
-            <stop offset="65%" stop-color="#74dbbe" stop-opacity="0.22" />
-            <stop offset="100%" stop-color="#ff5c00" stop-opacity="0" />
-        </linearGradient>
-    </defs>
-    <g clip-path="url(#${clipId})">
-        <rect class="playsay-logo-paper" height="420" width="420" />
-        <image class="playsay-logo-art" height="456" href="${url.resourcesPath}/img/logo.jpg" preserveAspectRatio="xMidYMid meet" width="456" x="-28" y="-18" />
-        <rect class="playsay-logo-shine" fill="url(#${shineId})" height="560" width="190" x="-240" y="-80" />
-    </g>
-    <path class="playsay-logo-outline" d="M74 38C117 21 187 25 239 30C310 37 365 61 386 111C410 168 397 252 371 310C344 370 281 404 203 401C123 398 57 367 33 307C10 250 23 169 35 113C45 69 53 47 74 38Z" />
-</svg>
+<span class="${className}" role="img" aria-label="${msg("playsayLoginLogoAlt")}">
+    <img class="playsay-logo-image playsay-logo-image-light" src="${url.resourcesPath}/img/honey-school-logo.svg" width="1080" height="215" alt="" aria-hidden="true" />
+    <img class="playsay-logo-image playsay-logo-image-dark" src="${url.resourcesPath}/img/honey-school-logo-reverse.svg" width="1080" height="215" alt="" aria-hidden="true" />
+</span>
 </#macro>
 
 <#macro registrationLayout bodyClass="" displayInfo=false displayMessage=true displayRequiredFields=false>
@@ -61,7 +45,7 @@
         </#list>
     </#if>
     <title>${msg("loginTitle",(realm.displayName!''))}</title>
-    <link rel="icon" href="${url.resourcesPath}/img/logo.jpg" />
+    <link rel="icon" href="${url.resourcesPath}/img/favicon.svg" type="image/svg+xml" />
     <#if properties.stylesCommon?has_content>
         <#list properties.stylesCommon?split(' ') as style>
             <link href="${url.resourcesCommonPath}/${style}" rel="stylesheet" />
@@ -281,7 +265,7 @@
                 </div>
             </div>
 
-            <a class="playsay-site-return" href="https://play-and-say.ru">${msg("playsayLoginReturnToSite")}</a>
+            <a class="playsay-site-return" href="https://honey.school">${msg("playsayLoginReturnToSite")}</a>
 
             <@loginFooter.content/>
         </section>

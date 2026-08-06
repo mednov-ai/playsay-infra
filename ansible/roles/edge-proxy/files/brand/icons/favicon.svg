@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Honey School</title>
+  <rect width="64" height="64" rx="14" fill="#202433"/>
+  <g fill="#E99500">
+    <path d="M20 10h8l5 8-5 8h-8l-5-8z"/>
+    <path d="M40 10h8l5 8-5 8h-8l-5-8z"/>
+    <path d="M11 29h8l5 8-5 8h-8l-5-8z"/>
+    <path d="M31 29h8l5 8-5 8h-8l-5-8z"/>
+    <path d="M12 44c0 5-4 7-4 11 0 3 2 5 5 5s5-2 5-5c0-4-4-6-4-11z"/>
+  </g>
+</svg>

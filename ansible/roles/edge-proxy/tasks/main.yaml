@@ -31,6 +31,15 @@
     group: www-data
     mode: "0644"
 
+- name: Publish the Honey School brand assets
+  ansible.builtin.copy:
+    src: brand/
+    dest: "{{ edge_root_site.document_root }}/brand/"
+    owner: root
+    group: www-data
+    mode: preserve
+    directory_mode: "0755"
+
 # Temporary: remove this task and the deployed file after Mailjet marks
 # honey.school Active and support confirms that account activation is complete.
 - name: Publish the temporary Mailjet domain validation file

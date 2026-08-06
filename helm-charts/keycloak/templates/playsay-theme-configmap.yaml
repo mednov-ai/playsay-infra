@@ -21,4 +21,9 @@ data:
   playsay-login.css: |-
 {{ .Files.Get "themes/playsay/login/resources/css/playsay-login.css" | indent 4 }}
 binaryData:
-  logo.jpg: {{ .Files.Get "themes/playsay/login/resources/img/logo.jpg" | b64enc }}
+  honey-school-logo.svg: {{ .Files.Get "themes/playsay/login/resources/img/honey-school-logo.svg" | b64enc }}
+  honey-school-logo-reverse.svg: {{ .Files.Get "themes/playsay/login/resources/img/honey-school-logo-reverse.svg" | b64enc }}
+  favicon.svg: {{ .Files.Get "themes/playsay/login/resources/img/favicon.svg" | b64enc }}
+  quicksand-latin-400.woff2: {{ .Files.Get "themes/playsay/login/resources/fonts/quicksand-latin-400.woff2" | b64enc }}
+  quicksand-latin-500.woff2: {{ .Files.Get "themes/playsay/login/resources/fonts/quicksand-latin-500.woff2" | b64enc }}
+  quicksand-latin-600.woff2: {{ .Files.Get "themes/playsay/login/resources/fonts/quicksand-latin-600.woff2" | b64enc }}

@@ -25,7 +25,7 @@ database:
 emailService:
   existingSecret: playsay-email
   deliveryProvider: mailjet-api
-  fromName: Play&Say
+  fromName: Honey School
   defaultReplayTtl: PT72H
   providerTrackingTtl: PT72H
   providerReconcileWindow: PT5M

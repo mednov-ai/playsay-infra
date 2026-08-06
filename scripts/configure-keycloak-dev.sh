@@ -99,7 +99,7 @@ ensure_realm() {
   jq -n --arg realm "$REALM" '{
       realm: $realm,
       enabled: true,
-      displayName: "Play&Say",
+      displayName: "Honey School",
       loginTheme: "playsay",
       internationalizationEnabled: true,
       supportedLocales: ["ru", "en", "de", "fr"],
@@ -113,7 +113,7 @@ ensure_realm_theme() {
   local token="$1"
   kc_curl -H "Authorization: Bearer $token" "$KEYCLOAK_URL/admin/realms/$REALM" \
     | jq '. + {
-        displayName: "Play&Say",
+        displayName: "Honey School",
         loginTheme: "playsay",
         internationalizationEnabled: true,
         supportedLocales: ["ru", "en", "de", "fr"],

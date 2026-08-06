@@ -42,7 +42,7 @@ keycloak:
       memory: 900Mi
 
   podAnnotations:
-    checksum/playsay-theme: isolated-dev-theme-20260721
+    checksum/playsay-theme: honey-school-brand-20260806
 
   extraEnvVars:
     - name: KC_SPI_THEME_CACHE_THEMES
@@ -71,8 +71,18 @@ keycloak:
             path: login/messages/messages_fr.properties
           - key: playsay-login.css
             path: login/resources/css/playsay-login.css
-          - key: logo.jpg
-            path: login/resources/img/logo.jpg
+          - key: honey-school-logo.svg
+            path: login/resources/img/honey-school-logo.svg
+          - key: honey-school-logo-reverse.svg
+            path: login/resources/img/honey-school-logo-reverse.svg
+          - key: favicon.svg
+            path: login/resources/img/favicon.svg
+          - key: quicksand-latin-400.woff2
+            path: login/resources/fonts/quicksand-latin-400.woff2
+          - key: quicksand-latin-500.woff2
+            path: login/resources/fonts/quicksand-latin-500.woff2
+          - key: quicksand-latin-600.woff2
+            path: login/resources/fonts/quicksand-latin-600.woff2
 
   extraVolumeMounts:
     - name: playsay-theme
