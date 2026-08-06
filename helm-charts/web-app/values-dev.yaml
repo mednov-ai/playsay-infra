@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-199"
-  digest: sha256:709be84ca393254f544e14d3ffe62d2a5be78022f6335abfa0d60b2138b55ff8
+  tag: "web-codex-vocabulary-modal-impl-200"
+  digest: sha256:ac8c12eafa3c963a463772aeda9e23aa4a01d43435e53d2a6a3ea67524b0d02a
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-199
-  number: "199"
-  branch: develop
-  branchLabel: web-dev
-  commit: 41e0f0f3d643c6b1cc48a9f29328ea186ba187b1
-  commitShort: "41e0f0f3d643"
+  name: web-codex-vocabulary-modal-impl-200
+  number: "200"
+  branch: codex/vocabulary-modal-impl
+  branchLabel: web-codex-vocabulary-modal-impl
+  commit: c4b7b20b894a90079be1743db0122fd8f454f324
+  commitShort: "c4b7b20b894a"
 service:
   type: NodePort
   nodePort: 32083
