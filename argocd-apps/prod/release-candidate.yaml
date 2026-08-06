@@ -1,0 +1,15 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/1.001.09"
+baseRelease: "release/1.001.08"
+basePlatformCommit: "41e0f0f3d643c6b1cc48a9f29328ea186ba187b1"
+acceptedDevCommit: "69c27d0dc9bfbf7b201ab8088b551ce6be29c2af"
+baseInfraCommit: "ecdec5cfa58d8740253fb2ae3cab8bcef57b3b00"
+platformCommit: "69c27d0dc9bfbf7b201ab8088b551ce6be29c2af"
+affectedTargets:
+validationSuites:
+  - "ci-contracts"
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "7"
+updatedAt: "2026-08-06T19:34:13Z"

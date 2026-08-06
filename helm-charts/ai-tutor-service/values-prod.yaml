@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: "ai-tutor-release-1.001.00-23"
-  digest: "sha256:376d071bf7e1a26a69184ee4ee92ce747a67c386480d4a5ef75f6b4981684290"
+  tag: "ai-tutor-release-1.001.07-25"
+  digest: "sha256:0b0137ba630ca92789f036ee0b8631ac444e641ee8b53269885c7d5ce8226e6d"
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: ai-tutor-release-1.001.00-23, number: "23", branch: release/1.001.00, branchLabel: ai-tutor-release-1.001.00, commit: "92406096f13b2451086d39021f8febfab855dbdc", commitShort: "92406096f13b"}
+build: {name: ai-tutor-release-1.001.07-25, number: "25", branch: release/1.001.07, branchLabel: ai-tutor-release-1.001.07, commit: "a171a7eda31f9faf8252cc5081a8435f3a12012e", commitShort: "a171a7eda31f"}
 service: {type: ClusterIP}
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
@@ -22,5 +22,5 @@ openai:
 runtime:
   javaToolOptions: "-Xms192m -Xmx384m -Djava.security.egd=file:/dev/urandom"
 resources:
-  requests: { cpu: 50m, memory: 448Mi }
-  limits: { cpu: "1", memory: 768Mi }
+  requests: {cpu: 50m, memory: 448Mi}
+  limits: {cpu: "1", memory: 768Mi}

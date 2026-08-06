@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/1.001.00
+    targetRevision: release/1.001.09
     path: kustomize/cloudnative-pg-operator
   destination:
     server: https://kubernetes.default.svc
