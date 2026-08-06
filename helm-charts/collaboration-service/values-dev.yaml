@@ -18,5 +18,6 @@ apiGateway:
   baseUrl: http://api-gateway.playsay-dev.svc.cluster.local
 collaboration:
   existingSecret: playsay-collaboration
-  gameRealtimeMode: shadow
+  gameRealtimeMode: primary
   snapshotIntervalMs: "10000"
+
