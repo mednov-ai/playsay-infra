@@ -7,7 +7,7 @@ Usage: scripts/apply-rf-edge-release.sh --check|--apply [--inventory PATH]
 
 Runs the Selectel RF edge playbook only from a clean, pushed numeric release
 branch. --apply also requires:
-  PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/<number>.<number>.<number>
+  PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN
 EOF
   exit 2
 }
@@ -47,8 +47,8 @@ for command_name in git ansible-playbook grep; do
 done
 
 release_branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
-if ! printf '%s\n' "$release_branch" | grep -Eq '^release/[0-9]+\.[0-9]+\.[0-9]+$'; then
-  echo "Selectel production may be reconciled only from a numeric release branch; current branch: ${release_branch:-detached}." >&2
+if ! printf '%s\n' "$release_branch" | grep -Eq '^release/[0-9]{2}\.[0-9]{3}\.[0-9]{2}$'; then
+  echo "Selectel production may be reconciled only from a release/NN.NNN.NN branch; current branch: ${release_branch:-detached}." >&2
   exit 2
 fi
 

@@ -97,7 +97,7 @@
       <printContributedVariables>false</printContributedVariables>
       <causeString>GitHub push routed for $BRANCH_NAME</causeString>
       <regexpFilterText>$GITHUB_REF $GITHUB_AFTER</regexpFilterText>
-      <regexpFilterExpression>^refs/heads/(develop|release/[0-9]+\.[0-9]+\.[0-9]+) (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
+      <regexpFilterExpression>^refs/heads/(develop|release/[0-9]{2}\.[0-9]{3}\.[0-9]{2}) (?!0{40}$)[0-9a-f]{40}$</regexpFilterExpression>
       <silentResponse>false</silentResponse>
       <shouldNotFlatten>false</shouldNotFlatten>
       <overrideQuietPeriod>false</overrideQuietPeriod>
