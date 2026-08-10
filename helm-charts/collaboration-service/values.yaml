@@ -30,7 +30,7 @@ apiGateway:
 
 collaboration:
   existingSecret: playsay-collaboration
-  gameRealtimeMode: off
+  gameRealtimeMode: "off"
   tokenSecretKey: token-secret
   serviceTokenKey: service-token
   snapshotIntervalMs: "10000"
