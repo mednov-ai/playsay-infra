@@ -1,4 +1,5 @@
 <#import "footer.ftl" as loginFooter>
+<#import "theme-resources.ftl" as themeResourceTags>
 <#macro playsayLogoSvg className clipId shineId>
 <span class="${className}" role="img" aria-label="${msg("playsayLoginLogoAlt")}">
     <img class="playsay-logo-image playsay-logo-image-light" src="${url.resourcesPath}/img/honey-school-logo.svg" width="1080" height="215" alt="" aria-hidden="true" />
@@ -44,19 +45,25 @@
             <meta name="${meta?split('==')[0]}" content="${meta?split('==')[1]}"/>
         </#list>
     </#if>
-    <title>${msg("loginTitle",(realm.displayName!''))}</title>
+    <title>${title!}</title>
     <link rel="icon" href="${url.resourcesPath}/img/favicon.svg" type="image/svg+xml" />
-    <#if properties.stylesCommon?has_content>
+    <#if themeResources?? && themeResources.stylesCommon?has_content>
+        <@themeResourceTags.renderStyles themeResources.stylesCommon url.resourcesCommonPath />
+    <#elseif properties.stylesCommon?has_content>
         <#list properties.stylesCommon?split(' ') as style>
             <link href="${url.resourcesCommonPath}/${style}" rel="stylesheet" />
         </#list>
     </#if>
-    <#if properties.styles?has_content>
+    <#if themeResources?? && themeResources.styles?has_content>
+        <@themeResourceTags.renderStyles themeResources.styles url.resourcesPath />
+    <#elseif properties.styles?has_content>
         <#list properties.styles?split(' ') as style>
             <link href="${url.resourcesPath}/${style}" rel="stylesheet" />
         </#list>
     </#if>
-    <#if properties.scripts?has_content>
+    <#if themeResources?? && themeResources.scripts?has_content>
+        <@themeResourceTags.renderScripts themeResources.scripts url.resourcesPath "text/javascript" />
+    <#elseif properties.scripts?has_content>
         <#list properties.scripts?split(' ') as script>
             <script src="${url.resourcesPath}/${script}" type="text/javascript"></script>
         </#list>
@@ -75,11 +82,13 @@
         </#list>
     </#if>
     <script type="module">
-        import { startSessionPolling } from "${url.resourcesPath}/js/authChecker.js";
+        <#outputformat "JavaScript">
+        import { startSessionPolling } from ${(url.resourcesPath + "/js/authChecker.js")?c};
 
         startSessionPolling(
-            "${url.ssoLoginInOtherTabsUrl?no_esc}"
+            ${url.ssoLoginInOtherTabsUrl?c}
         );
+        </#outputformat>
     </script>
     <script type="module">
         document.addEventListener("click", (event) => {
@@ -106,11 +115,13 @@
     </script>
     <#if authenticationSession??>
         <script type="module">
-            import { checkAuthSession } from "${url.resourcesPath}/js/authChecker.js";
+            <#outputformat "JavaScript">
+            import { checkAuthSession } from ${(url.resourcesPath + "/js/authChecker.js")?c};
 
             checkAuthSession(
-                "${authenticationSession.authSessionIdHash}"
+                ${authenticationSession.authSessionIdHash?c}
             );
+            </#outputformat>
         </script>
     </#if>
 </head>

@@ -1,38 +1,31 @@
 theme:
   appBaseUrl: https://online.honey.school
 
+global:
+  security:
+    allowInsecureImages: true
+
 keycloak:
-  global:
-    security:
-      allowInsecureImages: true
-
   replicaCount: 1
-  production: true
-  httpEnabled: true
-  httpRelativePath: /keycloak/
-  proxyHeaders: xforwarded
-  hostname: https://ops.honey.school/keycloak
-  hostnameStrict: true
-
   image:
-    repository: bitnamilegacy/keycloak
-
-  auth:
-    adminUser: admin
-    existingSecret: keycloak-admin
-    passwordSecretKey: admin-password
-
-  cache:
-    enabled: false
-
+    repository: quay.io/keycloak/keycloak
+    tag: "26.7.1"
+    digest: sha256:f1f1f01e472c8a78df40d8f2a49a925274eda4d3d80d5f6edbb5c880ee3c01c6
+    pullPolicy: IfNotPresent
+  hostname: https://ops.honey.school/keycloak
+  httpRelativePath: /keycloak/
   service:
-    type: NodePort
-    ports:
-      http: 80
-    nodePorts:
-      http: "32084"
-
-  resourcesPreset: none
+    nodePort: 32084
+  adminSecret:
+    name: keycloak-admin
+    passwordKey: admin-password
+  database:
+    host: keycloak-postgresql
+    port: 5432
+    name: bitnami_keycloak
+    username: bn_keycloak
+    secretName: keycloak-postgresql
+    passwordKey: password
   resources:
     requests:
       cpu: 250m
@@ -40,77 +33,29 @@ keycloak:
     limits:
       cpu: "2"
       memory: 1536Mi
+  javaOpts: "-Xms512m -Xmx768m"
+  themeCacheEnabled: true
 
-  podAnnotations:
-    checksum/playsay-theme: honey-school-brand-20260806
-
-  extraEnvVars:
-    - name: JAVA_OPTS_KC_HEAP
-      value: "-Xms512m -Xmx768m"
-    - name: KC_SPI_THEME_CACHE_THEMES
-      value: "false"
-    - name: KC_SPI_THEME_CACHE_TEMPLATES
-      value: "false"
-    - name: KC_SPI_THEME_STATIC_MAX_AGE
-      value: "-1"
-
-  extraVolumes:
-    - name: playsay-theme
-      configMap:
-        name: keycloak-playsay-theme
-        items:
-          - key: theme.properties
-            path: login/theme.properties
-          - key: template.ftl
-            path: login/template.ftl
-          - key: messages_en.properties
-            path: login/messages/messages_en.properties
-          - key: messages_ru.properties
-            path: login/messages/messages_ru.properties
-          - key: messages_de.properties
-            path: login/messages/messages_de.properties
-          - key: messages_fr.properties
-            path: login/messages/messages_fr.properties
-          - key: playsay-login.css
-            path: login/resources/css/playsay-login.css
-          - key: honey-school-logo.svg
-            path: login/resources/img/honey-school-logo.svg
-          - key: honey-school-logo-reverse.svg
-            path: login/resources/img/honey-school-logo-reverse.svg
-          - key: favicon.svg
-            path: login/resources/img/favicon.svg
-          - key: quicksand-latin-400.woff2
-            path: login/resources/fonts/quicksand-latin-400.woff2
-          - key: quicksand-latin-500.woff2
-            path: login/resources/fonts/quicksand-latin-500.woff2
-          - key: quicksand-latin-600.woff2
-            path: login/resources/fonts/quicksand-latin-600.woff2
-
-  extraVolumeMounts:
-    - name: playsay-theme
-      mountPath: /opt/bitnami/keycloak/themes/playsay
-      readOnly: true
-
-  postgresql:
-    enabled: true
-    architecture: standalone
-    image:
-      repository: bitnamilegacy/postgresql
-    auth:
-      username: bn_keycloak
-      database: bitnami_keycloak
-      existingSecret: keycloak-postgresql
-      secretKeys:
-        userPasswordKey: password
-    primary:
-      resourcesPreset: none
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
-        limits:
-          cpu: "1"
-          memory: 768Mi
-      persistence:
-        enabled: true
-        size: 10Gi
+postgresql:
+  enabled: true
+  architecture: standalone
+  image:
+    repository: bitnamilegacy/postgresql
+  auth:
+    username: bn_keycloak
+    database: bitnami_keycloak
+    existingSecret: keycloak-postgresql
+    secretKeys:
+      userPasswordKey: password
+  primary:
+    resourcesPreset: none
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 768Mi
+    persistence:
+      enabled: true
+      size: 10Gi

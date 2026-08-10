@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/component: keycloak
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: keycloak
+spec:
+  podManagementPolicy: Parallel
+  replicas: {{ .Values.keycloak.replicaCount }}
+  serviceName: {{ .Release.Name }}-headless
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: keycloak
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: keycloak
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/playsay-theme: {{ include (print $.Template.BasePath "/playsay-theme-configmap.yaml") . | sha256sum }}
+      labels:
+        app.kubernetes.io/app-version: {{ .Chart.AppVersion | quote }}
+        app.kubernetes.io/component: keycloak
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        helm.sh/chart: keycloak-{{ .Chart.Version }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: keycloak
+          image: "{{ .Values.keycloak.image.repository }}@{{ .Values.keycloak.image.digest }}"
+          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
+          args:
+            - start
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: admin
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keycloak.adminSecret.name }}
+                  key: {{ .Values.keycloak.adminSecret.passwordKey }}
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://{{ .Values.keycloak.database.host }}:{{ .Values.keycloak.database.port }}/{{ .Values.keycloak.database.name }}"
+            - name: KC_DB_USERNAME
+              value: {{ .Values.keycloak.database.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keycloak.database.secretName }}
+                  key: {{ .Values.keycloak.database.passwordKey }}
+            - name: KC_HOSTNAME
+              value: {{ .Values.keycloak.hostname | quote }}
+            - name: KC_HOSTNAME_STRICT
+              value: "true"
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HTTP_RELATIVE_PATH
+              value: {{ .Values.keycloak.httpRelativePath | quote }}
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_CACHE
+              value: local
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+            - name: JAVA_OPTS_KC_HEAP
+              value: {{ .Values.keycloak.javaOpts | quote }}
+            - name: KC_SPI_THEME_CACHE_THEMES
+              value: {{ .Values.keycloak.themeCacheEnabled | quote }}
+            - name: KC_SPI_THEME_CACHE_TEMPLATES
+              value: {{ .Values.keycloak.themeCacheEnabled | quote }}
+            - name: KC_SPI_THEME_STATIC_MAX_AGE
+              value: {{ ternary "3600" "-1" .Values.keycloak.themeCacheEnabled | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9000
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: management
+            failureThreshold: 36
+            periodSeconds: 5
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: management
+            failureThreshold: 6
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: management
+            failureThreshold: 6
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+{{ toYaml .Values.keycloak.resources | indent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: playsay-theme
+              mountPath: /opt/keycloak/themes/playsay
+              readOnly: true
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: playsay-theme
+          configMap:
+            name: keycloak-playsay-theme
+            items:
+              - key: theme.properties
+                path: login/theme.properties
+              - key: template.ftl
+                path: login/template.ftl
+              - key: messages_en.properties
+                path: login/messages/messages_en.properties
+              - key: messages_ru.properties
+                path: login/messages/messages_ru.properties
+              - key: messages_de.properties
+                path: login/messages/messages_de.properties
+              - key: messages_fr.properties
+                path: login/messages/messages_fr.properties
+              - key: playsay-login.css
+                path: login/resources/css/playsay-login.css
+              - key: honey-school-logo.svg
+                path: login/resources/img/honey-school-logo.svg
+              - key: honey-school-logo-reverse.svg
+                path: login/resources/img/honey-school-logo-reverse.svg
+              - key: favicon.svg
+                path: login/resources/img/favicon.svg
+              - key: quicksand-latin-400.woff2
+                path: login/resources/fonts/quicksand-latin-400.woff2
+              - key: quicksand-latin-500.woff2
+                path: login/resources/fonts/quicksand-latin-500.woff2
+              - key: quicksand-latin-600.woff2
+                path: login/resources/fonts/quicksand-latin-600.woff2

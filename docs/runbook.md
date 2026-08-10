@@ -1414,15 +1414,15 @@ Sprint 1 installed Keycloak in minimal mode. It was first deployed before the VP
 
 - ArgoCD app: `keycloak`;
 - namespace: `keycloak`;
-- chart: local wrapper `helm-charts/keycloak`, with dependency `bitnami/keycloak` `24.9.0`;
-- Keycloak version: `26.3.2`;
-- URL: `https://ops.play-and-say.ru:18443/keycloak/`;
+- chart: local wrapper `helm-charts/keycloak`; it renders the official Keycloak StatefulSet directly and keeps only `bitnami/postgresql` `16.6.6` as a dependency;
+- Keycloak version: `26.7.1`, pinned to the reviewed multi-architecture `quay.io/keycloak/keycloak` digest in both value files;
+- URL: `https://dev.ops.honey.school/keycloak/` in dev and `https://ops.honey.school/keycloak/` in production;
 - service: NodePort `32084` on localhost through host nginx;
 - PostgreSQL: chart-managed standalone PostgreSQL with a `4Gi` PVC;
-- images: `docker.io/bitnamilegacy/keycloak` and `docker.io/bitnamilegacy/postgresql` because the chart's `docker.io/bitnami/...` tags are not available publicly anymore; replace with supported/private images before staging/prod. Chart `25.x` was avoided because it hit a known `Incomplete line...` startup failure in this dev setup.
+- images: the supported upstream Keycloak image comes from Quay; the existing PostgreSQL `17.4` image remains `docker.io/bitnamilegacy/postgresql` so this migration preserves the database StatefulSet, service, secret and PVC without combining a database-engine upgrade with the identity upgrade;
 - login theme: `playsay`, stored in Git under `helm-charts/keycloak/themes/playsay` and mounted into Keycloak by the wrapper chart as a ConfigMap volume. Theme caches are disabled in dev. The theme serves the approved Honey School main/reverse SVG logos, favicon and local Quicksand 400/500/600 fonts from its ConfigMap; the technical theme id remains `playsay`. The page syncs color mode with the SPA: `playsay_theme=light|dark|system` in the authorize URL sets `data-playsay-theme` and `data-playsay-resolved-theme` on `<html>`, while direct login links and `system` follow `prefers-color-scheme`; language dropdown links preserve the current `playsay_theme` parameter. The page stays auth-first: warm Honey School background accents, one hero heading, the login form, and a quiet localized return link to the main `https://honey.school/` site, without decorative balls/handprints, marketing chips/points, extra help copy, secondary brand header, or extra decorative markers. Failed login always renders a prominent generic global error banner above the form while preserving Keycloak field-level helper text, so unknown-user and wrong-password attempts do not reveal account existence. On mobile, the login form is ordered before the brand hero so username/password are visible without scrolling. All custom visible theme texts live in Keycloak message bundles for `ru`, `en`, `de`, and `fr`; frontend `ui_locales` and the Keycloak language dropdown must change both `<html lang>` and the visible copy.
 - future brand verification after a rollout: request `/brand/logo/honey-school-logo.svg`, `/brand/logo/honey-school-logo-reverse.svg`, `/brand/icons/favicon.svg`, `/brand/fonts/Quicksand-Regular.woff2`, and `/site.webmanifest` from each public SPA/root-site origin; verify `200`, the expected SVG/font/manifest MIME types, and no Google Fonts request. Open the Keycloak login URL in light and dark mode and verify the corresponding main/reverse logo, localized Honey School copy and favicon while confirming the issuer remains `/realms/playsay`.
-- theme rollout: `values-dev.yaml` carries `keycloak.podAnnotations.checksum/playsay-theme` in the Keycloak pod template. Update this checksum whenever files under `helm-charts/keycloak/themes/playsay/login` or the theme ConfigMap template change; ArgoCD then rolls the Keycloak pod without a manual `rollout restart`.
+- theme rollout: the wrapper StatefulSet computes `checksum/playsay-theme` from the theme ConfigMap. Changes below `helm-charts/keycloak/themes/playsay/login` therefore roll the Keycloak pod without a manual restart.
 - secrets: `keycloak-admin` and `keycloak-postgresql`, created manually in the cluster and never committed to Git.
 - initial realm: `playsay`;
 - initial realm roles: `STUDENT`, `TEACHER`, `ADMIN`;
@@ -1433,6 +1433,26 @@ Configure or repair the dev realm after Keycloak is healthy:
 ```bash
 ./scripts/configure-keycloak-dev.sh
 ```
+
+Configure optional Passkeys after the upgraded pod is healthy. The script changes only the passwordless WebAuthn policy and required-action switch; it does not mutate clients, roles or users and is safe to run repeatedly:
+
+```bash
+./scripts/configure-keycloak-passkeys.sh
+```
+
+Dev uses RP ID `dev.ops.honey.school`. Production must be run on `playsay-prod` with its own kubeconfig and canonical issuer:
+
+```bash
+KEYCLOAK_URL=https://ops.honey.school/keycloak \
+KEYCLOAK_WEBAUTHN_RP_ID=ops.honey.school \
+./scripts/configure-keycloak-passkeys.sh
+```
+
+The policy enables supported Keycloak Passkeys with `conditional` mediation, required user verification/discoverable credentials, ES256+RS256, attestation `none`, and an enabled but non-default `webauthn-register-passwordless` action. Password login and the custom Honey School email-code password reset remain available. The SPA starts registration through `kc_action=webauthn-register-passwordless:skip_if_exists`; users manage or delete credentials in the Keycloak Account Console.
+
+Before either Keycloak rollout, create the normal environment backup and verify the Keycloak custom-format archive with both `sha256sum -c` and `pg_restore -l`. The server performs its own schema migration during first startup. If startup, login, or passkey acceptance fails after that migration, scale Keycloak to zero, restore the pre-upgrade Keycloak database, return GitOps to the previous revision, and then bring the old pod back; image rollback without DB restore is not an accepted rollback.
+
+After rollout verify the pod image/readiness, the discovery document, the realm WebAuthn fields through the Admin API, password login, AIA registration, passkey login, cancellation, Account Console deletion, and password fallback. Use Chromium's virtual authenticator for repeatable smoke and one real platform passkey before production promotion.
 
 The script is idempotent. It creates/updates:
 

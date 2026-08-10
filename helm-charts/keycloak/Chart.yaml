@@ -2,9 +2,9 @@ apiVersion: v2
 name: playsay-keycloak
 description: Honey School Keycloak deployment wrapper with the Honey School login theme.
 type: application
-version: 0.1.0
-appVersion: "26.3.2"
+version: 0.2.0
+appVersion: "26.7.1"
 dependencies:
-  - name: keycloak
-    version: 24.9.0
+  - name: postgresql
+    version: 16.6.6
     repository: https://charts.bitnami.com/bitnami
