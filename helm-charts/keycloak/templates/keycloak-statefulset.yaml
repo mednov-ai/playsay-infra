@@ -92,21 +92,21 @@ spec:
               protocol: TCP
           startupProbe:
             httpGet:
-              path: /health/started
+              path: {{ printf "%s/health/started" (trimSuffix "/" .Values.keycloak.httpRelativePath) }}
               port: management
             failureThreshold: 36
             periodSeconds: 5
             timeoutSeconds: 3
           readinessProbe:
             httpGet:
-              path: /health/ready
+              path: {{ printf "%s/health/ready" (trimSuffix "/" .Values.keycloak.httpRelativePath) }}
               port: management
             failureThreshold: 6
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
             httpGet:
-              path: /health/live
+              path: {{ printf "%s/health/live" (trimSuffix "/" .Values.keycloak.httpRelativePath) }}
               port: management
             failureThreshold: 6
             periodSeconds: 10
