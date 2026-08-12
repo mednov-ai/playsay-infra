@@ -543,3 +543,23 @@ body.playsay-login-body {
     animation: none;
   }
 }
+
+.playsay-passkey-description,
+.playsay-passkey-progress {
+  margin: 0 0 18px;
+  color: var(--playsay-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.playsay-passkey-progress {
+  padding: 12px 14px;
+  border: 1px solid var(--playsay-line);
+  border-radius: 12px;
+  background: var(--playsay-input-bg);
+}
+
+.playsay-passkey-cancel {
+  margin-top: 10px;
+}

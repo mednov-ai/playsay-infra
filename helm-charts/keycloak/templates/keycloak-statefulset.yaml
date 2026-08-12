@@ -137,6 +137,10 @@ spec:
                 path: login/theme.properties
               - key: template.ftl
                 path: login/template.ftl
+              - key: webauthn-register.ftl
+                path: login/webauthn-register.ftl
+              - key: playsay-webauthn-register.js
+                path: login/resources/js/playsayWebAuthnRegister.js
               - key: messages_en.properties
                 path: login/messages/messages_en.properties
               - key: messages_ru.properties
