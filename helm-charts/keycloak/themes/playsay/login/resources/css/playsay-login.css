@@ -563,3 +563,66 @@ body.playsay-login-body {
 .playsay-passkey-cancel {
   margin-top: 10px;
 }
+
+.playsay-passkey-first [hidden] {
+  display: none !important;
+}
+
+.playsay-passkey-first {
+  display: grid;
+  gap: 12px;
+}
+
+.playsay-passkey-first .playsay-passkey-description {
+  margin-bottom: 4px;
+}
+
+.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary {
+  background: var(--playsay-orange);
+  color: #fff;
+  font-size: 16px;
+  box-shadow: 0 16px 32px rgba(154, 87, 0, 0.26);
+}
+
+.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary:hover,
+.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary:focus-visible {
+  background: var(--playsay-orange-dark);
+}
+
+.playsay-card .playsay-password-login-toggle {
+  display: inline-flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--playsay-line);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--playsay-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.playsay-card .playsay-password-login-toggle:hover,
+.playsay-card .playsay-password-login-toggle:focus-visible {
+  border-color: var(--playsay-orange);
+  color: var(--playsay-orange);
+}
+
+.playsay-passkey-status {
+  margin: 0;
+  border-radius: 12px;
+  background: var(--playsay-input-bg);
+  padding: 10px 12px;
+  color: var(--playsay-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.playsay-password-panel {
+  margin-top: 6px;
+  border-top: 1px solid var(--playsay-line);
+  padding-top: 20px;
+}

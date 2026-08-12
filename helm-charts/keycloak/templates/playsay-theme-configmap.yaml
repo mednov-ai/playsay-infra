@@ -10,10 +10,14 @@ data:
 {{ .Files.Get "themes/playsay/login/theme.properties" | indent 4 }}
   template.ftl: |-
 {{ tpl (.Files.Get "themes/playsay/login/template.ftl") . | indent 4 }}
+  login.ftl: |-
+{{ .Files.Get "themes/playsay/login/login.ftl" | indent 4 }}
   webauthn-register.ftl: |-
 {{ .Files.Get "themes/playsay/login/webauthn-register.ftl" | indent 4 }}
   playsay-webauthn-register.js: |-
 {{ .Files.Get "themes/playsay/login/resources/js/playsayWebAuthnRegister.js" | indent 4 }}
+  playsay-passkey-login.js: |-
+{{ .Files.Get "themes/playsay/login/resources/js/playsayPasskeyLogin.js" | indent 4 }}
   messages_en.properties: |-
 {{ .Files.Get "themes/playsay/login/messages/messages_en.properties" | indent 4 }}
   messages_ru.properties: |-
