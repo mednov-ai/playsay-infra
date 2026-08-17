@@ -1,0 +1,14 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/01.004.01"
+baseRelease: "release/01.003.00"
+basePlatformCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+acceptedDevCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+baseInfraCommit: "d5d618754672309b75634ea2215ec6d5044f3346"
+platformCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+affectedTargets:
+validationSuites:
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "12"
+updatedAt: "2026-08-17T20:28:17Z"
