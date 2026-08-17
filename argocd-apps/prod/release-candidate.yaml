@@ -1,0 +1,28 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/01.002.00"
+baseRelease: "release/1.001.09"
+basePlatformCommit: "69c27d0dc9bfbf7b201ab8088b551ce6be29c2af"
+acceptedDevCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+baseInfraCommit: "ecbf93c26e46658c415099416089d65acddb22fe"
+platformCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+affectedTargets:
+  - "api-gateway"
+  - "ai-tutor-service"
+  - "vocabulary-service"
+  - "web-app"
+  - "game-adapter-service"
+  - "collaboration-service"
+  - "media-service"
+  - "payment-service"
+  - "registration-service"
+  - "email-service"
+  - "keyboard-service"
+  - "keyboard-app"
+validationSuites:
+  - "ci-contracts"
+  - "smoke-syntax"
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "9"
+updatedAt: "2026-08-17T11:42:27Z"

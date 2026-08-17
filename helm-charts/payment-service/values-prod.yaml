@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-payment-service
-  tag: "payment-release-1.001.00-10"
-  digest: "sha256:4ec8a62425cd0568de8903fd5ed5b140e189d73d082d35b4c82821699003e049"
+  tag: "payment-release-1.001.09-17"
+  digest: "sha256:c4b704d22943afcfe3328d4c710bd3efc305b328489183a4f07ef136e52548fd"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: payment-release-1.001.00-10
-  number: "10"
-  branch: release/1.001.00
-  branchLabel: payment-release-1.001.00
-  commit: 92406096f13b2451086d39021f8febfab855dbdc
-  commitShort: "92406096f13b"
+  name: payment-release-1.001.09-17
+  number: "17"
+  branch: release/1.001.09
+  branchLabel: payment-release-1.001.09
+  commit: 69c27d0dc9bfbf7b201ab8088b551ce6be29c2af
+  commitShort: "69c27d0dc9bf"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
