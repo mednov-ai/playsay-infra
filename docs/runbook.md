@@ -710,8 +710,8 @@ It creates/updates the confidential Keycloak client `playsay-registration-servic
 
 Mailjet uses one primary login with isolated API keys and sending domains:
 
-- production primary API key: sender `Play&Say <no-reply@honey.school>` and callback `https://online.honey.school/api/webhooks/mailjet`;
-- dev subaccount `PlaySay Dev`: sender `Play&Say <no-reply@dev.honey.school>` and callback `https://dev.online.honey.school/api/webhooks/mailjet`.
+- production primary API key: sender `Honey School <no-reply@honey.school>` and callback `https://online.honey.school/api/webhooks/mailjet`;
+- dev subaccount `Honey School Dev`: sender `Honey School <no-reply@dev.honey.school>` and callback `https://dev.online.honey.school/api/webhooks/mailjet`.
 
 Validate each sending domain under its own API key. Production uses the existing root verification/SPF/DKIM records. Dev must publish the exact Mailjet-generated verification TXT plus SPF/DKIM below `dev.honey.school`; never replace the production `mailjet._domainkey.honey.school` value with a dev key. The public webhook uses HTTPS Basic Auth and the gateway exchanges it for the existing internal email-service token. Generate URL-safe webhook credentials and keep all values outside Git and command output.
 
