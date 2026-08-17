@@ -94,6 +94,7 @@ spec:
               value: {{ .Values.emailService.providerReconcilePollMs | quote }}
             - name: PLAYSAY_EMAIL_WEBHOOK_CHECK_MS
               value: {{ .Values.emailService.webhookCheckMs | quote }}
+            {{- if eq .Values.emailService.deliveryProvider "smtp" }}
             - name: PLAYSAY_EMAIL_SMTP_HOST
               valueFrom:
                 secretKeyRef:
@@ -124,6 +125,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.smtp.starttlsKey | quote }}
+            {{- else if eq .Values.emailService.deliveryProvider "unisender-api" }}
             - name: PLAYSAY_EMAIL_UNISENDER_API_BASE_URL
               value: {{ .Values.emailService.unisender.apiBaseUrl | quote }}
             - name: PLAYSAY_EMAIL_UNISENDER_USER_ID
@@ -133,9 +135,9 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.unisender.apiKeyKey | quote }}
-                  optional: true
             - name: PLAYSAY_EMAIL_UNISENDER_WEBHOOK_URL
               value: {{ .Values.emailService.unisender.webhookUrl | quote }}
+            {{- else if eq .Values.emailService.deliveryProvider "mailjet-api" }}
             - name: PLAYSAY_EMAIL_MAILJET_API_BASE_URL
               value: {{ .Values.emailService.mailjet.apiBaseUrl | quote }}
             - name: PLAYSAY_EMAIL_MAILJET_API_KEY
@@ -143,13 +145,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.mailjet.apiKeyKey | quote }}
-                  optional: true
             - name: PLAYSAY_EMAIL_MAILJET_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.mailjet.secretKeyKey | quote }}
-                  optional: true
             - name: PLAYSAY_EMAIL_MAILJET_ENVIRONMENT
               value: {{ .Values.emailService.mailjet.environment | quote }}
             - name: PLAYSAY_EMAIL_MAILJET_WEBHOOK_URL
@@ -159,13 +159,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.mailjet.webhookUsernameKey | quote }}
-                  optional: true
             - name: PLAYSAY_EMAIL_MAILJET_WEBHOOK_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.emailService.existingSecret | quote }}
                   key: {{ .Values.emailService.mailjet.webhookPasswordKey | quote }}
-                  optional: true
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

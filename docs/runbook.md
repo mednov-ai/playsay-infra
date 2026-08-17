@@ -745,6 +745,8 @@ fi
 
 The environment Helm values set `PLAYSAY_EMAIL_DELIVERY_PROVIDER=mailjet-api`, the environment label and exact callback URL. `email-service` sends one rendered message through `/v3.1/send`, stores Mailjet `MessageID`, tags it with delivery/attempt/environment metadata, registers grouped Event API version 2 callbacks hourly and reconciles unfinished messages through `/v3/REST/message/{MessageID}`. `sent` means destination SMTP acceptance and maps to `DELIVERED`; `open`, `click`, hard/soft bounce, blocked, spam and unsubscribe remain factual provider statuses. `SOFT_BOUNCED` is non-terminal; `BLOCKED` is terminal and cannot be resent automatically. Historical `UNISENDER_API` rows remain readable during and after the switch. Remove the old Unisender secret only after the production canary and a 24-hour observation window.
 
+The Helm deployment mounts credentials only for the selected delivery provider. A Mailjet environment must not require placeholder SMTP or Unisender keys, and the selected provider's credential references remain mandatory so a missing key fails before application startup.
+
 After rollout, sign in as `ADMIN` and open workspace section **Письма**. Confirm that a non-admin profile has no such section and receives `403` from `/api/admin/email-deliveries`. The admin log must show local status separately from provider status, auto-refresh about every 30 seconds, show attempt history without email body/provider credentials, and enable resend only for an eligible failed/expired record. Verify webhook and reconciliation without printing payloads or credentials:
 
 ```bash
