@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/1.001.00
+    targetRevision: release/01.003.00
     path: helm-charts/game-adapter-service
     helm:
       valueFiles:
