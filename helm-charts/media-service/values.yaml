@@ -37,6 +37,12 @@ mediaService:
   cacheMaxVideoBytes: "262144000"
   cacheTempDirectory: /tmp/playsay-media-cache
 
+youtubeDataApi:
+  enabled: false
+  existingSecret: playsay-youtube-data-api
+  apiKeyKey: api-key
+  timeoutSeconds: "8"
+
 youtubePot:
   enabled: false
   providerBaseUrl: http://127.0.0.1:4416

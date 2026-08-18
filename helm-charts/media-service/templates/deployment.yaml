@@ -63,6 +63,15 @@ spec:
               value: {{ .Values.mediaService.ytdlpPluginDirectory | quote }}
             - name: PLAYSAY_MEDIA_SERVICE_YTDLP_JS_RUNTIME
               value: {{ .Values.mediaService.ytdlpJsRuntime | quote }}
+            {{- if .Values.youtubeDataApi.enabled }}
+            - name: PLAYSAY_YOUTUBE_DATA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.youtubeDataApi.existingSecret | quote }}
+                  key: {{ .Values.youtubeDataApi.apiKeyKey | quote }}
+            - name: PLAYSAY_YOUTUBE_DATA_API_TIMEOUT_SECONDS
+              value: {{ .Values.youtubeDataApi.timeoutSeconds | quote }}
+            {{- end }}
             - name: PLAYSAY_YOUTUBE_POT_ENABLED
               value: {{ .Values.youtubePot.enabled | quote }}
             - name: PLAYSAY_YOUTUBE_POT_PROVIDER_BASE_URL

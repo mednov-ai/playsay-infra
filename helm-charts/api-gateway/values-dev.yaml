@@ -92,9 +92,9 @@ publicAppUrl: https://dev.online.honey.school
 video:
   youtube:
     rfRelay:
-      enabled: "true"
+      enabled: "false"
       geoCountryHeader: X-PlaySay-Geo-Country
-      requireGeoCountry: "false"
+      requireGeoCountry: "true"
     cache:
       enabled: "true"
       pollDelayMs: "5000"
