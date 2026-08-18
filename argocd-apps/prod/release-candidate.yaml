@@ -1,0 +1,16 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/01.004.02"
+baseRelease: "release/01.004.01"
+basePlatformCommit: "fdc133188e98f6549d71a3a1d5b9bc711eee2cbb"
+acceptedDevCommit: "4228f4d3450bb736681330dd6455bf2a81504168"
+baseInfraCommit: "6086d0d43a3c8b8648dc04aef3bd97762be67214"
+platformCommit: "4228f4d3450bb736681330dd6455bf2a81504168"
+affectedTargets:
+  - "api-gateway"
+  - "web-app"
+validationSuites:
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "13"
+updatedAt: "2026-08-18T11:35:07Z"
