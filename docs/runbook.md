@@ -869,8 +869,6 @@ Runtime controls in the `media-service` chart:
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_PATH`: executable used by `media-service` for YouTube metadata, format selection, thumbnail source URL, and upstream media URLs; default `/usr/local/bin/yt-dlp`.
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_PLUGIN_DIRECTORY`: yt-dlp plugin search root; the pinned standalone binary requires `/usr/local/lib`, which contains `yt-dlp-plugins/yt_dlp_plugins`.
 - `PLAYSAY_MEDIA_SERVICE_YTDLP_JS_RUNTIME`: JS challenge runtime; the pinned image uses `deno:/usr/local/bin/deno`.
-- `PLAYSAY_YOUTUBE_DATA_API_KEY`: environment-specific restricted YouTube Data API v3 server key. Store it only in the `playsay-youtube-data-api` secret under key `api-key`; dev and production must use different keys.
-- `PLAYSAY_YOUTUBE_DATA_API_TIMEOUT_SECONDS`: bounded metadata lookup timeout; default `8` seconds.
 - `PLAYSAY_YOUTUBE_POT_ENABLED`: dev-only switch for automatic YouTube PO Token support; default `false`.
 - `PLAYSAY_YOUTUBE_POT_PROVIDER_BASE_URL`: loopback-only bgutil sidecar endpoint, default `http://127.0.0.1:4416`.
 - `PLAYSAY_YOUTUBE_POT_ALLOWED_VIDEO_IDS`: comma-separated spike allowlist; keep empty outside the controlled dev experiment.
@@ -882,19 +880,9 @@ Runtime controls in the `media-service` chart:
 - `PLAYSAY_MEDIA_SERVICE_CACHE_MAX_VIDEO_BYTES`: final MP4 cap, default `262144000` (250 MiB).
 - `PLAYSAY_MEDIA_SERVICE_CACHE_TEMP_DIRECTORY`: disk-backed working directory, mounted as a size-limited `emptyDir`, default `/tmp/playsay-media-cache` with `1Gi` limit.
 
-Relay eligibility is strict: the authenticated app profile must have `countryCode=RU`, the trusted IP country header must be `RU`, the user must already have normal Play&Say access to the material, the block must be a YouTube `videoEmbed`, and effective video metadata must show duration `<= 420` seconds and English language. If stored `videoMeta` is missing or incomplete, `api-gateway` calls the internal `media-service` metadata endpoint by parsed YouTube `videoId` before the policy check. `media-service` first requests `contentDetails.duration` and `snippet.defaultAudioLanguage` from YouTube Data API v3, then uses `yt-dlp` only to fill missing fields. Text metadata language is never treated as audio language. Complete on-demand metadata is saved into the existing cache record. If both sources remain incomplete, playback stays fail-closed as `NEEDS_REVIEW/YOUTUBE_METADATA_MISSING` and no relay session is created. If profile country and IP country conflict, relay is not used and the frontend falls back to the official YouTube embed decision.
+Relay eligibility is strict: the authenticated app profile must have `countryCode=RU`, the trusted IP country header must be `RU`, the user must already have normal Play&Say access to the material, the block must be a YouTube `videoEmbed`, and effective video metadata must show duration `<= 420` seconds and English language. If stored `videoMeta` is missing or incomplete, `api-gateway` may call the internal `media-service` metadata endpoint by parsed YouTube `videoId`; `media-service` uses `yt-dlp` without an external API key. Complete on-demand metadata is saved into the existing cache record. Missing metadata remains fail-closed only for RF relay and cache downloads. When RF relay is disabled, a valid YouTube ID returns the official privacy-enhanced embed even if duration or language is unavailable. Known policy violations, such as duration over seven minutes or a known non-English language, remain blocked.
 
-When YouTube does not publish `defaultAudioLanguage`, a teacher may enter the observed duration (`m:ss`, maximum `7:00`) and explicitly confirm English audio in the material editor. This stores `videoMeta.validationStatus=TEACHER_CONFIRMED`; changing the video URL or provider removes the confirmation. Existing material authorization remains the trust boundary for this write.
-
-Provision keys separately on the corresponding guest without printing or copying values between environments:
-
-```bash
-sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml \
-  TARGET_NAMESPACE=playsay-dev \
-  scripts/sync-youtube-data-api-secret.sh
-```
-
-The script prompts for the key without echoing it. Use `TARGET_NAMESPACE=playsay-prod` only on the production guest with the independently restricted production key. Enable only YouTube Data API v3 for each key and restrict server requests to the AX41 egress IP. Create the secret before a chart revision that enables `youtubeDataApi`; otherwise the media-service pod correctly remains unready instead of starting without the required credential.
+When automatic metadata is unavailable, a teacher may enter the observed duration (`m:ss`, maximum `7:00`) and explicitly confirm English audio in the material editor. This stores `videoMeta.validationStatus=TEACHER_CONFIRMED`; changing the video URL or provider removes the confirmation. Existing material authorization remains the trust boundary for this write. No Google Cloud project or YouTube Data API key is required.
 
 ### Dev-only YouTube PO Token spike
 
@@ -958,11 +946,11 @@ kubectl -n playsay-dev logs deploy/media-service --since=30m | grep 'media-servi
 kubectl -n playsay-dev logs deploy/media-service --since=30m | grep 'media-service stream response'
 ```
 
-For a `YOUTUBE_METADATA_MISSING` report, expect fields like `urlKind=SHORT`, parsed `videoId=<id>`, and `videoMetaPresent=false` or `durationPresent=false` / `languagePresent=false`. A successful official lookup logs `YouTube Data API resolved metadata` with the video ID and non-secret fields, followed by a gateway decision with `metadataSource=MEDIA_SERVICE_ON_DEMAND`. HTTP 403/429, timeout or missing `defaultAudioLanguage` falls back to `yt-dlp`; if that also fails, use teacher confirmation rather than weakening the strict policy. With relay disabled, valid metadata produces `mode=EMBED` and no playback session or media-service stream line.
+For a `YOUTUBE_METADATA_MISSING` report, expect fields like `urlKind=SHORT`, parsed `videoId=<id>`, and `videoMetaPresent=false` or `durationPresent=false` / `languagePresent=false`. A successful extractor lookup logs `media-service yt-dlp resolved metadata` and a gateway decision with `metadataSource=MEDIA_SERVICE_ON_DEMAND`. If extraction fails, the teacher may confirm metadata manually. With relay disabled, missing metadata produces `mode=EMBED`, `reason=RF_RELAY_DISABLED_METADATA_OPTIONAL`, and no playback session or media-service stream line.
 
 Video relay streaming needs buffering disabled on both proxy layers. The web-app container nginx has a specific `/api/media/video-playback-sessions/` location before generic `/api/`, rewrites `/api/media/...` to `media-service`, and disables `proxy_buffering` / `proxy_request_buffering`. Host nginx must include the same specific `/api/media/video-playback-sessions/` location under `online.play-and-say.ru` with buffering off and long `proxy_read_timeout` / `proxy_send_timeout` values. After changing the host nginx generator on an existing VPS, re-render or manually verify `/etc/nginx/conf.d/playsay-k8s-dev.conf`, then run `nginx -t` and reload nginx without stopping Docker, k3s, or Amnezia.
 
-The temporary dev RF relay spike is disabled after the 2026-08-18 YouTube bot-check incident: `video.youtube.rfRelay.enabled: "false"` and `video.youtube.rfRelay.requireGeoCountry: "true"`. Dev therefore matches production playback policy after strict metadata validation and uses the official embed. Re-enable relay only in a separate reviewed experiment after a new extractor path passes metadata, session, Range playback and cache acceptance without cookies or account credentials.
+The temporary dev RF relay spike is disabled after the 2026-08-18 YouTube bot-check incident: `video.youtube.rfRelay.enabled: "false"` and `video.youtube.rfRelay.requireGeoCountry: "true"`. Dev therefore uses the official embed; missing metadata does not block that mode. Re-enable relay only in a separate reviewed experiment after a new extractor path passes metadata, session, Range playback and cache acceptance without cookies or account credentials.
 
 Do not trust a client-supplied geolocation header directly. Host nginx or another trusted edge proxy must strip any inbound `X-PlaySay-Geo-Country` header from the public request and set its own value before proxying to `web-app`/`api-gateway`. Outside the temporary dev test bypass above, keep `PLAYSAY_YOUTUBE_RF_RELAY_ENABLED=false` until that edge geolocation is configured and verified.
 
