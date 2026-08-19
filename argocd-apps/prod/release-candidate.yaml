@@ -1,0 +1,15 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/01.004.04"
+baseRelease: "release/01.004.03"
+basePlatformCommit: "5624b94e33043eef9991f6fe4c008270a534d144"
+acceptedDevCommit: "54930b91785aa2998089e876aea144a509dd676e"
+baseInfraCommit: "87debcc3846c66f641dd94ab340f037e03c27162"
+platformCommit: "54930b91785aa2998089e876aea144a509dd676e"
+affectedTargets:
+  - "web-app"
+validationSuites:
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "15"
+updatedAt: "2026-08-19T12:24:58Z"
