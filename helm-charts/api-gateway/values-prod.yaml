@@ -91,6 +91,7 @@ emailService:
   existingSecret: playsay-email
   serviceTokenKey: service-token
 publicAppUrl: https://online.honey.school
+publicAppRfUrl: https://online.honeyschool.ru
 video:
   youtube:
     rfRelay:

@@ -214,6 +214,8 @@ spec:
               value: {{ .Values.chatEmail.retryDelays | quote }}
             - name: PLAYSAY_PUBLIC_APP_URL
               value: {{ .Values.publicAppUrl | quote }}
+            - name: PLAYSAY_PUBLIC_APP_RF_URL
+              value: {{ .Values.publicAppRfUrl | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_ENABLED
               value: {{ .Values.video.youtube.rfRelay.enabled | quote }}
             - name: PLAYSAY_YOUTUBE_RF_RELAY_GEO_COUNTRY_HEADER
