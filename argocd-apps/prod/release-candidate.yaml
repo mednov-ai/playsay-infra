@@ -1,0 +1,15 @@
+schemaVersion: 1
+status: building
+releaseBranch: "release/01.004.05"
+baseRelease: "release/01.004.04"
+basePlatformCommit: "54930b91785aa2998089e876aea144a509dd676e"
+acceptedDevCommit: "711eea8d4740b9c0672cecd4be6b52f0e75ef597"
+baseInfraCommit: "442c99474f968268120e130472b2646b17fe1f80"
+platformCommit: "711eea8d4740b9c0672cecd4be6b52f0e75ef597"
+affectedTargets:
+  - "registration-service"
+validationSuites:
+dispatcher:
+  job: "playsay-platform-dispatch-release"
+  build: "16"
+updatedAt: "2026-08-19T13:29:27Z"
