@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-213"
-  digest: sha256:1d25adbae68d69b765c7818277957de244abe6f2b4a66d01a304a8d1418f0c6b
+  tag: "web-hotfix-lesson-link-clipboard-217"
+  digest: sha256:1f558487ddcfa86f58672c4ec806c2892dec070a3292b7a162933e34473543d7
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-213
-  number: "213"
-  branch: develop
-  branchLabel: web-dev
-  commit: 4228f4d3450bb736681330dd6455bf2a81504168
-  commitShort: "4228f4d3450b"
+  name: web-hotfix-lesson-link-clipboard-217
+  number: "217"
+  branch: hotfix/lesson-link-clipboard
+  branchLabel: web-hotfix-lesson-link-clipboard
+  commit: 54930b91785aa2998089e876aea144a509dd676e
+  commitShort: "54930b91785a"
 service:
   type: NodePort
   nodePort: 32083
