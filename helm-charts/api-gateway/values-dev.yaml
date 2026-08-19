@@ -1,14 +1,14 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-lesson-link-origin-hotfix-109"
-  digest: sha256:ec77bff775dbfba3c5cd9e5aeb01e8c4a80d8e3ca2b8dc88a7b37260bd73ca01
+  tag: "api-dev-110"
+  digest: sha256:b85b6e9d2bd77c6a2526719ad379ef0d30942f14926c0d0e1bea30421f6b2d50
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-lesson-link-origin-hotfix-109
-  number: "109"
-  branch: codex/lesson-link-origin-hotfix
-  branchLabel: api-codex-lesson-link-origin-hotfix
+  name: api-dev-110
+  number: "110"
+  branch: develop
+  branchLabel: api-dev
   commit: b53288c18f92dbd8e7033eebb61544ee902bc510
   commitShort: "b53288c18f92"
 updateStrategy:
