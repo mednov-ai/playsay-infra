@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "media-dev-29"
-  digest: sha256:44fdbc1298eb02fd28c099f95b348ad4471fb6791811f010a931ee6ae8e11443
+  tag: "media-dev-30"
+  digest: sha256:a1a3b6a0004cb517c8b57cea893fbb0f712b465924d12388e16d7e376308bc43
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: media-dev-29
-  number: "29"
+  name: media-dev-30
+  number: "30"
   branch: develop
   branchLabel: media-dev
-  commit: 151a7911ed16dfee9b6ebc87a9855967208a53be
-  commitShort: "151a7911ed16"
+  commit: e4204760157bc048c7b603929987c1da8798bc0b
+  commitShort: "e4204760157b"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
