@@ -1161,12 +1161,19 @@ Personal vocabulary practice uses retryable service-to-service callbacks; there 
 
 The dev web build enables `VITE_VOCABULARY_PRACTICE_ENABLED`, `VITE_VOCABULARY_HOMEWORK_ENABLED`, `VITE_VOCABULARY_LIVE_ENABLED`, `VITE_VOCABULARY_KEY_ENABLED`, and the composer/rail cutover flag `VITE_PERSONAL_PRACTICE_V2_ENABLED`. The web pipeline also sets `VITE_KEYBOARD_ORIGIN=https://dev.key.honey.school` for dev and `VITE_KEYBOARD_ORIGIN=https://key.honey.school` for production; do not replace these with a source-code hardcode. Production keeps the V2 cutover disabled for the first compatible backend release. UI rollback changes only the cutover/build flags or restores the previous web image; do not roll back or delete the compatible Liquibase tables.
 
+Adaptive vocabulary uses backend controls `PLAYSAY_VOCABULARY_COMPOSER_ENABLED`, `PLAYSAY_VOCABULARY_ADAPTIVE_POLICY_ENABLED`, `PLAYSAY_VOCABULARY_DELIVERY_POLICIES_ENABLED`, `PLAYSAY_VOCABULARY_KEY_NGRAMS_ENABLED`, `PLAYSAY_VOCABULARY_GENERATED_MEDIA_ENABLED`, and `PLAYSAY_VOCABULARY_LEXICAL_BACKFILL_ENABLED`, with matching dev web build flags and `VITE_VOCABULARY_TYPED_TARGETS_ENABLED` in Honey School Key. AX41 dev enables this complete set for acceptance; production defaults remain disabled. Rollback disables new launches and generation first, while additive tables, accepted evidence, approved assets, and immutable active snapshots remain readable.
+
+Generated vocabulary images use the vocabulary-service-owned `vocabulary-media/` prefix and the dedicated `playsay-vocabulary-media` bucket. Dev uses MinIO at `http://minio.storage.svc.cluster.local:9000`, credentials from `playsay-object-storage`, and may create the missing dedicated bucket. The image generator uses `playsay-openai/api-key` through `PLAYSAY_VOCABULARY_MEDIA_API_KEY`; never copy either secret value into Helm, logs, evidence, or chat. Production must provision and review its bucket, Secret references, moderation role, and retention policy before enabling generation, and must keep automatic bucket creation disabled.
+
+Operator-safe endpoints `GET /internal/vocabulary/diagnostics` and `POST /internal/vocabulary/reconcile` report or retry stale projections, assignment callbacks, stuck generation, and bounded missing-object checks. The corresponding Key endpoints are `GET /internal/keyboard/vocabulary/diagnostics` and `POST /internal/keyboard/vocabulary/reconcile`. They require `X-PlaySay-Service-Token`, fail closed when it is absent, and must be inspected only through counts, ages, and sanitized error codes—never answer, example, prompt, subject, object-key, or callback payload columns.
+
 Roll out Personal Practice V2 in this order:
 
 1. Deploy `vocabulary-service` migrations/backend and compatible `api-gateway`; verify practice-plan tables and internal callback health.
 2. Deploy `web-app` with `VITE_PERSONAL_PRACTICE_V2_ENABLED=true` in dev, then `keyboard-app`/`keyboard-service`.
 3. Verify preview `planId + revision` publication, one live run per lesson, presence-aware recipients, reconnect recovery, homework progress, and the exact Key session set.
 4. If the UI must be rolled back, disable the V2 build flag or restore the previous web image. Keep plan/item-v2 columns in place so in-flight sessions remain readable.
+5. For adaptive acceptance, verify one real first-use generation, teacher/admin candidate review, approval, learner delivery, regeneration without replacing the approved revision, and text-only behavior during generator or object-store failure.
 
 After rollout, verify without printing payloads:
 

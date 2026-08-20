@@ -34,6 +34,31 @@ userData:
   serviceTokenKey: service-token
 assignmentIntegration:
   gatewayBaseUrl: http://api-gateway.playsay-dev.svc.cluster.local
+features:
+  composerEnabled: "false"
+  adaptivePolicyEnabled: "false"
+  deliveryPoliciesEnabled: "false"
+  keyNgramsEnabled: "false"
+  generatedMediaEnabled: "false"
+  lexicalBackfillEnabled: "false"
+media:
+  generator: disabled
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+  baseUrl: https://api.openai.com/v1
+  model: gpt-image-1-mini
+  generationWorkerMs: "10000"
+  regenerationLimitPerHour: "5"
+  reconciliationMs: "60000"
+  storage:
+    provider: memory
+    endpoint: ""
+    region: us-east-1
+    bucket: playsay-vocabulary-media
+    existingSecret: playsay-object-storage
+    accessKeyKey: access-key
+    secretKeyKey: secret-key
+    createBucket: "false"
 runtime:
   javaToolOptions: "-XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=55 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
 resources:

@@ -47,6 +47,33 @@ spec:
             {{- end }}
             - { name: PLAYSAY_VOCABULARY_OPENAI_MODEL, value: {{ .Values.openai.model | quote }} }
             - { name: PLAYSAY_VOCABULARY_OPENAI_REASONING_EFFORT, value: {{ .Values.openai.reasoningEffort | quote }} }
+            - { name: PLAYSAY_VOCABULARY_COMPOSER_ENABLED, value: {{ .Values.features.composerEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_ADAPTIVE_POLICY_ENABLED, value: {{ .Values.features.adaptivePolicyEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_DELIVERY_POLICIES_ENABLED, value: {{ .Values.features.deliveryPoliciesEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_KEY_NGRAMS_ENABLED, value: {{ .Values.features.keyNgramsEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_GENERATED_MEDIA_ENABLED, value: {{ .Values.features.generatedMediaEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_LEXICAL_BACKFILL_ENABLED, value: {{ .Values.features.lexicalBackfillEnabled | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_GENERATOR, value: {{ .Values.media.generator | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_BASE_URL, value: {{ .Values.media.baseUrl | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_MODEL, value: {{ .Values.media.model | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_GENERATION_WORKER_MS, value: {{ .Values.media.generationWorkerMs | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_REGENERATION_LIMIT_PER_HOUR, value: {{ .Values.media.regenerationLimitPerHour | quote }} }
+            - { name: PLAYSAY_VOCABULARY_RECONCILIATION_MS, value: {{ .Values.media.reconciliationMs | quote }} }
+            {{- if eq .Values.media.generator "openai" }}
+            - name: PLAYSAY_VOCABULARY_MEDIA_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.media.existingSecret | quote }}, key: {{ .Values.media.apiKeyKey | quote }} } }
+            {{- end }}
+            - { name: PLAYSAY_VOCABULARY_MEDIA_STORAGE_PROVIDER, value: {{ .Values.media.storage.provider | quote }} }
+            {{- if eq .Values.media.storage.provider "s3" }}
+            - { name: PLAYSAY_VOCABULARY_MEDIA_S3_ENDPOINT, value: {{ .Values.media.storage.endpoint | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_S3_REGION, value: {{ .Values.media.storage.region | quote }} }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_S3_BUCKET, value: {{ .Values.media.storage.bucket | quote }} }
+            - name: PLAYSAY_VOCABULARY_MEDIA_S3_ACCESS_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.media.storage.existingSecret | quote }}, key: {{ .Values.media.storage.accessKeyKey | quote }} } }
+            - name: PLAYSAY_VOCABULARY_MEDIA_S3_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.media.storage.existingSecret | quote }}, key: {{ .Values.media.storage.secretKeyKey | quote }} } }
+            - { name: PLAYSAY_VOCABULARY_MEDIA_S3_CREATE_BUCKET, value: {{ .Values.media.storage.createBucket | quote }} }
+            {{- end }}
             {{- if .Values.runtime.javaToolOptions }}
             - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
             {{- end }}
