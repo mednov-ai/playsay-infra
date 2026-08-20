@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: "ai-tutor-dev-35"
-  digest: sha256:569ef3d80d835926b58d2183178297137b25ba6e7450639f6138f629a613d16f
+  tag: "ai-tutor-dev-37"
+  digest: sha256:472cb3c4b8e877b410b5f25f34de2c92e8cc9eb5dd5dcdd887b4b2c7e1ae1d09
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: ai-tutor-dev-35, number: "35", branch: develop, branchLabel: ai-tutor-dev, commit: "845e03fcb86b58ce4e4645adbba8bb7aea535311", commitShort: "845e03fcb86b"}
+build: {name: ai-tutor-dev-37, number: "37", branch: develop, branchLabel: ai-tutor-dev, commit: "e4204760157bc048c7b603929987c1da8798bc0b", commitShort: "e4204760157b"}
 service: {type: ClusterIP}
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
