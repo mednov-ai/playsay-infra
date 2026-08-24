@@ -9,3 +9,5 @@ ansible/inventories/*/hosts.yaml
 terraform.tfstate
 terraform.tfstate.*
 kubeconfig*
+__pycache__/
+*.py[cod]

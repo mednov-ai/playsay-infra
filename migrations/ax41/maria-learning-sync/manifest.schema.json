@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://honey.school/schemas/maria-learning-sync-v2.json",
+  "title": "Honey School Maria learning-data synchronization manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "bundleId",
+    "createdAt",
+    "cutoffAt",
+    "sourceEnvironment",
+    "targetEnvironment",
+    "sourceDatabaseSchemaSha256",
+    "platformCommit",
+    "infraCommit",
+    "mariaSubjectSha256",
+    "cohortSubjectSha256",
+    "tables",
+    "objects",
+    "exclusions"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2" },
+    "bundleId": { "type": "string", "pattern": "^maria-learning-(vdsina-to-dev|dev-to-prod)-[0-9]{8}T[0-9]{6}Z$" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "cutoffAt": { "type": "string", "format": "date-time" },
+    "sourceEnvironment": { "enum": ["vdsina", "dev"] },
+    "targetEnvironment": { "enum": ["dev", "prod"] },
+    "sourceDatabaseSchemaSha256": { "$ref": "#/$defs/sha256" },
+    "platformCommit": { "type": "string", "minLength": 1 },
+    "infraCommit": { "type": "string", "minLength": 1 },
+    "mariaSubjectSha256": { "$ref": "#/$defs/sha256" },
+    "cohortSubjectSha256": { "$ref": "#/$defs/sha256" },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "rowCount", "rowSha256", "file", "fileSha256"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "rowCount": { "type": "integer", "minimum": 0 },
+          "rowSha256": { "$ref": "#/$defs/sha256" },
+          "file": { "type": "string", "pattern": "^tables/[a-z][a-z0-9_]*\\.csv$" },
+          "fileSha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["keySha256", "keyHex", "file", "size", "sha256", "sourceKinds"],
+        "properties": {
+          "keySha256": { "$ref": "#/$defs/sha256" },
+          "keyHex": { "type": "string", "pattern": "^([0-9a-f]{2})+$" },
+          "file": { "type": "string", "pattern": "^objects/[0-9a-f]{64}$" },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "sourceKinds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "enum": ["MATERIAL_ASSET", "COLLABORATION_SNAPSHOT", "YOUTUBE_CACHE"] }
+          }
+        }
+      }
+    },
+    "exclusions": {
+      "const": [
+        "assignment_integration_outbox",
+        "vocabulary_integration_outbox",
+        "chat",
+        "ai_tutor",
+        "registration",
+        "email_delivery",
+        "audit",
+        "sessions_and_tokens"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "sourceEnvironment": { "const": "vdsina" },
+        "targetEnvironment": { "const": "dev" },
+        "bundleId": { "pattern": "^maria-learning-vdsina-to-dev-[0-9]{8}T[0-9]{6}Z$" }
+      }
+    },
+    {
+      "properties": {
+        "sourceEnvironment": { "const": "dev" },
+        "targetEnvironment": { "const": "prod" },
+        "bundleId": { "pattern": "^maria-learning-dev-to-prod-[0-9]{8}T[0-9]{6}Z$" }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

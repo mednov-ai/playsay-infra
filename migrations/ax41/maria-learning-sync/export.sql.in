@@ -1,0 +1,492 @@
+\set ON_ERROR_STOP on
+\pset tuples_only on
+\pset format unaligned
+\set QUIET 1
+\set maria_subject `tr -d '\r\n' < '__MARIA_SUBJECT_FILE__'`
+
+-- PostgreSQL does not allow CREATE TEMP TABLE AS after a READ ONLY transaction
+-- starts. This transaction touches only session-local temporary tables; the
+-- operator-enforced source freeze prevents concurrent persistent writes.
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+-- The retired VDSina schema predates assignment activity state, game adaptation
+-- state and vocabulary practice state. Session-local compatibility relations
+-- project legacy rows onto the current bundle contract; absent newer state is
+-- exported as empty/defaulted data and is therefore reset on the authoritative
+-- VDSina -> dev apply. On current dev/prod schemas these statements are no-ops.
+SELECT $ddl$CREATE TEMP VIEW assignment AS
+  SELECT public.assignment.*,
+         'MATERIAL'::varchar AS content_kind,
+         NULL::uuid AS activity_ref,
+         NULL::uuid AS practice_plan_id,
+         NULL::uuid AS source_vocabulary_practice_id
+  FROM public.assignment$ddl$
+WHERE NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'assignment' AND column_name = 'content_kind'
+) \gexec
+
+SELECT $ddl$CREATE TEMP VIEW assignment_recipient AS
+  SELECT public.assignment_recipient.*,
+         NULL::uuid AS activity_ref,
+         'NOT_STARTED'::varchar AS activity_state,
+         NULL::numeric AS completion_ratio,
+         NULL::numeric AS accuracy,
+         NULL::integer AS difficult_word_count,
+         0::bigint AS activity_revision,
+         NULL::timestamptz AS activity_updated_at
+  FROM public.assignment_recipient$ddl$
+WHERE NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'assignment_recipient' AND column_name = 'activity_state'
+) \gexec
+
+SELECT $ddl$CREATE TEMP VIEW vocabulary_entries AS
+  SELECT public.vocabulary_entries.*, false::boolean AS practice_paused
+  FROM public.vocabulary_entries$ddl$
+WHERE NOT EXISTS (
+  SELECT 1 FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'vocabulary_entries' AND column_name = 'practice_paused'
+) \gexec
+
+SELECT $ddl$CREATE TEMP TABLE material_game_adaptation (
+  id uuid, material_id uuid, source_asset_id uuid, adapted_asset_id uuid,
+  block_id varchar, status varchar, compatibility varchar, report text,
+  model varchar, prompt_hash varchar, attempts integer, next_attempt_at timestamptz,
+  lease_until timestamptz, last_error_code varchar, created_at timestamptz,
+  updated_at timestamptz, mechanics_validation varchar, validator_version varchar,
+  source_hash varchar, validation_report jsonb
+)$ddl$ WHERE to_regclass('public.material_game_adaptation') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_skill_states (
+  id uuid, entry_id uuid, owner_subject varchar, skill varchar, stage varchar,
+  interval_index integer, due_at timestamptz, success_streak integer,
+  lapse_count integer, last_rating varchar, last_practiced_at timestamptz,
+  created_at timestamptz, updated_at timestamptz
+)$ddl$ WHERE to_regclass('public.vocabulary_skill_states') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_practice_plans (
+  id uuid, created_by_subject varchar, revision bigint, delivery varchar,
+  mode varchar, lesson_id uuid, payload_json text, expires_at timestamptz,
+  published_practice_id uuid, created_at timestamptz, updated_at timestamptz
+)$ddl$ WHERE to_regclass('public.vocabulary_practice_plans') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_practices (
+  id uuid, created_by_subject varchar, delivery varchar, status varchar,
+  lesson_id uuid, assignment_id uuid, mode varchar, settings_json text,
+  started_at timestamptz, completed_at timestamptz, created_at timestamptz,
+  updated_at timestamptz
+)$ddl$ WHERE to_regclass('public.vocabulary_practices') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_practice_sessions (
+  id uuid, practice_id uuid, owner_subject varchar, status varchar,
+  current_item_position integer, attempt_sequence integer, revision bigint,
+  correct_count integer, attempt_count integer, teacher_hint text,
+  help_requested boolean, started_at timestamptz, completed_at timestamptz,
+  created_at timestamptz, updated_at timestamptz
+)$ddl$ WHERE to_regclass('public.vocabulary_practice_sessions') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_practice_items (
+  id uuid, session_id uuid, entry_id uuid, position integer, skill varchar,
+  exercise_type varchar, prompt text, answer text, options_json text,
+  snapshot_json text, attempt_count integer, retry_after_sequence integer,
+  completed_at timestamptz, created_at timestamptz, updated_at timestamptz,
+  schema_version integer, accepted_answers_json text, content_json text,
+  affects_schedule boolean
+)$ddl$ WHERE to_regclass('public.vocabulary_practice_items') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_practice_attempts (
+  id uuid, session_id uuid, item_id uuid, owner_subject varchar,
+  client_attempt_id varchar, rating varchar, answer_text text, correct boolean,
+  hints_used integer, duration_ms bigint, created_at timestamptz,
+  schedule_credit_applied boolean
+)$ddl$ WHERE to_regclass('public.vocabulary_practice_attempts') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE vocabulary_integration_outbox (
+  session_id uuid, status varchar
+)$ddl$ WHERE to_regclass('public.vocabulary_integration_outbox') IS NULL \gexec
+
+SELECT $ddl$CREATE TEMP TABLE assignment_integration_outbox (
+  assignment_id uuid, status varchar
+)$ddl$ WHERE to_regclass('public.assignment_integration_outbox') IS NULL \gexec
+
+CREATE TEMP TABLE sync_maria ON COMMIT DROP AS
+SELECT id, keycloak_subject
+FROM app_user
+WHERE keycloak_subject = :'maria_subject'
+  AND roles LIKE '%TEACHER%';
+
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM sync_maria) <> 1 THEN
+    RAISE EXCEPTION 'exactly one teacher must match the supplied immutable subject';
+  END IF;
+END $$;
+
+CREATE TEMP TABLE sync_lessons ON COMMIT DROP AS
+SELECT id
+FROM lesson
+WHERE teacher_user_id = (SELECT id FROM sync_maria);
+
+CREATE TEMP TABLE sync_assignments ON COMMIT DROP AS
+SELECT id
+FROM assignment
+WHERE teacher_user_id = (SELECT id FROM sync_maria)
+   OR lesson_id IN (SELECT id FROM sync_lessons)
+   OR source_lesson_id IN (SELECT id FROM sync_lessons);
+
+CREATE TEMP TABLE sync_user_ids ON COMMIT DROP AS
+SELECT id FROM sync_maria
+UNION
+SELECT id FROM app_user WHERE managed_by_teacher_user_id = (SELECT id FROM sync_maria)
+UNION
+SELECT student_user_id FROM lesson_participant WHERE lesson_id IN (SELECT id FROM sync_lessons)
+UNION
+SELECT student_user_id FROM assignment_recipient WHERE assignment_id IN (SELECT id FROM sync_assignments)
+UNION
+SELECT student_user_id FROM submission WHERE assignment_id IN (SELECT id FROM sync_assignments)
+UNION
+SELECT recipient_user_id FROM lesson_email_reminder WHERE lesson_id IN (SELECT id FROM sync_lessons)
+UNION
+SELECT student_user_id FROM collaboration_document
+WHERE lesson_id IN (SELECT id FROM sync_lessons) AND student_user_id IS NOT NULL;
+ALTER TABLE sync_user_ids ADD PRIMARY KEY (id);
+
+-- A lesson participant may be managed by a different teacher whose account and
+-- learning graph are deliberately outside Maria's route-bound migration. Keep
+-- the participant but project that out-of-cohort management edge to false/null
+-- so the portable snapshot is referentially closed without importing the other
+-- teacher or any of that teacher's data.
+CREATE TEMP TABLE sync_app_user ON COMMIT DROP AS
+SELECT * FROM app_user WHERE id IN (SELECT id FROM sync_user_ids);
+UPDATE sync_app_user
+SET managed_by_teacher = false,
+    managed_by_teacher_user_id = NULL
+WHERE managed_by_teacher_user_id IS NOT NULL
+  AND managed_by_teacher_user_id NOT IN (SELECT id FROM sync_user_ids);
+
+CREATE TEMP TABLE sync_subjects ON COMMIT DROP AS
+SELECT keycloak_subject
+FROM sync_app_user;
+
+CREATE TEMP TABLE sync_practices ON COMMIT DROP AS
+SELECT id
+FROM vocabulary_practices
+WHERE created_by_subject IN (SELECT keycloak_subject FROM sync_subjects)
+   OR lesson_id IN (SELECT id FROM sync_lessons)
+   OR assignment_id IN (SELECT id FROM sync_assignments)
+UNION
+SELECT practice_id
+FROM vocabulary_practice_sessions
+WHERE owner_subject IN (SELECT keycloak_subject FROM sync_subjects);
+ALTER TABLE sync_practices ADD PRIMARY KEY (id);
+
+DO $$
+DECLARE
+  added_users integer;
+  added_practices integer;
+BEGIN
+  LOOP
+    INSERT INTO sync_user_ids
+    SELECT DISTINCT u.id
+    FROM app_user u
+    JOIN vocabulary_practice_sessions s ON s.owner_subject = u.keycloak_subject
+    WHERE s.practice_id IN (SELECT id FROM sync_practices)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_users = ROW_COUNT;
+    TRUNCATE sync_subjects;
+    INSERT INTO sync_subjects
+    SELECT keycloak_subject FROM app_user WHERE id IN (SELECT id FROM sync_user_ids);
+    INSERT INTO sync_practices
+    SELECT id FROM vocabulary_practices
+    WHERE created_by_subject IN (SELECT keycloak_subject FROM sync_subjects)
+       OR lesson_id IN (SELECT id FROM sync_lessons)
+       OR assignment_id IN (SELECT id FROM sync_assignments)
+    UNION
+    SELECT practice_id FROM vocabulary_practice_sessions
+    WHERE owner_subject IN (SELECT keycloak_subject FROM sync_subjects)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_practices = ROW_COUNT;
+    EXIT WHEN added_users = 0 AND added_practices = 0;
+  END LOOP;
+END $$;
+
+CREATE TEMP TABLE sync_materials ON COMMIT DROP AS
+SELECT id FROM lesson_material WHERE owner_teacher_user_id = (SELECT id FROM sync_maria)
+UNION
+SELECT material_id FROM lesson WHERE id IN (SELECT id FROM sync_lessons) AND material_id IS NOT NULL
+UNION
+SELECT material_id FROM assignment WHERE id IN (SELECT id FROM sync_assignments) AND material_id IS NOT NULL
+UNION
+SELECT material_id FROM lesson_participant WHERE lesson_id IN (SELECT id FROM sync_lessons) AND material_id IS NOT NULL
+UNION
+SELECT material_id FROM lesson_material_annotation WHERE lesson_id IN (SELECT id FROM sync_lessons)
+UNION
+SELECT material_id FROM collaboration_document WHERE lesson_id IN (SELECT id FROM sync_lessons);
+ALTER TABLE sync_materials ADD PRIMARY KEY (id);
+
+CREATE TEMP TABLE sync_templates ON COMMIT DROP AS
+SELECT lesson_template_id AS id FROM lesson
+WHERE id IN (SELECT id FROM sync_lessons) AND lesson_template_id IS NOT NULL
+UNION
+SELECT lesson_template_id FROM assignment
+WHERE id IN (SELECT id FROM sync_assignments) AND lesson_template_id IS NOT NULL
+UNION
+SELECT id FROM lesson_template
+WHERE material_id IN (SELECT id FROM sync_materials);
+ALTER TABLE sync_templates ADD PRIMARY KEY (id);
+
+DO $$
+DECLARE
+  added_materials integer;
+  added_templates integer;
+BEGIN
+  LOOP
+    INSERT INTO sync_materials
+    SELECT material_id FROM lesson_template
+    WHERE id IN (SELECT id FROM sync_templates) AND material_id IS NOT NULL
+    UNION
+    SELECT material_id FROM lesson_template_card
+    WHERE lesson_template_id IN (SELECT id FROM sync_templates)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_materials = ROW_COUNT;
+
+    INSERT INTO sync_templates
+    SELECT id FROM lesson_template WHERE material_id IN (SELECT id FROM sync_materials)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_templates = ROW_COUNT;
+    EXIT WHEN added_materials = 0 AND added_templates = 0;
+  END LOOP;
+END $$;
+
+CREATE TEMP TABLE sync_courses ON COMMIT DROP AS
+SELECT course_id AS id FROM lesson_template
+WHERE id IN (SELECT id FROM sync_templates) AND course_id IS NOT NULL;
+
+CREATE TEMP TABLE sync_course_export ON COMMIT DROP AS
+SELECT * FROM course WHERE id IN (SELECT id FROM sync_courses);
+UPDATE sync_course_export
+SET created_by_user_id = NULL
+WHERE created_by_user_id IS NOT NULL
+  AND created_by_user_id NOT IN (SELECT id FROM sync_user_ids);
+
+CREATE TEMP TABLE sync_lesson_material_export ON COMMIT DROP AS
+SELECT * FROM lesson_material WHERE id IN (SELECT id FROM sync_materials);
+UPDATE sync_lesson_material_export
+SET owner_teacher_user_id = NULL
+WHERE owner_teacher_user_id IS NOT NULL
+  AND owner_teacher_user_id NOT IN (SELECT id FROM sync_user_ids);
+
+CREATE TEMP TABLE sync_assignment_export ON COMMIT DROP AS
+SELECT * FROM assignment WHERE id IN (SELECT id FROM sync_assignments);
+UPDATE sync_assignment_export
+SET lesson_id = CASE WHEN lesson_id IN (SELECT id FROM sync_lessons) THEN lesson_id ELSE NULL END,
+    source_lesson_id = CASE WHEN source_lesson_id IN (SELECT id FROM sync_lessons) THEN source_lesson_id ELSE NULL END,
+    lesson_template_id = CASE WHEN lesson_template_id IN (SELECT id FROM sync_templates) THEN lesson_template_id ELSE NULL END,
+    material_id = CASE WHEN material_id IN (SELECT id FROM sync_materials) THEN material_id ELSE NULL END;
+
+CREATE TEMP TABLE sync_submission_export ON COMMIT DROP AS
+SELECT * FROM submission WHERE assignment_id IN (SELECT id FROM sync_assignments);
+UPDATE sync_submission_export
+SET lesson_id = NULL
+WHERE lesson_id IS NOT NULL AND lesson_id NOT IN (SELECT id FROM sync_lessons);
+
+CREATE TEMP TABLE sync_entries ON COMMIT DROP AS
+SELECT id FROM vocabulary_entries
+WHERE owner_subject IN (SELECT keycloak_subject FROM sync_subjects);
+
+CREATE TEMP TABLE sync_plans ON COMMIT DROP AS
+SELECT id FROM vocabulary_practice_plans
+WHERE created_by_subject IN (SELECT keycloak_subject FROM sync_subjects)
+   OR lesson_id IN (SELECT id FROM sync_lessons)
+   OR published_practice_id IN (SELECT id FROM sync_practices);
+
+CREATE TEMP TABLE sync_caches ON COMMIT DROP AS
+SELECT DISTINCT cache_id AS id
+FROM youtube_video_cache_reference
+WHERE material_id IN (SELECT id FROM sync_materials);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM assignment_integration_outbox
+    WHERE assignment_id IN (SELECT id FROM sync_assignments)
+      AND status NOT IN ('COMPLETED', 'SENT')
+  ) THEN
+    RAISE EXCEPTION 'scoped assignment integration outbox is not drained';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM vocabulary_integration_outbox
+    WHERE session_id IN (
+      SELECT id FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM sync_practices)
+    ) AND status NOT IN ('COMPLETED', 'SENT')
+  ) THEN
+    RAISE EXCEPTION 'scoped vocabulary integration outbox is not drained';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM youtube_video_cache_reference
+    WHERE cache_id IN (SELECT id FROM sync_caches)
+      AND material_id NOT IN (SELECT id FROM sync_materials)
+  ) THEN
+    RAISE EXCEPTION 'a selected YouTube cache is shared outside the source scope';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM material_asset scoped
+    JOIN material_asset outside ON outside.storage_key = scoped.storage_key
+    WHERE scoped.material_id IN (SELECT id FROM sync_materials)
+      AND outside.material_id NOT IN (SELECT id FROM sync_materials)
+      AND scoped.storage_key IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'a selected material object key is shared outside the source scope';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM collaboration_document scoped
+    JOIN collaboration_document outside ON outside.snapshot_storage_key = scoped.snapshot_storage_key
+    WHERE scoped.lesson_id IN (SELECT id FROM sync_lessons)
+      AND outside.lesson_id NOT IN (SELECT id FROM sync_lessons)
+      AND scoped.snapshot_storage_key IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'a selected collaboration object key is shared outside the source scope';
+  END IF;
+END $$;
+
+\o '__OUTPUT_DIR__/cohort-subjects.txt'
+SELECT keycloak_subject FROM sync_subjects ORDER BY keycloak_subject;
+\o
+
+\o '__OUTPUT_DIR__/tables/app_user.csv'
+COPY (SELECT * FROM sync_app_user ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/student_profile.csv'
+COPY (SELECT * FROM student_profile WHERE user_id IN (SELECT id FROM sync_user_ids) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/teacher_profile.csv'
+COPY (SELECT * FROM teacher_profile WHERE user_id IN (SELECT id FROM sync_user_ids) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/course.csv'
+COPY (SELECT * FROM sync_course_export ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/curriculum_topic.csv'
+COPY (SELECT * FROM curriculum_topic WHERE course_id IN (SELECT id FROM sync_courses) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_material.csv'
+COPY (SELECT * FROM sync_lesson_material_export ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/material_asset.csv'
+COPY (SELECT * FROM material_asset WHERE material_id IN (SELECT id FROM sync_materials) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/material_html_game_enrichment.csv'
+COPY (SELECT * FROM material_html_game_enrichment WHERE material_id IN (SELECT id FROM sync_materials) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/material_game_adaptation.csv'
+COPY (SELECT * FROM material_game_adaptation WHERE material_id IN (SELECT id FROM sync_materials) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/youtube_video_cache.csv'
+COPY (SELECT * FROM youtube_video_cache WHERE id IN (SELECT id FROM sync_caches) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/youtube_video_cache_reference.csv'
+COPY (SELECT * FROM youtube_video_cache_reference WHERE material_id IN (SELECT id FROM sync_materials) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_template.csv'
+COPY (SELECT * FROM lesson_template WHERE id IN (SELECT id FROM sync_templates) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_template_card.csv'
+COPY (SELECT * FROM lesson_template_card WHERE lesson_template_id IN (SELECT id FROM sync_templates) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson.csv'
+COPY (SELECT * FROM lesson WHERE id IN (SELECT id FROM sync_lessons) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_participant.csv'
+COPY (SELECT * FROM lesson_participant WHERE lesson_id IN (SELECT id FROM sync_lessons) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_email_reminder.csv'
+COPY (SELECT * FROM lesson_email_reminder WHERE lesson_id IN (SELECT id FROM sync_lessons) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/assignment.csv'
+COPY (SELECT * FROM sync_assignment_export ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/assignment_recipient.csv'
+COPY (SELECT * FROM assignment_recipient WHERE assignment_id IN (SELECT id FROM sync_assignments) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/submission.csv'
+COPY (SELECT * FROM sync_submission_export ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/lesson_material_annotation.csv'
+COPY (SELECT * FROM lesson_material_annotation WHERE lesson_id IN (SELECT id FROM sync_lessons) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/collaboration_document.csv'
+COPY (SELECT * FROM collaboration_document WHERE lesson_id IN (SELECT id FROM sync_lessons) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_entries.csv'
+COPY (SELECT * FROM vocabulary_entries WHERE id IN (SELECT id FROM sync_entries) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_occurrences.csv'
+COPY (SELECT * FROM vocabulary_occurrences WHERE entry_id IN (SELECT id FROM sync_entries) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_skill_states.csv'
+COPY (SELECT * FROM vocabulary_skill_states WHERE entry_id IN (SELECT id FROM sync_entries) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_practice_plans.csv'
+COPY (SELECT * FROM vocabulary_practice_plans WHERE id IN (SELECT id FROM sync_plans) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_practices.csv'
+COPY (SELECT * FROM vocabulary_practices WHERE id IN (SELECT id FROM sync_practices) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_practice_sessions.csv'
+COPY (SELECT * FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM sync_practices) ORDER BY id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_practice_items.csv'
+COPY (SELECT i.* FROM vocabulary_practice_items i JOIN vocabulary_practice_sessions s ON s.id = i.session_id WHERE s.practice_id IN (SELECT id FROM sync_practices) ORDER BY i.id) TO STDOUT CSV HEADER;
+\o
+\o '__OUTPUT_DIR__/tables/vocabulary_practice_attempts.csv'
+COPY (SELECT a.* FROM vocabulary_practice_attempts a JOIN vocabulary_practice_sessions s ON s.id = a.session_id WHERE s.practice_id IN (SELECT id FROM sync_practices) ORDER BY a.id) TO STDOUT CSV HEADER;
+\o
+
+\o '__OUTPUT_DIR__/object-keys.tsv'
+COPY (
+  SELECT encode(convert_to(storage_key, 'UTF8'), 'hex'), 'MATERIAL_ASSET'
+  FROM material_asset
+  WHERE material_id IN (SELECT id FROM sync_materials) AND storage_key IS NOT NULL AND storage_key <> ''
+  UNION ALL
+  SELECT encode(convert_to(snapshot_storage_key, 'UTF8'), 'hex'), 'COLLABORATION_SNAPSHOT'
+  FROM collaboration_document
+  WHERE lesson_id IN (SELECT id FROM sync_lessons)
+    AND snapshot_storage_key IS NOT NULL AND snapshot_storage_key <> ''
+  UNION ALL
+  SELECT encode(convert_to(storage_key, 'UTF8'), 'hex'), 'YOUTUBE_CACHE'
+  FROM youtube_video_cache
+  WHERE id IN (SELECT id FROM sync_caches) AND storage_key IS NOT NULL AND storage_key <> ''
+  ORDER BY 1, 2
+) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t');
+\o
+
+\o '__OUTPUT_DIR__/database-schema.tsv'
+COPY (
+  SELECT table_name, ordinal_position, column_name, data_type, udt_name, is_nullable, coalesce(column_default, '')
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name IN (
+      'app_user','student_profile','teacher_profile','course','curriculum_topic','lesson_material',
+      'material_asset','material_html_game_enrichment','material_game_adaptation','youtube_video_cache',
+      'youtube_video_cache_reference','lesson_template','lesson_template_card','lesson','lesson_participant',
+      'lesson_email_reminder','assignment','assignment_recipient','submission','lesson_material_annotation',
+      'collaboration_document','vocabulary_entries','vocabulary_occurrences','vocabulary_skill_states',
+      'vocabulary_practice_plans','vocabulary_practices','vocabulary_practice_sessions',
+      'vocabulary_practice_items','vocabulary_practice_attempts'
+    )
+  ORDER BY table_name, ordinal_position
+) TO STDOUT WITH (FORMAT csv, DELIMITER E'\t');
+\o
+
+\o '__OUTPUT_DIR__/source-counts.tsv'
+SELECT 'users' || E'\t' || count(*) FROM sync_user_ids;
+SELECT 'lessons' || E'\t' || count(*) FROM sync_lessons;
+SELECT 'materials' || E'\t' || count(*) FROM sync_materials;
+SELECT 'assignments' || E'\t' || count(*) FROM sync_assignments;
+SELECT 'vocabularyEntries' || E'\t' || count(*) FROM sync_entries;
+SELECT 'vocabularyPractices' || E'\t' || count(*) FROM sync_practices;
+\o
+
+COMMIT;

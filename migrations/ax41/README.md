@@ -19,3 +19,10 @@ The immediate source-VPS safety workflow is:
 This safety bundle is a full dev disaster-recovery artifact. It is not the
 selective production seed; the latter must use the reviewed immutable-ID allowlist
 and refusal checks described in the AX41 migration plan.
+
+The later data-only synchronization of Maria Mednova's lesson history and
+vocabulary progress is implemented separately in [`maria-learning-sync/`](maria-learning-sync/README.md).
+It uses fixed Python routes with separate encrypted snapshots for VDSina-to-dev
+and accepted-dev-to-prod, preserves target-only accounts, and requires an
+operator-approved maintenance window plus automatic database/object backup before
+any destructive apply.

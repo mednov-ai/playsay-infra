@@ -1,0 +1,442 @@
+\set ON_ERROR_STOP on
+\set QUIET 1
+\set maria_subject `tr -d '\r\n' < '__MARIA_SUBJECT_FILE__'`
+\set cutoff_at `tr -d '\r\n' < '__CUTOFF_FILE__'`
+
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+SET LOCAL lock_timeout = '15s';
+SET LOCAL statement_timeout = '20min';
+CREATE TEMP TABLE input_maria_subject(subject text PRIMARY KEY);
+INSERT INTO input_maria_subject VALUES (:'maria_subject');
+
+CREATE TEMP TABLE stg_app_user (LIKE app_user INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_student_profile (LIKE student_profile INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_teacher_profile (LIKE teacher_profile INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_course (LIKE course INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_curriculum_topic (LIKE curriculum_topic INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_material (LIKE lesson_material INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_material_asset (LIKE material_asset INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_material_html_game_enrichment (LIKE material_html_game_enrichment INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_material_game_adaptation (LIKE material_game_adaptation INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_youtube_video_cache (LIKE youtube_video_cache INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_youtube_video_cache_reference (LIKE youtube_video_cache_reference INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_template (LIKE lesson_template INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_template_card (LIKE lesson_template_card INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson (LIKE lesson INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_participant (LIKE lesson_participant INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_email_reminder (LIKE lesson_email_reminder INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_assignment (LIKE assignment INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_assignment_recipient (LIKE assignment_recipient INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_submission (LIKE submission INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_lesson_material_annotation (LIKE lesson_material_annotation INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_collaboration_document (LIKE collaboration_document INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_entries (LIKE vocabulary_entries INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_occurrences (LIKE vocabulary_occurrences INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_skill_states (LIKE vocabulary_skill_states INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_practice_plans (LIKE vocabulary_practice_plans INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_practices (LIKE vocabulary_practices INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_practice_sessions (LIKE vocabulary_practice_sessions INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_practice_items (LIKE vocabulary_practice_items INCLUDING DEFAULTS);
+CREATE TEMP TABLE stg_vocabulary_practice_attempts (LIKE vocabulary_practice_attempts INCLUDING DEFAULTS);
+
+\copy stg_app_user FROM '__DATA_DIR__/tables/app_user.csv' CSV HEADER
+\copy stg_student_profile FROM '__DATA_DIR__/tables/student_profile.csv' CSV HEADER
+\copy stg_teacher_profile FROM '__DATA_DIR__/tables/teacher_profile.csv' CSV HEADER
+\copy stg_course FROM '__DATA_DIR__/tables/course.csv' CSV HEADER
+\copy stg_curriculum_topic FROM '__DATA_DIR__/tables/curriculum_topic.csv' CSV HEADER
+\copy stg_lesson_material FROM '__DATA_DIR__/tables/lesson_material.csv' CSV HEADER
+\copy stg_material_asset FROM '__DATA_DIR__/tables/material_asset.csv' CSV HEADER
+\copy stg_material_html_game_enrichment FROM '__DATA_DIR__/tables/material_html_game_enrichment.csv' CSV HEADER
+\copy stg_material_game_adaptation FROM '__DATA_DIR__/tables/material_game_adaptation.csv' CSV HEADER
+\copy stg_youtube_video_cache FROM '__DATA_DIR__/tables/youtube_video_cache.csv' CSV HEADER
+\copy stg_youtube_video_cache_reference FROM '__DATA_DIR__/tables/youtube_video_cache_reference.csv' CSV HEADER
+\copy stg_lesson_template FROM '__DATA_DIR__/tables/lesson_template.csv' CSV HEADER
+\copy stg_lesson_template_card FROM '__DATA_DIR__/tables/lesson_template_card.csv' CSV HEADER
+\copy stg_lesson FROM '__DATA_DIR__/tables/lesson.csv' CSV HEADER
+\copy stg_lesson_participant FROM '__DATA_DIR__/tables/lesson_participant.csv' CSV HEADER
+\copy stg_lesson_email_reminder FROM '__DATA_DIR__/tables/lesson_email_reminder.csv' CSV HEADER
+\copy stg_assignment FROM '__DATA_DIR__/tables/assignment.csv' CSV HEADER
+\copy stg_assignment_recipient FROM '__DATA_DIR__/tables/assignment_recipient.csv' CSV HEADER
+\copy stg_submission FROM '__DATA_DIR__/tables/submission.csv' CSV HEADER
+\copy stg_lesson_material_annotation FROM '__DATA_DIR__/tables/lesson_material_annotation.csv' CSV HEADER
+\copy stg_collaboration_document FROM '__DATA_DIR__/tables/collaboration_document.csv' CSV HEADER
+\copy stg_vocabulary_entries FROM '__DATA_DIR__/tables/vocabulary_entries.csv' CSV HEADER
+\copy stg_vocabulary_occurrences FROM '__DATA_DIR__/tables/vocabulary_occurrences.csv' CSV HEADER
+\copy stg_vocabulary_skill_states FROM '__DATA_DIR__/tables/vocabulary_skill_states.csv' CSV HEADER
+\copy stg_vocabulary_practice_plans FROM '__DATA_DIR__/tables/vocabulary_practice_plans.csv' CSV HEADER
+\copy stg_vocabulary_practices FROM '__DATA_DIR__/tables/vocabulary_practices.csv' CSV HEADER
+\copy stg_vocabulary_practice_sessions FROM '__DATA_DIR__/tables/vocabulary_practice_sessions.csv' CSV HEADER
+\copy stg_vocabulary_practice_items FROM '__DATA_DIR__/tables/vocabulary_practice_items.csv' CSV HEADER
+\copy stg_vocabulary_practice_attempts FROM '__DATA_DIR__/tables/vocabulary_practice_attempts.csv' CSV HEADER
+
+-- YouTube cache UUIDs were generated independently in each environment. Merge
+-- the global cache by its database natural key and keep the existing target UUID
+-- so target-only references remain valid. References have their own natural key
+-- and are remapped the same way before the generic UUID upsert phase.
+CREATE TEMP TABLE youtube_cache_id_map AS
+SELECT incoming.id AS source_id, existing.id AS target_id
+FROM stg_youtube_video_cache incoming
+JOIN youtube_video_cache existing
+  ON existing.video_id = incoming.video_id AND existing.quality = incoming.quality
+WHERE existing.id <> incoming.id;
+ALTER TABLE youtube_cache_id_map ADD PRIMARY KEY (source_id);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM youtube_cache_id_map mapping
+    JOIN stg_youtube_video_cache collision ON collision.id = mapping.target_id
+    WHERE collision.id <> mapping.source_id
+  ) THEN
+    RAISE EXCEPTION 'YouTube cache UUID collides with a different incoming natural key';
+  END IF;
+END $$;
+
+UPDATE stg_youtube_video_cache_reference incoming
+SET cache_id = mapping.target_id
+FROM youtube_cache_id_map mapping
+WHERE incoming.cache_id = mapping.source_id;
+
+UPDATE stg_youtube_video_cache incoming
+SET id = mapping.target_id
+FROM youtube_cache_id_map mapping
+WHERE incoming.id = mapping.source_id;
+
+CREATE TEMP TABLE youtube_reference_id_map AS
+SELECT incoming.id AS source_id, existing.id AS target_id
+FROM stg_youtube_video_cache_reference incoming
+JOIN youtube_video_cache_reference existing
+  ON existing.material_id = incoming.material_id AND existing.block_id = incoming.block_id
+WHERE existing.id <> incoming.id;
+ALTER TABLE youtube_reference_id_map ADD PRIMARY KEY (source_id);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM youtube_reference_id_map mapping
+    JOIN stg_youtube_video_cache_reference collision ON collision.id = mapping.target_id
+    WHERE collision.id <> mapping.source_id
+  ) THEN
+    RAISE EXCEPTION 'YouTube reference UUID collides with a different incoming natural key';
+  END IF;
+END $$;
+
+UPDATE stg_youtube_video_cache_reference incoming
+SET id = mapping.target_id
+FROM youtube_reference_id_map mapping
+WHERE incoming.id = mapping.source_id;
+
+CREATE TEMP TABLE game_enrichment_id_map AS
+SELECT incoming.id AS source_id, existing.id AS target_id
+FROM stg_material_html_game_enrichment incoming
+JOIN material_html_game_enrichment existing
+  ON existing.material_id = incoming.material_id
+ AND existing.asset_id = incoming.asset_id
+ AND existing.block_id = incoming.block_id
+WHERE existing.id <> incoming.id;
+ALTER TABLE game_enrichment_id_map ADD PRIMARY KEY (source_id);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM game_enrichment_id_map mapping
+    JOIN stg_material_html_game_enrichment collision ON collision.id = mapping.target_id
+    WHERE collision.id <> mapping.source_id
+  ) THEN
+    RAISE EXCEPTION 'HTML game enrichment UUID collides with a different incoming natural key';
+  END IF;
+END $$;
+
+UPDATE stg_material_html_game_enrichment incoming
+SET id = mapping.target_id
+FROM game_enrichment_id_map mapping
+WHERE incoming.id = mapping.source_id;
+
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM stg_app_user WHERE keycloak_subject = (SELECT subject FROM input_maria_subject) AND roles LIKE '%TEACHER%') <> 1 THEN
+    RAISE EXCEPTION 'bundle does not contain exactly one matching Maria teacher identity';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM stg_app_user source_user
+    JOIN app_user target_user ON target_user.keycloak_subject = source_user.keycloak_subject
+    WHERE target_user.id <> source_user.id
+  ) THEN
+    RAISE EXCEPTION 'target Keycloak subject maps to a different application UUID';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM stg_app_user source_user
+    LEFT JOIN stg_app_user manager
+      ON manager.id = source_user.managed_by_teacher_user_id
+    WHERE source_user.managed_by_teacher_user_id IS NOT NULL
+      AND manager.id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'bundle contains an app_user management edge outside the selected cohort';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM stg_course source_course
+    LEFT JOIN stg_app_user creator ON creator.id = source_course.created_by_user_id
+    WHERE source_course.created_by_user_id IS NOT NULL AND creator.id IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM stg_lesson_material source_material
+    LEFT JOIN stg_app_user owner ON owner.id = source_material.owner_teacher_user_id
+    WHERE source_material.owner_teacher_user_id IS NOT NULL AND owner.id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'bundle contains a nullable owner edge outside the selected cohort';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM stg_lesson_template child
+    LEFT JOIN stg_lesson_material parent ON parent.id = child.material_id
+    WHERE child.material_id IS NOT NULL AND parent.id IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM stg_lesson_template_card child
+    LEFT JOIN stg_lesson_material parent ON parent.id = child.material_id
+    WHERE parent.id IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM stg_lesson_participant child
+    LEFT JOIN stg_lesson_material parent ON parent.id = child.material_id
+    WHERE child.material_id IS NOT NULL AND parent.id IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM stg_lesson_material_annotation child
+    LEFT JOIN stg_lesson_material parent ON parent.id = child.material_id
+    WHERE parent.id IS NULL
+  ) OR EXISTS (
+    SELECT 1 FROM stg_collaboration_document child
+    LEFT JOIN stg_lesson_material parent ON parent.id = child.material_id
+    WHERE parent.id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'bundle material/template closure is incomplete';
+  END IF;
+END $$;
+
+UPDATE stg_lesson_email_reminder
+SET status = 'SKIPPED', last_error = NULL
+WHERE status IN ('PENDING', 'FAILED') AND due_at <= :'cutoff_at'::timestamptz;
+
+CREATE TEMP TABLE target_maria AS
+SELECT id FROM app_user WHERE keycloak_subject = (SELECT subject FROM input_maria_subject);
+CREATE TEMP TABLE target_lessons AS
+SELECT id FROM lesson WHERE teacher_user_id = (SELECT id FROM target_maria);
+CREATE TEMP TABLE target_assignments AS
+SELECT id FROM assignment
+WHERE teacher_user_id = (SELECT id FROM target_maria)
+   OR lesson_id IN (SELECT id FROM target_lessons)
+   OR source_lesson_id IN (SELECT id FROM target_lessons);
+CREATE TEMP TABLE target_user_ids AS
+SELECT id FROM target_maria
+UNION SELECT id FROM app_user WHERE managed_by_teacher_user_id = (SELECT id FROM target_maria)
+UNION SELECT student_user_id FROM lesson_participant WHERE lesson_id IN (SELECT id FROM target_lessons)
+UNION SELECT student_user_id FROM assignment_recipient WHERE assignment_id IN (SELECT id FROM target_assignments)
+UNION SELECT student_user_id FROM submission WHERE assignment_id IN (SELECT id FROM target_assignments)
+UNION SELECT recipient_user_id FROM lesson_email_reminder WHERE lesson_id IN (SELECT id FROM target_lessons)
+UNION SELECT student_user_id FROM collaboration_document
+WHERE lesson_id IN (SELECT id FROM target_lessons) AND student_user_id IS NOT NULL;
+ALTER TABLE target_user_ids ADD PRIMARY KEY (id);
+CREATE TEMP TABLE target_subjects AS
+SELECT keycloak_subject FROM app_user WHERE id IN (SELECT id FROM target_user_ids);
+CREATE TEMP TABLE target_practices AS
+SELECT id FROM vocabulary_practices
+WHERE created_by_subject IN (SELECT keycloak_subject FROM target_subjects)
+   OR lesson_id IN (SELECT id FROM target_lessons)
+   OR assignment_id IN (SELECT id FROM target_assignments)
+UNION SELECT practice_id FROM vocabulary_practice_sessions
+WHERE owner_subject IN (SELECT keycloak_subject FROM target_subjects);
+ALTER TABLE target_practices ADD PRIMARY KEY (id);
+DO $$
+DECLARE
+  added_users integer;
+  added_practices integer;
+BEGIN
+  LOOP
+    INSERT INTO target_user_ids
+    SELECT DISTINCT u.id
+    FROM app_user u
+    JOIN vocabulary_practice_sessions s ON s.owner_subject = u.keycloak_subject
+    WHERE s.practice_id IN (SELECT id FROM target_practices)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_users = ROW_COUNT;
+    TRUNCATE target_subjects;
+    INSERT INTO target_subjects
+    SELECT keycloak_subject FROM app_user WHERE id IN (SELECT id FROM target_user_ids);
+    INSERT INTO target_practices
+    SELECT id FROM vocabulary_practices
+    WHERE created_by_subject IN (SELECT keycloak_subject FROM target_subjects)
+       OR lesson_id IN (SELECT id FROM target_lessons)
+       OR assignment_id IN (SELECT id FROM target_assignments)
+    UNION
+    SELECT practice_id FROM vocabulary_practice_sessions
+    WHERE owner_subject IN (SELECT keycloak_subject FROM target_subjects)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_practices = ROW_COUNT;
+    EXIT WHEN added_users = 0 AND added_practices = 0;
+  END LOOP;
+END $$;
+CREATE TEMP TABLE target_entries AS
+SELECT id FROM vocabulary_entries WHERE owner_subject IN (SELECT keycloak_subject FROM target_subjects);
+CREATE TEMP TABLE target_materials AS
+SELECT id FROM lesson_material WHERE owner_teacher_user_id = (SELECT id FROM target_maria)
+UNION SELECT material_id FROM lesson WHERE id IN (SELECT id FROM target_lessons) AND material_id IS NOT NULL
+UNION SELECT material_id FROM assignment WHERE id IN (SELECT id FROM target_assignments) AND material_id IS NOT NULL
+UNION SELECT material_id FROM lesson_participant WHERE lesson_id IN (SELECT id FROM target_lessons) AND material_id IS NOT NULL
+UNION SELECT material_id FROM lesson_material_annotation WHERE lesson_id IN (SELECT id FROM target_lessons)
+UNION SELECT material_id FROM collaboration_document WHERE lesson_id IN (SELECT id FROM target_lessons);
+ALTER TABLE target_materials ADD PRIMARY KEY (id);
+CREATE TEMP TABLE target_templates AS
+SELECT lesson_template_id AS id FROM lesson
+WHERE id IN (SELECT id FROM target_lessons) AND lesson_template_id IS NOT NULL
+UNION SELECT lesson_template_id FROM assignment
+WHERE id IN (SELECT id FROM target_assignments) AND lesson_template_id IS NOT NULL
+UNION SELECT id FROM lesson_template WHERE material_id IN (SELECT id FROM target_materials);
+ALTER TABLE target_templates ADD PRIMARY KEY (id);
+DO $$
+DECLARE
+  added_materials integer;
+  added_templates integer;
+BEGIN
+  LOOP
+    INSERT INTO target_materials
+    SELECT material_id FROM lesson_template
+    WHERE id IN (SELECT id FROM target_templates) AND material_id IS NOT NULL
+    UNION
+    SELECT material_id FROM lesson_template_card
+    WHERE lesson_template_id IN (SELECT id FROM target_templates)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_materials = ROW_COUNT;
+
+    INSERT INTO target_templates
+    SELECT id FROM lesson_template WHERE material_id IN (SELECT id FROM target_materials)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS added_templates = ROW_COUNT;
+    EXIT WHEN added_materials = 0 AND added_templates = 0;
+  END LOOP;
+END $$;
+CREATE TEMP TABLE target_caches AS
+SELECT DISTINCT cache_id AS id FROM youtube_video_cache_reference
+WHERE material_id IN (SELECT id FROM target_materials);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM youtube_video_cache_reference r
+    WHERE r.cache_id IN (SELECT id FROM target_caches)
+      AND r.material_id NOT IN (SELECT id FROM target_materials)
+  ) THEN
+    RAISE EXCEPTION 'a scoped YouTube cache is shared by material outside the destructive scope';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM stg_material_asset incoming
+    JOIN material_asset outside ON outside.storage_key = incoming.storage_key
+    WHERE outside.material_id NOT IN (SELECT id FROM target_materials)
+      AND incoming.storage_key IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'a scoped material object key is shared outside the destructive scope';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM collaboration_document scoped
+    JOIN collaboration_document outside ON outside.snapshot_storage_key = scoped.snapshot_storage_key
+    WHERE scoped.lesson_id IN (SELECT id FROM target_lessons)
+      AND outside.lesson_id NOT IN (SELECT id FROM target_lessons)
+      AND scoped.snapshot_storage_key IS NOT NULL
+  ) OR EXISTS (
+    SELECT 1
+    FROM stg_collaboration_document incoming
+    JOIN collaboration_document outside ON outside.snapshot_storage_key = incoming.snapshot_storage_key
+    WHERE outside.lesson_id NOT IN (SELECT id FROM target_lessons)
+      AND incoming.snapshot_storage_key IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'a collaboration snapshot key is shared outside the destructive scope';
+  END IF;
+END $$;
+
+DELETE FROM vocabulary_integration_outbox WHERE session_id IN (
+  SELECT id FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM target_practices)
+);
+DELETE FROM vocabulary_practice_attempts WHERE session_id IN (
+  SELECT id FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM target_practices)
+);
+DELETE FROM vocabulary_practice_items WHERE session_id IN (
+  SELECT id FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM target_practices)
+);
+DELETE FROM vocabulary_practice_sessions WHERE practice_id IN (SELECT id FROM target_practices);
+DELETE FROM vocabulary_practice_plans
+WHERE created_by_subject IN (SELECT keycloak_subject FROM target_subjects)
+   OR lesson_id IN (SELECT id FROM target_lessons)
+   OR published_practice_id IN (SELECT id FROM target_practices);
+DELETE FROM vocabulary_practices WHERE id IN (SELECT id FROM target_practices);
+DELETE FROM vocabulary_skill_states WHERE entry_id IN (SELECT id FROM target_entries);
+DELETE FROM vocabulary_occurrences WHERE entry_id IN (SELECT id FROM target_entries);
+DELETE FROM vocabulary_entries WHERE id IN (SELECT id FROM target_entries);
+
+DELETE FROM assignment_integration_outbox WHERE assignment_id IN (SELECT id FROM target_assignments);
+DELETE FROM submission WHERE assignment_id IN (SELECT id FROM target_assignments);
+DELETE FROM assignment_recipient WHERE assignment_id IN (SELECT id FROM target_assignments);
+DELETE FROM lesson_material_annotation
+WHERE lesson_id IN (SELECT id FROM target_lessons);
+DELETE FROM collaboration_document
+WHERE lesson_id IN (SELECT id FROM target_lessons);
+DELETE FROM lesson_email_reminder WHERE lesson_id IN (SELECT id FROM target_lessons);
+DELETE FROM assignment WHERE id IN (SELECT id FROM target_assignments);
+DELETE FROM lesson_participant WHERE lesson_id IN (SELECT id FROM target_lessons);
+DELETE FROM lesson WHERE id IN (SELECT id FROM target_lessons);
+
+DELETE FROM student_profile WHERE user_id IN (SELECT id FROM stg_app_user);
+DELETE FROM teacher_profile WHERE user_id IN (SELECT id FROM stg_app_user);
+
+CREATE OR REPLACE FUNCTION pg_temp.sync_upsert(target_table regclass, staging_table regclass)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  column_list text;
+  update_list text;
+BEGIN
+  SELECT string_agg(format('%I', a.attname), ', ' ORDER BY a.attnum),
+         string_agg(format('%1$I = EXCLUDED.%1$I', a.attname), ', ' ORDER BY a.attnum)
+           FILTER (WHERE a.attname <> 'id')
+    INTO column_list, update_list
+  FROM pg_attribute a
+  WHERE a.attrelid = target_table AND a.attnum > 0 AND NOT a.attisdropped;
+  EXECUTE format(
+    'INSERT INTO %s (%s) SELECT %s FROM %s ON CONFLICT (id) DO UPDATE SET %s',
+    target_table, column_list, column_list, staging_table, update_list
+  );
+END $$;
+
+SELECT pg_temp.sync_upsert('app_user', 'stg_app_user');
+SELECT pg_temp.sync_upsert('student_profile', 'stg_student_profile');
+SELECT pg_temp.sync_upsert('teacher_profile', 'stg_teacher_profile');
+SELECT pg_temp.sync_upsert('course', 'stg_course');
+SELECT pg_temp.sync_upsert('curriculum_topic', 'stg_curriculum_topic');
+SELECT pg_temp.sync_upsert('lesson_material', 'stg_lesson_material');
+SELECT pg_temp.sync_upsert('material_asset', 'stg_material_asset');
+SELECT pg_temp.sync_upsert('material_html_game_enrichment', 'stg_material_html_game_enrichment');
+SELECT pg_temp.sync_upsert('material_game_adaptation', 'stg_material_game_adaptation');
+SELECT pg_temp.sync_upsert('youtube_video_cache', 'stg_youtube_video_cache');
+SELECT pg_temp.sync_upsert('youtube_video_cache_reference', 'stg_youtube_video_cache_reference');
+SELECT pg_temp.sync_upsert('lesson_template', 'stg_lesson_template');
+SELECT pg_temp.sync_upsert('lesson_template_card', 'stg_lesson_template_card');
+SELECT pg_temp.sync_upsert('lesson', 'stg_lesson');
+SELECT pg_temp.sync_upsert('lesson_participant', 'stg_lesson_participant');
+SELECT pg_temp.sync_upsert('lesson_email_reminder', 'stg_lesson_email_reminder');
+SELECT pg_temp.sync_upsert('assignment', 'stg_assignment');
+SELECT pg_temp.sync_upsert('assignment_recipient', 'stg_assignment_recipient');
+SELECT pg_temp.sync_upsert('submission', 'stg_submission');
+SELECT pg_temp.sync_upsert('lesson_material_annotation', 'stg_lesson_material_annotation');
+SELECT pg_temp.sync_upsert('collaboration_document', 'stg_collaboration_document');
+SELECT pg_temp.sync_upsert('vocabulary_entries', 'stg_vocabulary_entries');
+SELECT pg_temp.sync_upsert('vocabulary_occurrences', 'stg_vocabulary_occurrences');
+SELECT pg_temp.sync_upsert('vocabulary_skill_states', 'stg_vocabulary_skill_states');
+SELECT pg_temp.sync_upsert('vocabulary_practice_plans', 'stg_vocabulary_practice_plans');
+SELECT pg_temp.sync_upsert('vocabulary_practices', 'stg_vocabulary_practices');
+SELECT pg_temp.sync_upsert('vocabulary_practice_sessions', 'stg_vocabulary_practice_sessions');
+SELECT pg_temp.sync_upsert('vocabulary_practice_items', 'stg_vocabulary_practice_items');
+SELECT pg_temp.sync_upsert('vocabulary_practice_attempts', 'stg_vocabulary_practice_attempts');
+
+SELECT setval(
+  pg_get_serial_sequence('vocabulary_occurrences', 'id'),
+  greatest(coalesce((SELECT max(id) FROM vocabulary_occurrences), 1), 1),
+  EXISTS (SELECT 1 FROM vocabulary_occurrences)
+);
+
+COMMIT;
