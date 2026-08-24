@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-dev-47"
-  digest: sha256:9227fa85bb9708f83dd2344a4719a8cee590acebbb219050e11be25a6dcbb06d
+  tag: "registration-hotfix-restore-production-registration-49"
+  digest: sha256:c1e31eccb3449f76a6f13280f12b751c0fd379492f4dc186ebdccefa14b9211b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-dev-47
-  number: "47"
-  branch: develop
-  branchLabel: registration-dev
-  commit: e4204760157bc048c7b603929987c1da8798bc0b
-  commitShort: "e4204760157b"
+  name: registration-hotfix-restore-production-registration-49
+  number: "49"
+  branch: hotfix/restore-production-registration
+  branchLabel: registration-hotfix-restore-production-registration
+  commit: 58d5dbdeb7c949cbaa484cad952acfce0bc638aa
+  commitShort: "58d5dbdeb7c9"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
