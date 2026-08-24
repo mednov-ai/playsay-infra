@@ -1,0 +1,49 @@
+#!/bin/bash
+set -euo pipefail
+
+chain_dump="$(iptables -w -L LIBVIRT_FWI --line-numbers -n -v)"
+reject_line="$(awk '$4 == "REJECT" && $8 == "virbr60" { print $1; exit }' <<<"$chain_dump")"
+
+if [[ -z "$reject_line" ]]; then
+  echo "LIBVIRT_FWI has no virbr60 reject boundary" >&2
+  exit 1
+fi
+
+assert_rule_before_reject() {
+  local protocol="$1"
+  local destination="$2"
+  local port_match="$3"
+  local matches
+  local count
+
+  matches="$(awk \
+    -v protocol="$protocol" \
+    -v input_interface="{{ ax41_public_interface }}" \
+    -v destination="$destination" \
+    -v port_match="$port_match" \
+    '$4 == "ACCEPT" && $5 == protocol && $7 == input_interface && $8 == "virbr60" && $10 == destination && index($0, port_match) { print $1 }' \
+    <<<"$chain_dump")"
+  count="$(wc -w <<<"$matches" | tr -d ' ')"
+
+  if [[ "$count" -ne 1 ]]; then
+    echo "expected exactly one LIBVIRT_FWI rule for protocol=$protocol destination=$destination port=$port_match, found $count" >&2
+    exit 1
+  fi
+  if (( matches >= reject_line )); then
+    echo "LIBVIRT_FWI rule for protocol=$protocol destination=$destination port=$port_match is below reject boundary" >&2
+    exit 1
+  fi
+}
+
+{% for port in ax41_prod_livekit_tcp_ports %}
+assert_rule_before_reject 6 {{ ax41_prod_vm_address }} "dpt:{{ port }}"
+{% endfor %}
+{% for port in ax41_prod_livekit_udp_ports %}
+assert_rule_before_reject 17 {{ ax41_prod_vm_address }} "{{ 'dpts' if ':' in port else 'dpt' }}:{{ port }}"
+{% endfor %}
+{% for port in ax41_dev_livekit_tcp_ports %}
+assert_rule_before_reject 6 {{ ax41_dev_vm_address }} "dpt:{{ port }}"
+{% endfor %}
+{% for port in ax41_dev_livekit_udp_ports %}
+assert_rule_before_reject 17 {{ ax41_dev_vm_address }} "{{ 'dpts' if ':' in port else 'dpt' }}:{{ port }}"
+{% endfor %}

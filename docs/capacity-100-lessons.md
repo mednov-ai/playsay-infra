@@ -13,6 +13,12 @@ This gate validates the single-node AX41 production profile. It is not a high-av
 
 The stock `lk load-test` command models publishers and subscribers as separate participants. It is useful for an SFU stress preflight but does not reproduce two bidirectional participants per isolated room. The acceptance run therefore uses browser workers with fake 720p camera/audio inputs and the normal Play&Say login, room-token, schedule WebSocket and Yjs paths. Run workers from two external load-generator hosts; do not run them on AX41.
 
+## Realtime port budget
+
+LiveKit production owns UDP `50000:50511`: 512 ports. LiveKit requires two UDP ports per participant in this mode, so the fixed 100-room/two-participant profile consumes up to 400 ports and leaves 112 ports (21.9%) of headroom. The 120-room burst consumes up to 480 ports and leaves only 32; it is an acceptance burst, not a supported steady-state target. Expand the range or add a media node before raising the steady-state target above 100 rooms.
+
+coturn owns relay UDP `49152:49999`: 848 ports. The 30%-forced-relay profile has 60 relayed participants; even the conservative static gate of two relay ports per participant requires only 120. `scripts/validate-100-lesson-capacity.sh` calculates both budgets from rendered/current configuration and fails if either range is too small. Port-range arithmetic is only a configuration gate: successful external ICE/TURN probes and the full load test remain required for certification.
+
 ## Production memory contract
 
 | Workload | Request | Limit | Managed heap |

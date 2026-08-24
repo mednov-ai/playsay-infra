@@ -1,0 +1,19 @@
+# Managed by Ansible. Honey School management split DNS.
+port=53
+listen-address={{ wireguard_dns_listen_address }}
+bind-interfaces
+no-hosts
+no-resolv
+domain-needed
+bogus-priv
+stop-dns-rebind
+cache-size=1000
+local-ttl=60
+
+{% for upstream_server in wireguard_dns_upstream_servers %}
+server={{ upstream_server }}
+{% endfor %}
+
+{% for hostname in wireguard_dns_private_hostnames %}
+host-record={{ hostname }},{{ wireguard_dns_listen_address }}
+{% endfor %}

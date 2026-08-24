@@ -7,9 +7,10 @@ operation="${2:-}"
 [ "$network_name" = "playsay-workloads" ] || exit 0
 
 apply_rule() {
-  if ! iptables -C LIBVIRT_FWI "$@" -j ACCEPT 2>/dev/null; then
-    iptables -I LIBVIRT_FWI 1 "$@" -j ACCEPT
-  fi
+  while iptables -C LIBVIRT_FWI "$@" -j ACCEPT 2>/dev/null; do
+    iptables -D LIBVIRT_FWI "$@" -j ACCEPT
+  done
+  iptables -I LIBVIRT_FWI 1 "$@" -j ACCEPT
 }
 
 remove_rule() {

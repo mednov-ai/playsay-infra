@@ -73,14 +73,6 @@
     mode: "0644"
   notify: Reload UFW
 
-- name: Enable and start LiveKit destination NAT service
-  ansible.builtin.systemd_service:
-    name: playsay-livekit-nat.service
-    enabled: true
-    state: started
-    daemon_reload: true
-  when: not ansible_check_mode
-
 - name: Install the persistent libvirt ingress hook
   ansible.builtin.template:
     src: libvirt-network-hook.sh.j2
@@ -89,10 +81,31 @@
     group: root
     mode: "0755"
 
+- name: Install the LiveKit firewall invariant validator
+  ansible.builtin.template:
+    src: validate-livekit-firewall.sh.j2
+    dest: /usr/local/sbin/playsay-validate-livekit-firewall
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Apply the libvirt ingress hook to the running workloads network
   ansible.builtin.command:
     cmd: /etc/libvirt/hooks/network playsay-workloads started -
   changed_when: false
+
+- name: Validate LiveKit ingress rules precede the libvirt reject boundary
+  ansible.builtin.command:
+    cmd: /usr/local/sbin/playsay-validate-livekit-firewall
+  changed_when: false
+
+- name: Enable and start LiveKit network reconciliation service
+  ansible.builtin.systemd_service:
+    name: playsay-livekit-nat.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not ansible_check_mode
 
 - name: Allow routed prod LiveKit TCP traffic
   community.general.ufw:

@@ -50,3 +50,19 @@ add_rule -i {{ ax41_public_interface }} -p tcp --dport {{ port }} -j DNAT --to-d
 {% for port in ax41_dev_livekit_udp_ports %}
 add_rule -i {{ ax41_public_interface }} -p udp --dport {{ port }} -j DNAT --to-destination {{ ax41_dev_vm_address }}
 {% endfor %}
+
+# libvirt can rebuild LIBVIRT_FWI for a short time after libvirtd becomes active.
+# Reapply the hook until the required rules survive two consecutive checks.
+for attempt in $(seq 1 15); do
+  /etc/libvirt/hooks/network playsay-workloads reconnect -
+  if /usr/local/sbin/playsay-validate-livekit-firewall >/dev/null 2>&1; then
+    sleep 1
+    if /usr/local/sbin/playsay-validate-livekit-firewall >/dev/null 2>&1; then
+      exit 0
+    fi
+  fi
+  sleep 1
+done
+
+echo "LiveKit firewall did not stabilize after 15 attempts" >&2
+/usr/local/sbin/playsay-validate-livekit-firewall

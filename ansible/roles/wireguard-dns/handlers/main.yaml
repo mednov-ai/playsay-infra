@@ -1,0 +1,8 @@
+---
+- name: Restart WireGuard split DNS
+  ansible.builtin.systemd_service:
+    name: playsay-wireguard-dns.service
+    enabled: true
+    state: restarted
+    daemon_reload: true
+  when: not ansible_check_mode

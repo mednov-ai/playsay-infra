@@ -16,6 +16,8 @@ The old VPS has only the short paid overlap remaining. Final source bundle `play
 
 The old VPS and AX41 are independent authentication and deployment contours. AX41 dev uses only `dev.*.honey.school` with issuer `https://dev.ops.honey.school/keycloak/realms/playsay`; production uses direct `*.honey.school` origins plus the Russian `online.honeyschool.ru` and `key.honeyschool.ru` proxy aliases, all with the single issuer `https://ops.honey.school/keycloak/realms/playsay`. The two `.ru` aliases belong to the same production `playsay-web` client and are present in its redirect URIs, web origins and post-logout redirects. The old hosts `online.play-and-say.ru` and `key.play-and-say.ru` remain exclusively in the protected `legacy/play-and-say-vps` branches and use `https://ops.play-and-say.ru:18443/keycloak/realms/playsay`. Never add cross-contour redirect URIs, web origins, logout redirects, issuers, JWKS, or ArgoCD target revisions. Legacy Jenkins is manual-only and can build only the legacy branch. The root `play-and-say.ru` site is outside both application-auth changes.
 
+As a temporary migration handoff applied on 2026-08-18, both HTTP and HTTPS requests for `online.play-and-say.ru` return `302` to `https://online.honeyschool.ru$request_uri`; the HTTP ACME challenge path remains local so the legacy certificate can renew. The VDSina nginx source is `/etc/nginx/conf.d/playsay-k8s-dev.conf`, and the pre-change rollback copy is `/etc/nginx/conf.d/playsay-k8s-dev.conf.before-online-redirect-20260817T211632Z`. To roll back, restore that exact file, run `nginx -t`, and reload nginx. Remove the bridge instead of making it permanent after the owner accepts the domain transition and authorizes retirement of the legacy VDSina edge. Do not add the old origin to current Keycloak, CORS or WebSocket allowlists.
+
 Legacy Jenkins was reconciled on 2026-08-05 after an agent followed stale local guidance and manually retried current `develop` on the old controller. Erroneous `playsay-api-gateway-develop` build `#87` was aborted; protected infra branch `legacy/play-and-say-vps` at `33d7e9a3a6533be1431a3ba624b10e1d8b3af04` was reapplied with `scripts/configure-jenkins-jobs.sh`. The only enabled jobs are the 13 `playsay-legacy-vps-*` jobs, each hard-pinned to `*/legacy/play-and-say-vps` with an empty trigger set. Every job without that prefix, including `playsay-game-adapter-service-develop`, must remain disabled. Modern retries and Jenkins configuration belong only to the AX41 `playsay-ci` guest; never pass `develop`, feature or release parameters to VDSina Jenkins.
 
 Current API lesson/chat WebSockets are fail-closed through `PLAYSAY_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS`. The api-gateway Helm values must render exactly `https://dev.online.honey.school` for dev and `https://online.honey.school,https://online.honeyschool.ru,https://honeyschool.ru` for production; local chart defaults contain only localhost/127.0.0.1 wildcard ports. Do not add `www.honeyschool.ru`, wildcard domains or `online.play-and-say.ru` to the current chart. This policy change belongs only to AX41/Selectel Honey School contours and must not trigger an old-VPS apply, legacy Jenkins build or legacy branch edit.
@@ -31,6 +33,8 @@ Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to r
 The committed desired state supports a capacity gate for 100 simultaneous individual lessons (200 bidirectional 720p/30fps participants, 30% TURN), but it is not certified until the maintenance-window test in `docs/capacity-100-lessons.md` passes. Single-node prod has no HA; LiveKit/coturn rollout disconnects active media.
 
 The production source-of-truth ranges are LiveKit UDP `50000:50511`, coturn relay UDP `49152:49999`, TURN `3478` TCP/UDP and LiveKit fallback `7881` TCP. Dev has a disjoint contour on the same public AX41 address: LiveKit UDP `51000:51049`, coturn relay UDP `50600:50999`, TURN `3479` TCP/UDP and LiveKit fallback `7882` TCP. They must match `ansible/group_vars/ax41_hosts.yaml`, `ansible/group_vars/ax41_guests.yaml`, the dev overrides in the ignored inventory copied from `hosts.yaml.example`, AX41 UFW/DNAT/libvirt hook and the corresponding LiveKit values file. The host reserves `3478-3479,7881-7882,49152-51049`; each guest reserves only its own contour. Both realtime guests apply 16 MiB UDP buffer maxima and backlog `10000`; the host applies conntrack `524288`. Prod/dev/CI libvirt CPU shares are `2048/512/512`. AX41 DNAT is reconciled by `playsay-livekit-nat.service`, not appended by UFW: the oneshot removes historical/current duplicates before installing exactly one rule per required port. After every firewall apply, verify `iptables-save -t nat` contains one copy of every prod and dev DNAT rule and none of the former `49160:49200` or `50000:50020` ranges.
+
+`playsay-livekit-nat.service` is coupled to `libvirtd.service` and must reconcile both DNAT and `LIBVIRT_FWI` after every libvirt restart. The reconciler waits until the required rules pass two consecutive checks above the blanket `virbr60` reject boundary. Diagnose a lesson stuck at `Connecting`/`Disconnected` with `sudo /usr/local/sbin/playsay-validate-livekit-firewall`, `sudo systemctl status playsay-livekit-nat.service` and an external TCP probe of `65.109.55.110:3478` and `:7881`; pod/HTTP health alone does not validate ICE. The supported recovery is `sudo systemctl restart playsay-livekit-nat.service`, followed by the validator and external probes. Do not restart k3s, LiveKit or coturn for this firewall-ordering symptom. On 2026-08-24 this procedure recovered production after the 2026-08-20 unattended libvirt package restart had rebuilt `LIBVIRT_FWI` with the custom realtime rules below its reject rule.
 
 Before rollout:
 
@@ -63,6 +67,45 @@ ansible-playbook \
 On 2026-07-20 Ubuntu was updated to kernel `6.8.0-136-generic`; the corrected reboot gate restored RAID, SSH, libvirt, WireGuard, UFW and VPN-only Cockpit automatically. Cockpit uses the `playsay-cockpit-vpn.service` late starter so its address-bound socket starts only after `wg0`; do not directly add an `After=wg-quick@wg0` dependency to `cockpit.socket`, because socket units are ordered before `sockets.target` and that creates a boot ordering cycle. The final complete Ansible run reported `changed=0`. RAID/SMART, firewall, reboot and VPN evidence is recorded at `migrations/ax41/evidence/20260720-ax41-host-vpn.md`.
 
 The MacBook and phone WireGuard profiles are stored outside Git at `/Users/evgeniymednov/Backups/PlayAndSay/wireguard/macbook.conf` and `phone.conf`. Import each profile into a WireGuard-compatible client and activate it; gray/private client IP addresses are expected because `PersistentKeepalive=25` lets both clients initiate the tunnel to public endpoint `65.109.55.110:51820`. After activation, open `https://10.250.0.1:9090`, sign in as `playsay`, and retrieve its generated password from the macOS Keychain item `PlayAndSay AX41 Cockpit`. The Cockpit certificate is initially self-signed. Confirm a server-side handshake for both peers before disabling public SSH. Do not publish port 9090 in DNS or the public firewall.
+
+### WireGuard split DNS
+
+AX41 runs the dedicated hardened `playsay-wireguard-dns.service` process from the existing `dnsmasq-base` package only on the management address `10.250.0.1:53`; it does not replace the host resolver or libvirt's per-network dnsmasq processes. UFW already trusts authenticated input on `wg0`, while no DNS socket is allowed on a public or wildcard address. The exact private records `ops.honey.school`, `dev.ops.honey.school` and `jenkins.honey.school` resolve to `10.250.0.1` so their normal HTTPS URLs traverse WireGuard. Public application names and `hooks.honey.school` are intentionally excluded. Every other query is forwarded to the declared public resolvers, so the VPN can be the client's only DNS server without changing public product resolution.
+
+Validate and apply the server before changing any client profile:
+
+```bash
+./scripts/validate-wireguard-split-dns.sh
+cd ansible
+ansible-playbook \
+  -i inventories/hetzner-ax41/hosts.yaml \
+  playbooks/ax41-host.yaml \
+  --check --diff --tags wireguard-dns
+ansible-playbook \
+  -i inventories/hetzner-ax41/hosts.yaml \
+  playbooks/ax41-host.yaml \
+  --tags wireguard-dns
+dig +short @10.250.0.1 ops.honey.school A
+dig +short @10.250.0.1 dev.ops.honey.school A
+dig +short @10.250.0.1 jenkins.honey.school A
+dig +short @10.250.0.1 honey.school A
+```
+
+The first three queries must return only `10.250.0.1`; the public query must return a different non-empty address. Verify `ss -lntup 'sport = :53'` on AX41 contains only `10.250.0.1:53` for DNS. Then, and only then, change `DNS = 1.1.1.1` to `DNS = 10.250.0.1` in each protected profile under `/Users/evgeniymednov/Backups/PlayAndSay/wireguard/` and replace the imported tunnel in the WireGuard client without printing or copying its private key.
+
+On a split-tunnel Mac, WireGuard registers its DNS server as a supplemental all-domain resolver alongside the primary network resolver. That can race for names which also exist publicly. Keep the profile DNS entry for tunnel portability, and install the VPN-aware domain-specific macOS resolver while the tunnel is active:
+
+```bash
+./scripts/configure-macos-wireguard-split-dns.sh
+```
+
+The helper validates the server before invoking `sudo`, then installs the root-owned `school.honey.wireguard-split-dns` LaunchDaemon and its immutable helper under `/usr/local/libexec`. Every five seconds the daemon checks that `10.250.0.1` routes through the MacBook's `10.250.0.2` WireGuard interface. While active, it creates `/etc/resolver/honey.school` with `10.250.0.1` as its only nameserver, so public DNS cannot win a resolver race; dnsmasq answers the three private records and forwards public names. When the tunnel is inactive, it removes that resolver and flushes `mDNSResponder`, restoring the normal public resolver without a manual step. With the tunnel active, `scutil --dns` must show a `honey.school` resolver containing only `10.250.0.1`. Then open the normal URLs:
+
+- `https://jenkins.honey.school/login`;
+- `https://ops.honey.school/argocd/` and `https://dev.ops.honey.school/argocd/`;
+- `https://ops.honey.school/victoria-metrics/vmui/` and `https://dev.ops.honey.school/victoria-metrics/vmui/`.
+
+Verify fail-closed behavior from both paths: with WireGuard active, the private records must resolve to the management address and the ops pages must open; after turning the tunnel off, the daemon must remove `/etc/resolver/honey.school`, the public Keycloak discovery URL must still resolve and respond normally, and the VPN-only panels must not be reachable through the management address. For Mac rollback, run `./scripts/configure-macos-wireguard-split-dns.sh uninstall`; then restore the client profile DNS to `1.1.1.1`, replace the imported tunnel, and revert/apply the Ansible change.
 
 Branch routing is strict. `playsay-platform-dispatch-webhook` is the only job that owns the Generic Webhook Trigger token; it validates each push payload and forwards it to exactly one internal dispatcher. `playsay-platform-dispatch-develop` accepts only `develop` and aborts its older dispatcher when a newer develop push arrives. `playsay-platform-dispatch-release` accepts only a protected fixed-width branch named `release/NN.NNN.NN`, for example `release/01.002.00`, and serializes release candidates independently of develop. Both internal dispatchers share the global four-agent CI cap. `codex/*`, `feature/*` and `hotfix/*` publish to dev only through direct manual starts of the required module jobs with explicit branch/commit parameters; they have no webhook dispatcher. Tag/delete events are ignored and free-form `release/*` names fail before routing.
 
@@ -1475,28 +1518,38 @@ The script is idempotent. It creates/updates:
 - realm login theme `playsay`;
 - realm i18n: `internationalizationEnabled=true`, supported locales `ru`, `en`, `de`, `fr`, and default locale `ru`;
 - realm roles `STUDENT`, `TEACHER`, `ADMIN`;
-- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://online.play-and-say.ru`, local Vite dev origins `http://localhost:5173`, `http://localhost:5174`, `http://127.0.0.1:5173`, `http://127.0.0.1:5174`, local preview origins `http://localhost:4173`, `http://127.0.0.1:4173`, and direct access grants enabled for server-side managed-student invite exchange by `registration-service`;
+- public web client `playsay-web` with Authorization Code + PKCE redirects for `https://dev.online.honey.school` and `https://dev.key.honey.school`, the localhost origins declared by `configure-keycloak-dev.sh`, and direct access grants enabled for server-side managed-student invite exchange by `registration-service`;
 - backend client `playsay-api`;
 - dev users `student-demo`, `student-demo-2`, `student-demo-3`, `student-demo-4`, `teacher-demo`, and `admin-demo`.
 
-Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Re-running the script adds any missing password keys without rotating existing ones. `configure-keycloak-dev.sh` also syncs the three passwords required by Jenkins Sprint 5/Sprint 6 smoke into a same-named secret in the `jenkins` namespace through `scripts/sync-keycloak-dev-users-secret.sh`; run that sync script directly if the `jenkins` namespace is recreated. Do not commit or print those values in shared logs. Retrieve a password only when needed, replacing the jsonpath key with the needed user:
+Demo passwords are generated once and stored in the Kubernetes secret `keycloak-dev-users` in the `keycloak` namespace. Re-running the script adds any missing password keys without rotating existing ones. `configure-keycloak-dev.sh` also syncs the three passwords required by Jenkins Sprint 5/Sprint 6 smoke into a same-named secret in the `jenkins` namespace through `scripts/sync-keycloak-dev-users-secret.sh`; run that sync script directly if the `jenkins` namespace is recreated. Do not commit or print those values in shared logs. Retrieve a password only when needed from `playsay-dev` through the AX41 jump host, replacing the jsonpath key with the needed user:
 
 ```bash
-ssh root@89.124.113.223 \
-  "kubectl -n keycloak get secret keycloak-dev-users -o jsonpath='{.data.student-demo-password}' | base64 -d"
+ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
+  -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 -o IdentitiesOnly=yes -W %h:%p root@65.109.55.110' \
+  playsay@10.60.0.30 \
+  "sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n keycloak get secret keycloak-dev-users -o jsonpath='{.data.student-demo-password}' | base64 -d"
 ```
 
 Check status:
 
 ```bash
-ssh root@89.124.113.223 "kubectl -n argocd get app keycloak && kubectl -n keycloak get pods,pvc,svc"
+ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
+  -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 -o IdentitiesOnly=yes -W %h:%p root@65.109.55.110' \
+  playsay@10.60.0.30 \
+  "sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n argocd get app keycloak && sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n keycloak get pods,pvc,svc"
 ```
 
 Get the admin password only when needed:
 
 ```bash
-ssh root@89.124.113.223 \
-  "kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.admin-password}' | base64 -d"
+ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 \
+  -o IdentitiesOnly=yes \
+  -o 'ProxyCommand=ssh -i /Users/evgeniymednov/.ssh/play_and_say_vps_ed25519 -o IdentitiesOnly=yes -W %h:%p root@65.109.55.110' \
+  playsay@10.60.0.30 \
+  "sudo KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n keycloak get secret keycloak-admin -o jsonpath='{.data.admin-password}' | base64 -d"
 ```
 
 Keep the dev instance single-replica, non-HA, and resource-limited even after the dev VPS upgrade.
@@ -1751,7 +1804,7 @@ PLAYWRIGHT_PACKAGE_DIR=/Users/evgeniymednov/.codex/tools/playwright \
   ./scripts/smoke/sprint6-homework-smoke.mjs
 ```
 
-The Sprint 5 script obtains Keycloak Authorization Code + PKCE tokens as `teacher-demo`, `student-demo`, and `student-demo-2`, reads demo passwords from env vars in Jenkins or from the dev `keycloak-dev-users` Kubernetes secret over SSH during local runs without printing them, creates a temporary published private material, active group lesson, and required collaboration documents through the API for deterministic setup, then drives real browser classroom pages for teacher + two students. It verifies individual documents, teacher supervision/edit, group document sync, colored material-scoped cursors clipped to the lesson material surface, annotation sync after scroll/resize/reload, and finalize creating a normal material submission. The Sprint 6 script uses the same auth path, creates temporary homework material, standalone group/single assignments and lesson carry-over homework, then verifies homework UI, permissions, score/errors progress and resubmit. Both scripts clean up temporary lessons and archive temporary materials at the end.
+The Sprint 5 and Sprint 6 scripts default to the current AX41 dev contour (`https://dev.online.honey.school`, issuer `https://dev.ops.honey.school/keycloak/realms/playsay`) and obtain Keycloak Authorization Code + PKCE tokens as `teacher-demo`, `student-demo`, and `student-demo-2`. They read demo passwords from env vars in Jenkins or from the dev `keycloak-dev-users` Kubernetes secret through the AX41 jump host during local runs without printing them. Sprint 5 creates a temporary published private material, active group lesson and required collaboration documents through the API, then drives real browser classroom pages for teacher + two students; it verifies individual documents, teacher supervision/edit, group document sync, colored material-scoped cursors clipped to the lesson material surface, annotation sync after scroll/resize/reload, and finalize creating a normal material submission. Sprint 6 creates temporary homework material, standalone group/single assignments and lesson carry-over homework, then verifies homework UI, permissions, score/errors progress and resubmit. Both scripts clean up temporary lessons and archive temporary materials at the end.
 
 ## LiveKit Dev Video
 

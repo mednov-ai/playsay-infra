@@ -1,0 +1,135 @@
+---
+- name: Validate WireGuard split DNS contract
+  ansible.builtin.assert:
+    that:
+      - wireguard_dns_listen_address == wireguard_address.split('/')[0]
+      - wireguard_dns_upstream_servers | length >= 2
+      - wireguard_dns_private_hostnames | length > 0
+      - (wireguard_dns_private_hostnames | unique | length) == (wireguard_dns_private_hostnames | length)
+      - "'ops.honey.school' in wireguard_dns_private_hostnames"
+      - "'dev.ops.honey.school' in wireguard_dns_private_hostnames"
+      - "'jenkins.honey.school' in wireguard_dns_private_hostnames"
+      - "'hooks.honey.school' not in wireguard_dns_private_hostnames"
+      - "'online.honey.school' not in wireguard_dns_private_hostnames"
+      - "'dev.online.honey.school' not in wireguard_dns_private_hostnames"
+    fail_msg: WireGuard split DNS must bind to the management address and contain only operator-facing hostnames.
+
+- name: Validate private split DNS hostnames
+  ansible.builtin.assert:
+    that:
+      - item is match('^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$')
+      - "'*' not in item"
+    fail_msg: "Invalid WireGuard split DNS hostname: {{ item }}"
+  loop: "{{ wireguard_dns_private_hostnames }}"
+
+- name: Install the WireGuard split DNS service and diagnostics
+  ansible.builtin.apt:
+    name:
+      - dnsmasq-base
+      - dnsutils
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the Honey School host configuration directory
+  ansible.builtin.file:
+    path: /etc/playsay
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render the VPN-only split DNS configuration
+  ansible.builtin.template:
+    src: playsay-wireguard-split-dns.conf.j2
+    dest: /etc/playsay/wireguard-split-dns.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: dnsmasq --test --conf-file=%s
+  notify: Restart WireGuard split DNS
+
+- name: Install the dedicated WireGuard split DNS service
+  ansible.builtin.template:
+    src: playsay-wireguard-dns.service.j2
+    dest: /etc/systemd/system/playsay-wireguard-dns.service
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/bin/systemd-analyze verify %s
+  notify: Restart WireGuard split DNS
+
+- name: Enable the WireGuard split DNS service
+  ansible.builtin.systemd_service:
+    name: playsay-wireguard-dns.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: not ansible_check_mode
+
+- name: Apply pending split DNS changes before verification
+  ansible.builtin.meta: flush_handlers
+  when: not ansible_check_mode
+
+- name: Read split DNS listeners
+  ansible.builtin.command:
+    cmd: ss -H -lntup sport = :53
+  register: wireguard_dns_listeners
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Assert split DNS is not exposed outside WireGuard
+  ansible.builtin.assert:
+    that:
+      - wireguard_dns_listeners.stdout_lines | length >= 2
+      - "(wireguard_dns_listen_address ~ ':53') in wireguard_dns_listeners.stdout"
+      - "'0.0.0.0:53' not in wireguard_dns_listeners.stdout"
+      - "'127.0.0.1:53' not in wireguard_dns_listeners.stdout"
+      - "'[::]:53' not in wireguard_dns_listeners.stdout"
+      - "'*:53' not in wireguard_dns_listeners.stdout"
+    fail_msg: "dnsmasq must listen only on {{ wireguard_dns_listen_address }}:53 over TCP and UDP."
+  when: not ansible_check_mode
+
+- name: Resolve private hostnames through split DNS
+  ansible.builtin.command:
+    argv:
+      - dig
+      - +short
+      - "@{{ wireguard_dns_listen_address }}"
+      - "{{ item }}"
+      - A
+  loop: "{{ wireguard_dns_private_hostnames }}"
+  register: wireguard_dns_private_queries
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Assert private hostnames resolve to the management edge
+  ansible.builtin.assert:
+    that:
+      - item.stdout_lines | length == 1
+      - item.stdout_lines[0] == wireguard_dns_listen_address
+    fail_msg: "Split DNS returned an unexpected address for {{ item.item }}."
+  loop: "{{ wireguard_dns_private_queries.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not ansible_check_mode
+
+- name: Resolve a public hostname through the upstream DNS path
+  ansible.builtin.command:
+    argv:
+      - dig
+      - +short
+      - "@{{ wireguard_dns_listen_address }}"
+      - honey.school
+      - A
+  register: wireguard_dns_public_query
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Assert public DNS forwarding remains available
+  ansible.builtin.assert:
+    that:
+      - wireguard_dns_public_query.stdout_lines | length > 0
+      - wireguard_dns_listen_address not in wireguard_dns_public_query.stdout_lines
+    fail_msg: Split DNS must forward non-operator hostnames to the configured public resolvers.
+  when: not ansible_check_mode

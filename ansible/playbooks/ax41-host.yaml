@@ -16,6 +16,9 @@
     - role: ax41-firewall
       tags:
         - ax41-firewall
+    - role: wireguard-dns
+      tags:
+        - wireguard-dns
     - role: edge-proxy
       tags:
         - edge-proxy

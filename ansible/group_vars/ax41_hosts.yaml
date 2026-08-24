@@ -72,6 +72,17 @@ wireguard_peers:
     public_key: XOHhYpu0HaHcy9qe1viPg1RHoeoiALGnjJw0gO4J60Y=
     allowed_ips: 10.250.0.3/32
 
+# Split DNS is reachable only through WireGuard. It keeps public application
+# DNS unchanged while routing authenticated operators to the AX41 ops edge.
+wireguard_dns_listen_address: 10.250.0.1
+wireguard_dns_upstream_servers:
+  - 1.1.1.1
+  - 1.0.0.1
+wireguard_dns_private_hostnames:
+  - ops.honey.school
+  - dev.ops.honey.school
+  - jenkins.honey.school
+
 edge_certificate_name: online.honey.school
 edge_root_site:
   hostname: honey.school

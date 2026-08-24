@@ -2,6 +2,7 @@
 Description=Reconcile Play&Say production and dev LiveKit DNAT
 After=network-online.target ufw.service libvirtd.service
 Wants=network-online.target
+PartOf=libvirtd.service
 
 [Service]
 Type=oneshot

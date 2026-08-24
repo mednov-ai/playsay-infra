@@ -49,6 +49,7 @@ require_text "$render_dir/collaboration.yaml" "memory: 768Mi"
 
 require_text "$render_dir/monitoring.yaml" "playsay-collaboration-service"
 require_text "$render_dir/monitoring.yaml" "PlaySayLiveKitCpuHigh"
+require_text "$render_dir/monitoring.yaml" "PlaySayLiveKitJoinFailures"
 require_text "$render_dir/monitoring.yaml" "PlaySayUdpBufferErrors"
 require_text "$render_dir/monitoring.yaml" "PlaySayCollaborationBackpressure"
 require_text "$render_dir/monitoring.yaml" "-retentionPeriod=7d"
@@ -67,6 +68,30 @@ require_text "$repo_root/ansible/group_vars/ax41_guests.yaml" 'reserved_ports: "
 require_text "$repo_root/ansible/playbooks/ax41-guests.yaml" "inventory_hostname in ['playsay-prod', 'playsay-dev']"
 require_text "$repo_root/ansible/group_vars/ax41_hosts.yaml" "livekit_upstream: 10.60.0.30:7880"
 
+lesson_rooms=100
+participants_per_room=2
+livekit_ports_per_participant=2
+relay_participant_percent=30
+turn_ports_per_relay_participant=2
+
+livekit_port_start="$(awk '/port_range_start:/ { print $2; exit }' "$render_dir/livekit.yaml")"
+livekit_port_end="$(awk '/port_range_end:/ { print $2; exit }' "$render_dir/livekit.yaml")"
+livekit_port_count=$((livekit_port_end - livekit_port_start + 1))
+livekit_port_required=$((lesson_rooms * participants_per_room * livekit_ports_per_participant))
+if (( livekit_port_count < livekit_port_required )); then
+  echo "LiveKit UDP range has $livekit_port_count ports; $livekit_port_required are required for $lesson_rooms rooms" >&2
+  exit 1
+fi
+
+coturn_min_port="$(awk '/^coturn_min_port:/ { print $2; exit }' "$repo_root/ansible/group_vars/ax41_guests.yaml")"
+coturn_max_port="$(awk '/^coturn_max_port:/ { print $2; exit }' "$repo_root/ansible/group_vars/ax41_guests.yaml")"
+coturn_port_count=$((coturn_max_port - coturn_min_port + 1))
+coturn_port_required=$((lesson_rooms * participants_per_room * relay_participant_percent * turn_ports_per_relay_participant / 100))
+if (( coturn_port_count < coturn_port_required )); then
+  echo "coturn relay range has $coturn_port_count ports; $coturn_port_required are required for the forced-relay profile" >&2
+  exit 1
+fi
+
 if grep -R -Fq "146.103.126.15" \
   "$repo_root/helm-charts/livekit/values-dev.yaml" \
   "$repo_root/ansible/group_vars/ax41_hosts.yaml"; then
@@ -84,4 +109,4 @@ require_text "$repo_root/helm-charts/email-service/values-prod.yaml" "-Xmx192m"
 require_text "$repo_root/helm-charts/payment-service/values-prod.yaml" "-Xmx192m"
 require_text "$repo_root/helm-charts/keycloak/values-prod.yaml" "-Xmx768m"
 
-echo "100-lesson capacity contract is internally consistent."
+echo "100-lesson capacity contract is internally consistent: LiveKit ${livekit_port_count}/${livekit_port_required}, coturn ${coturn_port_count}/${coturn_port_required} available/required ports."

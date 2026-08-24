@@ -116,6 +116,15 @@ data:
             annotations:
               summary: "LiveKit metrics недоступны"
               description: "vmagent не может читать LiveKit Prometheus endpoint больше 3 минут."
+
+          - alert: PlaySayLiveKitJoinFailures
+            expr: sum(increase(livekit_participant_join_total{state="signal_connected"}[5m])) - (sum(increase(livekit_participant_join_total{state="rtc_connected"}[5m])) or vector(0)) >= 2
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "LiveKit не подключает участников"
+              description: "За 5 минут как минимум два входа дошли до signaling, но не установили RTC; проверьте TURN/LiveKit порты и AX41 LIBVIRT_FWI."
       {{- end }}
 
       {{- if .Values.alerts.capacity.enabled }}

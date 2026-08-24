@@ -1,0 +1,36 @@
+[Unit]
+Description=Honey School WireGuard split DNS
+Documentation=file:///etc/playsay/wireguard-split-dns.conf
+Requires=wg-quick@{{ wireguard_interface }}.service
+After=network-online.target wg-quick@{{ wireguard_interface }}.service
+PartOf=wg-quick@{{ wireguard_interface }}.service
+
+[Service]
+Type=simple
+User=dnsmasq
+Group=nogroup
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/playsay/wireguard-split-dns.conf --pid-file=
+Restart=on-failure
+RestartSec=2s
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RemoveIPC=true
+RestrictAddressFamilies=AF_INET AF_NETLINK AF_UNIX
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
