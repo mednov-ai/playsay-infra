@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-hotfix-restore-production-registration-231"
-  digest: sha256:28ca465281e02e0eae59e736d2366e74a603456957df8d7347fcc373b42502c1
+  tag: "web-dev-233"
+  digest: sha256:83a2cee8af7daea0fe63e48c0c031c98ba112fab2eb74cf0b432e0fbed36c4f8
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-hotfix-restore-production-registration-231
-  number: "231"
-  branch: hotfix/restore-production-registration
-  branchLabel: web-hotfix-restore-production-registration
-  commit: 7a399b13624d00f403cde8573399f59f3c3f7f88
-  commitShort: "7a399b13624d"
+  name: web-dev-233
+  number: "233"
+  branch: develop
+  branchLabel: web-dev
+  commit: 804f11470e90f1f77d18b897eab2f1eec97c5253
+  commitShort: "804f11470e90"
 service:
   type: NodePort
   nodePort: 32083
