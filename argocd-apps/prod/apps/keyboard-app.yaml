@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/1.001.00
+    targetRevision: release/01.004.07
     path: helm-charts/keyboard-app
     helm:
       valueFiles:
