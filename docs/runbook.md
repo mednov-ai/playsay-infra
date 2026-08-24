@@ -837,14 +837,36 @@ kubectl -n playsay-dev logs deploy/registration-service --since=30m | grep -E '4
 
 A healthy gateway forwards `X-Forwarded-For` to `registration-service`; a shared gateway/ingress IP must not be the only address used for public registration rate limits. A rollout restart clears the in-memory limiter, but treat it as a temporary dev relief only. If an earlier email-provider outage created a disabled Keycloak user without a pending registration row, retrying `/register` for that email should create a fresh pending token and send a new confirmation email instead of silently returning `CHECK_EMAIL`.
 
-Manual auth smoke:
+Public registration acceptance is a disposable-account flow, not an HTTP-page smoke. It uses the external Playwright installation and a random temporary mailbox, prints only a run id, origin and coarse stages, verifies `start → email → confirm → first OIDC password sign-in with STUDENT`, removes the synthetic identity through the registration-service-owned internal lifecycle and deletes the mailbox. Cleanup failure fails acceptance. Never reuse a learner/owner address, print the confirmation link, retain the mailbox body, or put email/password/token/subject in evidence.
 
-1. Open `https://online.play-and-say.ru/register`; verify the welcome page and Keycloak login theme both expose registration links.
-2. Register with a password that passes the visible policy (`8..128` chars, 3 character classes, no email/name fragments).
-3. Confirm the email and sign in through Keycloak; `/api/me` must include `STUDENT`.
-4. Open `https://online.play-and-say.ru/forgot-password` and request a code for the same email. The SPA must immediately render `/reset-password?email=...` without a reload; Back/Forward must preserve public routing. The received localized email must contain the same reset-form link without the code in its URL. Enter the code and new password in that form.
-5. Verify the reset code is one-time, expires after 15 minutes, and repeated bad attempts stop after 5 tries.
-6. In received emails, SPF/DKIM/DMARC should pass and sender should be `no-reply@play-and-say.ru`.
+Run dev acceptance from the trusted operator workspace after the web and registration-service ArgoCD applications are `Synced/Healthy`:
+
+```bash
+cd playsay-platform
+node scripts/smoke/registration-e2e-smoke.mjs
+```
+
+The smoke defaults to `https://dev.online.honey.school`, canonical dev issuer, `playsay-dev`, and the current AX41 SSH route. Before a release, also verify a desktop plus phone viewport, all four locale resource structures, keyboard submit/focus, field `aria-invalid`/`aria-describedby`, non-color password statuses, exactly one start request, current return-host allow/deny tests, registration-service tests and the web production build.
+
+After a separate production authorization and GitOps promotion, run the same disposable journey once from each supported production online origin. The cleanup route changes only to the production guest/namespace; secret values remain inside the remote shell:
+
+```bash
+PLAY_SAY_REGISTRATION_SMOKE_WEB_BASE_URL=https://online.honey.school \
+PLAY_SAY_REGISTRATION_SMOKE_AUTH_ISSUER=https://ops.honey.school/keycloak/realms/playsay \
+PLAY_SAY_REGISTRATION_SMOKE_SSH_HOST=playsay@10.60.0.20 \
+PLAY_SAY_REGISTRATION_SMOKE_NAMESPACE=playsay-prod \
+node scripts/smoke/registration-e2e-smoke.mjs
+
+PLAY_SAY_REGISTRATION_SMOKE_WEB_BASE_URL=https://online.honeyschool.ru \
+PLAY_SAY_REGISTRATION_SMOKE_AUTH_ISSUER=https://ops.honey.school/keycloak/realms/playsay \
+PLAY_SAY_REGISTRATION_SMOKE_SSH_HOST=playsay@10.60.0.20 \
+PLAY_SAY_REGISTRATION_SMOKE_NAMESPACE=playsay-prod \
+node scripts/smoke/registration-e2e-smoke.mjs
+```
+
+Use only coarse stages when diagnosing a failure: `CLIENT_VALIDATION_BLOCKED`, `REQUEST_ROUTING`, `REGISTRATION_SERVICE`, `KEYCLOAK_MUTATION`, `EMAIL_DELIVERY`, `CONFIRMATION`, `OIDC_SIGN_IN`. Correlate the run timestamp with gateway/registration/email/Keycloak health and Mailjet delivery status; do not add a normalized email or subject to logs. A `CLIENT_VALIDATION_BLOCKED` result means no start request was sent. A successful page load or healthy pod does not satisfy registration acceptance.
+
+If the hotfix regresses only form validation/presentation, return the production web reference to the previous numeric release through GitOps. If password policy, return URL, confirmation or Keycloak mutation regresses, roll back registration-service as well. Re-run the retained invalid/valid cases and disposable smoke after rollback; never restore protected legacy origins as a shortcut.
 
 Managed-student invite smoke:
 

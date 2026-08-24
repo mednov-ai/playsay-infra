@@ -31,7 +31,7 @@ database:
   hikariMaxPoolSize: ""
 
 registrationService:
-  publicBaseUrl: https://online.play-and-say.ru
+  publicBaseUrl: https://online.honey.school
   internalApi:
     existingSecret: playsay-registration
     serviceTokenKey: service-token
