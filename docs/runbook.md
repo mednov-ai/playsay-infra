@@ -755,6 +755,14 @@ Run or rerun Keycloak bootstrap after this change:
 
 It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update/delete and role reads, enables direct access grants on the public `playsay-web` client for server-side managed-student invite exchange, and writes `keycloak-client-id`, `keycloak-client-secret` plus a stable randomly generated `service-token` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Re-running the script preserves an existing service token. Secret values are not printed. The same `service-token` is mounted into `api-gateway`, `registration-service`, `ai-tutor-service`, `vocabulary-service` and `keyboard-service` for internal user-management/data-purge calls only; it must never be exposed to the SPA.
 
+Production keeps the existing client and secret. Before accepting a release that enables public registration, reconcile and verify only its required service-account role mappings from the production guest:
+
+```bash
+./scripts/configure-keycloak-prod-registration.sh
+```
+
+The production script is idempotent, does not rotate credentials or create users, and fails unless exactly one existing registration client and `realm-management` client are present. It grants only `view-users`, `manage-users`, and `view-realm`, then reads the mappings back before reporting success.
+
 Mailjet uses one primary login with isolated API keys and sending domains:
 
 - production primary API key: sender `Honey School <no-reply@honey.school>` and callback `https://online.honey.school/api/webhooks/mailjet`;
