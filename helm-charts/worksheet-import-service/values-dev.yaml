@@ -1,4 +1,6 @@
 feature: {enabled: true}
+imagePullSecrets:
+  - name: ghcr-pull-secret
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: https://dev.ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
