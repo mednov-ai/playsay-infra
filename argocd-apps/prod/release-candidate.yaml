@@ -1,18 +1,14 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.004.07"
-baseRelease: "release/01.004.06"
-basePlatformCommit: "b53288c18f92dbd8e7033eebb61544ee902bc510"
+status: building
+releaseBranch: "release/01.004.08"
+baseRelease: "release/01.004.07"
+basePlatformCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
 acceptedDevCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
-baseInfraCommit: "d9d6c8981e491b8f08a8665beea1046f39b43687"
+baseInfraCommit: "9d507ac80cf9a112466e1cf032996b9707c3ed72"
 platformCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
 affectedTargets:
-  - "web-app"
-  - "registration-service"
 validationSuites:
-  - "ci-contracts"
-  - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "19"
-updatedAt: "2026-08-24T12:48:57Z"
+  build: "21"
+updatedAt: "2026-08-25T16:01:52Z"
