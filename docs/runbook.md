@@ -1240,6 +1240,18 @@ Do not store the token in `playsay-infra` or `playsay-platform`.
 
 If you prefer CLI later, pass secrets only through a local untracked file such as `.env.local` or an interactive prompt.
 
+## Shared External Activity Production Readiness
+
+The web pipeline must export `VITE_EXTERNAL_ACTIVITY_ENABLED=true` for both dev and numeric production release builds. `scripts/ci/validate-ci-contracts.sh` verifies that the production branch of `Jenkinsfile.web-app` sets the flag and fails closed before `vite build` if it is absent. Do not promote a web artifact whose external-activity launcher accepts a click without immediately showing provider/extension status.
+
+The required unpacked extension is version `0.1.7` or later. It allows `dev.online.honey.school`, `online.honey.school`, and `online.honeyschool.ru`, includes its package version in the version-1 `AWAITING_ACTION` acknowledgement, and temporarily uses the Chrome Debugger permission during an active activity to deliver trusted pointer, wheel, and keyboard input to canvas/iframe providers. Version 0.1.6 may capture and scroll but is not promotion-eligible because provider actions can ignore its synthetic input; the web must show `EXTENSION_UPDATE_REQUIRED` before capture. Regenerate the ZIP and installation guide and confirm `0.1.7` on `chrome://extensions` before distribution. Every later shipped extension source, manifest behavior/permission, runtime bundle, or user-facing asset change requires another patch increment.
+
+Before production release, run the focused web/extension tests, localization integrity suite, production-mode build, and dev browser matrix with one teacher and at least one student: outdated-extension rejection, successful acknowledgement/capture, a real provider start action from both teacher and student input, missing or disabled extension, closed provider tab, Retry with a new session, and Return to lesson. After separate promotion authorization, repeat the canary on both `https://online.honeyschool.ru/` and `https://online.honey.school/`. Verify the displayed extension version, visible checking/acknowledged/starting/active states, trusted input without sustained latency, stable failure code, student-safe stopped copy, and ordinary classroom recovery.
+
+Collect only extension version, web build identity, timestamps, lifecycle phase, and the stable codes `FEATURE_UNAVAILABLE`, `EXTENSION_NOT_DETECTED`, `EXTENSION_UPDATE_REQUIRED`, `TARGET_TAB_CLOSED`, `CAPTURE_PERMISSION_DENIED`, `CAPTURE_NOT_SUPPORTED`, `CAPTURE_START_FAILED`, or `EXTENSION_ERROR_UNKNOWN`. Never record provider page content, raw Chrome errors, target tab/stream ids, session nonce, participant input, cookies, credentials, or learner data.
+
+Rollback is web-only: restore the previous web image or produce an explicitly disabled web build through the reviewed GitOps release path, then verify the normal classroom. Do not roll back backend/data, change extension permissions, use direct `kubectl apply`, or modify the protected legacy contour. Production build, release-candidate creation, promotion, and rollback each remain separately authorized operations.
+
 ## Vocabulary Practice Internal Callbacks
 
 Personal vocabulary practice uses retryable service-to-service callbacks; there is no distributed transaction between assignments, vocabulary, and Key.
