@@ -39,7 +39,7 @@ ai:
 database:
   existingSecret: playsay-app-db
   liquibaseEnabled: "false"
-  hikariMaxPoolSize: "3"
+  hikariMaxPoolSize: "8"
 livekit:
   enabled: true
   serverUrl: wss://dev.online.honey.school/livekit
