@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
 export KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 DEV_API_SERVER="${DEV_API_SERVER:-https://10.60.0.30:6443}"
 OUTPUT_FILE="${1:-}"
@@ -11,7 +8,8 @@ OUTPUT_FILE="${1:-}"
 [[ -n "$OUTPUT_FILE" ]] || { echo "Usage: $0 OUTPUT_FILE" >&2; exit 2; }
 command -v kubectl >/dev/null || { echo "kubectl is required" >&2; exit 1; }
 
-kubectl apply -k "$REPO_ROOT/kustomize/jenkins-remote-deployer"
+kubectl -n argocd get application jenkins-remote-deployer >/dev/null
+kubectl -n playsay-ci-access get serviceaccount playsay-ci-deployer >/dev/null
 
 for _ in $(seq 1 30); do
   token="$(kubectl -n playsay-ci-access get secret playsay-ci-deployer-token -o jsonpath='{.data.token}' 2>/dev/null | base64 -d || true)"

@@ -1496,6 +1496,8 @@ unset JENKINS_USER JENKINS_PASSWORD
 
 The current agent SSH route is the explicit key, AX41 jump host and `playsay@10.60.0.40` command above. Current dev Kubernetes diagnostics use the same jump host with destination `playsay@10.60.0.30`. The old `146.103.126.15` controller is rollback-only and no longer receives GitHub webhooks; `89.124.113.223` is retired. Do not connect to either old address without an explicit owner request naming the legacy contour. Unauthenticated Jenkins API calls return a login redirect or `Authentication required`; that only means auth is missing, not that the job is down. For POST requests such as job reconfiguration or manual `buildWithParameters`, also request a crumb from `/crumbIssuer/api/json` and send the returned cookie plus crumb header. When a dispatcher build has several downstream results and only one module failed, retry that module job directly with the original `BRANCH_NAME`, `GITHUB_BEFORE`, and `GITHUB_AFTER` instead of rebuilding successful modules. Keep Jenkins passwords, crumbs, GitHub tokens, and kubeconfigs out of logs and chat.
 
+The dev `jenkins-remote-deployer` ArgoCD application owns the scoped CI service account, rollout/read-only ArgoCD RBAC, Liquibase runner, and migration admission policies from `kustomize/jenkins-remote-deployer`. Change those permissions only through reviewed `playsay-infra/develop` commits and wait for that application to become `Synced / Healthy`; do not apply the kustomization directly. `scripts/create-dev-ci-kubeconfig.sh` only reads the reconciled service-account token and writes the protected kubeconfig after the ArgoCD application and service account exist.
+
 ## Headlamp Kubernetes UI
 
 Headlamp is installed at:

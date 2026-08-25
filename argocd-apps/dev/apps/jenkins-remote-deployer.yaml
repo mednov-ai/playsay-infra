@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jenkins-remote-deployer
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: develop
+    path: kustomize/jenkins-remote-deployer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: playsay-ci-access
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
