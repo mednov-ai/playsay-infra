@@ -51,6 +51,8 @@ spec:
               valueFrom: { secretKeyRef: { name: {{ .Values.storage.existingSecret | quote }}, key: {{ .Values.storage.secretKeyKey | quote }} } }
             - { name: PLAYSAY_WORKSHEET_AI_PROVIDER, value: {{ .Values.analysis.provider | quote }} }
             - { name: PLAYSAY_AI_OPENAI_MODEL, value: {{ .Values.analysis.model | quote }} }
+            - { name: PLAYSAY_AI_WORKSHEET_REASONING, value: {{ .Values.analysis.reasoningEffort | quote }} }
+            - { name: PLAYSAY_WORKSHEET_AI_REQUEST_TIMEOUT, value: {{ .Values.analysis.requestTimeout | quote }} }
             - { name: PLAYSAY_WORKSHEET_ANALYSIS_CONCURRENCY, value: {{ .Values.analysis.concurrency | quote }} }
             - { name: PLAYSAY_WORKSHEET_ANALYSIS_MAX_RETRIES, value: {{ .Values.analysis.retries | quote }} }
             - { name: PLAYSAY_WORKSHEET_CONFIDENCE_THRESHOLD, value: {{ .Values.analysis.confidenceThreshold | quote }} }
