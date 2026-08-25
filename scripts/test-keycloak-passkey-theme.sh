@@ -17,16 +17,33 @@ rg -q 'playsayPasskeyDefaultLabel' "$TEMPLATE"
 rg -q 'requiresExplicitUserGesture' "$TEMPLATE"
 rg -q 'allowGestureFallback: false' "$TEMPLATE"
 rg -q 'playsay-passkey-login' "$LOGIN_TEMPLATE"
-rg -q 'playsay-password-panel.*hidden' "$LOGIN_TEMPLATE"
-rg -q 'passwordInitiallyExpanded:.*passwordError' "$LOGIN_TEMPLATE"
+rg -q 'id="kc-form-login"' "$LOGIN_TEMPLATE"
+rg -q 'playsaySignInTitle' "$LOGIN_TEMPLATE"
+rg -q 'initPasskeyLogin' "$LOGIN_TEMPLATE"
 rg -q 'mediation: "optional"' "$LOGIN_SCRIPT"
-
-PASSKEY_LINE=$(rg -n 'id="playsay-passkey-login"' "$LOGIN_TEMPLATE" | cut -d: -f1)
-PASSWORD_LINE=$(rg -n 'id="playsay-password-panel"' "$LOGIN_TEMPLATE" | cut -d: -f1)
-if (( PASSKEY_LINE >= PASSWORD_LINE )); then
-  echo "The passkey action must be rendered before the password fallback." >&2
+if rg -q 'sessionStorage|reserveAutomaticAttempt|authenticationSessionIdentifier|passwordInitiallyExpanded|initPasskeyFirstLogin' "$LOGIN_SCRIPT" "$LOGIN_TEMPLATE"; then
+  echo "Login must not reserve or start an automatic Passkey attempt." >&2
   exit 1
 fi
+
+for locale in ru en de fr; do
+  messages="$THEME_ROOT/messages/messages_${locale}.properties"
+  rg -q '^playsaySignInTitle=' "$messages"
+  rg -q '^playsaySignInDescription=' "$messages"
+  rg -q '^playsaySignInAlternative=' "$messages"
+  rg -q '^playsayPasskeyLoginPrimary=' "$messages"
+  rg -q '^playsayPasskeyLoginFailed=' "$messages"
+done
+
+PASSKEY_LINE=$(rg -n 'id="playsay-passkey-login"' "$LOGIN_TEMPLATE" | cut -d: -f1)
+PASSWORD_LINE=$(rg -n 'id="kc-form-login"' "$LOGIN_TEMPLATE" | cut -d: -f1)
+if (( PASSWORD_LINE >= PASSKEY_LINE )); then
+  echo "The visible password form must be rendered before the optional Passkey action." >&2
+  exit 1
+fi
+
+rg -q 'kcButtonPrimaryClass.*id="kc-login"' "$LOGIN_TEMPLATE"
+rg -q 'kcButtonDefaultClass.*playsay-passkey-login-secondary' "$LOGIN_TEMPLATE"
 
 TEST_DIR=$(mktemp -d)
 trap 'rm -rf "$TEST_DIR"' EXIT
@@ -59,25 +76,122 @@ cp "$REPO_ROOT/scripts/fixtures/webauthn-authenticate-stub.js" "$TEST_DIR/login/
 cp "$REPO_ROOT/scripts/fixtures/module-package.json" "$TEST_DIR/login/package.json"
 
 node --input-type=module - "$TEST_DIR/login/playsayPasskeyLogin.js" <<'NODE'
+import assert from "node:assert/strict";
+
 const scriptUrl = new URL(`file://${process.argv[2]}`);
-const { authenticationSessionIdentifier, isUserCancellation, reserveAutomaticAttempt } = await import(scriptUrl);
+const stubUrl = new URL("./webauthnAuthenticate.js", scriptUrl);
+const login = await import(scriptUrl);
+const stub = await import(stubUrl);
 
-const identifier = authenticationSessionIdentifier("foo=bar; KC_AUTH_SESSION_HASH=session-123", "https://example.test/login?tab_id=tab-1");
-if (identifier !== "hash:session-123") throw new Error("The Keycloak authentication-session hash must take precedence.");
-
-const tabIdentifier = authenticationSessionIdentifier("", "https://example.test/login?client_id=web&tab_id=tab-1");
-if (tabIdentifier !== "tab:web:tab-1") throw new Error("The Keycloak tab id must be used as a fallback.");
-
-const values = new Map();
-const storage = { getItem: (key) => values.get(key), setItem: (key, value) => values.set(key, value) };
-if (!reserveAutomaticAttempt(storage, identifier)) throw new Error("The first automatic attempt must be reserved.");
-if (reserveAutomaticAttempt(storage, identifier)) throw new Error("The automatic attempt must run only once per authentication session.");
-if (!reserveAutomaticAttempt(storage, "hash:session-456")) throw new Error("A new authentication session must get its own automatic attempt.");
-
-if (!isUserCancellation({ name: "NotAllowedError" }) || !isUserCancellation({ name: "AbortError" })) {
-  throw new Error("User cancellation must keep the password form collapsed.");
+class FakeElement extends EventTarget {
+  constructor() {
+    super();
+    this.disabled = false;
+    this.hidden = false;
+    this.textContent = "";
+  }
 }
-if (isUserCancellation({ name: "SecurityError" })) throw new Error("Unexpected WebAuthn errors must reveal the password fallback.");
+
+function installDom({ supported = true } = {}) {
+  const elements = new Map([
+    ["playsay-passkey-option", new FakeElement()],
+    ["playsay-passkey-login", new FakeElement()],
+    ["playsay-passkey-status", new FakeElement()],
+    ["kc-form-login", new FakeElement()],
+  ]);
+  elements.get("playsay-passkey-status").hidden = true;
+  globalThis.document = { getElementById: (id) => elements.get(id) };
+  globalThis.window = { PublicKeyCredential: supported ? function PublicKeyCredential() {} : undefined };
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: { credentials: supported ? { get() {} } : undefined },
+  });
+  return elements;
+}
+
+function initialize(elements, enabled = true) {
+  login.initPasskeyLogin({
+    enabled,
+    input: { isUserIdentified: false },
+    messages: { opening: "opening", failed: "failed" },
+  });
+  return {
+    form: elements.get("kc-form-login"),
+    section: elements.get("playsay-passkey-option"),
+    button: elements.get("playsay-passkey-login"),
+    status: elements.get("playsay-passkey-status"),
+  };
+}
+
+async function flush() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+stub.resetWebauthnTestState();
+let elements = installDom();
+let controls = initialize(elements);
+assert.equal(stub.webauthnTestState.authenticateCalls.length, 0, "Initialization must not start WebAuthn.");
+assert.equal(controls.section.hidden, false);
+controls.button.dispatchEvent(new Event("click"));
+await flush();
+assert.equal(stub.webauthnTestState.authenticateCalls.length, 1, "Explicit activation must start one request.");
+assert.equal(stub.webauthnTestState.authenticateCalls[0].additionalOptions.mediation, "optional");
+assert.equal(controls.button.disabled, false);
+
+stub.resetWebauthnTestState();
+let settlePending;
+stub.setAuthenticateImplementation(() => new Promise((resolve) => { settlePending = resolve; }));
+elements = installDom();
+controls = initialize(elements);
+controls.button.dispatchEvent(new Event("click"));
+controls.button.dispatchEvent(new Event("click"));
+assert.equal(stub.webauthnTestState.authenticateCalls.length, 1, "A pending request must reject duplicate activation.");
+assert.equal(controls.button.disabled, true);
+settlePending(undefined);
+await flush();
+assert.equal(controls.button.disabled, false);
+
+stub.resetWebauthnTestState();
+stub.setAuthenticateImplementation(async () => { throw Object.assign(new Error("cancelled"), { name: "NotAllowedError" }); });
+elements = installDom();
+controls = initialize(elements);
+controls.button.dispatchEvent(new Event("click"));
+await flush();
+assert.equal(controls.status.hidden, true, "Cancellation must not be announced as an error.");
+assert.equal(controls.button.disabled, false);
+
+stub.resetWebauthnTestState();
+stub.setAuthenticateImplementation(async () => { throw Object.assign(new Error("failed"), { name: "SecurityError" }); });
+elements = installDom();
+controls = initialize(elements);
+controls.button.dispatchEvent(new Event("click"));
+await flush();
+assert.equal(controls.status.textContent, "failed");
+assert.equal(controls.status.hidden, false);
+assert.equal(controls.section.hidden, false, "Unexpected failure must keep the Passkey retry available.");
+
+stub.resetWebauthnTestState();
+let rejectPending;
+stub.setAuthenticateImplementation(() => new Promise((_, reject) => { rejectPending = reject; }));
+elements = installDom();
+controls = initialize(elements);
+controls.button.dispatchEvent(new Event("click"));
+controls.form.dispatchEvent(new Event("focusin"));
+assert.equal(stub.webauthnTestState.signalCalls, 1, "Password interaction must abort the pending request.");
+assert.equal(controls.button.disabled, false);
+assert.equal(controls.status.hidden, true);
+rejectPending(Object.assign(new Error("aborted"), { name: "AbortError" }));
+await flush();
+
+stub.resetWebauthnTestState();
+elements = installDom({ supported: false });
+controls = initialize(elements);
+assert.equal(controls.section.hidden, true, "Unsupported WebAuthn must hide the optional method.");
+assert.equal(stub.webauthnTestState.authenticateCalls.length, 0);
+
+assert.equal(login.isUserCancellation({ name: "NotAllowedError" }), true);
+assert.equal(login.isUserCancellation({ name: "AbortError" }), true);
+assert.equal(login.isUserCancellation({ name: "SecurityError" }), false);
 NODE
 
 echo "Keycloak passkey theme regression checks passed."
