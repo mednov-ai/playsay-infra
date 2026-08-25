@@ -47,4 +47,4 @@ databases:
     reclaimPolicy: retain
     enabled: false
 
-worksheetImport: { enabled: false, role: worksheet_import_app, passwordSecret: playsay-postgres-worksheet-import }
+worksheetImport: { enabled: true, role: worksheet_import_app, passwordSecret: playsay-postgres-worksheet-import }
