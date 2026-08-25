@@ -32,7 +32,15 @@ spec:
 {{- range $key, $value := .Values.cluster.postgresql.parameters }}
       {{ $key }}: {{ $value | quote }}
 {{- end }}
-  {{- with .Values.cluster.managed }}
   managed:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    roles:
+      {{- range .Values.cluster.managed.roles }}
+      - {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.worksheetImport.enabled }}
+      - name: {{ .Values.worksheetImport.role | quote }}
+        ensure: present
+        login: true
+        passwordSecret:
+          name: {{ .Values.worksheetImport.passwordSecret | quote }}
+      {{- end }}

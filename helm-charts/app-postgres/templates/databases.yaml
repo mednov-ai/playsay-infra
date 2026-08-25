@@ -1,9 +1,10 @@
 {{- range .Values.databases }}
+{{- if ne (toString (.enabled | default true)) "false" }}
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: {{ printf "%s-%s" $.Values.cluster.name .name | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%s" $.Values.cluster.name (.name | replace "_" "-") | trunc 63 | trimSuffix "-" }}
   labels:
     app.kubernetes.io/name: app-postgres
     app.kubernetes.io/instance: {{ $.Release.Name }}
@@ -16,4 +17,5 @@ spec:
   owner: {{ .owner | quote }}
   databaseReclaimPolicy: {{ .reclaimPolicy | default "retain" }}
   ensure: {{ .ensure | default "present" }}
+{{- end }}
 {{- end }}

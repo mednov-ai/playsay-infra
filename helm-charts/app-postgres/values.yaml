@@ -36,8 +36,18 @@ cluster:
         passwordSecret:
           name: playsay-postgres-keyboard
 
+worksheetImport:
+  enabled: false
+  role: worksheet_import_app
+  passwordSecret: playsay-postgres-worksheet-import
+
 databases:
   - name: keyboard
     owner: keyboard_app
     ensure: present
     reclaimPolicy: retain
+  - name: worksheet_import
+    owner: worksheet_import_app
+    ensure: present
+    reclaimPolicy: retain
+    enabled: false

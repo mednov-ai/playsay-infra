@@ -28,6 +28,23 @@ The replacement Jenkins controller is active on dedicated guest `playsay-ci`; it
 
 Authoritative restore capture `playsay-safety-v3-20260720T220404Z` was used to rebuild dev and is documented in `migrations/ax41/evidence/20260720-safety-v3.md`. The newer final source cutoff is `playsay-final-vps-v2-20260721T083819Z`: its encrypted files are outside Git under `/Users/evgeniymednov/Backups/PlayAndSay/ax41-final-vps-20260721`, while the RSA private key is stored separately under `/Users/evgeniymednov/Backups/PlayAndSay/keys`. Transport/payload checksums, local RSA/AES decryption, PostgreSQL 17 source catalogs and both archives passed. Never commit or colocate the private key with an off-host copy of the bundle. Evidence: `migrations/ax41/evidence/20260721-honey-cutover-and-final-backup.md`.
 
+### Worksheet import enablement
+
+`worksheet-import-service` is internal and ClusterIP-only. Its dev/prod ArgoCD applications and both gateway/service feature flags render disabled by default; a chart existing without a Deployment is the expected disabled state. Before enabling an environment, provision separate sealed secrets for the service token, the `worksheet_import_app` database credentials, and restricted MinIO staging credentials; create the `worksheet_import` database/role; create the private `playsay-worksheet-staging` bucket with no anonymous policy; and run the service Liquibase migration through the approved bounded migration Job. Never reuse gateway database credentials or MinIO root credentials.
+
+For dev, provision without printing secret values:
+
+```bash
+./scripts/sync-worksheet-import-db-secret.sh
+./scripts/provision-worksheet-import-secrets.sh
+```
+
+The database helper keeps the CloudNativePG password source in `playsay-data/playsay-postgres-worksheet-import` and produces the runtime/migration shape as `playsay-worksheet-import-db` in `playsay-dev` and `jenkins`. The staging helper uses the existing MinIO root Secret only inside a short-lived provisioning pod, creates a dedicated restricted user and bucket policy, and copies only `playsay-worksheet-import-storage` into the application namespace. Inspect Secret metadata and bucket policy, never their values, before enabling the chart.
+
+Enable and verify in this order: database/role and bucket policy, worksheet service migration, worksheet service flag/rollout, internal health and authorized preview checks, then the gateway flag. Keep production disabled until a synthetic JPEG/PDF packet completes review and idempotent materialization in dev. Roll back by disabling the gateway first and then the service; do not delete staging objects, the database, or material source attachments during rollback. TTL cleanup must continue until abandoned sessions expire.
+
+Safe diagnostics are session status counts, page/source counts, job lease age, raster/analysis durations, retry/failure class, blocker counts and cleanup age. Do not print or query source bytes, OCR text, prompts, answers, correct options, flashcard backs, object keys, access credentials or learner responses. A growing oldest-lease age indicates a stuck worker; a growing oldest-staging age indicates cleanup failure. Provider failure is not an availability incident while manual continuation succeeds.
+
 ## Production 100-Lesson Capacity Profile
 
 The committed desired state supports a capacity gate for 100 simultaneous individual lessons (200 bidirectional 720p/30fps participants, 30% TURN), but it is not certified until the maintenance-window test in `docs/capacity-100-lessons.md` passes. Single-node prod has no HA; LiveKit/coturn rollout disconnects active media.

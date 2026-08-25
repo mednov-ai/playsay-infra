@@ -1,0 +1,77 @@
+{{- if .Values.feature.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "worksheet-import-service.fullname" . }}
+  labels: {{- include "worksheet-import-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "worksheet-import-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "worksheet-import-service.selectorLabels" . | nindent 8 }}
+        playsay.io/build-name: {{ .Values.build.name | quote }}
+        playsay.io/source-commit: {{ .Values.build.commitShort | quote }}
+    spec:
+      enableServiceLinks: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worksheet-import-service
+          image: "{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ name: http, containerPort: {{ .Values.service.targetPort }} }]
+          env:
+            - { name: SERVER_PORT, value: {{ .Values.service.targetPort | quote }} }
+            - { name: PLAYSAY_WORKSHEET_IMPORT_ENABLED, value: "true" }
+            - { name: PLAYSAY_AUTH_ISSUER_URI, value: {{ .Values.auth.issuerUri | quote }} }
+            - { name: PLAYSAY_AUTH_JWK_SET_URI, value: {{ .Values.auth.jwkSetUri | quote }} }
+            - name: PLAYSAY_WORKSHEET_SERVICE_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ .Values.auth.existingSecret | quote }}, key: {{ .Values.auth.serviceTokenKey | quote }} } }
+            - name: PLAYSAY_WORKSHEET_DB_JDBC_URL
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.jdbcUriKey | quote }} } }
+            - name: PLAYSAY_WORKSHEET_DB_USERNAME
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.usernameKey | quote }} } }
+            - name: PLAYSAY_WORKSHEET_DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ .Values.database.existingSecret | quote }}, key: {{ .Values.database.passwordKey | quote }} } }
+            - { name: PLAYSAY_WORKSHEET_LIQUIBASE_ENABLED, value: {{ .Values.database.liquibaseEnabled | quote }} }
+            - { name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE, value: {{ .Values.database.hikariMaxPoolSize | quote }} }
+            - { name: PLAYSAY_WORKSHEET_STORAGE_PROVIDER, value: {{ .Values.storage.provider | quote }} }
+            - { name: PLAYSAY_WORKSHEET_S3_ENDPOINT, value: {{ .Values.storage.endpoint | quote }} }
+            - { name: PLAYSAY_WORKSHEET_S3_REGION, value: {{ .Values.storage.region | quote }} }
+            - { name: PLAYSAY_WORKSHEET_S3_BUCKET, value: {{ .Values.storage.bucket | quote }} }
+            - { name: PLAYSAY_WORKSHEET_S3_PATH_STYLE_ACCESS, value: {{ .Values.storage.pathStyleAccess | quote }} }
+            - { name: PLAYSAY_WORKSHEET_S3_CREATE_BUCKET, value: {{ .Values.storage.createBucket | quote }} }
+            - name: PLAYSAY_WORKSHEET_S3_ACCESS_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.storage.existingSecret | quote }}, key: {{ .Values.storage.accessKeyKey | quote }} } }
+            - name: PLAYSAY_WORKSHEET_S3_SECRET_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.storage.existingSecret | quote }}, key: {{ .Values.storage.secretKeyKey | quote }} } }
+            - { name: PLAYSAY_WORKSHEET_AI_PROVIDER, value: {{ .Values.analysis.provider | quote }} }
+            - { name: PLAYSAY_AI_OPENAI_MODEL, value: {{ .Values.analysis.model | quote }} }
+            - { name: PLAYSAY_WORKSHEET_ANALYSIS_CONCURRENCY, value: {{ .Values.analysis.concurrency | quote }} }
+            - { name: PLAYSAY_WORKSHEET_ANALYSIS_MAX_RETRIES, value: {{ .Values.analysis.retries | quote }} }
+            - { name: PLAYSAY_WORKSHEET_CONFIDENCE_THRESHOLD, value: {{ .Values.analysis.confidenceThreshold | quote }} }
+            - { name: PLAYSAY_WORKSHEET_MAX_PAGES, value: {{ .Values.limits.maxPages | quote }} }
+            - { name: PLAYSAY_WORKSHEET_MAX_PACKET_BYTES, value: {{ .Values.limits.maxPacketBytes | quote }} }
+            - { name: PLAYSAY_WORKSHEET_MAX_IMAGE_BYTES, value: {{ .Values.limits.maxImageBytes | quote }} }
+            - { name: PLAYSAY_WORKSHEET_PDF_MAX_BYTES, value: {{ .Values.limits.pdfMaxBytes | quote }} }
+            - { name: PLAYSAY_WORKSHEET_PDF_MAX_PAGES, value: {{ .Values.limits.pdfMaxPages | quote }} }
+            - { name: PLAYSAY_WORKSHEET_PDF_MAX_PAGE_PIXELS, value: {{ .Values.limits.pdfMaxPagePixels | quote }} }
+            - { name: PLAYSAY_WORKSHEET_PDF_TIMEOUT, value: {{ .Values.limits.pdfTimeout | quote }} }
+            - { name: PLAYSAY_WORKSHEET_RETENTION, value: {{ .Values.retention.duration | quote }} }
+            - { name: PLAYSAY_WORKSHEET_CLEANUP_DELAY, value: {{ .Values.retention.cleanupDelay | quote }} }
+            {{- if eq .Values.analysis.provider "openai" }}
+            - name: PLAYSAY_AI_OPENAI_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.analysis.existingSecret | quote }}, key: {{ .Values.analysis.apiKeyKey | quote }} } }
+            {{- end }}
+            {{- if .Values.runtime.javaToolOptions }}
+            - { name: JAVA_TOOL_OPTIONS, value: {{ .Values.runtime.javaToolOptions | quote }} }
+            {{- end }}
+          startupProbe: { httpGet: { path: /actuator/health/liveness, port: http }, failureThreshold: 30, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, periodSeconds: 10 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, periodSeconds: 20 }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}

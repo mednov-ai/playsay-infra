@@ -1,0 +1,11 @@
+{{- if .Values.feature.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "worksheet-import-service.fullname" . }}
+  labels: {{- include "worksheet-import-service.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports: [{ name: http, port: {{ .Values.service.port }}, targetPort: http }]
+  selector: {{- include "worksheet-import-service.selectorLabels" . | nindent 4 }}
+{{- end }}

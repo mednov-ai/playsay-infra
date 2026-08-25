@@ -41,3 +41,10 @@ databases:
     owner: keyboard_app
     ensure: present
     reclaimPolicy: retain
+  - name: worksheet_import
+    owner: worksheet_import_app
+    ensure: present
+    reclaimPolicy: retain
+    enabled: false
+
+worksheetImport: { enabled: false, role: worksheet_import_app, passwordSecret: playsay-postgres-worksheet-import }

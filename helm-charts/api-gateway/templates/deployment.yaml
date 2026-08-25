@@ -145,6 +145,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mediaService.existingSecret | quote }}
                   key: {{ .Values.mediaService.serviceTokenKey | quote }}
+            - { name: PLAYSAY_WORKSHEET_IMPORT_ENABLED, value: {{ .Values.worksheetImport.enabled | quote }} }
+            - { name: PLAYSAY_WORKSHEET_SERVICE_BASE_URL, value: {{ .Values.worksheetImport.baseUrl | quote }} }
+            {{- if eq .Values.worksheetImport.enabled "true" }}
+            - name: PLAYSAY_WORKSHEET_SERVICE_TOKEN
+              valueFrom: { secretKeyRef: { name: {{ .Values.worksheetImport.existingSecret | quote }}, key: {{ .Values.worksheetImport.serviceTokenKey | quote }} } }
+            {{- end }}
             - name: PLAYSAY_MEDIA_SERVICE_CACHE_REQUEST_TIMEOUT_SECONDS
               value: {{ .Values.mediaService.cacheRequestTimeoutSeconds | quote }}
             - name: PLAYSAY_GAME_ADAPTER_SERVICE_BASE_URL

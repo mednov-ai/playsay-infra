@@ -1,0 +1,34 @@
+feature: { enabled: false }
+image: { repository: ghcr.io/mednov-ai/playsay-worksheet-import-service, tag: "0.1.0", digest: "", pullPolicy: IfNotPresent }
+imagePullSecrets: []
+build: { name: local-0, number: "0", branch: local, branchLabel: local, commit: unknown, commitShort: unknown }
+replicaCount: 1
+service: { type: ClusterIP, port: 80, targetPort: 8089 }
+auth:
+  issuerUri: https://ops.honey.school/keycloak/realms/playsay
+  jwkSetUri: https://ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
+  existingSecret: playsay-worksheet-import
+  serviceTokenKey: service-token
+database: { existingSecret: playsay-worksheet-import-db, jdbcUriKey: jdbc-uri, usernameKey: username, passwordKey: password, liquibaseEnabled: "false", hikariMaxPoolSize: "3" }
+storage:
+  provider: s3
+  endpoint: http://minio.playsay-dev.svc.cluster.local:9000
+  region: us-east-1
+  bucket: playsay-worksheet-staging
+  existingSecret: playsay-worksheet-import-storage
+  accessKeyKey: access-key
+  secretKeyKey: secret-key
+  pathStyleAccess: "true"
+  createBucket: "false"
+analysis:
+  provider: stub
+  existingSecret: playsay-openai
+  apiKeyKey: api-key
+  model: gpt-5.6-sol
+  concurrency: "2"
+  retries: "3"
+  confidenceThreshold: "0.75"
+limits: { maxPages: "100", maxPacketBytes: "134217728", maxImageBytes: "12582912", pdfMaxBytes: "67108864", pdfMaxPages: "50", pdfMaxPagePixels: "40000000", pdfTimeout: PT45S }
+retention: { duration: PT72H, cleanupDelay: PT1H }
+runtime: { javaToolOptions: "" }
+resources: { requests: { cpu: 50m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }

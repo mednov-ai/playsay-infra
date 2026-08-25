@@ -1,0 +1,6 @@
+apiVersion: v2
+name: worksheet-import-service
+description: Honey School private photo and PDF worksheet import worker
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

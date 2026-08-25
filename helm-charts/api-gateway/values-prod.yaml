@@ -72,6 +72,10 @@ mediaService:
   existingSecret: playsay-media
   serviceTokenKey: service-token
   cacheRequestTimeoutSeconds: "660"
+
+worksheetImport:
+  enabled: "false"
+  baseUrl: http://worksheet-import-service.playsay-prod.svc.cluster.local
 gameAdapterService:
   baseUrl: http://game-adapter-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-game-adapter
