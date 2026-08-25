@@ -52,7 +52,7 @@ kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" \
   --env="STAGING_BUCKET=$STAGING_BUCKET" \
   --overrides="$(
     kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" --restart=Never --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
-      --dry-run=client -o json --command -- /bin/sh -ec true |
+      --dry-run=client -o json |
       python3 -c '
 import json, sys
 p = json.load(sys.stdin)
@@ -75,6 +75,17 @@ print(json.dumps(p))
     mc admin policy create storage worksheet-import-staging /tmp/policy.json >/dev/null 2>&1 || mc admin policy info storage worksheet-import-staging >/dev/null
     mc admin user add storage "$STAGING_ACCESS_KEY" "$STAGING_SECRET_KEY" >/dev/null 2>&1 || true
     mc admin policy attach storage worksheet-import-staging --user "$STAGING_ACCESS_KEY" >/dev/null
+    mc stat "storage/$STAGING_BUCKET" >/dev/null
+    anonymous_policy="$(mc anonymous get "storage/$STAGING_BUCKET")"
+    case "$anonymous_policy" in
+      *private*) ;;
+      *) exit 1 ;;
+    esac
+    policy_entities="$(mc admin policy entities storage worksheet-import-staging --json)"
+    case "$policy_entities" in
+      *"$STAGING_ACCESS_KEY"*) ;;
+      *) exit 1 ;;
+    esac
   ' >/dev/null
 
 kubectl -n "$STORAGE_NAMESPACE" wait --for=condition=Ready "pod/$PROVISION_POD" --timeout=60s >/dev/null 2>&1 || true
