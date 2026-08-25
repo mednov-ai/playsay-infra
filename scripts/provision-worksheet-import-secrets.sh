@@ -45,15 +45,33 @@ if ! kubectl -n "$STORAGE_NAMESPACE" get secret "$STAGING_SECRET" >/dev/null 2>&
 fi
 
 kubectl -n "$STORAGE_NAMESPACE" delete pod "$PROVISION_POD" --ignore-not-found --wait=true >/dev/null 2>&1 || true
-kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" \
-  --restart=Never \
-  --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
-  --env="MINIO_ENDPOINT=$MINIO_ENDPOINT" \
-  --env="STAGING_BUCKET=$STAGING_BUCKET" \
-  --overrides="$(
-    kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" --restart=Never --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
-      --dry-run=client -o json |
-      python3 -c '
+provision_script='
+  mc alias set storage "$MINIO_ENDPOINT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+  mc mb --ignore-existing "storage/$STAGING_BUCKET" >/dev/null
+  printf "%s" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET/*\"]}]}" > /tmp/policy.json
+  mc admin policy create storage worksheet-import-staging /tmp/policy.json >/dev/null 2>&1 || mc admin policy info storage worksheet-import-staging >/dev/null
+  mc admin user add storage "$STAGING_ACCESS_KEY" "$STAGING_SECRET_KEY" >/dev/null 2>&1 || true
+  mc admin policy attach storage worksheet-import-staging --user "$STAGING_ACCESS_KEY" >/dev/null
+  mc stat "storage/$STAGING_BUCKET" >/dev/null
+  anonymous_policy="$(mc anonymous get "storage/$STAGING_BUCKET")"
+  case "$anonymous_policy" in
+    *private*) ;;
+    *) exit 1 ;;
+  esac
+  policy_entities="$(mc admin policy entities storage worksheet-import-staging --json)"
+  case "$policy_entities" in
+    *"$STAGING_ACCESS_KEY"*) ;;
+    *) exit 1 ;;
+  esac
+'
+pod_overrides="$(
+  kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" \
+    --restart=Never \
+    --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
+    --dry-run=client \
+    -o json \
+    --command -- /bin/sh -ec "$provision_script" |
+    python3 -c '
 import json, sys
 p = json.load(sys.stdin)
 c = p["spec"]["containers"][0]
@@ -67,26 +85,11 @@ c["env"] = [
 ]
 print(json.dumps(p))
 ' "$MINIO_ENDPOINT" "$STAGING_BUCKET" "$ROOT_SECRET" "$STAGING_SECRET"
-  )" \
-  --command -- /bin/sh -ec '
-    mc alias set storage "$MINIO_ENDPOINT" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
-    mc mb --ignore-existing "storage/$STAGING_BUCKET" >/dev/null
-    printf "%s" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET/*\"]}]}" > /tmp/policy.json
-    mc admin policy create storage worksheet-import-staging /tmp/policy.json >/dev/null 2>&1 || mc admin policy info storage worksheet-import-staging >/dev/null
-    mc admin user add storage "$STAGING_ACCESS_KEY" "$STAGING_SECRET_KEY" >/dev/null 2>&1 || true
-    mc admin policy attach storage worksheet-import-staging --user "$STAGING_ACCESS_KEY" >/dev/null
-    mc stat "storage/$STAGING_BUCKET" >/dev/null
-    anonymous_policy="$(mc anonymous get "storage/$STAGING_BUCKET")"
-    case "$anonymous_policy" in
-      *private*) ;;
-      *) exit 1 ;;
-    esac
-    policy_entities="$(mc admin policy entities storage worksheet-import-staging --json)"
-    case "$policy_entities" in
-      *"$STAGING_ACCESS_KEY"*) ;;
-      *) exit 1 ;;
-    esac
-  ' >/dev/null
+)"
+kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" \
+  --restart=Never \
+  --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
+  --overrides="$pod_overrides" >/dev/null
 
 kubectl -n "$STORAGE_NAMESPACE" wait --for=condition=Ready "pod/$PROVISION_POD" --timeout=60s >/dev/null 2>&1 || true
 if ! kubectl -n "$STORAGE_NAMESPACE" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/$PROVISION_POD" --timeout=180s >/dev/null; then
