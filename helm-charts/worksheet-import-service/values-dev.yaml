@@ -6,12 +6,12 @@ storage: {endpoint: 'http://minio.playsay-dev.svc.cluster.local:9000'}
 analysis: {provider: stub}
 runtime: {javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55 -XX:ActiveProcessorCount=1"}
 image:
-  tag: worksheet-import-dev-2
-  digest: sha256:5d4ef7bf4436508136822d58874e2f93dd873fe1aeb6b12fa53927a8994a01a2
+  tag: worksheet-import-dev-3
+  digest: sha256:46417db31ad7f321624941583323afccf9f1b362b4bed65b31908280e5a4613c
 build:
-  name: worksheet-import-dev-2
-  number: "2"
+  name: worksheet-import-dev-3
+  number: "3"
   branch: develop
   branchLabel: worksheet-import-dev
-  commit: 631f0dc04e633ed51fbe0a170c20af5f5418333a
-  commitShort: 631f0dc04e63
+  commit: 30422fbd10b2b2bff7eed6d966ee65805b71dfec
+  commitShort: 30422fbd10b2
