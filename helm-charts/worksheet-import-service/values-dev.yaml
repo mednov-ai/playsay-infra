@@ -4,7 +4,7 @@ imagePullSecrets:
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: https://dev.ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
-storage: {endpoint: 'http://minio.playsay-dev.svc.cluster.local:9000'}
+storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: stub}
 runtime: {javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55 -XX:ActiveProcessorCount=1"}
 image:
