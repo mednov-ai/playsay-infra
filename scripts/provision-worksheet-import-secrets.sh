@@ -71,7 +71,7 @@ provision_script='
     *private*) ;;
     *) exit 1 ;;
   esac
-  policy_entities="$(mc admin policy entities storage worksheet-import-staging --json)"
+  policy_entities="$(mc admin policy entities storage --policy worksheet-import-staging --json)"
   case "$policy_entities" in
     *"$STAGING_ACCESS_KEY"*) ;;
     *) exit 1 ;;
