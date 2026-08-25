@@ -5,15 +5,11 @@
 
 <@layout.registrationLayout displayMessage=!passwordError displayInfo=false; section>
     <#if section = "title">
-        ${msg("playsayPasskeyLoginTitle")}
+        ${msg("playsaySignInTitle")}
     <#elseif section = "header">
-        ${msg("playsayPasskeyLoginTitle")}
+        ${msg("playsaySignInTitle")}
     <#elseif section = "form">
-        <div class="playsay-passkey-first" id="playsay-passkey-first">
-            <p class="playsay-passkey-description" id="playsay-passkey-login-description">
-                ${msg("playsayPasskeyLoginDescription")}
-            </p>
-
+        <div class="playsay-login-methods" id="playsay-login-methods">
             <#if passkeyEnabled>
                 <form id="webauth" action="${url.loginAction}" method="post">
                     <input type="hidden" id="clientDataJSON" name="clientDataJSON" />
@@ -33,111 +29,106 @@
                 </#if>
             </#if>
 
-            <button
-                aria-describedby="playsay-passkey-login-description"
-                class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!} playsay-passkey-login-primary"
-                id="playsay-passkey-login"
-                type="button"
-            >${msg("playsayPasskeyLoginPrimary")}</button>
+            <p class="playsay-sign-in-description">${msg("playsaySignInDescription")}</p>
 
-            <button
-                aria-controls="playsay-password-panel"
-                aria-expanded="${passwordError?c}"
-                class="${properties.kcButtonClass!} ${properties.kcButtonDefaultClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!} playsay-password-login-toggle"
-                id="playsay-password-login-toggle"
-                type="button"
-                <#if passwordError>hidden</#if>
-            >${msg("playsayPasswordLoginToggle")}</button>
-
-            <p class="playsay-passkey-status" id="playsay-passkey-status" role="status" hidden></p>
-
-            <div class="playsay-password-panel" id="playsay-password-panel" <#if !passwordError>hidden</#if>>
-                <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post">
-                    <#if !usernameHidden??>
-                        <div class="${properties.kcFormGroupClass!}">
-                            <label for="username" class="${properties.kcLabelClass!}"><#if !realm.loginWithEmailAllowed>${msg("username")}<#elseif !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
-                            <input
-                                aria-invalid="${passwordError?c}"
-                                autocomplete="username"
-                                class="${properties.kcInputClass!}"
-                                dir="ltr"
-                                id="username"
-                                name="username"
-                                tabindex="2"
-                                type="text"
-                                value="${(login.username!'')}"
-                                <#if passwordError>autofocus</#if>
-                            />
-
-                            <#if passwordError>
-                                <span id="input-error" class="${properties.kcInputErrorMessageClass!}" aria-live="polite">
-                                    ${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
-                                </span>
-                            </#if>
-                        </div>
-                    </#if>
-
+            <form id="kc-form-login" onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post">
+                <#if !usernameHidden??>
                     <div class="${properties.kcFormGroupClass!}">
-                        <label for="password" class="${properties.kcLabelClass!}">${msg("password")}</label>
-                        <div class="${properties.kcInputGroup!}" dir="ltr">
-                            <input
-                                aria-invalid="${passwordError?c}"
-                                autocomplete="current-password"
-                                class="${properties.kcInputClass!}"
-                                id="password"
-                                name="password"
-                                tabindex="3"
-                                type="password"
-                            />
-                            <button
-                                aria-controls="password"
-                                aria-label="${msg("showPassword")}"
-                                class="${properties.kcFormPasswordVisibilityButtonClass!}"
-                                data-icon-hide="${properties.kcFormPasswordVisibilityIconHide!}"
-                                data-icon-show="${properties.kcFormPasswordVisibilityIconShow!}"
-                                data-label-hide="${msg('hidePassword')}"
-                                data-label-show="${msg('showPassword')}"
-                                data-password-toggle
-                                tabindex="4"
-                                type="button"
-                            ><i class="${properties.kcFormPasswordVisibilityIconShow!}" aria-hidden="true"></i></button>
-                        </div>
+                        <label for="username" class="${properties.kcLabelClass!}"><#if !realm.loginWithEmailAllowed>${msg("username")}<#elseif !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
+                        <input
+                            aria-invalid="${passwordError?c}"
+                            autocomplete="username"
+                            class="${properties.kcInputClass!}"
+                            dir="ltr"
+                            id="username"
+                            name="username"
+                            type="text"
+                            value="${(login.username!'')}"
+                            <#if passwordError>autofocus</#if>
+                        />
 
-                        <#if usernameHidden?? && passwordError>
+                        <#if passwordError>
                             <span id="input-error" class="${properties.kcInputErrorMessageClass!}" aria-live="polite">
                                 ${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
                             </span>
                         </#if>
                     </div>
+                </#if>
 
-                    <#if realm.rememberMe && !usernameHidden??>
-                        <div class="${properties.kcFormGroupClass!} ${properties.kcFormSettingClass!}">
-                            <div id="kc-form-options">
-                                <div class="checkbox">
-                                    <label>
-                                        <input id="rememberMe" name="rememberMe" type="checkbox" <#if login.rememberMe??>checked</#if>> ${msg("rememberMe")}
-                                    </label>
-                                </div>
+                <div class="${properties.kcFormGroupClass!}">
+                    <label for="password" class="${properties.kcLabelClass!}">${msg("password")}</label>
+                    <div class="${properties.kcInputGroup!}" dir="ltr">
+                        <input
+                            aria-invalid="${passwordError?c}"
+                            autocomplete="current-password"
+                            class="${properties.kcInputClass!}"
+                            id="password"
+                            name="password"
+                            type="password"
+                        />
+                        <button
+                            aria-controls="password"
+                            aria-label="${msg("showPassword")}"
+                            class="${properties.kcFormPasswordVisibilityButtonClass!}"
+                            data-icon-hide="${properties.kcFormPasswordVisibilityIconHide!}"
+                            data-icon-show="${properties.kcFormPasswordVisibilityIconShow!}"
+                            data-label-hide="${msg('hidePassword')}"
+                            data-label-show="${msg('showPassword')}"
+                            data-password-toggle
+                            type="button"
+                        ><i class="${properties.kcFormPasswordVisibilityIconShow!}" aria-hidden="true"></i></button>
+                    </div>
+
+                    <#if usernameHidden?? && passwordError>
+                        <span id="input-error" class="${properties.kcInputErrorMessageClass!}" aria-live="polite">
+                            ${kcSanitize(messagesPerField.getFirstError('username','password'))?no_esc}
+                        </span>
+                    </#if>
+                </div>
+
+                <#if realm.rememberMe && !usernameHidden??>
+                    <div class="${properties.kcFormGroupClass!} ${properties.kcFormSettingClass!}">
+                        <div id="kc-form-options">
+                            <div class="checkbox">
+                                <label>
+                                    <input id="rememberMe" name="rememberMe" type="checkbox" <#if login.rememberMe??>checked</#if>> ${msg("rememberMe")}
+                                </label>
                             </div>
                         </div>
-                    </#if>
-
-                    <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
-                        <input type="hidden" id="id-hidden-input" name="credentialId" <#if auth.selectedCredential?has_content>value="${auth.selectedCredential}"</#if> />
-                        <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="${msg("playsayPasswordLoginSubmit")}" />
                     </div>
-                </form>
+                </#if>
+
+                <div id="kc-form-buttons" class="${properties.kcFormGroupClass!}">
+                    <input type="hidden" id="id-hidden-input" name="credentialId" <#if auth.selectedCredential?has_content>value="${auth.selectedCredential}"</#if> />
+                    <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" name="login" id="kc-login" type="submit" value="${msg("playsayPasswordLoginSubmit")}" />
+                </div>
+            </form>
+
+            <div class="playsay-login-separator" role="separator">
+                <span>${msg("playsaySignInAlternative")}</span>
+            </div>
+
+            <div class="playsay-passkey-option" id="playsay-passkey-option">
+                <p class="playsay-passkey-description" id="playsay-passkey-login-description">
+                    ${msg("playsayPasskeyLoginDescription")}
+                </p>
+                <button
+                    aria-describedby="playsay-passkey-login-description"
+                    class="${properties.kcButtonClass!} ${properties.kcButtonDefaultClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!} playsay-passkey-login-secondary"
+                    id="playsay-passkey-login"
+                    type="button"
+                >${msg("playsayPasskeyLoginPrimary")}</button>
+                <p class="playsay-passkey-status" id="playsay-passkey-status" role="status" aria-live="polite" hidden></p>
             </div>
         </div>
 
         <script type="module" src="${url.resourcesPath}/js/passwordVisibility.js"></script>
         <script type="module">
             <#outputformat "JavaScript">
-            import { initPasskeyFirstLogin } from ${(url.resourcesPath + "/js/playsayPasskeyLogin.js")?c};
+            import { initPasskeyLogin } from ${(url.resourcesPath + "/js/playsayPasskeyLogin.js")?c};
 
-            initPasskeyFirstLogin({
+            initPasskeyLogin({
                 enabled: ${passkeyEnabled?c},
-                passwordInitiallyExpanded: ${passwordError?c},
                 input: {
                     isUserIdentified: ${(isUserIdentified!false)?c},
                     challenge: ${(challenge!'')?c},
@@ -149,7 +140,6 @@
                 },
                 messages: {
                     opening: ${msg("playsayPasskeyLoginOpening")?c},
-                    unsupported: ${msg("playsayPasskeyLoginUnsupported")?c},
                     failed: ${msg("playsayPasskeyLoginFailed")?c}
                 }
             });

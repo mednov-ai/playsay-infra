@@ -564,32 +564,52 @@ body.playsay-login-body {
   margin-top: 10px;
 }
 
-.playsay-passkey-first [hidden] {
+.playsay-login-methods [hidden] {
   display: none !important;
 }
 
-.playsay-passkey-first {
+.playsay-login-methods {
   display: grid;
   gap: 12px;
 }
 
-.playsay-passkey-first .playsay-passkey-description {
-  margin-bottom: 4px;
+.playsay-sign-in-description {
+  margin: 0 0 4px;
+  color: var(--playsay-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
 }
 
-.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary {
-  background: var(--playsay-orange);
-  color: #fff;
-  font-size: 16px;
-  box-shadow: 0 16px 32px rgba(154, 87, 0, 0.26);
+.playsay-login-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--playsay-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary:hover,
-.playsay-card .playsay-passkey-login-primary.pf-c-button.pf-m-primary:focus-visible {
-  background: var(--playsay-orange-dark);
+.playsay-login-separator::before,
+.playsay-login-separator::after {
+  height: 1px;
+  flex: 1;
+  background: var(--playsay-line);
+  content: "";
 }
 
-.playsay-card .playsay-password-login-toggle {
+.playsay-passkey-option {
+  display: grid;
+  gap: 10px;
+}
+
+.playsay-passkey-option .playsay-passkey-description {
+  margin: 0;
+}
+
+.playsay-card .playsay-passkey-login-secondary {
   display: inline-flex;
   width: 100%;
   min-height: 50px;
@@ -604,8 +624,8 @@ body.playsay-login-body {
   font-weight: 800;
 }
 
-.playsay-card .playsay-password-login-toggle:hover,
-.playsay-card .playsay-password-login-toggle:focus-visible {
+.playsay-card .playsay-passkey-login-secondary:hover,
+.playsay-card .playsay-passkey-login-secondary:focus-visible {
   border-color: var(--playsay-orange);
   color: var(--playsay-orange);
 }
@@ -619,10 +639,4 @@ body.playsay-login-body {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
-}
-
-.playsay-password-panel {
-  margin-top: 6px;
-  border-top: 1px solid var(--playsay-line);
-  padding-top: 20px;
 }
