@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-hotfix-external-activity-extension-status-247"
-  digest: sha256:107af6eb0817478d50b4127fee03846d2e2779a40fa216f325519b80568194b7
+  tag: "web-dev-248"
+  digest: sha256:099ef63e6d15fa2ad7d3b6a664369c115c87901c74f166c318bf555285134c7f
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-hotfix-external-activity-extension-status-247
-  number: "247"
-  branch: hotfix/external-activity-extension-status
-  branchLabel: web-hotfix-external-activity-extension-status
-  commit: 4241a9ba4345f3ac4318760cf1c8f124b1aecc1f
-  commitShort: "4241a9ba4345"
+  name: web-dev-248
+  number: "248"
+  branch: develop
+  branchLabel: web-dev
+  commit: d9ecf194a520c1041a8513a84373253ac640a482
+  commitShort: "d9ecf194a520"
 service:
   type: NodePort
   nodePort: 32083
