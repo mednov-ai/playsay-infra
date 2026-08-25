@@ -25,6 +25,8 @@ analysis:
   existingSecret: playsay-openai
   apiKeyKey: api-key
   model: gpt-5.6-sol
+  reasoningEffort: medium
+  requestTimeout: PT75S
   concurrency: "2"
   retries: "3"
   confidenceThreshold: "0.75"

@@ -45,6 +45,8 @@ Enable and verify in this order: database/role and bucket policy, worksheet serv
 
 Safe diagnostics are session status counts, page/source counts, job lease age, raster/analysis durations, retry/failure class, blocker counts and cleanup age. Do not print or query source bytes, OCR text, prompts, answers, correct options, flashcard backs, object keys, access credentials or learner responses. A growing oldest-lease age indicates a stuck worker; a growing oldest-staging age indicates cleanup failure. Provider failure is not an availability incident while manual continuation succeeds.
 
+The accepted dev real-provider profile uses `gpt-5.6-sol`, reasoning effort `low`, and a bounded `PT120S` timeout per page or packet request. This leaves headroom for structured vision output while remaining below the five-minute worker lease; keep production on the disabled stub baseline until its own reviewed enablement.
+
 ## Production 100-Lesson Capacity Profile
 
 The committed desired state supports a capacity gate for 100 simultaneous individual lessons (200 bidirectional 720p/30fps participants, 30% TURN), but it is not certified until the maintenance-window test in `docs/capacity-100-lessons.md` passes. Single-node prod has no HA; LiveKit/coturn rollout disconnects active media.
