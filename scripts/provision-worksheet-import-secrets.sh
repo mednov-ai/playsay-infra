@@ -35,8 +35,21 @@ kubectl -n "$APP_NAMESPACE" label secret "$SERVICE_SECRET" \
   app.kubernetes.io/managed-by=playsay-infra \
   playsay.io/component=worksheet-import --overwrite >/dev/null
 
+staging_secret_needs_refresh=false
 if ! kubectl -n "$STORAGE_NAMESPACE" get secret "$STAGING_SECRET" >/dev/null 2>&1; then
-  openssl rand -hex 16 > "$tmp_dir/access-key"
+  staging_secret_needs_refresh=true
+else
+  kubectl -n "$STORAGE_NAMESPACE" get secret "$STAGING_SECRET" -o jsonpath='{.data.access-key}' | base64 -d > "$tmp_dir/existing-access-key"
+  raw_access_key_length="$(wc -c < "$tmp_dir/existing-access-key" | tr -d ' ')"
+  normalized_access_key_length="$(tr -d '\r\n' < "$tmp_dir/existing-access-key" | wc -c | tr -d ' ')"
+  if [[ "$raw_access_key_length" != "$normalized_access_key_length" ]] ||
+    (( normalized_access_key_length < 3 || normalized_access_key_length > 20 )); then
+    staging_secret_needs_refresh=true
+  fi
+fi
+
+if [[ "$staging_secret_needs_refresh" == "true" ]]; then
+  openssl rand -hex 10 | tr -d '\r\n' > "$tmp_dir/access-key"
   openssl rand -base64 48 | tr -d '\r\n' > "$tmp_dir/secret-key"
   kubectl -n "$STORAGE_NAMESPACE" create secret generic "$STAGING_SECRET" \
     --from-file=access-key="$tmp_dir/access-key" \
@@ -50,7 +63,7 @@ provision_script='
   mc mb --ignore-existing "storage/$STAGING_BUCKET" >/dev/null
   printf "%s" "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:ListBucket\",\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\"],\"Resource\":[\"arn:aws:s3:::$STAGING_BUCKET/*\"]}]}" > /tmp/policy.json
   mc admin policy create storage worksheet-import-staging /tmp/policy.json >/dev/null 2>&1 || mc admin policy info storage worksheet-import-staging >/dev/null
-  mc admin user add storage "$STAGING_ACCESS_KEY" "$STAGING_SECRET_KEY" >/dev/null 2>&1 || true
+  mc admin user info storage "$STAGING_ACCESS_KEY" >/dev/null 2>&1 || mc admin user add storage "$STAGING_ACCESS_KEY" "$STAGING_SECRET_KEY" >/dev/null
   mc admin policy attach storage worksheet-import-staging --user "$STAGING_ACCESS_KEY" >/dev/null
   mc stat "storage/$STAGING_BUCKET" >/dev/null
   anonymous_policy="$(mc anonymous get "storage/$STAGING_BUCKET")"
@@ -91,8 +104,16 @@ kubectl -n "$STORAGE_NAMESPACE" run "$PROVISION_POD" \
   --image=minio/mc:RELEASE.2025-08-13T08-35-41Z \
   --overrides="$pod_overrides" >/dev/null
 
-kubectl -n "$STORAGE_NAMESPACE" wait --for=condition=Ready "pod/$PROVISION_POD" --timeout=60s >/dev/null 2>&1 || true
-if ! kubectl -n "$STORAGE_NAMESPACE" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/$PROVISION_POD" --timeout=180s >/dev/null; then
+provision_phase=""
+for _ in $(seq 1 90); do
+  provision_phase="$(kubectl -n "$STORAGE_NAMESPACE" get pod "$PROVISION_POD" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+  case "$provision_phase" in
+    Succeeded) break ;;
+    Failed) break ;;
+  esac
+  sleep 2
+done
+if [[ "$provision_phase" != "Succeeded" ]]; then
   kubectl -n "$STORAGE_NAMESPACE" get pod "$PROVISION_POD" -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,REASON:.status.containerStatuses[0].state.terminated.reason >&2 || true
   exit 1
 fi
