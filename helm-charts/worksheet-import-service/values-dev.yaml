@@ -8,12 +8,12 @@ storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: stub}
 runtime: {javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55 -XX:ActiveProcessorCount=1"}
 image:
-  tag: worksheet-import-dev-7
-  digest: sha256:53eb488700b4542ea10d91f570643e1c0f68cc979117fb872cf7a722f305a206
+  tag: worksheet-import-dev-8
+  digest: sha256:e1872e13d6c00239063535a24f09e06abd80d95fb6e6647c7063c2c0d2d94ba9
 build:
-  name: worksheet-import-dev-7
-  number: "7"
+  name: worksheet-import-dev-8
+  number: "8"
   branch: develop
   branchLabel: worksheet-import-dev
-  commit: 72cf0e9863db325786fc8aa612979fbca28a43ad
-  commitShort: 72cf0e9863db
+  commit: c9f8b421abf7d1ac7791409354030c0beba777f3
+  commitShort: c9f8b421abf7
