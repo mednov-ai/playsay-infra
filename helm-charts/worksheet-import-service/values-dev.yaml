@@ -8,12 +8,12 @@ storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: openai, reasoningEffort: low, requestTimeout: PT120S}
 runtime: {javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55 -XX:ActiveProcessorCount=1"}
 image:
-  tag: worksheet-import-dev-9
-  digest: sha256:b06b62a7dc8b58112784b83b123eb64dd24e2873d3800066c6152395eb269ecf
+  tag: worksheet-import-dev-10
+  digest: sha256:1ca547d17ef1f6410ea98e30e034210e01b64fcff720e46130de0875df564e2f
 build:
-  name: worksheet-import-dev-9
-  number: "9"
+  name: worksheet-import-dev-10
+  number: "10"
   branch: develop
   branchLabel: worksheet-import-dev
-  commit: a9ac989a431ce3a1361ce07d4d2198a214deb22e
-  commitShort: a9ac989a431c
+  commit: ef71ebbeffc35b68bd39fbc384f7be942174f2c5
+  commitShort: ef71ebbeffc3
