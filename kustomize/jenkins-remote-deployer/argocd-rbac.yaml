@@ -21,6 +21,7 @@ rules:
       - registration-service
       - vocabulary-service
       - web-app
+      - worksheet-import-service
     verbs:
       - get
       - patch

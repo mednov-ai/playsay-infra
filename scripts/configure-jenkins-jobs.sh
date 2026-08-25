@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}/jenkins}"
+JENKINS_URL="${JENKINS_URL:-http://127.0.0.1:${JENKINS_NODEPORT_HTTP:-32082}}"
 DEFAULT_JOB_NAMES=(
   playsay-platform-dispatch-webhook
   playsay-platform-dispatch-develop
