@@ -5,6 +5,9 @@ image:
   tag: "keycloak-hotfix-lesson-magic-links-3"
   digest: sha256:a1032608080c2abdd5a093da2b147abd9b4eb82864dcdf0da86375557459b128
   pullPolicy: IfNotPresent
+imagePullSecrets:
+  - name: ghcr-pull-secret
+
 build:
   name: keycloak-hotfix-lesson-magic-links-3
   number: "3"
