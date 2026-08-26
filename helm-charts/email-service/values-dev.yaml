@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-email-service
-  tag: "email-dev-35"
-  digest: sha256:3d30ef61aa6906a55778722f1f1f70b7880ea40c098ced80c490378d2fcf2761
+  tag: "email-hotfix-lesson-magic-links-37"
+  digest: sha256:320434a371689f3be46e2ee21b025f1bfb3f7e775655619f095ed21bd2873d4a
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: email-dev-35
-  number: "35"
-  branch: develop
-  branchLabel: email-dev
-  commit: 480bbc10d5b4d042b56bf0e6deb770c20f6a0898
-  commitShort: "480bbc10d5b4"
+  name: email-hotfix-lesson-magic-links-37
+  number: "37"
+  branch: hotfix/lesson-magic-links
+  branchLabel: email-hotfix-lesson-magic-links
+  commit: b316450619656dcb163d4ccb08c6bbe1dcd6afee
+  commitShort: "b31645061965"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
