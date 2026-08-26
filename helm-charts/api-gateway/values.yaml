@@ -133,6 +133,17 @@ chatEmail:
   pollDelayMs: "30000"
   retryDelays: PT1M,PT5M,PT15M
 
+chatPush:
+  enabled: "false"
+  publicKey: ""
+  existingSecret: playsay-chat-push
+  privateKeyKey: private-key
+  subjectKey: subject
+  pollDelayMs: "3000"
+  initialDelayMs: "3000"
+  lease: PT1M
+  retryDelays: PT10S,PT1M,PT5M
+
 publicAppUrl: https://online.honey.school
 publicAppRfUrl: https://online.honey.school
 

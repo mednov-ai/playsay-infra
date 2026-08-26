@@ -927,11 +927,29 @@ For the known lesson `19.07.2026 10:00–10:45 Europe/Moscow`, saving the same t
 
 Deploy in the order `email-service` (template migration), `api-gateway` (chat migration/queue), then `web-app`. The current presence contract assumes one `api-gateway` replica; do not scale it horizontally until chat presence is moved to a shared broker.
 
+Browser chat notifications are an explicit opt-in Web Push path layered before the unchanged email digest fallback. The chart keeps `chatPush.enabled=false` by default. Dev may enable it only after the P-256 private key and a `mailto:` or HTTPS subject exist as keys `private-key` and `subject` in the environment-local `playsay-chat-push` Secret; only the matching public key belongs in `values-dev.yaml`. Never print, commit, reuse across environments, or expose the private key through capability responses. A VAPID key rotation requires replacing the Secret and public value together, rolling out `api-gateway`, and asking users to disable and enable notifications again because existing browser subscriptions are bound to the old application-server key.
+
 1. Open the same teacher/student dialog in two authenticated browser profiles. A new outgoing message must move from one grey check after REST save to two grey checks after delivery and two orange checks after the recipient opens the dialog.
 2. Close every Play&Say tab for the recipient, send several short messages within two minutes, and confirm only one `chat_email_digest` row remains `PENDING` with all message links.
 3. Confirm one localized `chat-unread-digest` email arrives after the two-minute grace period. It must show the message count and sender name, contain no message body, and open `/?chat=<conversationId>` or `/?chat=open`.
 4. Send more messages after the first email. No second email may be sent before `sent_at + 10 minutes`; without new messages there must be no repeat at all.
 5. Repeat with the recipient returning online or reading before `due_at`: the digest becomes `SKIPPED`. A recipient without email is also `SKIPPED`; provider errors retry with the configured 1/5/15-minute backoff and eventually become `FAILED` without losing chat messages.
+6. With notifications disabled in chat, confirm the browser does not request permission. Enable them from the chat bell and confirm the authenticated `GET /api/chat/push/capability` returns only `enabled` and the public key, followed by one active subscription for that account. Permission denial must leave chat and email usable and show the localized denied state.
+7. Hide or close the recipient tab and send one message. Expect one generic localized Honey School notification containing no sender, student, lesson, or message text. Clicking it must focus or open the same-origin `/?chat=<conversationId>` deep link. With a visible client, expect no system notification; the unread badge must still update without reload.
+8. Read the dialog before the push worker claims the delivery and confirm the row becomes `SKIPPED`. A successful push changes neither `delivered_at` nor read ticks and does not cancel the email digest. Repeated delivery for the same message/subscription must not create a second notification.
+
+Read-only capability and sanitized monitoring checks:
+
+```bash
+curl -fsS -H "Authorization: Bearer $ACCESS_TOKEN" https://dev.online.honey.school/api/chat/push/capability | jq '{enabled, publicKeyPresent: (.publicKey | length > 0)}'
+curl -fsS https://dev.online.honey.school/api/actuator/prometheus | grep -E '^playsay_chat_push_(deliveries|outcomes)'
+KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-data exec playsay-postgres-1 -c postgres -- \
+  psql -d playsay -c "select status, count(*) from chat_push_delivery group by status order by status;"
+```
+
+Metrics are deliberately limited to delivery status/outcome. Do not add endpoint, subscription keys, user id, conversation id, message id, or content labels. Rising `invalid` outcomes mean browser endpoints returned permanent `404/410`; the worker deactivates those subscriptions and the user must opt in again. `retrying` indicates bounded provider/network retry, while `failed` means the configured retries were exhausted.
+
+For push-first rollback, set `chatPush.enabled=false` in the affected environment values and deliver that GitOps commit before removing or rotating the environment Secret. Chat, receipts, unread reconciliation, and the email digest must continue normally while push is disabled. Do not delete delivery rows as part of rollback.
 
 Read-only queue verification on the VPS:
 

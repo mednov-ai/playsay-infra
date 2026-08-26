@@ -218,6 +218,30 @@ spec:
               value: {{ .Values.chatEmail.pollDelayMs | quote }}
             - name: PLAYSAY_CHAT_EMAIL_RETRY_DELAYS
               value: {{ .Values.chatEmail.retryDelays | quote }}
+            - name: PLAYSAY_CHAT_PUSH_ENABLED
+              value: {{ .Values.chatPush.enabled | quote }}
+            - name: PLAYSAY_CHAT_PUSH_PUBLIC_KEY
+              value: {{ .Values.chatPush.publicKey | quote }}
+            {{- if eq (toString .Values.chatPush.enabled) "true" }}
+            - name: PLAYSAY_CHAT_PUSH_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chatPush.existingSecret | quote }}
+                  key: {{ .Values.chatPush.privateKeyKey | quote }}
+            - name: PLAYSAY_CHAT_PUSH_SUBJECT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.chatPush.existingSecret | quote }}
+                  key: {{ .Values.chatPush.subjectKey | quote }}
+            {{- end }}
+            - name: PLAYSAY_CHAT_PUSH_POLL_DELAY_MS
+              value: {{ .Values.chatPush.pollDelayMs | quote }}
+            - name: PLAYSAY_CHAT_PUSH_INITIAL_DELAY_MS
+              value: {{ .Values.chatPush.initialDelayMs | quote }}
+            - name: PLAYSAY_CHAT_PUSH_LEASE
+              value: {{ .Values.chatPush.lease | quote }}
+            - name: PLAYSAY_CHAT_PUSH_RETRY_DELAYS
+              value: {{ .Values.chatPush.retryDelays | quote }}
             - name: PLAYSAY_PUBLIC_APP_URL
               value: {{ .Values.publicAppUrl | quote }}
             - name: PLAYSAY_PUBLIC_APP_RF_URL
