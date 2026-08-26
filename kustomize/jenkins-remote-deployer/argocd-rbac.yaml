@@ -15,6 +15,7 @@ rules:
       - email-service
       - keyboard-app
       - keyboard-service
+      - keycloak
       - media-service
       - game-adapter-service
       - payment-service
