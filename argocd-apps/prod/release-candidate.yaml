@@ -3,8 +3,8 @@ status: building
 releaseBranch: "release/01.004.13"
 baseRelease: "release/01.004.12"
 basePlatformCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
-acceptedDevCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
-baseInfraCommit: "0182f4620bfa3c79defb48e99eda65575ab9966b"
+acceptedDevCommit: "9812e78400c2b8747537f7fe97e43bfffaaaef29"
+baseInfraCommit: "99dd9ac40456525cc0c26b40ad4ecb2e0ec5f3ef"
 platformCommit: "9812e78400c2b8747537f7fe97e43bfffaaaef29"
 affectedTargets:
   - "api-gateway"
@@ -23,5 +23,5 @@ validationSuites:
   - "ci-contracts"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "34"
-updatedAt: "2026-08-26T16:26:31Z"
+  build: "35"
+updatedAt: "2026-08-26T16:29:19Z"
