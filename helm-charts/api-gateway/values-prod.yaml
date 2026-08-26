@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-release-01.004.06-111"
-  digest: "sha256:4d4dbed2ca8bd7249c28fd981f8489ac6b097fff4d595b578eac4ddff5b6fe21"
+  tag: "api-release-01.004.12-124"
+  digest: "sha256:8fb7bdf36f9849b7d165709aa9e3eceb4df6292a3b978f795f786db7c7bde4ed"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-release-01.004.06-111
-  number: "111"
-  branch: release/01.004.06
-  branchLabel: api-release-01.004.06
-  commit: b53288c18f92dbd8e7033eebb61544ee902bc510
-  commitShort: "b53288c18f92"
+  name: api-release-01.004.12-124
+  number: "124"
+  branch: release/01.004.12
+  branchLabel: api-release-01.004.12
+  commit: d18830a1b4197cd0c8d2712718a415aae074193c
+  commitShort: "d18830a1b419"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -76,7 +76,6 @@ mediaService:
   existingSecret: playsay-media
   serviceTokenKey: service-token
   cacheRequestTimeoutSeconds: "660"
-
 worksheetImport:
   enabled: "false"
   baseUrl: http://worksheet-import-service.playsay-prod.svc.cluster.local
