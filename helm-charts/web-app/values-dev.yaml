@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-hotfix-lesson-magic-links-255"
-  digest: sha256:a15587b3e8a7e1866d150c2530211fe77902d768293f948c03c678aa818fe363
+  tag: "web-dev-258"
+  digest: sha256:cdd8e47188e0a83aee1129748b962948acee228c38c76ea6d7a69c3f0664145a
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-hotfix-lesson-magic-links-255
-  number: "255"
-  branch: hotfix/lesson-magic-links
-  branchLabel: web-hotfix-lesson-magic-links
-  commit: c325fd92e3f46a8c1dd27aeb73c2f6e446f0700f
-  commitShort: "c325fd92e3f4"
+  name: web-dev-258
+  number: "258"
+  branch: develop
+  branchLabel: web-dev
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: "b15c57a619dd"
 service:
   type: NodePort
   nodePort: 32083
