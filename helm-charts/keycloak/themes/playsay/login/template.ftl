@@ -76,7 +76,6 @@
         }
     </script>
     <script src="${url.resourcesPath}/js/menu-button-links.js" type="module"></script>
-    <script src="${url.resourcesPath}/js/playsayPasswordRecovery.js" type="module"></script>
     <#if scripts??>
         <#list scripts as script>
             <script src="${script}" type="text/javascript"></script>
@@ -252,11 +251,7 @@
 
                     <div class="playsay-auth-links">
                         <a href="{{ .Values.theme.appBaseUrl }}/register">${msg("noAccount")} ${msg("doRegister")}</a>
-                        <a
-                            data-recovery-base-url="{{ .Values.theme.appBaseUrl }}/forgot-password"
-                            href="{{ .Values.theme.appBaseUrl }}/forgot-password"
-                            id="playsay-forgot-password"
-                        >${msg("doForgotPassword")}</a>
+                        <a href="{{ .Values.theme.appBaseUrl }}/forgot-password">${msg("doForgotPassword")}</a>
                     </div>
 
                     <#if auth?has_content && auth.showTryAnotherWayLink()>
