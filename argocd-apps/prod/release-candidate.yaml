@@ -1,10 +1,10 @@
 schemaVersion: 1
 status: building
 releaseBranch: "release/01.004.12"
-baseRelease: "release/01.004.08"
-basePlatformCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
+baseRelease: "release/01.004.09"
+basePlatformCommit: "e2f82907333809ed2e59daa3bef502237fe8c72c"
 acceptedDevCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
-baseInfraCommit: "e3a5e8f85ae10a075274342e33f4122933eb3623"
+baseInfraCommit: "9e8b9c9151e834577b083af626c643b1273378de"
 platformCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
 affectedTargets:
   - "api-gateway"
