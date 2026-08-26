@@ -2,18 +2,18 @@ theme:
   appBaseUrl: https://dev.online.honey.school
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
-  tag: "keycloak-hotfix-lesson-magic-links-4"
-  digest: sha256:fb5a1d03e4dce30d6b73c17870423b3acd68961ae56dad469dd528a3e9485ad1
+  tag: "keycloak-dev-7"
+  digest: sha256:b75d7dba36cd8888f0ebf977ab44c5e933cc8bacd92b5a563991cd2c33953f1a
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: keycloak-hotfix-lesson-magic-links-4
-  number: "4"
-  branch: hotfix/lesson-magic-links
-  branchLabel: keycloak-hotfix-lesson-magic-links
-  commit: c325fd92e3f46a8c1dd27aeb73c2f6e446f0700f
-  commitShort: c325fd92e3f4
+  name: keycloak-dev-7
+  number: "7"
+  branch: develop
+  branchLabel: keycloak-dev
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: b15c57a619dd
 global:
   security:
     allowInsecureImages: true
