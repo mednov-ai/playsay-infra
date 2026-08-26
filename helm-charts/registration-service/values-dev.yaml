@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-dev-54"
-  digest: sha256:ee95914fa8ce3ce669d970d881e9aa63bc51ffdc44c9d7c798a0168a9f48745c
+  tag: "registration-hotfix-lesson-magic-links-57"
+  digest: sha256:1fe5cd4f24435c977e59d967c0307cd46b6419e699c2039f64a50074a15a05bf
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-dev-54
-  number: "54"
-  branch: develop
-  branchLabel: registration-dev
-  commit: 6af3f4a60e8a49e94f8f74cb24bbebf8d20d7bbd
-  commitShort: "6af3f4a60e8a"
+  name: registration-hotfix-lesson-magic-links-57
+  number: "57"
+  branch: hotfix/lesson-magic-links
+  branchLabel: registration-hotfix-lesson-magic-links
+  commit: 1bc2e68ac11cda4e69508eec17f03eedf77b6e60
+  commitShort: "1bc2e68ac11c"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
