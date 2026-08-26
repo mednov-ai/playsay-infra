@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-hotfix-lesson-magic-links-35"
-  digest: sha256:8de582dda99fbbcdb092d859ae393d2b7820514872633af8ab5791c476c2465c
+  tag: "collab-dev-38"
+  digest: sha256:3f5410313c53fc06e8b2c7da260b4b03de4240646f15a159cc4d445d84988095
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-hotfix-lesson-magic-links-35
-  number: "35"
-  branch: hotfix/lesson-magic-links
-  branchLabel: collab-hotfix-lesson-magic-links
-  commit: 1bc2e68ac11cda4e69508eec17f03eedf77b6e60
-  commitShort: "1bc2e68ac11c"
+  name: collab-dev-38
+  number: "38"
+  branch: develop
+  branchLabel: collab-dev
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: "b15c57a619dd"
 service:
   type: NodePort
   nodePort: 32086
