@@ -41,7 +41,7 @@ admin_token() {
 configure_remembered_sessions() {
   local token="$1"
   kc_curl -H "Authorization: Bearer $token" "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM" \
-    | jq '. + {rememberMe: true, ssoSessionIdleRememberMe: 2592000, ssoSessionMaxLifespanRememberMe: 2592000}' \
+    | jq '. + {rememberMe: true, ssoSessionIdleTimeoutRememberMe: 2592000, ssoSessionMaxLifespanRememberMe: 2592000}' \
     | kc_curl -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d @- \
       "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM" >/dev/null
 }
@@ -77,7 +77,7 @@ configure_lesson_execution() {
   printf '%s' "$executions" | jq -c --arg id "$execution_id" \
     '.[] | select(.id == $id) | . + {requirement: "ALTERNATIVE"}' \
     | kc_curl -X PUT -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d @- \
-      "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM/authentication/executions/$execution_id" >/dev/null
+      "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM/authentication/flows/$KEYCLOAK_BROWSER_FLOW/executions" >/dev/null
 
   provider_token=$(secret_value "$KEYCLOAK_LESSON_PROVIDER_NAMESPACE" "$KEYCLOAK_LESSON_PROVIDER_SECRET" "$KEYCLOAK_LESSON_PROVIDER_TOKEN_KEY")
   payload=$(jq -nc \
@@ -106,7 +106,7 @@ activate_and_verify() {
 
   kc_curl -H "Authorization: Bearer $token" "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM" \
     | jq -e --arg flow "$KEYCLOAK_BROWSER_FLOW" \
-      '.browserFlow == $flow and .rememberMe == true and .ssoSessionIdleRememberMe == 2592000 and .ssoSessionMaxLifespanRememberMe == 2592000' >/dev/null
+      '.browserFlow == $flow and .rememberMe == true and .ssoSessionIdleTimeoutRememberMe == 2592000 and .ssoSessionMaxLifespanRememberMe == 2592000' >/dev/null
   kc_curl -H "Authorization: Bearer $token" \
     "$KEYCLOAK_URL/admin/realms/$KEYCLOAK_REALM/authentication/flows/$KEYCLOAK_BROWSER_FLOW/executions" \
     | jq -e '.[] | select(.providerId == "playsay-lesson-assertion" and .requirement == "ALTERNATIVE" and .authenticationConfig != null)' >/dev/null
