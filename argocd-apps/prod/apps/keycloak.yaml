@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/01.004.08
+    targetRevision: release/01.004.09
     path: helm-charts/keycloak
     helm:
       releaseName: keycloak
