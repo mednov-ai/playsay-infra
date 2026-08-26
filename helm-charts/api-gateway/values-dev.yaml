@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-hotfix-lesson-magic-links-128"
-  digest: sha256:29c8c081131749761b9e98d000060cacfbfe238710db2e0e9ac66c8a9952165f
+  tag: "api-dev-133"
+  digest: sha256:46e7ff20e8fc5d9757707e3de84ec5632cf1c25aea4b2fadf5431ee0d0575b0b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-hotfix-lesson-magic-links-128
-  number: "128"
-  branch: hotfix/lesson-magic-links
-  branchLabel: api-hotfix-lesson-magic-links
-  commit: 9812e78400c2b8747537f7fe97e43bfffaaaef29
-  commitShort: "9812e78400c2"
+  name: api-dev-133
+  number: "133"
+  branch: develop
+  branchLabel: api-dev
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: "b15c57a619dd"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
