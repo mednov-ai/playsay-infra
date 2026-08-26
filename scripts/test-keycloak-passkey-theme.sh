@@ -7,6 +7,8 @@ SCRIPT="$THEME_ROOT/resources/js/playsayWebAuthnRegister.js"
 TEMPLATE="$THEME_ROOT/webauthn-register.ftl"
 LOGIN_SCRIPT="$THEME_ROOT/resources/js/playsayPasskeyLogin.js"
 LOGIN_TEMPLATE="$THEME_ROOT/login.ftl"
+RECOVERY_SCRIPT="$THEME_ROOT/resources/js/playsayPasswordRecovery.js"
+LAYOUT_TEMPLATE="$THEME_ROOT/template.ftl"
 
 if rg -q 'window\.prompt' "$SCRIPT" "$TEMPLATE"; then
   echo "Passkey theme must not ask the user for a credential label." >&2
@@ -20,6 +22,9 @@ rg -q 'playsay-passkey-login' "$LOGIN_TEMPLATE"
 rg -q 'id="kc-form-login"' "$LOGIN_TEMPLATE"
 rg -q 'playsaySignInTitle' "$LOGIN_TEMPLATE"
 rg -q 'initPasskeyLogin' "$LOGIN_TEMPLATE"
+rg -q 'id="playsay-forgot-password"' "$LAYOUT_TEMPLATE"
+rg -q 'data-recovery-base-url=' "$LAYOUT_TEMPLATE"
+rg -q 'playsayPasswordRecovery.js' "$LAYOUT_TEMPLATE"
 rg -q 'mediation: "optional"' "$LOGIN_SCRIPT"
 if rg -q 'sessionStorage|reserveAutomaticAttempt|authenticationSessionIdentifier|passwordInitiallyExpanded|initPasskeyFirstLogin' "$LOGIN_SCRIPT" "$LOGIN_TEMPLATE"; then
   echo "Login must not reserve or start an automatic Passkey attempt." >&2
@@ -192,6 +197,65 @@ assert.equal(stub.webauthnTestState.authenticateCalls.length, 0);
 assert.equal(login.isUserCancellation({ name: "NotAllowedError" }), true);
 assert.equal(login.isUserCancellation({ name: "AbortError" }), true);
 assert.equal(login.isUserCancellation({ name: "SecurityError" }), false);
+NODE
+
+mkdir -p "$TEST_DIR/recovery"
+cp "$RECOVERY_SCRIPT" "$TEST_DIR/recovery/playsayPasswordRecovery.js"
+cp "$REPO_ROOT/scripts/fixtures/module-package.json" "$TEST_DIR/recovery/package.json"
+
+node --input-type=module - "$TEST_DIR/recovery/playsayPasswordRecovery.js" <<'NODE'
+import assert from "node:assert/strict";
+
+const recovery = await import(new URL(`file://${process.argv[2]}`));
+const documentRef = {
+  createElement() {
+    return {
+      required: false,
+      type: "text",
+      value: "",
+      checkValidity() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.value); },
+    };
+  },
+};
+
+assert.equal(
+  recovery.passwordRecoveryHref("https://online.honey.school/forgot-password", " learner+one@example.test ", documentRef),
+  "https://online.honey.school/forgot-password?email=learner%2Bone%40example.test",
+);
+assert.equal(
+  recovery.passwordRecoveryHref("https://online.honey.school/forgot-password", "not-an-email", documentRef),
+  "https://online.honey.school/forgot-password",
+);
+assert.equal(
+  recovery.passwordRecoveryHref("https://online.honey.school/forgot-password", "", documentRef),
+  "https://online.honey.school/forgot-password",
+);
+
+class FakeLink extends EventTarget {
+  constructor() {
+    super();
+    this.dataset = { recoveryBaseUrl: "https://online.honey.school/forgot-password" };
+    this.href = this.dataset.recoveryBaseUrl;
+  }
+}
+
+const link = new FakeLink();
+const username = { value: "changed@example.test" };
+recovery.initPasswordRecoveryLink({ link, username, documentRef });
+link.dispatchEvent(new Event("pointerdown"));
+assert.equal(link.href, "https://online.honey.school/forgot-password?email=changed%40example.test");
+username.value = "second@example.test";
+link.dispatchEvent(new Event("focus"));
+assert.equal(link.href, "https://online.honey.school/forgot-password?email=second%40example.test");
+
+const missingUsernameLink = new FakeLink();
+recovery.initPasswordRecoveryLink({ link: missingUsernameLink, username: null, documentRef });
+missingUsernameLink.dispatchEvent(new Event("click"));
+assert.equal(missingUsernameLink.href, "https://online.honey.school/forgot-password");
+assert.equal(
+  recovery.passwordRecoveryHref("https://online.honey.school/forgot-password", "learner@example.test", null),
+  "https://online.honey.school/forgot-password",
+);
 NODE
 
 echo "Keycloak passkey theme regression checks passed."

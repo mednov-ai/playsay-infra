@@ -864,7 +864,7 @@ kubectl -n playsay-dev logs deploy/registration-service --since=30m | grep -E '4
 
 A healthy gateway forwards `X-Forwarded-For` to `registration-service`; a shared gateway/ingress IP must not be the only address used for public registration rate limits. A rollout restart clears the in-memory limiter, but treat it as a temporary dev relief only. If an earlier email-provider outage created a disabled Keycloak user without a pending registration row, retrying `/register` for that email should create a fresh pending token and send a new confirmation email instead of silently returning `CHECK_EMAIL`.
 
-Public registration acceptance is a disposable-account flow, not an HTTP-page smoke. It uses the external Playwright installation and a random temporary mailbox, prints only a run id, origin and coarse stages, verifies `start → email → confirm → repeat confirm safely → first OIDC password sign-in with STUDENT`, removes the synthetic identity through the registration-service-owned internal lifecycle and deletes the mailbox. Cleanup failure fails acceptance. Never reuse a learner/owner address, print the confirmation link, retain the mailbox body, or put email/password/token/subject in evidence.
+Public registration acceptance is a disposable-account flow, not an HTTP-page smoke. It uses the external Playwright installation and a random temporary mailbox, prints only a run id, origin and coarse stages, verifies `start → email → confirm → repeat confirm safely → first OIDC password sign-in with STUDENT → PASSWORD_RESET_REQUEST → PASSWORD_RESET_EMAIL → PASSWORD_RESET_CONFIRM → PASSWORD_RESET_SIGN_IN`, proves the old password is rejected and the new password signs in, removes the synthetic identity through the registration-service-owned internal lifecycle, and deletes the mailbox. Cleanup failure fails acceptance. Never reuse a learner/owner address, print the confirmation/reset link or code, retain the mailbox body, or put email/password/token/subject in evidence.
 
 Run dev acceptance from the trusted operator workspace after the web and registration-service ArgoCD applications are `Synced/Healthy`:
 
@@ -873,7 +873,7 @@ cd playsay-platform
 node scripts/smoke/registration-e2e-smoke.mjs
 ```
 
-The smoke defaults to `https://dev.online.honey.school`, canonical dev issuer, `playsay-dev`, and the current AX41 SSH route. Before a release, also verify a desktop plus phone viewport, all four locale resource structures, keyboard submit/focus, field `aria-invalid`/`aria-describedby`, non-color password statuses, exactly one start request, current return-host allow/deny tests, registration-service tests and the web production build.
+The smoke defaults to `https://dev.online.honey.school`, canonical dev issuer, `playsay-dev`, and the current AX41 SSH route. Before a release, also verify a desktop plus phone viewport, all four locale resource structures, keyboard submit/focus, field `aria-invalid`/`aria-describedby`, the Keycloak forgot link with valid and invalid login input, non-color password statuses, exactly one start request, current return-host allow/deny tests, registration-service tests and the web production build.
 
 After a separate production authorization and GitOps promotion, run the same disposable journey once from each supported production online origin. The cleanup route changes only to the production guest/namespace; secret values remain inside the remote shell:
 
@@ -891,9 +891,15 @@ PLAY_SAY_REGISTRATION_SMOKE_NAMESPACE=playsay-prod \
 node scripts/smoke/registration-e2e-smoke.mjs
 ```
 
-Use only coarse stages when diagnosing a failure: `CLIENT_VALIDATION_BLOCKED`, `REQUEST_ROUTING`, `REGISTRATION_SERVICE`, `KEYCLOAK_MUTATION`, `EMAIL_DELIVERY`, `CONFIRMATION`, `OIDC_SIGN_IN`. Correlate the run timestamp with gateway/registration/email/Keycloak health and Mailjet delivery status; do not add a normalized email or subject to logs. A `CLIENT_VALIDATION_BLOCKED` result means no start request was sent. A successful page load or healthy pod does not satisfy registration acceptance.
+Use only coarse stages when diagnosing a failure: `CLIENT_VALIDATION_BLOCKED`, `REQUEST_ROUTING`, `REGISTRATION_SERVICE`, `KEYCLOAK_MUTATION`, `EMAIL_DELIVERY`, `CONFIRMATION`, `OIDC_SIGN_IN`, `PASSWORD_RESET_REQUEST`, `PASSWORD_RESET_EMAIL`, `PASSWORD_RESET_CONFIRM`, `PASSWORD_RESET_SIGN_IN`. Password-reset service diagnostics are restricted to `event=password_reset_request outcome=CODE_SENT|COOLDOWN|ACCOUNT_NOT_ACTIVE|EMAIL_DELIVERY_FAILED`; the failure event may include only the exception class. A bounded read-only check is:
 
-If the hotfix regresses only form validation/presentation, return the production web reference to the previous numeric release through GitOps. If password policy, return URL, confirmation or Keycloak mutation regresses, roll back registration-service as well. Re-run the retained invalid/valid cases and disposable smoke after rollback; never restore protected legacy origins as a shortcut.
+```bash
+kubectl -n playsay-dev logs deploy/registration-service --since=30m | grep 'event=password_reset_request outcome='
+```
+
+Correlate only the run timestamp with gateway/registration/email/Keycloak health and Mailjet delivery status; never add email, username, subject, reset code/hash, password, URL, provider identifier/body, secret or exception message to the event. A `CLIENT_VALIDATION_BLOCKED` result means no start request was sent. A successful page load or healthy pod does not satisfy registration acceptance.
+
+For a password-recovery hotfix, accept the exact `develop` source on dev first, merge both platform and infra changes, and create the next unused fixed-width numeric release. The candidate includes the reviewed Keycloak theme desired state and rebuilds only affected platform modules. After the normal pre-release backup and manual migration gate, promote only the `ready` numeric infra branch through ArgoCD. If the hotfix regresses only form validation/presentation or login-link continuity, return the production web/Keycloak desired state to the previous numeric release through GitOps. If password-reset state, email dispatch or Keycloak mutation regresses, roll back registration-service as well. Re-run the retained valid/invalid link/form tests and disposable reset smoke after rollback; never restore protected legacy origins as a shortcut.
 
 Managed-student invite smoke:
 
