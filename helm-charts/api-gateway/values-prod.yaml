@@ -28,7 +28,7 @@ auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 lessonAccess:
-  enabled: false
+  enabled: true
   oidcCallback: https://online.honey.school/auth/callback
 ai:
   openai:
