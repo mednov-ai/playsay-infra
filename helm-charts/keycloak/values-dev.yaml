@@ -1,24 +1,20 @@
 theme:
   appBaseUrl: https://dev.online.honey.school
-
 image:
-  repository: quay.io/keycloak/keycloak
-  tag: "26.7.1"
-  digest: sha256:f1f1f01e472c8a78df40d8f2a49a925274eda4d3d80d5f6edbb5c880ee3c01c6
+  repository: ghcr.io/mednov-ai/playsay-keycloak
+  tag: "keycloak-hotfix-lesson-magic-links-3"
+  digest: sha256:a1032608080c2abdd5a093da2b147abd9b4eb82864dcdf0da86375557459b128
   pullPolicy: IfNotPresent
-
 build:
-  name: upstream-26.7.1
-  number: "0"
-  branch: upstream
-  branchLabel: upstream
-  commit: upstream
-  commitShort: upstream
-
+  name: keycloak-hotfix-lesson-magic-links-3
+  number: "3"
+  branch: hotfix/lesson-magic-links
+  branchLabel: keycloak-hotfix-lesson-magic-links
+  commit: be6f146cf70467f95c8cf2113e84bcc419c4d1c5
+  commitShort: be6f146cf704
 global:
   security:
     allowInsecureImages: true
-
 keycloak:
   replicaCount: 1
   hostname: https://dev.ops.honey.school/keycloak
@@ -44,7 +40,6 @@ keycloak:
       memory: 900Mi
   javaOpts: "-Xms384m -Xmx600m"
   themeCacheEnabled: false
-
 postgresql:
   enabled: true
   architecture: standalone
