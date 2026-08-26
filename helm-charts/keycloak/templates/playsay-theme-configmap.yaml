@@ -18,6 +18,8 @@ data:
 {{ .Files.Get "themes/playsay/login/resources/js/playsayWebAuthnRegister.js" | indent 4 }}
   playsay-passkey-login.js: |-
 {{ .Files.Get "themes/playsay/login/resources/js/playsayPasskeyLogin.js" | indent 4 }}
+  playsay-password-recovery.js: |-
+{{ .Files.Get "themes/playsay/login/resources/js/playsayPasswordRecovery.js" | indent 4 }}
   messages_en.properties: |-
 {{ .Files.Get "themes/playsay/login/messages/messages_en.properties" | indent 4 }}
   messages_ru.properties: |-

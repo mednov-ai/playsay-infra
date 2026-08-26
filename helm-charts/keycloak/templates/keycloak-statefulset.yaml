@@ -145,6 +145,8 @@ spec:
                 path: login/resources/js/playsayWebAuthnRegister.js
               - key: playsay-passkey-login.js
                 path: login/resources/js/playsayPasskeyLogin.js
+              - key: playsay-password-recovery.js
+                path: login/resources/js/playsayPasswordRecovery.js
               - key: messages_en.properties
                 path: login/messages/messages_en.properties
               - key: messages_ru.properties

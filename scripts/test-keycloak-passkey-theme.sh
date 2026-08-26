@@ -9,6 +9,8 @@ LOGIN_SCRIPT="$THEME_ROOT/resources/js/playsayPasskeyLogin.js"
 LOGIN_TEMPLATE="$THEME_ROOT/login.ftl"
 RECOVERY_SCRIPT="$THEME_ROOT/resources/js/playsayPasswordRecovery.js"
 LAYOUT_TEMPLATE="$THEME_ROOT/template.ftl"
+THEME_CONFIGMAP="$REPO_ROOT/helm-charts/keycloak/templates/playsay-theme-configmap.yaml"
+KEYCLOAK_STATEFULSET="$REPO_ROOT/helm-charts/keycloak/templates/keycloak-statefulset.yaml"
 
 if rg -q 'window\.prompt' "$SCRIPT" "$TEMPLATE"; then
   echo "Passkey theme must not ask the user for a credential label." >&2
@@ -25,6 +27,8 @@ rg -q 'initPasskeyLogin' "$LOGIN_TEMPLATE"
 rg -q 'id="playsay-forgot-password"' "$LAYOUT_TEMPLATE"
 rg -q 'data-recovery-base-url=' "$LAYOUT_TEMPLATE"
 rg -q 'playsayPasswordRecovery.js' "$LAYOUT_TEMPLATE"
+rg -q 'themes/playsay/login/resources/js/playsayPasswordRecovery.js' "$THEME_CONFIGMAP"
+rg -q 'path: login/resources/js/playsayPasswordRecovery.js' "$KEYCLOAK_STATEFULSET"
 rg -q 'mediation: "optional"' "$LOGIN_SCRIPT"
 if rg -q 'sessionStorage|reserveAutomaticAttempt|authenticationSessionIdentifier|passwordInitiallyExpanded|initPasskeyFirstLogin' "$LOGIN_SCRIPT" "$LOGIN_TEMPLATE"; then
   echo "Login must not reserve or start an automatic Passkey attempt." >&2
