@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
-metadata: { name: worksheet-import-service, namespace: argocd }
+metadata: {name: worksheet-import-service, namespace: argocd}
 spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: develop
+    targetRevision: release/01.004.12
     path: helm-charts/worksheet-import-service
-    helm: { valueFiles: [values-prod.yaml] }
-  destination: { server: https://kubernetes.default.svc, namespace: playsay-prod }
+    helm: {valueFiles: [values-prod.yaml]}
+  destination: {server: 'https://kubernetes.default.svc', namespace: playsay-prod}
   syncPolicy:
-    automated: { prune: true, selfHeal: true }
+    automated: {prune: true, selfHeal: true}
     syncOptions: [CreateNamespace=true]

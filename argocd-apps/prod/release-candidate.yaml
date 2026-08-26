@@ -1,14 +1,27 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.004.08"
-baseRelease: "release/01.004.07"
+status: building
+releaseBranch: "release/01.004.12"
+baseRelease: "release/01.004.08"
 basePlatformCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
-acceptedDevCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
-baseInfraCommit: "9d507ac80cf9a112466e1cf032996b9707c3ed72"
-platformCommit: "7a399b13624d00f403cde8573399f59f3c3f7f88"
+acceptedDevCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
+baseInfraCommit: "e3a5e8f85ae10a075274342e33f4122933eb3623"
+platformCommit: "d18830a1b4197cd0c8d2712718a415aae074193c"
 affectedTargets:
+  - "api-gateway"
+  - "ai-tutor-service"
+  - "worksheet-import-service"
+  - "vocabulary-service"
+  - "web-app"
+  - "game-adapter-service"
+  - "collaboration-service"
+  - "media-service"
+  - "payment-service"
+  - "registration-service"
+  - "email-service"
+  - "keyboard-service"
+  - "keyboard-app"
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "21"
-updatedAt: "2026-08-25T16:03:24Z"
+  build: "33"
+updatedAt: "2026-08-26T09:52:34Z"
