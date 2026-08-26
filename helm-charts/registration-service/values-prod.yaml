@@ -23,6 +23,9 @@ database:
   liquibaseEnabled: "false"
   hikariMaxPoolSize: "3"
 registrationService:
+  lessonAuth:
+    issuer: https://ops.honey.school/keycloak/realms/playsay
+    allowedCallbackOrigins: https://online.honey.school,https://online.honeyschool.ru
   publicBaseUrl: https://online.honey.school
   keycloak:
     baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak

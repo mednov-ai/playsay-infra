@@ -70,6 +70,18 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.registrationService.internalApi.existingSecret | quote }}
                   key: {{ .Values.registrationService.internalApi.serviceTokenKey | quote }}
+            - name: PLAYSAY_REGISTRATION_LESSON_AUTH_CLIENT_ID
+              value: {{ .Values.registrationService.lessonAuth.clientId | quote }}
+            - name: PLAYSAY_REGISTRATION_LESSON_AUTH_ISSUER
+              value: {{ .Values.registrationService.lessonAuth.issuer | quote }}
+            - name: PLAYSAY_REGISTRATION_LESSON_AUTH_ALLOWED_CALLBACK_ORIGINS
+              value: {{ .Values.registrationService.lessonAuth.allowedCallbackOrigins | quote }}
+            - name: PLAYSAY_REGISTRATION_LESSON_AUTH_PROVIDER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.registrationService.lessonAuth.existingSecret | quote }}
+                  key: {{ .Values.registrationService.lessonAuth.providerTokenKey | quote }}
+                  optional: true
             - name: PLAYSAY_REGISTRATION_TOKEN_TTL_HOURS
               value: {{ .Values.registrationService.tokenTtlHours | quote }}
             - name: PLAYSAY_REGISTRATION_RESEND_COOLDOWN_SECONDS
@@ -84,8 +96,6 @@ spec:
               value: {{ .Values.registrationService.keycloak.baseUrl | quote }}
             - name: PLAYSAY_KEYCLOAK_REALM
               value: {{ .Values.registrationService.keycloak.realm | quote }}
-            - name: PLAYSAY_KEYCLOAK_STUDENT_TOKEN_CLIENT_ID
-              value: {{ .Values.registrationService.keycloak.studentTokenClientId | quote }}
             - name: PLAYSAY_KEYCLOAK_ADMIN_CLIENT_ID
               valueFrom:
                 secretKeyRef:

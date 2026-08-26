@@ -35,6 +35,12 @@ registrationService:
   internalApi:
     existingSecret: playsay-registration
     serviceTokenKey: service-token
+  lessonAuth:
+    clientId: playsay-web
+    issuer: https://ops.honey.school/keycloak/realms/playsay
+    allowedCallbackOrigins: https://online.honey.school,https://online.honeyschool.ru
+    existingSecret: playsay-lesson-access
+    providerTokenKey: provider-token
   tokenTtlHours: "24"
   resendCooldownSeconds: "300"
   rateLimit:
@@ -44,7 +50,6 @@ registrationService:
   keycloak:
     baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
     realm: playsay
-    studentTokenClientId: playsay-web
     existingSecret: playsay-registration
     clientIdKey: keycloak-client-id
     clientSecretKey: keycloak-client-secret

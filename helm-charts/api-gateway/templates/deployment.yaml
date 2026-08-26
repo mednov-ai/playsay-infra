@@ -44,6 +44,23 @@ spec:
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
               value: {{ .Values.auth.jwkSetUri | quote }}
+            - name: PLAYSAY_LESSON_ACCESS_ENABLED
+              value: {{ .Values.lessonAccess.enabled | quote }}
+            - name: PLAYSAY_LESSON_ACCESS_HMAC_KEY_VERSION
+              value: {{ .Values.lessonAccess.hmacKeyVersion | quote }}
+            - name: PLAYSAY_LESSON_ACCESS_ATTEMPT_TTL_SECONDS
+              value: {{ .Values.lessonAccess.attemptTtlSeconds | quote }}
+            - name: PLAYSAY_WEB_OIDC_CLIENT_ID
+              value: {{ .Values.lessonAccess.oidcClientId | quote }}
+            - name: PLAYSAY_WEB_OIDC_CALLBACK
+              value: {{ .Values.lessonAccess.oidcCallback | quote }}
+            {{- if .Values.lessonAccess.enabled }}
+            - name: PLAYSAY_LESSON_ACCESS_HMAC_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lessonAccess.existingSecret | quote }}
+                  key: {{ .Values.lessonAccess.hmacSecretKey | quote }}
+            {{- end }}
             {{- if .Values.ai.openai.enabled }}
             - name: PLAYSAY_AI_PROVIDER
               value: "openai"
@@ -122,6 +139,8 @@ spec:
             {{- end }}
             - name: PLAYSAY_COLLABORATION_WEBSOCKET_URL
               value: {{ .Values.collaboration.websocketUrl | quote }}
+            - name: PLAYSAY_COLLABORATION_HTTP_BASE_URL
+              value: {{ .Values.collaboration.httpBaseUrl | quote }}
             - name: PLAYSAY_COLLABORATION_TOKEN_SECRET
               valueFrom:
                 secretKeyRef:

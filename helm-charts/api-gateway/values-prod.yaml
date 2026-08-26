@@ -27,6 +27,9 @@ websocket:
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+lessonAccess:
+  enabled: false
+  oidcCallback: https://online.honey.school/auth/callback
 ai:
   openai:
     enabled: true
@@ -56,6 +59,7 @@ lessonTranslation:
   apiKeyKey: api-key
 collaboration:
   websocketUrl: wss://online.honey.school/collab/ws
+  httpBaseUrl: http://collaboration-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-collaboration
   tokenTtlSeconds: "900"
 storage:

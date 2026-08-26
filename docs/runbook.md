@@ -1340,6 +1340,7 @@ The bootstrap/add-ons script runs it automatically after Jenkins is installed. T
 - `playsay-payment-service-develop`: tests/packages `payment-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-registration-service-develop`: tests/packages `registration-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
 - `playsay-email-service-develop`: tests/packages `email-service`, builds/pushes its image, then routes its reference to dev or the matching production release;
+- `playsay-keycloak-develop`: tests/packages the lesson Authenticator SPI, builds the pinned optimized custom Keycloak image, records its immutable digest, then routes its reference to dev or the matching production release;
 - `playsay-keyboard-backend-develop`: downstream keyboard backend job;
 - `playsay-keyboard-frontend-develop`: downstream keyboard frontend job.
 
@@ -1385,6 +1386,7 @@ Affected-target policy:
 - `backend/payment-service/**` -> `playsay-payment-service-develop`;
 - `backend/registration-service/**` -> `playsay-registration-service-develop`;
 - `backend/email-service/**` -> `playsay-email-service-develop`;
+- `backend/keycloak-lesson-authenticator/**` -> `playsay-keycloak-develop`;
 - `collaboration-service/**` -> `playsay-collaboration-service-develop`;
 - shared backend config/code -> all backend targets including `keyboard-service`;
 - shared frontend config/lockfile -> `web-app`, `game-adapter-service`, and `keyboard-app`;
@@ -1584,6 +1586,24 @@ Configure optional Passkeys after the upgraded pod is healthy. The script change
 ```bash
 ./scripts/configure-keycloak-passkeys.sh
 ```
+
+### Shared lesson-link authentication rollout
+
+Shared lesson links are additive and remain disabled in both environment value files until the complete dependency chain has passed acceptance. The link token is deterministic `HMAC-SHA-256` over protocol version, exact environment issuer, lesson id, link revision and key version. Dev and production must use independently generated 256-bit secrets in their own `playsay-lesson-access` secret; never copy a secret between guests or store its decoded value in Git, shell history, logs, evidence, or chat. The secret contains `hmac-secret-base64` for API Gateway and a separately generated `provider-token` for the Keycloak provider-to-registration-service channel. Generate each value directly into the environment's existing secret-management input, then verify only the key names and secret resource version. Rotation increments `lessonAccess.hmacKeyVersion`; changing only the version invalidates new starts from prior link revisions without exposing or storing raw link tokens.
+
+The Keycloak provider is built from `backend/keycloak-lesson-authenticator/Dockerfile`. It pins Keycloak `26.7.1` by upstream digest, installs the versioned SPI JAR and runs `kc.sh build`. Promote only a reviewed custom image digest; do not switch the chart to a mutable tag. After the custom image is healthy, configure the conditional browser flow idempotently from the matching guest. The script obtains the provider token from the environment-local Kubernetes secret and does not print it:
+
+```bash
+KEYCLOAK_URL=http://127.0.0.1:32084/keycloak \
+KEYCLOAK_LESSON_PROVIDER_NAMESPACE=<environment-namespace> \
+KEYCLOAK_LESSON_REDEEM_URL=http://registration-service.<environment-namespace>.svc.cluster.local/api/provider/lesson-auth/assertions/redeem \
+KEYCLOAK_LESSON_ISSUER=https://<environment-auth-origin>/keycloak/realms/playsay \
+./scripts/configure-keycloak-lesson-access.sh
+```
+
+The script copies the ordinary browser flow once, adds the lesson assertion authenticator as `ALTERNATIVE`, keeps password/passkey login unchanged when no assertion is present, and sets remembered SSO idle and maximum lifetimes to 30 days. Run it only after the provider and registration redemption endpoint are deployed. Verify an ordinary password login and explicit Passkey login immediately afterward.
+
+Roll out in this order, keeping `lessonAccess.enabled=false`: database backups; additive Liquibase migrations; registration and email services; collaboration disconnect endpoint; API Gateway; custom Keycloak image; conditional flow configuration; web application. Run isolated acceptance for reusable links, exact roster matching, generic email responses, Lobby approve/deny, kick/re-admit, reconnect, 30-day remember choice, current/all-device revocation, changed roster/schedule, cross-environment rejection and unchanged password/passkey fingerprints. Enable issuance in dev only after those checks. Production requires separate owner authorization, new environment-local secrets and the same gates. Rollback first disables issuance, then returns application images and browser-flow binding to their previous reviewed revisions; do not restore the legacy credential-mutating invite consume path. Restore the database only when reverting an incompatible Keycloak schema migration according to the existing Keycloak backup procedure.
 
 Dev uses RP ID `dev.ops.honey.school`. Production must be run on `playsay-prod` with its own kubeconfig and RP ID. Use the guest-local Keycloak NodePort because the public edge intentionally exposes realm/OIDC routes but hides the master/admin endpoints required by this script:
 

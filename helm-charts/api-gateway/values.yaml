@@ -28,6 +28,15 @@ auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
 
+lessonAccess:
+  enabled: false
+  existingSecret: playsay-lesson-access
+  hmacSecretKey: hmac-secret-base64
+  hmacKeyVersion: "1"
+  attemptTtlSeconds: "900"
+  oidcClientId: playsay-web
+  oidcCallback: https://online.honey.school/auth/callback
+
 ai:
   openai:
     enabled: false
@@ -67,6 +76,7 @@ lessonTranslation:
 
 collaboration:
   websocketUrl: wss://online.honey.school/collab/ws
+  httpBaseUrl: http://collaboration-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-collaboration
   tokenSecretKey: token-secret
   serviceTokenKey: service-token

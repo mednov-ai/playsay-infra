@@ -36,8 +36,8 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: keycloak
-          image: "{{ .Values.keycloak.image.repository }}@{{ .Values.keycloak.image.digest }}"
-          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - start
           env:

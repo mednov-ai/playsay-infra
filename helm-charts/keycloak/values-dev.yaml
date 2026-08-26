@@ -1,17 +1,26 @@
 theme:
   appBaseUrl: https://dev.online.honey.school
 
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "26.7.1"
+  digest: sha256:f1f1f01e472c8a78df40d8f2a49a925274eda4d3d80d5f6edbb5c880ee3c01c6
+  pullPolicy: IfNotPresent
+
+build:
+  name: upstream-26.7.1
+  number: "0"
+  branch: upstream
+  branchLabel: upstream
+  commit: upstream
+  commitShort: upstream
+
 global:
   security:
     allowInsecureImages: true
 
 keycloak:
   replicaCount: 1
-  image:
-    repository: quay.io/keycloak/keycloak
-    tag: "26.7.1"
-    digest: sha256:f1f1f01e472c8a78df40d8f2a49a925274eda4d3d80d5f6edbb5c880ee3c01c6
-    pullPolicy: IfNotPresent
   hostname: https://dev.ops.honey.school/keycloak
   httpRelativePath: /keycloak/
   service:
