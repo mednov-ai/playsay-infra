@@ -77,7 +77,7 @@ mediaService:
   serviceTokenKey: service-token
   cacheRequestTimeoutSeconds: "660"
 worksheetImport:
-  enabled: "false"
+  enabled: "true"
   baseUrl: http://worksheet-import-service.playsay-prod.svc.cluster.local
 gameAdapterService:
   baseUrl: http://game-adapter-service.playsay-prod.svc.cluster.local
