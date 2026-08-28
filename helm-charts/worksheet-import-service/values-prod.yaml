@@ -5,12 +5,12 @@ auth:
 storage: {endpoint: 'http://minio.playsay-prod.svc.cluster.local:9000'}
 analysis: {provider: stub}
 image:
-  tag: worksheet-import-release-01.004.12-12
-  digest: sha256:3c5abcb90095dd690d4bb4f10282a5142733f358911e00ac80de40760244e066
+  tag: worksheet-import-release-01.004.13-15
+  digest: sha256:c5e2b5df6d12e7d9c0f8443aa55af4663a3309d10e31ff53d834fbecd7ed2966
 build:
-  name: worksheet-import-release-01.004.12-12
-  number: "12"
-  branch: release/01.004.12
-  branchLabel: worksheet-import-release-01.004.12
-  commit: d18830a1b4197cd0c8d2712718a415aae074193c
-  commitShort: d18830a1b419
+  name: worksheet-import-release-01.004.13-15
+  number: "15"
+  branch: release/01.004.13
+  branchLabel: worksheet-import-release-01.004.13
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: b15c57a619dd

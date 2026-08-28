@@ -1,27 +1,22 @@
 theme:
   appBaseUrl: https://online.honey.school
-
 image:
-  repository: quay.io/keycloak/keycloak
-  tag: "26.7.1"
-  digest: sha256:f1f1f01e472c8a78df40d8f2a49a925274eda4d3d80d5f6edbb5c880ee3c01c6
+  repository: ghcr.io/mednov-ai/playsay-keycloak
+  tag: "keycloak-release-01.004.13-6"
+  digest: sha256:7d12065866359939f9a63ef7f392207a2778a35276f6901f2478fcef2a711345
   pullPolicy: IfNotPresent
-
 imagePullSecrets:
   - name: ghcr-pull-secret
-
 build:
-  name: upstream-26.7.1
-  number: "0"
-  branch: upstream
-  branchLabel: upstream
-  commit: upstream
-  commitShort: upstream
-
+  name: keycloak-release-01.004.13-6
+  number: "6"
+  branch: release/01.004.13
+  branchLabel: keycloak-release-01.004.13
+  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
+  commitShort: b15c57a619dd
 global:
   security:
     allowInsecureImages: true
-
 keycloak:
   replicaCount: 1
   hostname: https://ops.honey.school/keycloak
@@ -47,7 +42,6 @@ keycloak:
       memory: 1536Mi
   javaOpts: "-Xms512m -Xmx768m"
   themeCacheEnabled: true
-
 postgresql:
   enabled: true
   architecture: standalone
