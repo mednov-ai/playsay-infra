@@ -1,8 +1,10 @@
-feature: {enabled: false}
+feature: {enabled: true}
+imagePullSecrets:
+  - name: ghcr-pull-secret
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: https://ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
-storage: {endpoint: 'http://minio.playsay-prod.svc.cluster.local:9000'}
+storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: stub}
 image:
   tag: worksheet-import-release-01.004.13-15
