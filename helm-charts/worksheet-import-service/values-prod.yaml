@@ -1,4 +1,4 @@
-feature: {enabled: false}
+feature: {enabled: true}
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: https://ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
