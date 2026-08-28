@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/01.005.00
+    targetRevision: release/01.005.01
     path: helm-charts/app-postgres
     helm:
       valueFiles:
