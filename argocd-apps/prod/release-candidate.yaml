@@ -2,15 +2,15 @@ schemaVersion: 1
 status: building
 releaseBranch: "release/01.005.03"
 baseRelease: "release/01.005.02"
-basePlatformCommit: "65db2089bd547354616131e8328ec1db38868af4"
-acceptedDevCommit: "3512338efd111479823f5adb34ebeabe86068d94"
-baseInfraCommit: "8c66514b562caba5bbcaf3332ec0f113dd3de10e"
-platformCommit: "3512338efd111479823f5adb34ebeabe86068d94"
+basePlatformCommit: "3512338efd111479823f5adb34ebeabe86068d94"
+acceptedDevCommit: "2a3987a6556fb56cbc13fbaa7a691c8fdbc0329b"
+baseInfraCommit: "f92ba30282ae0de36e20267a3c65b07f8c9e31c4"
+platformCommit: "2a3987a6556fb56cbc13fbaa7a691c8fdbc0329b"
 affectedTargets:
   - "api-gateway"
   - "web-app"
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "42"
-updatedAt: "2026-08-30T19:31:29Z"
+  build: "43"
+updatedAt: "2026-08-30T19:37:03Z"
