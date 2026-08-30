@@ -1,5 +1,8 @@
 theme:
   appBaseUrl: https://online.honey.school
+  recoveryAllowedOrigins:
+    - https://online.honeyschool.ru
+    - https://online.honey.school
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
   tag: "keycloak-release-01.004.13-6"

@@ -254,6 +254,7 @@
                         <a href="{{ .Values.theme.appBaseUrl }}/register">${msg("noAccount")} ${msg("doRegister")}</a>
                         <a
                             data-recovery-base-url="{{ .Values.theme.appBaseUrl }}/forgot-password"
+                            data-recovery-allowed-origins="{{ join "," (default (list .Values.theme.appBaseUrl) .Values.theme.recoveryAllowedOrigins) }}"
                             href="{{ .Values.theme.appBaseUrl }}/forgot-password"
                             id="playsay-forgot-password"
                         >${msg("doForgotPassword")}</a>

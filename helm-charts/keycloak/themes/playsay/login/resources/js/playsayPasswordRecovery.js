@@ -22,6 +22,29 @@ export function passwordRecoveryHref(baseUrl, rawUsername, documentRef = globalT
   }
 }
 
+export function passwordRecoveryBaseUrl(
+  fallbackUrl,
+  rawAllowedOrigins,
+  currentHref = globalThis.window?.location?.href,
+  URLCtor = globalThis.URL,
+) {
+  const fallback = String(fallbackUrl || "");
+  if (!fallback || !currentHref || !URLCtor) {
+    return fallback;
+  }
+  try {
+    const allowedOrigins = String(rawAllowedOrigins || "")
+      .split(",")
+      .map((value) => new URLCtor(value.trim()).origin)
+      .filter(Boolean);
+    const redirectUri = new URLCtor(currentHref).searchParams.get("redirect_uri");
+    const redirectOrigin = redirectUri ? new URLCtor(redirectUri).origin : "";
+    return allowedOrigins.includes(redirectOrigin) ? `${redirectOrigin}/forgot-password` : fallback;
+  } catch (caught) {
+    return fallback;
+  }
+}
+
 export function initPasswordRecoveryLink({
   link = globalThis.document?.getElementById?.("playsay-forgot-password"),
   username = globalThis.document?.getElementById?.("username"),
@@ -32,7 +55,13 @@ export function initPasswordRecoveryLink({
     return;
   }
 
-  const baseUrl = link.dataset?.recoveryBaseUrl || link.getAttribute?.("href") || link.href;
+  const fallbackUrl = link.dataset?.recoveryBaseUrl || link.getAttribute?.("href") || link.href;
+  const baseUrl = passwordRecoveryBaseUrl(
+    fallbackUrl,
+    link.dataset?.recoveryAllowedOrigins,
+    globalThis.window?.location?.href,
+    URLCtor,
+  );
   const refreshDestination = () => {
     link.href = passwordRecoveryHref(baseUrl, username?.value, documentRef, URLCtor);
   };
