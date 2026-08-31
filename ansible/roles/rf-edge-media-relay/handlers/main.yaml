@@ -4,9 +4,11 @@
     name: coturn
     state: restarted
     daemon_reload: true
+  when: not ansible_check_mode
 
 - name: restart node exporter
   ansible.builtin.systemd_service:
     name: prometheus-node-exporter
     state: restarted
     daemon_reload: true
+  when: not ansible_check_mode
