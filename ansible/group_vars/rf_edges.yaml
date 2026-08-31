@@ -53,6 +53,7 @@ rf_edge_media_relay_tls_port: 5349
 rf_edge_media_relay_min_port: 49152
 rf_edge_media_relay_max_port: 49251
 rf_edge_media_relay_certificate_directory: /etc/letsencrypt/live/turn.honeyschool.ru
+rf_edge_media_relay_runtime_certificate_directory: /etc/coturn/certificates
 rf_edge_media_relay_secret_path: /etc/playsay/rf-edge-media-relay-auth-secret
 rf_edge_media_relay_metrics_directory: /var/lib/prometheus/node-exporter
 rf_edge_media_relay_metrics_port: 9100

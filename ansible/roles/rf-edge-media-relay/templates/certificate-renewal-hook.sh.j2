@@ -3,6 +3,7 @@ set -eu
 
 certificate="{{ rf_edge_media_relay_certificate_directory }}/fullchain.pem"
 private_key="{{ rf_edge_media_relay_certificate_directory }}/privkey.pem"
+runtime_directory="{{ rf_edge_media_relay_runtime_certificate_directory }}"
 openssl x509 -in "$certificate" -noout -checkend 604800 >/dev/null
 cert_public_key="$(mktemp)"
 private_public_key="$(mktemp)"
@@ -11,6 +12,9 @@ trap cleanup EXIT HUP INT TERM
 openssl x509 -in "$certificate" -pubkey -noout >"$cert_public_key"
 openssl pkey -in "$private_key" -pubout >"$private_public_key"
 cmp -s "$cert_public_key" "$private_public_key"
+install -d -o root -g turnserver -m 0750 "$runtime_directory"
+install -o root -g turnserver -m 0640 "$certificate" "$runtime_directory/fullchain.pem"
+install -o root -g turnserver -m 0640 "$private_key" "$runtime_directory/privkey.pem"
 touch /run/playsay-rf-edge-media-relay-certificate-reload-required
 
 # Deliberately do not reload coturn. An operator consumes this marker only in
