@@ -27,7 +27,9 @@ map $http_upgrade $playsay_rf_connection_upgrade {
 {% if route.response_replacements is defined %}
         proxy_set_header Accept-Encoding "";
         sub_filter_once off;
-        sub_filter_types application/json application/javascript text/javascript text/css;
+        # API JSON can intentionally contain both supported production origins
+        # (for example lesson-link copy choices) and must remain authoritative.
+        sub_filter_types application/javascript text/javascript text/css;
 {% for replacement in route.response_replacements %}
         sub_filter '{{ replacement.source }}' '{{ replacement.target }}';
 {% endfor %}
