@@ -140,30 +140,40 @@ def validate_allocations() -> None:
     if len(shared_secret) != 64 or any(byte not in b"0123456789abcdef" for byte in shared_secret):
         raise SystemExit("relay secret shape is invalid")
 
-    username = f"{int(time.time()) + 300}:preflight-{secrets.token_hex(8)}"
-    credential = base64.b64encode(
-        hmac.new(shared_secret, username.encode("ascii"), hashlib.sha1).digest()
-    ).decode("ascii")
-    common = [
-        "/usr/bin/turnutils_uclient",
-        "-u",
-        username,
-        "-w",
-        credential,
-        "-n",
-        "3",
-        "-y",
-        "-c",
-    ]
+    def authenticated_command() -> list[str]:
+        username = f"{int(time.time()) + 300}:preflight-{secrets.token_hex(8)}"
+        credential = base64.b64encode(
+            hmac.new(shared_secret, username.encode("ascii"), hashlib.sha1).digest()
+        ).decode("ascii")
+        return [
+            "/usr/bin/turnutils_uclient",
+            "-u",
+            username,
+            "-w",
+            credential,
+            "-n",
+            "3",
+            "-y",
+            "-c",
+        ]
 
     probe(
         ["/usr/bin/turnutils_uclient", "-u", "invalid", "-w", "invalid", "-n", "1", "-p", TURN_PORT, HOSTNAME],
         "invalid credential rejection",
         expect_success=False,
     )
-    probe(common + ["-p", TURN_PORT, HOSTNAME], "authenticated TURN/UDP allocation and data")
-    probe(common + ["-t", "-p", TURN_PORT, HOSTNAME], "authenticated TURN/TCP allocation and data")
-    probe(common + ["-t", "-S", "-p", TURNS_PORT, HOSTNAME], "authenticated TURN/TLS allocation and data")
+    probe(
+        authenticated_command() + ["-p", TURN_PORT, HOSTNAME],
+        "authenticated TURN/UDP allocation and data",
+    )
+    probe(
+        authenticated_command() + ["-t", "-p", TURN_PORT, HOSTNAME],
+        "authenticated TURN/TCP allocation and data",
+    )
+    probe(
+        authenticated_command() + ["-t", "-S", "-p", TURNS_PORT, HOSTNAME],
+        "authenticated TURN/TLS allocation and data",
+    )
 
 
 parser = argparse.ArgumentParser()
