@@ -1,14 +1,14 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-production-lesson-entry-recovery-264"
-  digest: sha256:06168f662650628eb79f0879e2a20d98ca6de08f1eea35dc5593bee8f8c55fe2
+  tag: "web-dev-265"
+  digest: sha256:34cfa1e973a1760b0e55659ae21a267b471a17e16262adc35f8432e247693e0e
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-production-lesson-entry-recovery-264
-  number: "264"
-  branch: codex/hotfix-production-lesson-entry-recovery
-  branchLabel: web-codex-hotfix-production-lesson-entry-recovery
+  name: web-dev-265
+  number: "265"
+  branch: develop
+  branchLabel: web-dev
   commit: 979706422c393686e55e38fb4bd0c2b74ac8a12a
   commitShort: "979706422c39"
 service:
