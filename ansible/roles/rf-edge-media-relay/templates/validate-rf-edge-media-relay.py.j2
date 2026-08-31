@@ -144,7 +144,17 @@ def validate_allocations() -> None:
     credential = base64.b64encode(
         hmac.new(shared_secret, username.encode("ascii"), hashlib.sha1).digest()
     ).decode("ascii")
-    common = ["/usr/bin/turnutils_uclient", "-u", username, "-w", credential, "-n", "3"]
+    common = [
+        "/usr/bin/turnutils_uclient",
+        "-u",
+        username,
+        "-w",
+        credential,
+        "-n",
+        "3",
+        "-y",
+        "-c",
+    ]
 
     probe(
         ["/usr/bin/turnutils_uclient", "-u", "invalid", "-w", "invalid", "-n", "1", "-p", TURN_PORT, HOSTNAME],
