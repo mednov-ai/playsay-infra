@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-release-01.005.03-263"
-  digest: "sha256:20e30ab62e4870d5a6a14aba113de88f95816393d15d68393a0c3cf256bde34e"
+  tag: "web-release-01.005.05-267"
+  digest: "sha256:c921a577d8ea293a1b1e674d5dc57d394d1009e6bedb24c63d5cc274ca971617"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-release-01.005.03-263
-  number: "263"
-  branch: release/01.005.03
-  branchLabel: web-release-01.005.03
-  commit: 2a3987a6556fb56cbc13fbaa7a691c8fdbc0329b
-  commitShort: "2a3987a6556f"
+  name: web-release-01.005.05-267
+  number: "267"
+  branch: release/01.005.05
+  branchLabel: web-release-01.005.05
+  commit: 43561834394be873505a5e9a18f47630266d45a2
+  commitShort: "43561834394b"
 service:
   type: NodePort
   nodePort: 32083
