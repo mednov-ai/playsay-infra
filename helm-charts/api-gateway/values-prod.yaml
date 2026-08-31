@@ -52,7 +52,7 @@ livekit:
   tokenTtlSeconds: "3600"
   regionalRelay:
     environment: prod
-    mode: off
+    mode: rf-origin-relay
 lessonTranslation:
   enabled: false
   provider: openai
