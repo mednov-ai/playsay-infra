@@ -101,6 +101,30 @@
   loop_control:
     label: "{{ item.item }}"
 
+- name: Create the protected coturn certificate directory
+  ansible.builtin.file:
+    path: "{{ rf_edge_media_relay_runtime_certificate_directory }}"
+    state: directory
+    owner: root
+    group: turnserver
+    mode: "0750"
+
+- name: Install coturn-readable copies of the independent certificate and key
+  ansible.builtin.copy:
+    src: "{{ item.source }}"
+    dest: "{{ rf_edge_media_relay_runtime_certificate_directory }}/{{ item.name }}"
+    remote_src: true
+    owner: root
+    group: turnserver
+    mode: "0640"
+  loop:
+    - source: "{{ rf_edge_media_relay_certificate_directory }}/fullchain.pem"
+      name: fullchain.pem
+    - source: "{{ rf_edge_media_relay_certificate_directory }}/privkey.pem"
+      name: privkey.pem
+  no_log: true
+  notify: restart coturn
+
 - name: Configure authenticated regional coturn
   ansible.builtin.template:
     src: turnserver.conf.j2
