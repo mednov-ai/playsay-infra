@@ -1,14 +1,15 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.005.06"
-baseRelease: "release/01.005.05"
+status: building
+releaseBranch: "release/01.006.00"
+baseRelease: "release/01.005.06"
 basePlatformCommit: "43561834394be873505a5e9a18f47630266d45a2"
-acceptedDevCommit: "43561834394be873505a5e9a18f47630266d45a2"
-baseInfraCommit: "6169d5b749f57f558f1b1cf344583ec85ea967a2"
-platformCommit: "43561834394be873505a5e9a18f47630266d45a2"
+acceptedDevCommit: "a8fcf8f8bd3eca4d62b606d9ad9456de5892068c"
+baseInfraCommit: "60e9be8dc9aa051b60ee06df939625433b86a418"
+platformCommit: "a8fcf8f8bd3eca4d62b606d9ad9456de5892068c"
 affectedTargets:
+  - "web-app"
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "48"
-updatedAt: "2026-08-31T12:49:40Z"
+  build: "49"
+updatedAt: "2026-08-31T20:38:50Z"
