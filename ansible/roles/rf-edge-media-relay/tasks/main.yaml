@@ -224,6 +224,7 @@
   loop:
     - coturn
     - prometheus-node-exporter
+  when: not ansible_check_mode
 
 - name: Apply relay configuration before joint validation
   ansible.builtin.meta: flush_handlers
