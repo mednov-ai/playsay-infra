@@ -1,0 +1,252 @@
+---
+- name: Verify the shared RF-edge capacity contract
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == rf_edge_media_relay_expected_distribution
+      - ansible_distribution_version is version(rf_edge_media_relay_expected_version, '==')
+      - ansible_processor_vcpus | int == rf_edge_media_relay_expected_vcpus
+      - ansible_memtotal_mb | int >= rf_edge_media_relay_min_memory_mb
+      - rf_edge_media_relay_min_port | int == 49152
+      - rf_edge_media_relay_max_port | int == 49251
+      - rf_edge_media_relay_auth_secret is not defined
+    fail_msg: The existing 1-vCPU/2-GiB edge or bounded relay contract has changed; review capacity before continuing.
+
+- name: Install the relay runtime and loopback monitoring packages
+  ansible.builtin.apt:
+    name:
+      - coturn
+      - curl
+      - openssl
+      - prometheus-node-exporter
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Configure bounded relay file-descriptor limits
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/90-playsay-rf-edge-media-relay.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      turnserver soft nofile 65536
+      turnserver hard nofile 65536
+  notify: restart coturn
+
+- name: Configure bounded relay UDP buffers
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/90-playsay-rf-edge-media-relay.conf
+    reload: true
+  loop:
+    - { name: net.core.rmem_max, value: "16777216" }
+    - { name: net.core.wmem_max, value: "16777216" }
+    - { name: net.core.netdev_max_backlog, value: "10000" }
+
+- name: Create the protected Honey School directory
+  ansible.builtin.file:
+    path: /etc/playsay
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Check the independent relay secret
+  ansible.builtin.stat:
+    path: "{{ rf_edge_media_relay_secret_path }}"
+  register: rf_edge_media_relay_secret_file
+  no_log: true
+
+- name: Require a protected independent relay secret
+  ansible.builtin.assert:
+    that:
+      - rf_edge_media_relay_secret_file.stat.exists
+      - rf_edge_media_relay_secret_file.stat.mode == '0600'
+      - rf_edge_media_relay_secret_file.stat.pw_name == 'root'
+    fail_msg: Deliver the independent regional secret with owner root and mode 0600 before applying this role.
+  no_log: true
+
+- name: Read the relay secret without emitting it
+  ansible.builtin.slurp:
+    src: "{{ rf_edge_media_relay_secret_path }}"
+  register: rf_edge_media_relay_secret_value
+  no_log: true
+
+- name: Resolve the relay secret
+  ansible.builtin.set_fact:
+    rf_edge_media_relay_auth_secret: "{{ rf_edge_media_relay_secret_value.content | b64decode | trim }}"
+  no_log: true
+
+- name: Require a high-entropy relay secret
+  ansible.builtin.assert:
+    that:
+      - rf_edge_media_relay_auth_secret is match('^[0-9a-f]{64}$')
+  no_log: true
+
+- name: Check the independent relay certificate and private key
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ rf_edge_media_relay_certificate_directory }}/fullchain.pem"
+    - "{{ rf_edge_media_relay_certificate_directory }}/privkey.pem"
+  register: rf_edge_media_relay_certificate_files
+
+- name: Fail closed until the independent relay certificate exists
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: Issue the independent turn.honeyschool.ru certificate before enabling coturn.
+  loop: "{{ rf_edge_media_relay_certificate_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Configure authenticated regional coturn
+  ansible.builtin.template:
+    src: turnserver.conf.j2
+    dest: /etc/turnserver.conf
+    owner: root
+    group: turnserver
+    mode: "0640"
+  no_log: true
+  notify: restart coturn
+
+- name: Enable the packaged coturn daemon
+  ansible.builtin.lineinfile:
+    path: /etc/default/coturn
+    regexp: '^TURNSERVER_ENABLED='
+    line: 'TURNSERVER_ENABLED=1'
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart coturn
+
+- name: Create the coturn systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/coturn.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Limit and account for coturn on the shared host
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/coturn.service.d/playsay-rf-edge-media-relay.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Service]
+      CPUAccounting=true
+      MemoryAccounting=true
+      MemoryHigh={{ rf_edge_media_relay_memory_high }}
+      MemoryMax={{ rf_edge_media_relay_memory_max }}
+      TasksMax=256
+      LimitNOFILE=65536
+      OOMScoreAdjust=100
+  notify: restart coturn
+
+- name: Create node-exporter textfile directory
+  ansible.builtin.file:
+    path: "{{ rf_edge_media_relay_metrics_directory }}"
+    state: directory
+    owner: root
+    group: prometheus
+    mode: "0750"
+
+- name: Bind node exporter to loopback with textfile collection
+  ansible.builtin.copy:
+    dest: /etc/default/prometheus-node-exporter
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      ARGS="--web.listen-address=127.0.0.1:{{ rf_edge_media_relay_metrics_port }} --collector.textfile.directory={{ rf_edge_media_relay_metrics_directory }}"
+  notify: restart node exporter
+
+- name: Install aggregate shared-edge metrics collector
+  ansible.builtin.template:
+    src: collect-rf-edge-media-relay-metrics.sh.j2
+    dest: /usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install shared-edge public-listener validator
+  ansible.builtin.template:
+    src: validate-rf-edge-media-relay-listeners.sh.j2
+    dest: /usr/local/sbin/playsay-validate-rf-edge-media-relay-listeners
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install privacy-safe relay configuration and allocation validator
+  ansible.builtin.template:
+    src: validate-rf-edge-media-relay.py.j2
+    dest: /usr/local/sbin/playsay-validate-rf-edge-media-relay
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Schedule aggregate shared-edge metrics collection
+  ansible.builtin.copy:
+    dest: /etc/cron.d/playsay-rf-edge-media-relay-metrics
+    owner: root
+    group: root
+    mode: "0644"
+    content: "* * * * * root /usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics\n"
+
+- name: Install non-disruptive relay certificate renewal hook
+  ansible.builtin.template:
+    src: certificate-renewal-hook.sh.j2
+    dest: /etc/letsencrypt/renewal-hooks/deploy/playsay-rf-edge-media-relay
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Extend UFW with the bounded TURN surface
+  community.general.ufw:
+    rule: allow
+    proto: "{{ item.proto }}"
+    port: "{{ item.port }}"
+  loop:
+    - { proto: tcp, port: "3478" }
+    - { proto: udp, port: "3478" }
+    - { proto: tcp, port: "5349" }
+    - { proto: udp, port: "49152:49251" }
+
+- name: Enable and start coturn and loopback node exporter
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - coturn
+    - prometheus-node-exporter
+
+- name: Apply relay configuration before joint validation
+  ansible.builtin.meta: flush_handlers
+
+- name: Validate nginx configuration on the shared host
+  ansible.builtin.command:
+    cmd: nginx -t
+  changed_when: false
+
+- name: Require nginx and coturn to remain active
+  ansible.builtin.command:
+    cmd: systemctl is-active {{ item }}
+  loop:
+    - nginx
+    - coturn
+  changed_when: false
+
+- name: Validate declared public and loopback listeners
+  ansible.builtin.command:
+    cmd: /usr/local/sbin/playsay-validate-rf-edge-media-relay-listeners
+  changed_when: false
+
+- name: Validate shared-edge relay configuration without creating allocations
+  ansible.builtin.command:
+    cmd: /usr/local/sbin/playsay-validate-rf-edge-media-relay --configuration
+  changed_when: false

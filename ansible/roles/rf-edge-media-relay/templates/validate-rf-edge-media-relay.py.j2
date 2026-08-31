@@ -1,0 +1,167 @@
+#!/usr/bin/python3
+"""Validate the shared RF edge without printing secrets, credentials, or raw logs."""
+
+import argparse
+import base64
+import hashlib
+import hmac
+import os
+import secrets
+import socket
+import stat
+import subprocess
+import time
+
+
+HOSTNAME = "{{ rf_edge_media_relay_hostname }}"
+PUBLIC_IPV4 = "{{ rf_edge_media_relay_public_ipv4 }}"
+SECRET_PATH = "{{ rf_edge_media_relay_secret_path }}"
+CERTIFICATE_PATH = "{{ rf_edge_media_relay_certificate_directory }}/fullchain.pem"
+TURN_PORT = "{{ rf_edge_media_relay_listening_port }}"
+TURNS_PORT = "{{ rf_edge_media_relay_tls_port }}"
+METRICS_PORT = "{{ rf_edge_media_relay_metrics_port }}"
+COMMAND_ENVIRONMENT = {**os.environ, "LC_ALL": "C"}
+
+
+def probe(command: list[str], label: str, *, expect_success: bool = True) -> None:
+    try:
+        result = subprocess.run(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            env=COMMAND_ENVIRONMENT,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"{label} timed out") from None
+    succeeded = result.returncode == 0
+    if succeeded != expect_success:
+        expectation = "succeed" if expect_success else "fail"
+        raise SystemExit(f"{label} did not {expectation}")
+    print(f"PASS {label}")
+
+
+def capture(command: list[str], label: str) -> str:
+    try:
+        result = subprocess.run(
+            command,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            env=COMMAND_ENVIRONMENT,
+            text=True,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"{label} timed out") from None
+    if result.returncode != 0:
+        raise SystemExit(f"{label} did not succeed")
+    return result.stdout
+
+
+def validate_configuration() -> None:
+    secret_stat = os.stat(SECRET_PATH, follow_symlinks=False)
+    if secret_stat.st_uid != 0 or stat.S_IMODE(secret_stat.st_mode) != 0o600:
+        raise SystemExit("relay secret ownership or mode is invalid")
+    print("PASS protected relay secret metadata")
+
+    resolved = {item[4][0] for item in socket.getaddrinfo(HOSTNAME, None, socket.AF_INET)}
+    if resolved != {PUBLIC_IPV4}:
+        raise SystemExit("TURN DNS does not resolve exactly to the established RF edge")
+    print("PASS exact TURN DNS")
+
+    probe(["/usr/sbin/nginx", "-t"], "nginx configuration")
+    probe(["/usr/bin/systemctl", "is-active", "nginx"], "nginx active")
+    probe(["/usr/bin/systemctl", "is-active", "coturn"], "coturn active")
+    probe(
+        ["/usr/local/sbin/playsay-validate-rf-edge-media-relay-listeners"],
+        "bounded public and loopback listeners",
+    )
+    probe(
+        ["/usr/bin/openssl", "x509", "-in", CERTIFICATE_PATH, "-noout", "-checkhost", HOSTNAME],
+        "independent certificate hostname",
+    )
+    probe(
+        ["/usr/bin/openssl", "x509", "-in", CERTIFICATE_PATH, "-noout", "-checkend", "604800"],
+        "certificate valid for at least seven days",
+    )
+    probe(
+        [
+            "/usr/bin/openssl",
+            "s_client",
+            "-connect",
+            f"{HOSTNAME}:{TURNS_PORT}",
+            "-servername",
+            HOSTNAME,
+            "-verify_hostname",
+            HOSTNAME,
+            "-verify_return_error",
+            "-brief",
+        ],
+        "TURN/TLS certificate chain",
+    )
+    firewall = capture(["/usr/sbin/ufw", "status", "verbose"], "UFW status")
+    if "Status: active" not in firewall or "Default: deny (incoming)" not in firewall:
+        raise SystemExit("UFW is not active with default-deny incoming policy")
+    print("PASS active default-deny UFW")
+
+    service_limits = capture(
+        [
+            "/usr/bin/systemctl",
+            "show",
+            "coturn",
+            "--property=CPUAccounting,MemoryAccounting,MemoryHigh,MemoryMax,LimitNOFILE,TasksMax",
+        ],
+        "coturn systemd limits",
+    )
+    required_limits = {
+        "CPUAccounting=yes",
+        "MemoryAccounting=yes",
+        "LimitNOFILE=65536",
+        "TasksMax=256",
+    }
+    if not required_limits.issubset(set(service_limits.splitlines())):
+        raise SystemExit("coturn systemd accounting or limits are incomplete")
+    if "MemoryHigh=infinity" in service_limits or "MemoryMax=infinity" in service_limits:
+        raise SystemExit("coturn memory limits are not bounded")
+    print("PASS coturn systemd accounting and limits")
+    probe(
+        ["/usr/bin/curl", "--fail", "--silent", "--show-error", f"http://127.0.0.1:{METRICS_PORT}/metrics"],
+        "loopback metrics",
+    )
+
+
+def validate_allocations() -> None:
+    with open(SECRET_PATH, "rb") as secret_file:
+        shared_secret = secret_file.read().strip()
+    if len(shared_secret) != 64 or any(byte not in b"0123456789abcdef" for byte in shared_secret):
+        raise SystemExit("relay secret shape is invalid")
+
+    username = f"{int(time.time()) + 300}:preflight-{secrets.token_hex(8)}"
+    credential = base64.b64encode(
+        hmac.new(shared_secret, username.encode("ascii"), hashlib.sha1).digest()
+    ).decode("ascii")
+    common = ["/usr/bin/turnutils_uclient", "-u", username, "-w", credential, "-n", "3"]
+
+    probe(
+        ["/usr/bin/turnutils_uclient", "-u", "invalid", "-w", "invalid", "-n", "1", "-p", TURN_PORT, HOSTNAME],
+        "invalid credential rejection",
+        expect_success=False,
+    )
+    probe(common + ["-p", TURN_PORT, HOSTNAME], "authenticated TURN/UDP allocation and data")
+    probe(common + ["-t", "-p", TURN_PORT, HOSTNAME], "authenticated TURN/TCP allocation and data")
+    probe(common + ["-t", "-S", "-p", TURNS_PORT, HOSTNAME], "authenticated TURN/TLS allocation and data")
+
+
+parser = argparse.ArgumentParser()
+mode = parser.add_mutually_exclusive_group(required=True)
+mode.add_argument("--configuration", action="store_true")
+mode.add_argument("--allocations", action="store_true")
+arguments = parser.parse_args()
+
+validate_configuration()
+if arguments.allocations:
+    validate_allocations()

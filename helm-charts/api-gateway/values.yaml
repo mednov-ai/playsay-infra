@@ -65,6 +65,12 @@ livekit:
   apiKeyKey: api-key
   apiSecretKey: api-secret
   tokenTtlSeconds: "3600"
+  regionalRelay:
+    environment: local
+    mode: off
+    existingSecret: rf-media-relay-auth
+    sharedSecretKey: shared-secret
+    credentialTtlSeconds: "900"
 
 lessonTranslation:
   enabled: false

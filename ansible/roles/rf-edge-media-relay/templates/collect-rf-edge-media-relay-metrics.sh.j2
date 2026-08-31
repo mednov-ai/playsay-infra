@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+output_file="{{ rf_edge_media_relay_metrics_directory }}/rf_edge_media_relay.prom"
+temporary_file="${output_file}.tmp"
+service_value() { systemctl is-active --quiet "$1" && printf 1 || printf 0; }
+restart_count() { systemctl show "$1" --property=NRestarts --value 2>/dev/null || printf 0; }
+
+relay_sockets="$(ss -H -lun 2>/dev/null | awk '$5 ~ /:([0-9]+)$/ { split($5, address, ":"); port=address[length(address)]; if (port >= {{ rf_edge_media_relay_min_port }} && port <= {{ rf_edge_media_relay_max_port }}) count++ } END { print count + 0 }')"
+allocation_failures="$(journalctl -u coturn --since '-2 minutes' --no-pager 2>/dev/null | grep -Eci 'allocation (failed|error)|cannot create allocation' || true)"
+auth_failures="$(journalctl -u coturn --since '-2 minutes' --no-pager 2>/dev/null | grep -Eci 'unauthorized|wrong credentials|cannot find credentials' || true)"
+
+umask 022
+{
+  printf 'playsay_rf_edge_coturn_up %s\n' "$(service_value coturn)"
+  printf 'playsay_rf_edge_nginx_up %s\n' "$(service_value nginx)"
+  printf 'playsay_rf_edge_coturn_restarts_total %s\n' "$(restart_count coturn)"
+  printf 'playsay_rf_edge_nginx_restarts_total %s\n' "$(restart_count nginx)"
+  printf 'playsay_rf_edge_media_relay_udp_sockets %s\n' "$relay_sockets"
+  printf 'playsay_rf_edge_media_relay_allocation_failures %s\n' "$allocation_failures"
+  printf 'playsay_rf_edge_media_relay_auth_failures %s\n' "$auth_failures"
+} >"$temporary_file"
+mv "$temporary_file" "$output_file"

@@ -1,0 +1,12 @@
+---
+- name: restart coturn
+  ansible.builtin.systemd_service:
+    name: coturn
+    state: restarted
+    daemon_reload: true
+
+- name: restart node exporter
+  ansible.builtin.systemd_service:
+    name: prometheus-node-exporter
+    state: restarted
+    daemon_reload: true

@@ -1,0 +1,5 @@
+---
+rf_edge_media_relay_expected_distribution: Ubuntu
+rf_edge_media_relay_expected_version: "24.04"
+rf_edge_media_relay_expected_vcpus: 1
+rf_edge_media_relay_min_memory_mb: 1800

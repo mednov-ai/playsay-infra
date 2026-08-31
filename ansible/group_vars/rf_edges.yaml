@@ -25,6 +25,7 @@ rf_edge_routes:
         target: wss://online.honeyschool.ru
       - source: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
         target: https://ops.honey.school/keycloak/realms/playsay
+
   - hostname: key.honeyschool.ru
     origin_hostname: key.honey.school
     certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
@@ -40,3 +41,29 @@ rf_edge_routes:
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
     kind: keycloak
     realm: playsay
+
+# One-lesson-only TURN service co-located with nginx on the already-paid RF
+# edge. A separate reviewed infrastructure change is required before resizing,
+# widening the range, adding another relay, or raising concurrency.
+rf_edge_media_relay_hostname: turn.honeyschool.ru
+rf_edge_media_relay_realm: turn.honeyschool.ru
+rf_edge_media_relay_public_ipv4: "{{ ansible_host }}"
+rf_edge_media_relay_listening_port: 3478
+rf_edge_media_relay_tls_port: 5349
+rf_edge_media_relay_min_port: 49152
+rf_edge_media_relay_max_port: 49251
+rf_edge_media_relay_certificate_directory: /etc/letsencrypt/live/turn.honeyschool.ru
+rf_edge_media_relay_secret_path: /etc/playsay/rf-edge-media-relay-auth-secret
+rf_edge_media_relay_metrics_directory: /var/lib/prometheus/node-exporter
+rf_edge_media_relay_metrics_port: 9100
+rf_edge_media_relay_total_quota: 8
+rf_edge_media_relay_user_quota: 4
+rf_edge_media_relay_memory_high: 512M
+rf_edge_media_relay_memory_max: 768M
+rf_edge_media_relay_forbidden_addresses:
+  - 65.109.55.110
+  - 10.60.0.20
+  - 10.60.0.30
+  - 10.60.0.40
+  - 146.103.126.15
+  - 89.124.113.223

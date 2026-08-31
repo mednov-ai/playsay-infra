@@ -3,10 +3,12 @@ set -eu
 
 usage() {
   cat >&2 <<'EOF'
-Usage: scripts/apply-rf-edge-release.sh --check|--apply [--inventory PATH]
+Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--inventory PATH]
 
-Runs the Selectel RF edge playbook only from a clean, pushed numeric release
-branch. --apply also requires:
+Runs the shared nginx/coturn Selectel RF edge playbook only from a clean,
+pushed numeric release branch. --syntax is read-only and may run from a topic
+branch. Review --check in a zero-allocation window;
+--apply may restart coturn and also requires:
   PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN
 EOF
   exit 2
@@ -17,7 +19,7 @@ inventory_path="${PLAYSAY_RF_EDGE_INVENTORY:-}"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --check|--apply)
+    --syntax|--check|--apply)
       [ -z "$mode" ] || usage
       mode="$1"
       shift
@@ -45,6 +47,21 @@ for command_name in git ansible-playbook grep; do
     exit 1
   }
 done
+
+if [ "$mode" = "--syntax" ]; then
+  if [ -n "$inventory_path" ]; then
+    case "$inventory_path" in
+      /*) ;;
+      *) inventory_path="$repo_root/$inventory_path" ;;
+    esac
+    [ -f "$inventory_path" ] || {
+      echo "Selectel inventory does not exist: $inventory_path" >&2
+      exit 2
+    }
+    exec ansible-playbook -i "$inventory_path" "$repo_root/ansible/playbooks/rf-edge.yaml" --syntax-check
+  fi
+  exec ansible-playbook "$repo_root/ansible/playbooks/rf-edge.yaml" --syntax-check
+fi
 
 release_branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
 if ! printf '%s\n' "$release_branch" | grep -Eq '^release/[0-9]{2}\.[0-9]{3}\.[0-9]{2}$'; then

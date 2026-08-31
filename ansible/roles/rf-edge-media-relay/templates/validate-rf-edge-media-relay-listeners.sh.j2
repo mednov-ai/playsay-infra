@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+unexpected="$(ss -H -lntu | awk '
+  {
+    endpoint=$5
+    sub(/^.*:/, "", endpoint)
+    port=endpoint + 0
+    local_only=($5 ~ /^127\./ || $5 ~ /^\[?::1\]?:/)
+    relay_range=(port >= {{ rf_edge_media_relay_min_port }} && port <= {{ rf_edge_media_relay_max_port }})
+    allowed=(port == 22 || port == 80 || port == 443 || port == {{ rf_edge_media_relay_listening_port }} || port == {{ rf_edge_media_relay_tls_port }} || relay_range)
+    if (!local_only && !allowed) print $1, $5
+  }
+')"
+
+if [ -n "$unexpected" ]; then
+  echo 'Unexpected public listener detected on the shared RF edge.' >&2
+  printf '%s\n' "$unexpected" >&2
+  exit 1
+fi
+
+ss -H -lntu | grep -Eq ':{{ rf_edge_media_relay_listening_port }}([[:space:]]|$)'
+ss -H -lnt | grep -Eq ':{{ rf_edge_media_relay_tls_port }}([[:space:]]|$)'
+ss -H -lnt | grep -Eq '127\.0\.0\.1:{{ rf_edge_media_relay_metrics_port }}([[:space:]]|$)'

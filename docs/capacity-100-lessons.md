@@ -2,6 +2,8 @@
 
 This gate validates the single-node AX41 production profile. It is not a high-availability test: restarting LiveKit, coturn, API or collaboration can disconnect active lessons.
 
+The coturn service co-located with nginx on the existing 1-vCPU/2-GiB Selectel RF edge is outside this capacity claim. Its ceiling is one concurrent two-participant 45-minute lesson with 720p camera/audio and one screen-share cycle, using only UDP `49152-49251`. A successful RF canary cannot be cited as evidence for 100 rooms or the 30%-forced-relay workload below. A dedicated/second relay, resize, wider range, or more concurrency requires a separate reviewed provider-state/capacity change and external load evidence.
+
 ## Fixed workload profile
 
 - 100 isolated individual rooms, two full publish/subscribe participants per room.

@@ -121,6 +121,23 @@ spec:
                   key: {{ .Values.livekit.apiSecretKey | quote }}
             - name: PLAYSAY_LIVEKIT_TOKEN_TTL_SECONDS
               value: {{ .Values.livekit.tokenTtlSeconds | quote }}
+            {{- $relayMode := .Values.livekit.regionalRelay.mode | default "off" }}
+            {{- if not (has $relayMode (list "off" "rf-origin-relay")) }}
+            {{- fail "livekit.regionalRelay.mode must be off or rf-origin-relay" }}
+            {{- end }}
+            - name: PLAYSAY_REGIONAL_RELAY_ENVIRONMENT
+              value: {{ .Values.livekit.regionalRelay.environment | quote }}
+            - name: PLAYSAY_REGIONAL_RELAY_MODE
+              value: {{ $relayMode | quote }}
+            - name: PLAYSAY_REGIONAL_RELAY_CREDENTIAL_TTL_SECONDS
+              value: {{ .Values.livekit.regionalRelay.credentialTtlSeconds | default "900" | quote }}
+            {{- if eq $relayMode "rf-origin-relay" }}
+            - name: PLAYSAY_REGIONAL_RELAY_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.livekit.regionalRelay.existingSecret | quote }}
+                  key: {{ .Values.livekit.regionalRelay.sharedSecretKey | quote }}
+            {{- end }}
             {{- end }}
             - name: PLAYSAY_LESSON_TRANSLATION_ENABLED
               value: {{ .Values.lessonTranslation.enabled | quote }}

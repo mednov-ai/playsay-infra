@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+certificate="{{ rf_edge_media_relay_certificate_directory }}/fullchain.pem"
+private_key="{{ rf_edge_media_relay_certificate_directory }}/privkey.pem"
+openssl x509 -in "$certificate" -noout -checkend 604800 >/dev/null
+cert_public_key="$(mktemp)"
+private_public_key="$(mktemp)"
+cleanup() { rm -f "$cert_public_key" "$private_public_key"; }
+trap cleanup EXIT HUP INT TERM
+openssl x509 -in "$certificate" -pubkey -noout >"$cert_public_key"
+openssl pkey -in "$private_key" -pubout >"$private_public_key"
+cmp -s "$cert_public_key" "$private_public_key"
+touch /run/playsay-rf-edge-media-relay-certificate-reload-required
+
+# Deliberately do not reload coturn. An operator consumes this marker only in
+# a verified zero-allocation window and then repeats TURN/TLS allocation.

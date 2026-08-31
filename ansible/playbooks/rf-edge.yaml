@@ -1,9 +1,22 @@
 ---
-- name: Configure the Play&Say Russian production ingress
+- name: Configure the Honey School Russian production edge
   hosts: rf_edges
   become: true
   gather_facts: true
+  serial: 1
+  any_errors_fatal: true
   vars_files:
     - ../group_vars/rf_edges.yaml
+  pre_tasks:
+    - name: Prove the play targets only the established RF edge
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-rf-edge'
+          - group_names | difference(['rf_edges']) | length == 0
+          - ansible_host is defined
+          - ansible_host == rf_edge_media_relay_public_ipv4
+          - ansible_host not in rf_edge_media_relay_forbidden_addresses
+        fail_msg: The RF-edge playbook refuses AX41, guests, alternate Selectel nodes, and legacy hosts.
   roles:
     - rf-edge-proxy
+    - rf-edge-media-relay

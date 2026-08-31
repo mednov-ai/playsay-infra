@@ -1,0 +1,32 @@
+listening-port={{ rf_edge_media_relay_listening_port }}
+tls-listening-port={{ rf_edge_media_relay_tls_port }}
+listening-ip={{ rf_edge_media_relay_public_ipv4 }}
+relay-ip={{ rf_edge_media_relay_public_ipv4 }}
+external-ip={{ rf_edge_media_relay_public_ipv4 }}
+min-port={{ rf_edge_media_relay_min_port }}
+max-port={{ rf_edge_media_relay_max_port }}
+realm={{ rf_edge_media_relay_realm }}
+server-name={{ rf_edge_media_relay_hostname }}
+use-auth-secret
+static-auth-secret={{ rf_edge_media_relay_auth_secret }}
+total-quota={{ rf_edge_media_relay_total_quota }}
+user-quota={{ rf_edge_media_relay_user_quota }}
+stale-nonce=600
+no-multicast-peers
+no-loopback-peers
+no-cli
+no-tlsv1
+no-tlsv1_1
+cert={{ rf_edge_media_relay_certificate_directory }}/fullchain.pem
+pkey={{ rf_edge_media_relay_certificate_directory }}/privkey.pem
+log-file=stdout
+simple-log
+denied-peer-ip=0.0.0.0-0.255.255.255
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=100.64.0.0-100.127.255.255
+denied-peer-ip=127.0.0.0-127.255.255.255
+denied-peer-ip=169.254.0.0-169.254.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.0.0.0-192.0.0.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+denied-peer-ip=224.0.0.0-255.255.255.255

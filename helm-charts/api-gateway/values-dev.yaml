@@ -48,6 +48,9 @@ livekit:
   serverUrl: wss://dev.online.honey.school/livekit
   existingSecret: livekit-keys
   tokenTtlSeconds: "3600"
+  regionalRelay:
+    environment: dev
+    mode: off
 lessonTranslation:
   enabled: true
   provider: openai
