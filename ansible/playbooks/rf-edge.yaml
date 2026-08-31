@@ -11,7 +11,7 @@
     - name: Prove the play targets only the established RF edge
       ansible.builtin.assert:
         that:
-          - inventory_hostname == 'playsay-rf-edge'
+          - inventory_hostname == 'playsay-selectel-rf-edge'
           - group_names | difference(['rf_edges']) | length == 0
           - ansible_host is defined
           - ansible_host == rf_edge_media_relay_public_ipv4
