@@ -233,20 +233,25 @@
     cmd: nginx -t
   changed_when: false
 
-- name: Require nginx and coturn to remain active
+- name: Require nginx to remain active
   ansible.builtin.command:
-    cmd: systemctl is-active {{ item }}
-  loop:
-    - nginx
-    - coturn
+    cmd: systemctl is-active nginx
   changed_when: false
+
+- name: Require coturn to remain active after apply
+  ansible.builtin.command:
+    cmd: systemctl is-active coturn
+  changed_when: false
+  when: not ansible_check_mode
 
 - name: Validate declared public and loopback listeners
   ansible.builtin.command:
     cmd: /usr/local/sbin/playsay-validate-rf-edge-media-relay-listeners
   changed_when: false
+  when: not ansible_check_mode
 
 - name: Validate shared-edge relay configuration without creating allocations
   ansible.builtin.command:
     cmd: /usr/local/sbin/playsay-validate-rf-edge-media-relay --configuration
   changed_when: false
+  when: not ansible_check_mode
