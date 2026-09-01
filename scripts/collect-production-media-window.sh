@@ -44,8 +44,10 @@ query_value() {
 
 printf 'metric,value\n'
 idle_zero='((sum(livekit_participant_total) == 0) * 0)'
-query_value direct_school_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"direct-school\"}[$range])) or $idle_zero"
-query_value rf_two_hop_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"rf-two-hop\"}[$range])) or $idle_zero"
+query_value direct_school_signaling_selections "sum(increase(playsay_classroom_signaling_route_selections_total{route=\"direct-school\"}[$range])) or $idle_zero"
+query_value rf_two_hop_signaling_selections "sum(increase(playsay_classroom_signaling_route_selections_total{route=\"rf-two-hop\"}[$range])) or $idle_zero"
+query_value baseline_media_policy_selections "sum(increase(playsay_classroom_media_policy_selections_total{policy=\"baseline\"}[$range])) or $idle_zero"
+query_value rf_turn_media_policy_selections "sum(increase(playsay_classroom_media_policy_selections_total{policy=\"rf-turn-relay\"}[$range])) or $idle_zero"
 query_value signal_connected_joins "sum(increase(livekit_participant_join_total{state=\"signal_connected\"}[$range]))"
 query_value rtc_connected_joins "sum(increase(livekit_participant_join_total{state=\"rtc_connected\"}[$range]))"
 query_value participants_min "min_over_time((sum(livekit_participant_total))[$range:15s])"

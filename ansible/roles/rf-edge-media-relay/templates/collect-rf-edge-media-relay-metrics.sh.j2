@@ -17,6 +17,7 @@ umask 022
   printf 'playsay_rf_edge_coturn_restarts_total %s\n' "$(restart_count coturn)"
   printf 'playsay_rf_edge_nginx_restarts_total %s\n' "$(restart_count nginx)"
   printf 'playsay_rf_edge_media_relay_udp_sockets %s\n' "$relay_sockets"
+  printf 'playsay_rf_edge_media_relay_active_udp_allocations %s\n' "$relay_sockets"
   printf 'playsay_rf_edge_media_relay_allocation_failures %s\n' "$allocation_failures"
   printf 'playsay_rf_edge_media_relay_auth_failures %s\n' "$auth_failures"
 } >"$temporary_file"

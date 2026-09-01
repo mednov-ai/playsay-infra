@@ -51,6 +51,8 @@ livekit:
   regionalRelay:
     environment: dev
     mode: off
+    signalingMode: off
+    mediaMode: off
 lessonTranslation:
   enabled: true
   provider: openai

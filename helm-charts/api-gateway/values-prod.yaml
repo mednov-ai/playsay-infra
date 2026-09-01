@@ -52,7 +52,9 @@ livekit:
   tokenTtlSeconds: "3600"
   regionalRelay:
     environment: prod
-    mode: rf-origin-relay
+    mode: off
+    signalingMode: rf-two-hop
+    mediaMode: off
     signalingUrl: wss://online.honeyschool.ru/livekit
 lessonTranslation:
   enabled: false

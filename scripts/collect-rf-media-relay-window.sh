@@ -71,6 +71,18 @@ metric_sum() {
 
 capture_sample() {
   sample="$(curl -fsS "$metrics_url")"
+  for required_metric in \
+    playsay_rf_edge_media_relay_active_udp_allocations \
+    playsay_rf_edge_media_relay_allocation_failures \
+    playsay_rf_edge_media_relay_auth_failures \
+    playsay_rf_edge_coturn_up \
+    playsay_rf_edge_nginx_up
+  do
+    printf '%s\n' "$sample" | grep -q "^${required_metric} " || {
+      echo "Required aggregate metric is unavailable: ${required_metric}" >&2
+      exit 1
+    }
+  done
   cpu_total="$(printf '%s\n' "$sample" | metric_sum node_cpu_seconds_total)"
   cpu_idle="$(printf '%s\n' "$sample" | awk '$1 ~ /^node_cpu_seconds_total\{/ && $1 ~ /mode="idle"/ { sum += $NF } END { printf "%.6f", sum + 0 }')"
   memory_available="$(printf '%s\n' "$sample" | metric_sum node_memory_MemAvailable_bytes)"
@@ -84,7 +96,7 @@ capture_sample() {
   nginx_up="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_nginx_up)"
   coturn_restarts="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_coturn_restarts_total)"
   nginx_restarts="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_nginx_restarts_total)"
-  relay_sockets="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_media_relay_udp_sockets)"
+  active_allocations="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_media_relay_active_udp_allocations)"
   allocation_failures="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_media_relay_allocation_failures)"
   auth_failures="$(printf '%s\n' "$sample" | metric_sum playsay_rf_edge_media_relay_auth_failures)"
 }
@@ -103,7 +115,7 @@ max_cpu=0
 min_memory_available="$memory_available"
 max_rx_mbps=0
 max_tx_mbps=0
-max_relay_sockets="$relay_sockets"
+max_active_allocations="$active_allocations"
 max_allocation_failures="$allocation_failures"
 max_auth_failures="$auth_failures"
 max_swap_used=0
@@ -113,7 +125,7 @@ initial_coturn_restarts="$coturn_restarts"
 initial_nginx_restarts="$nginx_restarts"
 elapsed=0
 
-printf 'timestamp_utc,cpu_percent,memory_available_bytes,rx_mbps,tx_mbps,relay_udp_sockets,allocation_failures,auth_failures,swap_used_bytes,coturn_up,nginx_up,coturn_restarts,nginx_restarts\n'
+printf 'timestamp_utc,cpu_percent,memory_available_bytes,rx_mbps,tx_mbps,active_turn_allocations,allocation_failures,auth_failures,swap_used_bytes,coturn_up,nginx_up,coturn_restarts,nginx_restarts\n'
 while [ "$elapsed" -lt "$duration" ]; do
   sleep "$interval"
   elapsed=$((elapsed + interval))
@@ -123,13 +135,13 @@ while [ "$elapsed" -lt "$duration" ]; do
   tx_mbps="$(awk -v value="$tx_bytes" -v previous="$previous_tx_bytes" -v seconds="$interval" 'BEGIN { printf "%.3f", (value-previous)*8/seconds/1000000 }')"
   swap_used="$(awk -v total="$swap_total" -v free="$swap_free" 'BEGIN { printf "%.0f", total-free }')"
   timestamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' "$timestamp" "$cpu_percent" "$memory_available" "$rx_mbps" "$tx_mbps" "$relay_sockets" "$allocation_failures" "$auth_failures" "$swap_used" "$coturn_up" "$nginx_up" "$coturn_restarts" "$nginx_restarts"
+  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' "$timestamp" "$cpu_percent" "$memory_available" "$rx_mbps" "$tx_mbps" "$active_allocations" "$allocation_failures" "$auth_failures" "$swap_used" "$coturn_up" "$nginx_up" "$coturn_restarts" "$nginx_restarts"
 
   max_cpu="$(float_max "$max_cpu" "$cpu_percent")"
   min_memory_available="$(float_min "$min_memory_available" "$memory_available")"
   max_rx_mbps="$(float_max "$max_rx_mbps" "$rx_mbps")"
   max_tx_mbps="$(float_max "$max_tx_mbps" "$tx_mbps")"
-  max_relay_sockets="$(float_max "$max_relay_sockets" "$relay_sockets")"
+  max_active_allocations="$(float_max "$max_active_allocations" "$active_allocations")"
   max_allocation_failures="$(float_max "$max_allocation_failures" "$allocation_failures")"
   max_auth_failures="$(float_max "$max_auth_failures" "$auth_failures")"
   max_swap_used="$(float_max "$max_swap_used" "$swap_used")"
@@ -146,5 +158,5 @@ udp_error_delta="$(awk -v final="$udp_errors" -v initial="$initial_udp_errors" '
 coturn_restart_delta="$(awk -v final="$coturn_restarts" -v initial="$initial_coturn_restarts" 'BEGIN { printf "%.0f", final-initial }')"
 nginx_restart_delta="$(awk -v final="$nginx_restarts" -v initial="$initial_nginx_restarts" 'BEGIN { printf "%.0f", final-initial }')"
 threshold_pass="$(awk -v cpu="$max_cpu" -v memory="$min_memory_available" -v rx="$max_rx_mbps" -v tx="$max_tx_mbps" -v swap="$max_swap_used" -v oom="$oom_delta" -v udp="$udp_error_delta" -v allocations="$max_allocation_failures" -v coturn_down="$coturn_down_samples" -v nginx_down="$nginx_down_samples" -v coturn_restarts="$coturn_restart_delta" -v nginx_restarts="$nginx_restart_delta" 'BEGIN { print (cpu < 70 && memory >= 536870912 && rx < 30 && tx < 30 && swap == 0 && oom == 0 && udp == 0 && allocations == 0 && coturn_down == 0 && nginx_down == 0 && coturn_restarts == 0 && nginx_restarts == 0) ? "PASS" : "FAIL" }')"
-printf 'summary,max_cpu_percent=%s,min_memory_available_bytes=%s,max_rx_mbps=%s,max_tx_mbps=%s,max_relay_udp_sockets=%s,max_allocation_failures=%s,max_auth_failures=%s,max_swap_used_bytes=%s,oom_delta=%s,udp_error_delta=%s,coturn_down_samples=%s,nginx_down_samples=%s,coturn_restart_delta=%s,nginx_restart_delta=%s,shared_host_gate=%s\n' \
-  "$max_cpu" "$min_memory_available" "$max_rx_mbps" "$max_tx_mbps" "$max_relay_sockets" "$max_allocation_failures" "$max_auth_failures" "$max_swap_used" "$oom_delta" "$udp_error_delta" "$coturn_down_samples" "$nginx_down_samples" "$coturn_restart_delta" "$nginx_restart_delta" "$threshold_pass"
+printf 'summary,max_cpu_percent=%s,min_memory_available_bytes=%s,max_rx_mbps=%s,max_tx_mbps=%s,max_active_turn_allocations=%s,max_allocation_failures=%s,max_auth_failures=%s,max_swap_used_bytes=%s,oom_delta=%s,udp_error_delta=%s,coturn_down_samples=%s,nginx_down_samples=%s,coturn_restart_delta=%s,nginx_restart_delta=%s,shared_host_gate=%s\n' \
+  "$max_cpu" "$min_memory_available" "$max_rx_mbps" "$max_tx_mbps" "$max_active_allocations" "$max_allocation_failures" "$max_auth_failures" "$max_swap_used" "$oom_delta" "$udp_error_delta" "$coturn_down_samples" "$nginx_down_samples" "$coturn_restart_delta" "$nginx_restart_delta" "$threshold_pass"

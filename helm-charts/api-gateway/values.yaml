@@ -68,6 +68,9 @@ livekit:
   regionalRelay:
     environment: local
     mode: off
+    # Empty values preserve the temporary legacy mode mapping; environment overlays must set both explicitly.
+    signalingMode: ""
+    mediaMode: ""
     signalingUrl: ""
     existingSecret: rf-media-relay-auth
     sharedSecretKey: shared-secret
