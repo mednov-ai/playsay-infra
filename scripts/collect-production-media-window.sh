@@ -43,15 +43,16 @@ query_value() {
 }
 
 printf 'metric,value\n'
-query_value direct_school_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"direct-school\"}[$range]))"
-query_value rf_two_hop_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"rf-two-hop\"}[$range]))"
+idle_zero='((sum(livekit_participant_total) == 0) * 0)'
+query_value direct_school_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"direct-school\"}[$range])) or $idle_zero"
+query_value rf_two_hop_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"rf-two-hop\"}[$range])) or $idle_zero"
 query_value signal_connected_joins "sum(increase(livekit_participant_join_total{state=\"signal_connected\"}[$range]))"
 query_value rtc_connected_joins "sum(increase(livekit_participant_join_total{state=\"rtc_connected\"}[$range]))"
 query_value participants_min "min_over_time((sum(livekit_participant_total))[$range:15s])"
 query_value participants_max "max_over_time((sum(livekit_participant_total))[$range:15s])"
-query_value rtt_p95_ms "histogram_quantile(0.95, sum(increase(livekit_rtt_ms_bucket[$range])) by (le))"
-query_value jitter_p95_ms "histogram_quantile(0.95, sum(increase(livekit_jitter_us_bucket[$range])) by (le)) / 1000"
-query_value packet_loss_p95_percent "histogram_quantile(0.95, sum(increase(livekit_packet_loss_percent_bucket[$range])) by (le))"
+query_value rtt_p95_ms "histogram_quantile(0.95, sum(increase(livekit_rtt_ms_bucket[$range])) by (le)) or $idle_zero"
+query_value jitter_p95_ms "(histogram_quantile(0.95, sum(increase(livekit_jitter_us_bucket[$range])) by (le)) / 1000) or $idle_zero"
+query_value packet_loss_p95_percent "histogram_quantile(0.95, sum(increase(livekit_packet_loss_percent_bucket[$range])) by (le)) or $idle_zero"
 query_value packet_loss_increase "sum(increase(livekit_packet_loss_total[$range]))"
 query_value nack_increase "sum(increase(livekit_nack_total[$range]))"
 query_value pod_restart_increase "sum(increase(kube_pod_container_status_restarts_total{namespace=~\"playsay-prod|livekit|keycloak|playsay-data|monitoring\"}[$range]))"
