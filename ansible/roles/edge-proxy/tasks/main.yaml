@@ -68,19 +68,16 @@
   changed_when: true
 
 - name: Check whether the shared honey.school certificate exists
-  tags: edge-proxy-routes
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
   register: edge_certificate
 
 - name: Check whether the honey.school root certificate exists
-  tags: edge-proxy-routes
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
   register: edge_root_certificate
 
 - name: Enforce the AX41 TLS protocol policy in the nginx HTTP context
-  tags: edge-proxy-routes
   ansible.builtin.lineinfile:
     path: /etc/nginx/nginx.conf
     regexp: '^\s*ssl_protocols\s+.*;\s*(?:#.*)?$'
@@ -88,8 +85,48 @@
     backup: true
   notify: reload nginx
 
-- name: Render exact-host AX41 edge routes
+- name: Create the AX41 nginx snippets directory
   tags: edge-proxy-routes
+  ansible.builtin.file:
+    path: /etc/nginx/snippets
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the privacy-safe LiveKit signaling log format
+  tags: edge-proxy-routes
+  ansible.builtin.copy:
+    dest: /etc/nginx/conf.d/00-playsay-livekit-log-format.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Excludes URI/query, addresses, headers, cookies, credentials and identifiers.
+      log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
+  notify: reload nginx
+
+- name: Install the privacy-safe LiveKit signaling location snippet
+  tags: edge-proxy-routes
+  ansible.builtin.copy:
+    dest: /etc/nginx/snippets/playsay-livekit-signaling.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      access_log /var/log/nginx/playsay-livekit-signaling.log playsay_livekit_signal;
+      proxy_request_buffering off;
+  notify: reload nginx
+
+- name: Reconcile only the LiveKit signaling includes in the active AX41 routes
+  tags: edge-proxy-routes
+  ansible.builtin.replace:
+    path: /etc/nginx/conf.d/playsay-honey.conf
+    regexp: '(^\s+location (?:= /livekit|/livekit/) \{\n)(?!\s+include /etc/nginx/snippets/playsay-livekit-signaling\.conf;)'
+    replace: '\g<1>        include /etc/nginx/snippets/playsay-livekit-signaling.conf;\n'
+  notify: reload nginx
+
+- name: Render exact-host AX41 edge routes
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
@@ -99,24 +136,20 @@
   notify: reload nginx
 
 - name: Validate nginx configuration
-  tags: edge-proxy-routes
   ansible.builtin.command:
     cmd: nginx -t
   changed_when: false
 
 - name: Enable and start nginx for the ACME bootstrap route
-  tags: edge-proxy-routes
   ansible.builtin.service:
     name: nginx
     enabled: true
     state: started
 
 - name: Apply the HTTP bootstrap route before requesting the root certificate
-  tags: edge-proxy-routes
   ansible.builtin.meta: flush_handlers
 
 - name: Issue the dedicated honey.school root certificate
-  tags: edge-proxy-routes
   ansible.builtin.command:
     argv:
       - certbot
@@ -137,13 +170,11 @@
   changed_when: edge_root_certificate_issue.rc == 0
 
 - name: Recheck the honey.school root certificate
-  tags: edge-proxy-routes
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
   register: edge_root_certificate_after
 
 - name: Render HTTPS for honey.school after certificate issuance
-  tags: edge-proxy-routes
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
