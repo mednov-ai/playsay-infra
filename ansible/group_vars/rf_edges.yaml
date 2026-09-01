@@ -15,6 +15,7 @@ rf_edge_routes:
     kind: landing
   - hostname: online.honeyschool.ru
     origin_hostname: online.honey.school
+    livekit_signaling_proxy: true
     certificate_directory: /etc/letsencrypt/live/online.honeyschool.ru
     kind: application
     tls_enabled: true

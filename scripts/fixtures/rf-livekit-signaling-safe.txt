@@ -1,0 +1,2 @@
+msec=1788282000.100 status=101 duration=2700.000 upstream_status=101 upstream_duration=2700.000
+msec=1788285000.200 status=400 duration=0.125 upstream_status=400 upstream_duration=0.124

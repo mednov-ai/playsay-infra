@@ -2,9 +2,24 @@
 set -eu
 
 usage() {
-  echo 'Usage: scripts/collect-rf-media-relay-window.sh --target USER@HOST --identity PATH [--duration SECONDS] [--interval SECONDS] [--local-port PORT]' >&2
+  echo 'Usage: scripts/collect-rf-media-relay-window.sh --target USER@HOST --identity PATH [--duration SECONDS] [--interval SECONDS] [--local-port PORT] | --self-test' >&2
   exit 2
 }
+
+awk_binary="${AWK_BINARY:-/usr/bin/awk}"
+[ -x "$awk_binary" ] || { echo 'Configured awk implementation is unavailable.' >&2; exit 1; }
+awk() { "$awk_binary" "$@"; }
+
+if [ "${1:-}" = "--self-test" ] && [ "$#" -eq 1 ]; then
+  cpu_fixture="$(awk 'BEGIN { delta=25; idle_delta=20; printf "%.3f", (delta > 0 ? 100 * (delta-idle_delta)/delta : 0) }')"
+  zero_fixture="$(awk 'BEGIN { delta=0; idle_delta=0; printf "%.3f", (delta > 0 ? 100 * (delta-idle_delta)/delta : 0) }')"
+  [ "$cpu_fixture" = "20.000" ] && [ "$zero_fixture" = "0.000" ] || {
+    echo 'awk portability fixture failed.' >&2
+    exit 1
+  }
+  echo 'awk portability fixture passed.'
+  exit 0
+fi
 
 target=""
 identity_path=""
@@ -103,7 +118,7 @@ while [ "$elapsed" -lt "$duration" ]; do
   sleep "$interval"
   elapsed=$((elapsed + interval))
   capture_sample
-  cpu_percent="$(awk -v total="$cpu_total" -v idle="$cpu_idle" -v previous_total="$previous_cpu_total" -v previous_idle="$previous_cpu_idle" 'BEGIN { delta=total-previous_total; idle_delta=idle-previous_idle; printf "%.3f", delta > 0 ? 100 * (delta-idle_delta)/delta : 0 }')"
+  cpu_percent="$(awk -v total="$cpu_total" -v idle="$cpu_idle" -v previous_total="$previous_cpu_total" -v previous_idle="$previous_cpu_idle" 'BEGIN { delta=total-previous_total; idle_delta=idle-previous_idle; printf "%.3f", (delta > 0 ? 100 * (delta-idle_delta)/delta : 0) }')"
   rx_mbps="$(awk -v value="$rx_bytes" -v previous="$previous_rx_bytes" -v seconds="$interval" 'BEGIN { printf "%.3f", (value-previous)*8/seconds/1000000 }')"
   tx_mbps="$(awk -v value="$tx_bytes" -v previous="$previous_tx_bytes" -v seconds="$interval" 'BEGIN { printf "%.3f", (value-previous)*8/seconds/1000000 }')"
   swap_used="$(awk -v total="$swap_total" -v free="$swap_free" 'BEGIN { printf "%.0f", total-free }')"

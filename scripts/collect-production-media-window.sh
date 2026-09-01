@@ -35,7 +35,7 @@ query_value() {
     "$query_url")"
   printf '%s' "$response" | jq -er '
     if .status != "success" then error("query failed")
-    elif (.data.result | length) == 0 then "NaN"
+    elif (.data.result | length) == 0 then error("aggregate source unavailable")
     elif (.data.result | length) != 1 then error("query was not aggregate")
     else .data.result[0].value[1]
     end
@@ -43,6 +43,8 @@ query_value() {
 }
 
 printf 'metric,value\n'
+query_value direct_school_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"direct-school\"}[$range]))"
+query_value rf_two_hop_route_selections "sum(increase(playsay_classroom_route_selections_total{route=\"rf-two-hop\"}[$range]))"
 query_value signal_connected_joins "sum(increase(livekit_participant_join_total{state=\"signal_connected\"}[$range]))"
 query_value rtc_connected_joins "sum(increase(livekit_participant_join_total{state=\"rtc_connected\"}[$range]))"
 query_value participants_min "min_over_time((sum(livekit_participant_total))[$range:15s])"

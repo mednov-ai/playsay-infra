@@ -125,10 +125,19 @@ spec:
             {{- if not (has $relayMode (list "off" "rf-origin-relay")) }}
             {{- fail "livekit.regionalRelay.mode must be off or rf-origin-relay" }}
             {{- end }}
+            {{- $relaySignalingUrl := .Values.livekit.regionalRelay.signalingUrl | default "" }}
+            {{- if and (eq $relayMode "rf-origin-relay") (ne .Values.livekit.regionalRelay.environment "prod") }}
+            {{- fail "livekit.regionalRelay may be enabled only in prod" }}
+            {{- end }}
+            {{- if and (eq $relayMode "rf-origin-relay") (ne $relaySignalingUrl "wss://online.honeyschool.ru/livekit") }}
+            {{- fail "livekit.regionalRelay.signalingUrl must be wss://online.honeyschool.ru/livekit when enabled" }}
+            {{- end }}
             - name: PLAYSAY_REGIONAL_RELAY_ENVIRONMENT
               value: {{ .Values.livekit.regionalRelay.environment | quote }}
             - name: PLAYSAY_REGIONAL_RELAY_MODE
               value: {{ $relayMode | quote }}
+            - name: PLAYSAY_REGIONAL_RELAY_SIGNALING_URL
+              value: {{ $relaySignalingUrl | quote }}
             - name: PLAYSAY_REGIONAL_RELAY_CREDENTIAL_TTL_SECONDS
               value: {{ .Values.livekit.regionalRelay.credentialTtlSeconds | default "900" | quote }}
             {{- if eq $relayMode "rf-origin-relay" }}

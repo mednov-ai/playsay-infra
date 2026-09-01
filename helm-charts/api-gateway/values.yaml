@@ -68,6 +68,7 @@ livekit:
   regionalRelay:
     environment: local
     mode: off
+    signalingUrl: ""
     existingSecret: rf-media-relay-auth
     sharedSecretKey: shared-secret
     credentialTtlSeconds: "900"

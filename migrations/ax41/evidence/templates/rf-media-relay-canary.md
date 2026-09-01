@@ -1,4 +1,4 @@
-# RF media relay canary evidence
+# RF classroom signaling and media canary evidence
 
 Record only aggregate results and timestamps. Do not include names, subjects, lesson/room ids, addresses, tokens, TURN credentials, SDP/candidates, device labels, raw logs, or lesson content.
 
@@ -26,8 +26,9 @@ Record only aggregate results and timestamps. Do not include names, subjects, le
 
 - Exact Moscow/UTC window:
 - Zero-active-lesson confirmation:
-- `.school` baseline unchanged:
-- `.ru` relay-only selection for both browsers:
+- `.school` baseline unchanged (`wss://online.honey.school/livekit`, no regional media):
+- `.ru` atomic route selection for both browsers (`wss://online.honeyschool.ru/livekit` plus relay-only media):
+- RF/AX41 unauthenticated WebSocket-path probe bounded status classes:
 - Camera/microphone bidirectional subscription:
 - Screen-share start/receive/stop cycle:
 - Rollback drill result and duration:
@@ -36,6 +37,11 @@ Record only aggregate results and timestamps. Do not include names, subjects, le
 
 - Exact Moscow/UTC start/end and stabilization end:
 - VPN disabled at start; recovery comparison timestamp if later required:
+- Selected signaling contour (`rf-two-hop` required for both `.ru` clients):
+- RF/AX41 WebSocket establishment/status/closure aggregates:
+- LiveKit start/resume/signal-source-close/duplicate-identity/participant-continuity aggregates:
+- Selected ICE transport class (`relay/udp` preferred; no address retained):
+- Signaling reconnect count (`0` required):
 - Media reconnect count (`0` required):
 - Packet loss maximum/p95 (`<2%` required):
 - RTT p95 (`<300 ms` required):
@@ -46,6 +52,19 @@ Record only aggregate results and timestamps. Do not include names, subjects, le
 - Swap/OOM/UDP errors/nginx or coturn restarts/allocation failures (`0` required):
 - nginx and coturn health throughout (`healthy` required):
 - Chat-WebSocket observation (reported separately from media):
+
+## Independent classification
+
+| Plane | Result | Bounded aggregate or failure class |
+| --- | --- | --- |
+| RF signaling ingress | | |
+| Selectel-to-AX41 signaling hop | | |
+| AX41/LiveKit signaling | | |
+| TURN/media | | |
+| RF shared host | | |
+| Application/API | | |
+| Collaboration WebSocket | | |
+| Client resource/network | | |
 
 ## Decision
 
