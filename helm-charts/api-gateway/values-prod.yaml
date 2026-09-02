@@ -65,6 +65,10 @@ lessonTranslation:
   apiKeyKey: api-key
 collaboration:
   websocketUrl: wss://online.honey.school/collab/ws
+  regionalRouting:
+    environment: prod
+    mode: rf-two-hop
+    websocketUrl: wss://online.honeyschool.ru/collab/ws
   httpBaseUrl: http://collaboration-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-collaboration
   tokenTtlSeconds: "900"

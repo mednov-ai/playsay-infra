@@ -38,7 +38,7 @@ static_check() {
   require_literal "$rf_template" 'access_log /var/log/nginx/playsay-rf-livekit-signaling.log playsay_livekit_signal;'
   require_literal "$ax41_template" 'location = /livekit {'
   require_literal "$ax41_template" 'location /livekit/ {'
-  require_literal "$ax41_template" 'access_log /var/log/nginx/playsay-livekit-signaling.log playsay_livekit_signal;'
+  require_literal "$ax41_template" 'include /etc/nginx/snippets/playsay-livekit-signaling.conf;'
   require_literal "$ax41_template" 'proxy_set_header Upgrade $http_upgrade;'
   require_literal "$ax41_template" 'proxy_set_header Connection $playsay_connection_upgrade;'
   require_literal "$ax41_template" 'proxy_buffering off;'

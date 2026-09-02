@@ -35,6 +35,8 @@ collaboration:
   serviceTokenKey: service-token
   snapshotIntervalMs: "10000"
   websocket:
+    heartbeatIntervalMs: "20000"
+    heartbeatMissedPongs: "2"
     softLimitBytes: "1048576"
     hardLimitBytes: "4194304"
     maxPayloadBytes: "4194304"
