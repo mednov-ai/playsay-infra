@@ -185,6 +185,22 @@ spec:
             {{- end }}
             - name: PLAYSAY_COLLABORATION_WEBSOCKET_URL
               value: {{ .Values.collaboration.websocketUrl | quote }}
+            {{- $collaborationMode := .Values.collaboration.regionalRouting.mode | default "off" }}
+            {{- if not (has $collaborationMode (list "off" "rf-two-hop")) }}
+            {{- fail "collaboration.regionalRouting.mode must be off or rf-two-hop" }}
+            {{- end }}
+            {{- if and (eq $collaborationMode "rf-two-hop") (ne .Values.collaboration.regionalRouting.environment "prod") }}
+            {{- fail "collaboration.regionalRouting may be enabled only in prod" }}
+            {{- end }}
+            {{- if and (eq $collaborationMode "rf-two-hop") (ne .Values.collaboration.regionalRouting.websocketUrl "wss://online.honeyschool.ru/collab/ws") }}
+            {{- fail "collaboration.regionalRouting.websocketUrl must be the exact RF collaboration URL when enabled" }}
+            {{- end }}
+            - name: PLAYSAY_COLLABORATION_REGIONAL_ROUTING_ENVIRONMENT
+              value: {{ .Values.collaboration.regionalRouting.environment | quote }}
+            - name: PLAYSAY_COLLABORATION_REGIONAL_ROUTING_MODE
+              value: {{ $collaborationMode | quote }}
+            - name: PLAYSAY_COLLABORATION_REGIONAL_WEBSOCKET_URL
+              value: {{ .Values.collaboration.regionalRouting.websocketUrl | quote }}
             - name: PLAYSAY_COLLABORATION_HTTP_BASE_URL
               value: {{ .Values.collaboration.httpBaseUrl | quote }}
             - name: PLAYSAY_COLLABORATION_TOKEN_SECRET

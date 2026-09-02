@@ -62,6 +62,10 @@ lessonTranslation:
   apiKeyKey: api-key
 collaboration:
   websocketUrl: wss://dev.online.honey.school/collab/ws
+  regionalRouting:
+    environment: dev
+    mode: off
+    websocketUrl: ""
   httpBaseUrl: http://collaboration-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-collaboration
   tokenTtlSeconds: "900"

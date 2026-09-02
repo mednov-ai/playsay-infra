@@ -220,4 +220,13 @@ data:
             annotations:
               summary: "Collaboration повторяет сохранение snapshot"
               description: "API или PostgreSQL не приняли snapshot с первой попытки."
+
+          - alert: PlaySayCollaborationStaleSockets
+            expr: increase(playsay_collaboration_heartbeat_terminations_total{channel="yjs"}[5m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Collaboration удалил зависшее Yjs-соединение"
+              description: "Heartbeat обнаружил соединение без pong; проверьте reconnect и рост активных Yjs-сокетов."
       {{- end }}

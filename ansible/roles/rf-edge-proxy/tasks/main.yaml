@@ -32,6 +32,9 @@
       - not (item.livekit_signaling_proxy | default(false) | bool) or item.kind == 'application'
       - not (item.livekit_signaling_proxy | default(false) | bool) or item.hostname == 'online.honeyschool.ru'
       - not (item.livekit_signaling_proxy | default(false) | bool) or item.origin_hostname == 'online.honey.school'
+      - not (item.collaboration_proxy | default(false) | bool) or item.kind == 'application'
+      - not (item.collaboration_proxy | default(false) | bool) or item.hostname == 'online.honeyschool.ru'
+      - not (item.collaboration_proxy | default(false) | bool) or item.origin_hostname == 'online.honey.school'
   loop: "{{ rf_edge_routes }}"
   loop_control:
     label: "{{ item.hostname | default('undefined') }}"

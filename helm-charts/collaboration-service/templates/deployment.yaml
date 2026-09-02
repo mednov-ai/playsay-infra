@@ -58,6 +58,10 @@ spec:
               value: {{ .Values.collaboration.websocket.hardLimitBytes | quote }}
             - name: WEBSOCKET_MAX_PAYLOAD_BYTES
               value: {{ .Values.collaboration.websocket.maxPayloadBytes | quote }}
+            - name: WEBSOCKET_HEARTBEAT_INTERVAL_MS
+              value: {{ .Values.collaboration.websocket.heartbeatIntervalMs | quote }}
+            - name: WEBSOCKET_HEARTBEAT_MISSED_PONGS
+              value: {{ .Values.collaboration.websocket.heartbeatMissedPongs | quote }}
             - name: NODE_OPTIONS
               value: {{ .Values.runtime.nodeOptions | quote }}
           readinessProbe:
