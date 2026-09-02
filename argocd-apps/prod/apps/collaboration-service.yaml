@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/01.006.00
+    targetRevision: release/01.006.05
     path: helm-charts/collaboration-service
     helm:
       valueFiles:
