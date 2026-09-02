@@ -36,9 +36,6 @@ require_pair "$render_dir/prod-active.yaml" PLAYSAY_COLLABORATION_REGIONAL_WEBSO
 require_pair "$render_dir/dev-off.yaml" PLAYSAY_COLLABORATION_REGIONAL_ROUTING_ENVIRONMENT dev
 require_pair "$render_dir/dev-off.yaml" PLAYSAY_COLLABORATION_REGIONAL_ROUTING_MODE off
 require_pair "$render_dir/prod-rollback.yaml" PLAYSAY_COLLABORATION_REGIONAL_ROUTING_MODE off
-require_pair "$render_dir/prod-active.yaml" PLAYSAY_REGIONAL_SIGNALING_MODE rf-two-hop
-require_pair "$render_dir/prod-active.yaml" PLAYSAY_REGIONAL_MEDIA_MODE rf-turn-relay
-
 if helm template api-gateway "$chart" -f "$chart/values-dev.yaml" \
   --set collaboration.regionalRouting.mode=rf-two-hop \
   --set collaboration.regionalRouting.websocketUrl=wss://online.honeyschool.ru/collab/ws \
