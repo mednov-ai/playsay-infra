@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-production-chat-280"
-  digest: sha256:b97c069ef035389b0af6d56adc399ee5d15d215d5212d37631685803a6edbd4f
+  tag: "web-dev-282"
+  digest: sha256:9c24ab66ee93793483c0c994c12e116349ef73e2ee1919af04aa909d00ea99ad
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-production-chat-280
-  number: "280"
-  branch: codex/hotfix-production-chat
-  branchLabel: web-codex-hotfix-production-chat
-  commit: ea2ade672a7063f12619d01a94f7936cc1437570
-  commitShort: "ea2ade672a70"
+  name: web-dev-282
+  number: "282"
+  branch: develop
+  branchLabel: web-dev
+  commit: 00c05f1f66af2e58465043731ea197040a8e01d5
+  commitShort: "00c05f1f66af"
 service:
   type: NodePort
   nodePort: 32083
