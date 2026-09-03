@@ -107,9 +107,6 @@ emailService:
   baseUrl: http://email-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-email
   serviceTokenKey: service-token
-chatPush:
-  enabled: "true"
-  publicKey: "BEPpkhG18MgbroGqVygTbug-nAeBWvvdAwicb5gQmSN2jW13oSe4eVEo7WTc00kpKhzrcosQSGMmvNuT5rlgosM"
 publicAppUrl: https://online.honey.school
 publicAppRfUrl: https://online.honeyschool.ru
 video:
