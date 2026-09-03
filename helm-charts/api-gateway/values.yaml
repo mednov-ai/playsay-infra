@@ -153,7 +153,7 @@ emailService:
 
 chatEmail:
   initialDelay: PT2M
-  cooldown: PT10M
+  cooldown: PT30M
   pollDelayMs: "30000"
   retryDelays: PT1M,PT5M,PT15M
 
