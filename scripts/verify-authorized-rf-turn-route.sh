@@ -14,12 +14,13 @@ validate_response() {
   response="$1"
   now_epoch="$2"
   printf '%s' "$response" | jq -e --arg signaling "$trusted_signaling_url" --argjson now "$now_epoch" '
+    def epoch_seconds: sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601;
     .serverUrl == $signaling and
     .mediaRouting.policy == "REGIONAL_RELAY" and
     .mediaRouting.revision == "selectel-rf-v1" and
     .mediaRouting.iceTransportPolicy == "relay" and
-    (.mediaRouting.expiresAt | fromdateiso8601) > $now and
-    (.mediaRouting.expiresAt | fromdateiso8601) <= ($now + 900) and
+    (.mediaRouting.expiresAt | epoch_seconds) > $now and
+    (.mediaRouting.expiresAt | epoch_seconds) <= ($now + 900) and
     (.mediaRouting.iceServers | length) == 1 and
     (.mediaRouting.iceServers[0].urls | sort) == ([
       "turn:turn.honeyschool.ru:3478?transport=tcp",
@@ -34,6 +35,12 @@ validate_response() {
 if [ "${1:-}" = '--self-test' ] && [ "$#" -eq 1 ]; then
   fixture='{"serverUrl":"wss://online.honeyschool.ru/livekit","mediaRouting":{"policy":"REGIONAL_RELAY","revision":"selectel-rf-v1","iceTransportPolicy":"relay","iceServers":[{"urls":["turn:turn.honeyschool.ru:3478?transport=udp","turn:turn.honeyschool.ru:3478?transport=tcp","turns:turn.honeyschool.ru:5349?transport=tcp"],"username":"future:test","credential":"redacted-fixture"}],"expiresAt":"2030-01-01T00:05:00Z"}}'
   validate_response "$fixture" 1893456000
+  fractional_fixture=$(printf '%s' "$fixture" | jq '.mediaRouting.expiresAt = "2030-01-01T00:05:00.123456Z"')
+  validate_response "$fractional_fixture" 1893456000
+  if validate_response "$fractional_fixture" 1893456301; then
+    echo 'Expired fractional timestamp must fail closed.' >&2
+    exit 1
+  fi
   echo 'Authorized RF TURN response-shape self-test passed.'
   exit 0
 fi
