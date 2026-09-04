@@ -1,14 +1,14 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-screen-share-mirror-depth-287"
-  digest: sha256:81761907d7d85c244203547eee4de0de2bf04ffaf2c04d41237ef9a002f2a364
+  tag: "web-dev-288"
+  digest: sha256:43d39b1f33dc68158de2eb8a40a5c2594627002064f1df04284fd5d31a8edc2b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-screen-share-mirror-depth-287
-  number: "287"
-  branch: codex/hotfix-screen-share-mirror-depth
-  branchLabel: web-codex-hotfix-screen-share-mirror-depth
+  name: web-dev-288
+  number: "288"
+  branch: develop
+  branchLabel: web-dev
   commit: 04737240c4bbf1a85939a4934afc41f0c49f0797
   commitShort: "04737240c4bb"
 service:
