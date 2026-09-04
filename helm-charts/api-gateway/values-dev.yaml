@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-hotfix-production-chat-149"
-  digest: sha256:578c08971f21c4a0c4917d5245d74508698ce741b2633ecb2a4f554572116390
+  tag: "api-dev-151"
+  digest: sha256:cc428ae9c66288ba0c7a3db1bdeee49f608165e2d07942b6b5d257f9bd7b7633
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-hotfix-production-chat-149
-  number: "149"
-  branch: codex/hotfix-production-chat
-  branchLabel: api-codex-hotfix-production-chat
-  commit: ea2ade672a7063f12619d01a94f7936cc1437570
-  commitShort: "ea2ade672a70"
+  name: api-dev-151
+  number: "151"
+  branch: develop
+  branchLabel: api-dev
+  commit: 541bc558539e804ee597e044e9f87d0f977a83dc
+  commitShort: "541bc558539e"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
