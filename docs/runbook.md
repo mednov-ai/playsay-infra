@@ -219,6 +219,8 @@ After the application release is delivered, prove fresh `.ru` tokens select regi
 
 #### Regional routing release parity and media path
 
+The `.08` restoration delivery and its still-open authenticated/no-VPN acceptance are recorded in [`20260904-release-01.006.08-regional-media.md`](../migrations/ax41/evidence/20260904-release-01.006.08-regional-media.md). Consult that evidence before treating deployment health as media-path acceptance.
+
 The RF metric-presence check must consume the full exporter response; its self-test includes a large response and an absent metric. Treat any collector parse/tunnel/write error as an invalid preflight and repeat after correction, even if CSV rows were printed.
 
 The production collector propagates aggregate parsing failures to its exit status. The lazily created snapshot `retry` histogram label can be absent before the first retry: its count is zero only when another snapshot histogram series is independently present. Absence of the entire snapshot histogram remains a failure; do not use an unconditional zero fallback or equate unavailable metrics with healthy operation.
