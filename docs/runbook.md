@@ -221,6 +221,8 @@ After the application release is delivered, prove fresh `.ru` tokens select regi
 
 The RF metric-presence check must consume the full exporter response; its self-test includes a large response and an absent metric. Treat any collector parse/tunnel/write error as an invalid preflight and repeat after correction, even if CSV rows were printed.
 
+The production collector propagates aggregate parsing failures to its exit status. The lazily created snapshot `retry` histogram label can be absent before the first retry: its count is zero only when another snapshot histogram series is independently present. Absence of the entire snapshot histogram remains a failure; do not use an unconditional zero fallback or equate unavailable metrics with healthy operation.
+
 The intended authorized production `.ru` media path is browser ↔ Selectel coturn ↔ AX41 LiveKit, for camera, microphone and screen share in both directions. `/livekit` nginx is signaling only. Production media restoration targets `signalingMode=rf-two-hop` and `mediaMode=rf-turn-relay`; `off` remains the independent rollback state, not evidence of a successful repair. Preserve collaboration settings and the direct `.school`/dev baseline.
 
 Before delivery, use matching candidate platform/infra checkouts and run locally:

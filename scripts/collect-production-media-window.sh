@@ -30,7 +30,22 @@ self_test() {
   echo 'Production metric aggregate parser fixtures passed.'
 }
 
-if [ "${1:-}" = "--self-test" ]; then [ "$#" -eq 1 ] || usage; self_test; exit 0; fi
+emit_aggregate() {
+  aggregate_name="$1"
+  aggregate_value="$(parse_aggregate)" || return 1
+  printf '%s,%s\n' "$aggregate_name" "$aggregate_value"
+}
+
+if [ "${1:-}" = "--self-test" ]; then
+  [ "$#" -eq 1 ] || usage
+  self_test
+  if printf '%s' '{"status":"success","data":{"result":[]}}' | emit_aggregate missing >/dev/null 2>&1; then
+    echo 'Missing aggregate must propagate failure to the collector.' >&2
+    exit 1
+  fi
+  echo 'Aggregate output failure propagation fixture passed.'
+  exit 0
+fi
 
 base_url=""
 start_epoch=""
@@ -59,7 +74,7 @@ query_value() {
     --data-urlencode "query=$expression" \
     --data-urlencode "time=$end_epoch" \
     "$query_url")"
-  printf '%s' "$response" | parse_aggregate | awk -v name="$metric_name" '{ print name "," $0 }'
+  printf '%s' "$response" | emit_aggregate "$metric_name"
 }
 
 printf 'metric,value\n'
@@ -92,6 +107,6 @@ query_value yjs_connection_open_increase "sum(increase(playsay_collaboration_con
 query_value yjs_connection_close_increase "sum(increase(playsay_collaboration_connection_closes_total{channel=\"yjs\"}[$range]))"
 query_value yjs_heartbeat_termination_increase "sum(increase(playsay_collaboration_heartbeat_terminations_total{channel=\"yjs\"}[$range]))"
 query_value collaboration_buffered_bytes_max "max_over_time((sum(playsay_collaboration_websocket_buffered_bytes))[$range:15s])"
-query_value collaboration_snapshot_retry_increase "sum(increase(playsay_collaboration_snapshot_flush_duration_seconds_count{outcome=\"retry\"}[$range]))"
+query_value collaboration_snapshot_retry_increase "sum(increase(playsay_collaboration_snapshot_flush_duration_seconds_count{outcome=\"retry\"}[$range])) or ((sum(playsay_collaboration_snapshot_flush_duration_seconds_count) >= 0) * 0)"
 query_value collaboration_forced_close_increase "sum(increase(playsay_collaboration_backpressure_forced_closes_total[$range]))"
 printf 'chat_websocket_reconnects,not_available\n'
