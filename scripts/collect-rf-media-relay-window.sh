@@ -10,6 +10,10 @@ awk_binary="${AWK_BINARY:-/usr/bin/awk}"
 [ -x "$awk_binary" ] || { echo 'Configured awk implementation is unavailable.' >&2; exit 1; }
 awk() { "$awk_binary" "$@"; }
 
+# Consume the complete input: grep -q closes early and makes a large printf
+# writer emit Broken pipe on macOS even when the required metric exists.
+has_metric() { awk -v name="$1" '$1 == name { found=1 } END { exit found ? 0 : 1 }'; }
+
 if [ "${1:-}" = "--self-test" ] && [ "$#" -eq 1 ]; then
   cpu_fixture="$(awk 'BEGIN { delta=25; idle_delta=20; printf "%.3f", (delta > 0 ? 100 * (delta-idle_delta)/delta : 0) }')"
   zero_fixture="$(awk 'BEGIN { delta=0; idle_delta=0; printf "%.3f", (delta > 0 ? 100 * (delta-idle_delta)/delta : 0) }')"
@@ -18,6 +22,12 @@ if [ "${1:-}" = "--self-test" ] && [ "$#" -eq 1 ]; then
     exit 1
   }
   echo 'awk portability fixture passed.'
+  awk 'BEGIN { print "required_metric 1"; for (i=0; i<10000; i++) print "other_metric 0" }' | has_metric required_metric
+  if printf 'other_metric 0\n' | has_metric required_metric; then
+    echo 'Missing metric fixture must fail closed.' >&2
+    exit 1
+  fi
+  echo 'Complete-input metric presence fixtures passed.'
   exit 0
 fi
 
@@ -78,7 +88,7 @@ capture_sample() {
     playsay_rf_edge_coturn_up \
     playsay_rf_edge_nginx_up
   do
-    printf '%s\n' "$sample" | grep -q "^${required_metric} " || {
+    printf '%s\n' "$sample" | has_metric "$required_metric" || {
       echo "Required aggregate metric is unavailable: ${required_metric}" >&2
       exit 1
     }
