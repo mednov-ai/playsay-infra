@@ -54,7 +54,7 @@ livekit:
     environment: prod
     mode: off
     signalingMode: rf-two-hop
-    mediaMode: off
+    mediaMode: rf-turn-relay
     signalingUrl: wss://online.honeyschool.ru/livekit
 lessonTranslation:
   enabled: false

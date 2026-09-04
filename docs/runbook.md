@@ -217,6 +217,24 @@ After the application release is delivered, prove fresh `.ru` tokens select regi
 
 ### Selectel classroom media relay
 
+#### Regional routing release parity and media path
+
+The intended authorized production `.ru` media path is browser ↔ Selectel coturn ↔ AX41 LiveKit, for camera, microphone and screen share in both directions. `/livekit` nginx is signaling only. Production media restoration targets `signalingMode=rf-two-hop` and `mediaMode=rf-turn-relay`; `off` remains the independent rollback state, not evidence of a successful repair. Preserve collaboration settings and the direct `.school`/dev baseline.
+
+Before delivery, use matching candidate platform/infra checkouts and run locally:
+
+```bash
+node scripts/verify-regional-routing-binding.mjs /absolute/path/to/candidate-platform
+node --test scripts/validate-regional-routing-release.test.mjs
+sh scripts/validate-regional-routing-release.sh /absolute/path/to/candidate-platform WORKTREE CURRENT_PROD_INFRA_REF
+```
+
+The first command renders prod/dev/media-only rollback Helm settings and exercises those non-secret settings through the candidate's real application YAML and selector. It uses synthetic credentials and no remote requests. `WORKTREE` is only for local preparation; release validation must use immutable source refs. Before finalization, reconcile the routing implementation and guard into develop in both repositories. The platform finalizer runs the infra preservation guard against both candidate source and the actual API image's `build.commit`, and refuses missing bindings/tests or an unexplained production routing downgrade. Static guard success is not behavioral or live-media evidence: API CI tests and the local rendered-config test remain mandatory. A reviewed candidate manifest may declare `regionalRoutingReview: media-only-rollback` to allow only the media downgrade while retaining signaling; record the reason in release evidence. Do not bypass the guard or reuse an untested image.
+
+After owner authorization and a fresh zero-participant check, inspect the actual edge configuration and run bounded TURN UDP/TCP/TLS allocation/data diagnostics. Inspect Selectel-to-AX41 connectivity and the declared AX41 media firewall/DNAT path. Self-relay TURN tests and a successful TCP connection to LiveKit are prerequisites, not proof that a browser's camera reaches LiveKit through Selectel. The fresh API-credential allocation and two-browser no-VPN acceptance below remain required. If this audit reveals missing edge rules, prepare a reviewed Ansible correction; do not improvise a live nginx/firewall change.
+
+Checks/development authorization is distinct from commit/push/CI/deploy authorization. Report the local result and obtain the owner's explicit delivery instruction; recheck zero active lessons immediately before any rollout. No service restart, DNS/secret rotation, capacity expansion or paid VM is implied.
+
 The Russian classroom TURN contour runs on the existing Selectel RF edge; no paid VM, resize, disk, address, or provider resource is added. The bounded contract is [`rf-edge-media-relay.md`](rf-edge-media-relay.md). LiveKit remains on AX41. coturn has configuration, secret, `turn.honeyschool.ru` certificate/key, listeners, quotas, service limits, and metrics independent from nginx, but both services deliberately share the 1-vCPU/2-GiB host and kernel.
 
 Use only the established ignored `ansible/inventories/rf-edge/hosts.yaml`, `ansible/playbooks/rf-edge.yaml`, and numeric-release wrapper shown above. The playbook accepts only the established inventory identity `playsay-selectel-rf-edge`, then applies `rf-edge-proxy` followed by `rf-edge-media-relay`. Before check/apply, point `turn.honeyschool.ru` at the established edge, issue its independent certificate, and deliver the same independently generated 64-character lowercase hex secret to `/etc/playsay/rf-edge-media-relay-auth-secret` and the protected production api-gateway Secret without printing it. The role keeps the ACME archive root-only and installs `root:turnserver 0640` runtime certificate/key copies below `/etc/coturn/certificates`; renewal refreshes those copies and queues a zero-allocation coturn reload without touching nginx. Review check mode during a zero-active-lesson window because a pending coturn change may require restart; nginx must never be restarted as part of relay rollback.
