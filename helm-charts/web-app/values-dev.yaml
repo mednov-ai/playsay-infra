@@ -1,14 +1,14 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-dev-vocabulary-301"
-  digest: sha256:bfdb17b30a15fc97b699b23816d2777a7503fdbb3f67d4639865120de236776d
+  tag: "web-dev-302"
+  digest: sha256:e189c065b945b95fe6dab8eec46ac7d26f23c84e2de5d099efe9e93ad2d39fda
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-dev-vocabulary-301
-  number: "301"
-  branch: codex/hotfix-dev-vocabulary
-  branchLabel: web-codex-hotfix-dev-vocabulary
+  name: web-dev-302
+  number: "302"
+  branch: develop
+  branchLabel: web-dev
   commit: 61a1bfdb945da03a06ed474e6eda7c1f25e66c47
   commitShort: "61a1bfdb945d"
 service:
