@@ -53,6 +53,15 @@ spec:
                 port_range_end: {{ .Values.rtc.udpPortRangeEnd }}
                 use_external_ip: false
                 node_ip: "{{ .Values.rtc.nodeIp }}"
+                {{- with .Values.rtc.interfaces }}
+                {{- if .includes }}
+                interfaces:
+                  includes:
+                    {{- range .includes }}
+                    - {{ . | quote }}
+                    {{- end }}
+                {{- end }}
+                {{- end }}
               {{- if .Values.rtc.batchIo.enabled }}
                 batch_io:
                   batch_size: {{ .Values.rtc.batchIo.batchSize }}

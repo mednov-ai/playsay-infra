@@ -2482,3 +2482,5 @@ Smoke выполняется двумя authenticated браузерами в о
 Group lesson, неподдерживаемый locale и участник вне lesson должны получать явный отказ без отправки аудио provider.
 
 Если provider недоступен или нужно быстро отключить контур, установите `lessonTranslation.enabled=false` и синхронизируйте ArgoCD. Это отключает только credential endpoint/translation control и не мешает основному LiveKit classroom. Не заменяйте этот rollback остановкой Docker, LiveKit, Amnezia или root site на `play-and-say.ru`.
+
+Dev LiveKit gathers RTC candidates only from its verified VM uplink `enp1s0`. The k3s `cni0`/`flannel.1` interfaces are excluded by this inclusion policy so their random source-port masquerading cannot create candidates outside the dev SFU allowlist. The chart emits no interface filter for environments that do not explicitly configure one. Apply through dev GitOps only in a zero-participant window; production values remain unchanged. Recheck the uplink name against the VM inventory before rebuilding the guest.
