@@ -14,8 +14,8 @@
     path: /etc/honeyschool/secrets
     state: directory
     owner: root
-    group: root
-    mode: "0700"
+    group: www-data
+    mode: "0710"
 
 - name: Create GeoIP state directory
   ansible.builtin.file:
