@@ -25,6 +25,28 @@ victoriaMetrics:
       cpu: 500m
       memory: 384Mi
 
+victoriaLogs:
+  enabled: false
+  image:
+    repository: victoriametrics/victoria-logs
+    tag: v1.52.0
+  retentionPeriod: 7d
+  httpPathPrefix: /victoria-logs
+  service:
+    type: ClusterIP
+    port: 9428
+    nodePort: null
+  storage:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 vmagent:
   image:
     repository: victoriametrics/vmagent
