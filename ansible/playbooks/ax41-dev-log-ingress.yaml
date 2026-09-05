@@ -1,0 +1,73 @@
+---
+- name: Configure only the dev log ingress on AX41
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  vars:
+    route: "{{ edge_routes | selectattr('hostname', 'equalto', 'dev.ops.honey.school') | first }}"
+    config_path: /etc/nginx/conf.d/playsay-honey.conf
+  tasks:
+    - name: Require the established host and dev upstream
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-ax41'
+          - ansible_host == '65.109.55.110'
+          - route.victoria_logs_upstream == '10.60.0.30:32089'
+          - route.victoria_logs_ingest_trusted_peers == ['94.102.89.213']
+    - name: Validate the existing nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      check_mode: false
+    - name: Inspect the existing virtual host structure
+      ansible.builtin.slurp:
+        src: "{{ config_path }}"
+      register: current_config
+      no_log: true
+    - name: Refuse a drifted dev HTTPS insertion boundary
+      ansible.builtin.assert:
+        that:
+          - (current_config.content | b64decode).count('server_name dev.ops.honey.school;') == 2
+          - "'listen 443 ssl;\n    listen [::]:443 ssl;\n    server_name dev.ops.honey.school;' in (current_config.content | b64decode)"
+    - name: Inspect the protected dev ingest password hash
+      ansible.builtin.stat:
+        path: "{{ route.victoria_logs_ingest_credentials_path }}"
+      register: ingest_hash
+    - name: Require protected credentials before exposing ingestion
+      ansible.builtin.assert:
+        that:
+          - ingest_hash.stat.exists
+          - ingest_hash.stat.mode == '0600'
+          - ingest_hash.stat.pw_name == 'root'
+    - name: Deliver the bounded dev-only block
+      block:
+        - name: Reconcile only the last matching dev HTTPS vhost
+          ansible.builtin.blockinfile:
+            path: "{{ config_path }}"
+            insertafter: '^    server_name dev.ops.honey.school;$'
+            marker: '    # {mark} DEV LOG INGRESS'
+            block: "{{ lookup('template', '../roles/edge-proxy/templates/dev-log-ingress.conf.j2') }}"
+            state: "{{ route.victoria_logs_enabled | ternary('present', 'absent') }}"
+            backup: true
+          register: log_ingress
+        - name: Validate all virtual hosts before reload
+          ansible.builtin.command: nginx -t
+          changed_when: false
+          when: not ansible_check_mode
+        - name: Gracefully reload nginx
+          ansible.builtin.systemd:
+            name: nginx
+            state: reloaded
+          when: not ansible_check_mode and log_ingress.changed
+      rescue:
+        - name: Restore the prior configuration without reload
+          ansible.builtin.copy:
+            src: "{{ log_ingress.backup_file }}"
+            dest: "{{ config_path }}"
+            remote_src: true
+            mode: '0644'
+          when: log_ingress.backup_file is defined
+        - name: Stop after rollback
+          ansible.builtin.fail:
+            msg: Dev log ingress validation failed; prior file restored.

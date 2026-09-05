@@ -6,7 +6,7 @@ config = (ROOT / "ansible/roles/honey-school-edge-logs/templates/fluent-bit.conf
 privacy = (ROOT / "ansible/roles/honey-school-edge-logs/templates/privacy-filter.lua.j2").read_text()
 values = (ROOT / "helm-charts/monitoring-lite/values-dev.yaml").read_text()
 deployment = (ROOT / "helm-charts/monitoring-lite/templates/victoria-logs.yaml").read_text()
-edge = (ROOT / "ansible/roles/edge-proxy/templates/playsay-honey.conf.j2").read_text()
+edge = (ROOT / "ansible/roles/edge-proxy/templates/dev-log-ingress.conf.j2").read_text()
 
 assert "storage.total_limit_size {{ honey_school_edge_logs_buffer_limit }}" in config
 assert "Mem_Buf_Limit   8M" in config

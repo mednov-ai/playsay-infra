@@ -145,7 +145,7 @@ edge_routes:
     headlamp_upstream: 10.60.0.30:32081
     victoria_metrics_upstream: 10.60.0.30:32085
     victoria_logs_upstream: 10.60.0.30:32089
-    victoria_logs_enabled: false
+    victoria_logs_enabled: true
     victoria_logs_ingest_trusted_peers:
       - 94.102.89.213
     victoria_logs_ingest_credentials_path: /etc/honeyschool/secrets/edge-log-ingest.htpasswd
