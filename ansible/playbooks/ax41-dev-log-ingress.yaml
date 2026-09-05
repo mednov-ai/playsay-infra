@@ -38,7 +38,8 @@
       ansible.builtin.assert:
         that:
           - ingest_hash.stat.exists
-          - ingest_hash.stat.mode == '0600'
+          - ingest_hash.stat.mode == '0640'
+          - ingest_hash.stat.gr_name == 'www-data'
           - ingest_hash.stat.pw_name == 'root'
     - name: Deliver the bounded dev-only block
       block:

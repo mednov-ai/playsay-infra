@@ -31,11 +31,16 @@ def main():
         ssh(host, f"install -d -o root -g root -m 0700 /etc/honeyschool/secrets; "
             f"umask 077; set -C; cat > {path}", value)
 
+    def allow_nginx_hash_read():
+        ssh(ORIGIN, "chown root:www-data /etc/honeyschool/secrets " + HASH_FILE +
+            "; chmod 0710 /etc/honeyschool/secrets; chmod 0640 " + HASH_FILE)
+
     edge_exists = exists(EDGE, ENV_FILE)
     hash_exists = exists(ORIGIN, HASH_FILE)
     if hash_exists:
         if not edge_exists:
             raise RuntimeError("Origin hash exists without edge credentials; refusing rotation")
+        allow_nginx_hash_read()
         print("Dev ingest credential files already exist; no rotation performed")
         return
     if edge_exists:
@@ -55,6 +60,7 @@ def main():
     if result.returncode:
         raise RuntimeError("Could not hash dev ingest password; values suppressed")
     create(ORIGIN, HASH_FILE, result.stdout.strip() + b"\n")
+    allow_nginx_hash_read()
     print("Independent dev ingest credentials provisioned; values suppressed")
 
 
