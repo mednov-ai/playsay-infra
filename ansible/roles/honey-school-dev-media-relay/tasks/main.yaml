@@ -42,9 +42,10 @@
 
 - name: Record the dev relay numeric uid for nftables
   ansible.builtin.set_fact:
-    honey_school_dev_turn_uid: "{{ getent_passwd['honey-turn-dev'][1] | int }}"
+    honey_school_dev_turn_uid: "{{ ansible_facts.getent_passwd['honey-turn-dev'][1] | int }}"
 
 - name: Create protected dev relay directories
+  tags: [rf-dev-media-bootstrap]
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
@@ -125,6 +126,14 @@
       name: privkey.pem
   no_log: true
   notify: restart Honey School dev coturn
+
+- name: Install the independent dev certificate renewal hook
+  ansible.builtin.template:
+    src: certificate-renewal-hook.sh.j2
+    dest: /etc/letsencrypt/renewal-hooks/deploy/60-honey-school-dev-turn
+    owner: root
+    group: root
+    mode: "0750"
 
 - name: Render the independent dev coturn configuration
   ansible.builtin.template:
