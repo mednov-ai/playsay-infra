@@ -1,0 +1,117 @@
+---
+- name: Install the local GeoIP reader and updater dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - libnginx-mod-http-geoip2
+      - mmdb-bin
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create protected Honey School configuration directory
+  ansible.builtin.file:
+    path: /etc/honeyschool/secrets
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Create GeoIP state directory
+  ansible.builtin.file:
+    path: "{{ honey_school_geoip_state_directory }}"
+    state: directory
+    owner: root
+    group: www-data
+    mode: "0750"
+
+- name: Check the protected IPinfo download token
+  ansible.builtin.stat:
+    path: "{{ honey_school_geoip_token_path }}"
+  register: honey_school_geoip_token
+  no_log: true
+
+- name: Validate the protected IPinfo download token when provisioned
+  ansible.builtin.assert:
+    that:
+      - honey_school_geoip_token.stat.exists
+      - honey_school_geoip_token.stat.isreg
+      - honey_school_geoip_token.stat.mode == '0600'
+      - honey_school_geoip_token.stat.pw_name == 'root'
+      - honey_school_geoip_token.stat.gr_name == 'root'
+    fail_msg: The Honey School IPinfo token must be a root-owned 0600 regular file.
+  when: honey_school_geoip_token.stat.exists
+  no_log: true
+
+- name: Install the GeoIP updater
+  ansible.builtin.template:
+    src: update-ipinfo-lite.sh.j2
+    dest: /usr/local/sbin/honey-school-update-ipinfo-lite
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install the disabled GeoIP database configuration
+  ansible.builtin.copy:
+    dest: "{{ honey_school_geoip_nginx_database_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+    force: false
+    content: |
+      # No validated database is active. Country is deliberately unknown.
+      map $host $honey_school_geo_country_code { default ""; }
+  notify: reload nginx after geoip change
+
+- name: Install the browser-entry redirect snippet
+  ansible.builtin.copy:
+    dest: /etc/nginx/snippets/honey-school-browser-entry.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      if ($honey_school_geo_redirect_decision) {
+          add_header Cache-Control "private, no-store" always;
+          add_header Vary "Sec-Fetch-Mode, Accept" always;
+          return 302 https://$honey_school_geo_redirect_host$request_uri;
+      }
+  notify: reload nginx after geoip change
+
+- name: Install the GeoIP update service
+  ansible.builtin.template:
+    src: honey-school-geoip-update.service.j2
+    dest: /etc/systemd/system/honey-school-geoip-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: honey_school_geoip_service_unit
+
+- name: Install the daily GeoIP update timer
+  ansible.builtin.template:
+    src: honey-school-geoip-update.timer.j2
+    dest: /etc/systemd/system/honey-school-geoip-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+  register: honey_school_geoip_timer_unit
+
+- name: Reload systemd for GeoIP units
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: honey_school_geoip_service_unit.changed or honey_school_geoip_timer_unit.changed
+
+- name: Download and validate the initial GeoIP database
+  ansible.builtin.command:
+    cmd: /usr/local/sbin/honey-school-update-ipinfo-lite
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - honey_school_geoip_token.stat.exists
+  no_log: true
+
+- name: Enable the daily GeoIP update timer
+  ansible.builtin.systemd:
+    name: honey-school-geoip-update.timer
+    enabled: true
+    state: started
+  when: not ansible_check_mode

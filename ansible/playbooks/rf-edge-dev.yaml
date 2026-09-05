@@ -1,0 +1,33 @@
+---
+- name: Configure the isolated Honey School RF development contour
+  hosts: rf_edges
+  become: true
+  gather_facts: true
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - ../group_vars/rf_edges.yaml
+  vars:
+    rf_edge_routes: "{{ rf_edge_development_routes }}"
+    rf_edge_render_globals: false
+  pre_tasks:
+    - name: Prove the play targets only the established RF edge
+      tags: [always]
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-selectel-rf-edge'
+          - group_names | difference(['rf_edges']) | length == 0
+          - ansible_host == rf_edge_dev_media_relay_public_ipv4
+          - rf_edge_routes | selectattr('environment', 'equalto', 'prod') | list | length == 0
+          - rf_edge_routes | selectattr('environment', 'equalto', 'dev') | list == rf_edge_development_routes
+        fail_msg: The RF dev play refuses alternate hosts and an incomplete environment map.
+  roles:
+    - role: honey-school-dev-ingress
+      tags:
+        - rf-dev-ingress
+    - role: honey-school-dev-media-relay
+      tags:
+        - rf-dev-media
+    - role: honey-school-edge-logs
+      tags:
+        - rf-dev-logs

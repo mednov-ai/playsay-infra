@@ -1,0 +1,117 @@
+---
+- name: Configure bounded RF edge log collection
+  when: honey_school_edge_logs_enabled | bool
+  block:
+    - name: Install Fluent Bit repository prerequisites
+      ansible.builtin.apt:
+        name: [ca-certificates, curl, gpg]
+        state: present
+        update_cache: true
+
+    - name: Install the Fluent Bit signing key
+      ansible.builtin.get_url:
+        url: https://packages.fluentbit.io/fluentbit.key
+        dest: /usr/share/keyrings/fluent-bit.asc
+        mode: '0644'
+
+    - name: Configure the Fluent Bit Noble repository
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/fluent-bit.asc] https://packages.fluentbit.io/ubuntu/noble noble main
+        filename: fluent-bit
+        state: present
+
+    - name: Install Fluent Bit
+      ansible.builtin.apt:
+        name: fluent-bit
+        state: present
+        update_cache: true
+
+    - name: Inspect protected log ingest credentials
+      ansible.builtin.stat:
+        path: "{{ honey_school_edge_logs_credentials_path }}"
+      register: honey_school_edge_logs_credentials
+
+    - name: Require protected log ingest credentials
+      ansible.builtin.assert:
+        that:
+          - honey_school_edge_logs_credentials.stat.exists
+          - honey_school_edge_logs_credentials.stat.pw_name == 'root'
+          - honey_school_edge_logs_credentials.stat.gr_name == 'root'
+          - honey_school_edge_logs_credentials.stat.mode == '0600'
+        fail_msg: Provision the root-owned 0600 edge log ingest environment file before enabling collection.
+
+    - name: Create bounded log buffer
+      ansible.builtin.file:
+        path: "{{ honey_school_edge_logs_buffer_directory }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Install the privacy filter
+      ansible.builtin.template:
+        src: privacy-filter.lua.j2
+        dest: /etc/fluent-bit/privacy-filter.lua
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart honey school edge logs
+
+    - name: Install signaling parser
+      ansible.builtin.template:
+        src: parsers.conf.j2
+        dest: /etc/fluent-bit/honey-school-parsers.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart honey school edge logs
+
+    - name: Install bounded Fluent Bit configuration
+      ansible.builtin.template:
+        src: fluent-bit.conf.j2
+        dest: /etc/fluent-bit/fluent-bit.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart honey school edge logs
+
+    - name: Create the Fluent Bit systemd override directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/fluent-bit.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Install Fluent Bit service limits
+      ansible.builtin.template:
+        src: service-override.conf.j2
+        dest: /etc/systemd/system/fluent-bit.service.d/honey-school.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd for honey school edge logs
+        - Restart honey school edge logs
+
+    - name: Enable Fluent Bit
+      ansible.builtin.systemd:
+        name: fluent-bit
+        enabled: true
+        state: started
+        daemon_reload: true
+
+- name: Inspect collector service for rollback
+  ansible.builtin.stat:
+    path: /lib/systemd/system/fluent-bit.service
+  register: honey_school_edge_logs_unit
+  when: not (honey_school_edge_logs_enabled | bool)
+
+- name: Stop collector when disabled
+  ansible.builtin.systemd:
+    name: fluent-bit
+    enabled: false
+    state: stopped
+  when:
+    - not (honey_school_edge_logs_enabled | bool)
+    - honey_school_edge_logs_unit.stat.exists | default(false)

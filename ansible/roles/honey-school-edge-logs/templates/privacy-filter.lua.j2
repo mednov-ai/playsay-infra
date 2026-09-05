@@ -1,0 +1,29 @@
+function sanitize_turn_event(tag, timestamp, record)
+    local message = string.lower(record["MESSAGE"] or "")
+    local event = nil
+    local outcome = "success"
+    if string.find(message, "error 401:", 1, true) or string.find(message, "error 438:", 1, true) then
+        event = "authentication_challenge"
+        outcome = "expected"
+    elseif string.find(message, "cannot find credentials", 1, true) then
+        event = "credential_missing"
+        outcome = "failure"
+    elseif string.find(message, "allocation", 1, true) and
+           (string.find(message, "deleted", 1, true) or string.find(message, "closed", 1, true)) then
+        event = "allocation_closed"
+    elseif string.find(message, "allocation", 1, true) and
+           (string.find(message, "created", 1, true) or string.find(message, "new", 1, true)) then
+        event = "allocation_created"
+    elseif string.find(message, "error", 1, true) or string.find(message, "failed", 1, true) then
+        event = "relay_error"
+        outcome = "failure"
+    else
+        return -1, timestamp, record
+    end
+    return 2, timestamp, {
+        environment = "{{ honey_school_edge_logs_environment }}",
+        source = "coturn",
+        event = event,
+        outcome = outcome
+    }
+end

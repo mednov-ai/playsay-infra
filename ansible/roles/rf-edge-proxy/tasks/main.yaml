@@ -25,16 +25,17 @@
   ansible.builtin.assert:
     that:
       - item.hostname is defined
+      - item.environment in ['dev', 'prod']
       - item.kind in ['application', 'keycloak', 'landing']
       - item.kind != 'keycloak' or item.realm is defined
       - item.kind != 'landing' or item.document_root is defined
       - item.kind != 'landing' or item.landing_source is defined
       - not (item.livekit_signaling_proxy | default(false) | bool) or item.kind == 'application'
-      - not (item.livekit_signaling_proxy | default(false) | bool) or item.hostname == 'online.honeyschool.ru'
-      - not (item.livekit_signaling_proxy | default(false) | bool) or item.origin_hostname == 'online.honey.school'
+      - not (item.livekit_signaling_proxy | default(false) | bool) or item.hostname == ((item.environment == 'dev') | ternary('dev.online.honeyschool.ru', 'online.honeyschool.ru'))
+      - not (item.livekit_signaling_proxy | default(false) | bool) or item.origin_hostname == ((item.environment == 'dev') | ternary('dev.online.honey.school', 'online.honey.school'))
       - not (item.collaboration_proxy | default(false) | bool) or item.kind == 'application'
-      - not (item.collaboration_proxy | default(false) | bool) or item.hostname == 'online.honeyschool.ru'
-      - not (item.collaboration_proxy | default(false) | bool) or item.origin_hostname == 'online.honey.school'
+      - not (item.collaboration_proxy | default(false) | bool) or item.hostname == ((item.environment == 'dev') | ternary('dev.online.honeyschool.ru', 'online.honeyschool.ru'))
+      - not (item.collaboration_proxy | default(false) | bool) or item.origin_hostname == ((item.environment == 'dev') | ternary('dev.online.honey.school', 'online.honey.school'))
   loop: "{{ rf_edge_routes }}"
   loop_control:
     label: "{{ item.hostname | default('undefined') }}"

@@ -1,0 +1,6 @@
+---
+- name: reload nginx after geoip change
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+

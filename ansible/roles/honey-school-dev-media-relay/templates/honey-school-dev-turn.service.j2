@@ -1,0 +1,28 @@
+[Unit]
+Description=Honey School isolated development TURN relay
+After=network-online.target honey-school-dev-turn-firewall.service
+Requires=honey-school-dev-turn-firewall.service
+
+[Service]
+Type=simple
+User=honey-turn-dev
+Group=honey-turn-dev
+ExecStart=/usr/bin/turnserver -c /etc/honeyschool/dev-turn/turnserver.conf --pidfile=
+Restart=on-failure
+RestartSec=2s
+CPUAccounting=true
+CPUQuota=25%
+MemoryAccounting=true
+MemoryHigh={{ rf_edge_dev_media_relay_memory_high }}
+MemoryMax={{ rf_edge_dev_media_relay_memory_max }}
+TasksMax=128
+LimitNOFILE=32768
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/etc/honeyschool/dev-turn
+
+[Install]
+WantedBy=multi-user.target
+

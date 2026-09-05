@@ -1,0 +1,9 @@
+[Service]
+EnvironmentFile={{ honey_school_edge_logs_credentials_path }}
+MemoryMax={{ honey_school_edge_logs_memory_max }}
+CPUQuota={{ honey_school_edge_logs_cpu_quota }}
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths={{ honey_school_edge_logs_buffer_directory }}

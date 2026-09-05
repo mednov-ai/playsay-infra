@@ -1,0 +1,8 @@
+table inet honey_school_dev_turn {
+    chain output {
+        type filter hook output priority filter; policy accept;
+        meta skuid {{ honey_school_dev_turn_uid }} ip daddr {{ rf_edge_dev_media_relay_sfu_ipv4 }} meta l4proto != udp drop
+        meta skuid {{ honey_school_dev_turn_uid }} ip daddr {{ rf_edge_dev_media_relay_sfu_ipv4 }} udp dport != {{ rf_edge_dev_media_relay_sfu_min_port }}-{{ rf_edge_dev_media_relay_sfu_max_port }} drop
+    }
+}
+

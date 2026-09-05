@@ -19,6 +19,9 @@
     - role: wireguard-dns
       tags:
         - wireguard-dns
+    - role: honey-school-geoip
+      tags:
+        - honey-school-geoip
     - role: edge-proxy
       tags:
         - edge-proxy

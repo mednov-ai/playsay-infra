@@ -7,6 +7,12 @@ victoriaMetrics:
   storage:
     size: 5Gi
 
+victoriaLogs:
+  enabled: true
+  service:
+    type: NodePort
+    nodePort: 32086
+
 vmagent:
   scrapeInterval: 30s
   evaluationInterval: 30s

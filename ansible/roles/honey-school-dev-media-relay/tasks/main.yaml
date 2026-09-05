@@ -1,0 +1,207 @@
+---
+- name: Validate the isolated dev relay contract
+  ansible.builtin.assert:
+    that:
+      - rf_edge_dev_media_relay_listening_port | int == 3479
+      - rf_edge_dev_media_relay_tls_port | int == 5350
+      - rf_edge_dev_media_relay_min_port | int == 49300
+      - rf_edge_dev_media_relay_max_port | int == 49399
+      - rf_edge_dev_media_relay_sfu_ipv4 == rf_edge_origin_address
+      - rf_edge_dev_media_relay_sfu_min_port | int == 51000
+      - rf_edge_dev_media_relay_sfu_max_port | int == 51049
+      - rf_edge_dev_media_relay_secret_path is match('^/etc/honeyschool/secrets/')
+      - rf_edge_dev_media_relay_secret_path != rf_edge_media_relay_secret_path
+      - rf_edge_dev_media_relay_certificate_directory != rf_edge_media_relay_certificate_directory
+      - rf_edge_dev_media_relay_min_port | int > rf_edge_media_relay_max_port | int
+      - rf_edge_dev_media_relay_max_port | int < 50000
+    fail_msg: The RF dev relay must remain separate from production listeners, credentials, certificate and SFU ports.
+
+- name: Install the isolated dev relay runtime
+  ansible.builtin.apt:
+    name:
+      - coturn
+      - nftables
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the unprivileged dev relay account
+  ansible.builtin.user:
+    name: honey-turn-dev
+    system: true
+    shell: /usr/sbin/nologin
+    home: /nonexistent
+    create_home: false
+
+- name: Resolve the dev relay account
+  ansible.builtin.getent:
+    database: passwd
+    key: honey-turn-dev
+
+- name: Record the dev relay numeric uid for nftables
+  ansible.builtin.set_fact:
+    honey_school_dev_turn_uid: "{{ getent_passwd['honey-turn-dev'][1] | int }}"
+
+- name: Create protected dev relay directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /etc/honeyschool, group: root, mode: "0755" }
+    - { path: /etc/honeyschool/secrets, group: root, mode: "0700" }
+    - { path: /etc/honeyschool/dev-turn, group: honey-turn-dev, mode: "0750" }
+    - { path: "{{ rf_edge_dev_media_relay_runtime_certificate_directory }}", group: honey-turn-dev, mode: "0750" }
+
+- name: Check the independent dev relay secret
+  ansible.builtin.stat:
+    path: "{{ rf_edge_dev_media_relay_secret_path }}"
+  register: honey_school_dev_turn_secret
+  no_log: true
+
+- name: Require a protected independent dev relay secret
+  ansible.builtin.assert:
+    that:
+      - honey_school_dev_turn_secret.stat.exists
+      - honey_school_dev_turn_secret.stat.isreg
+      - honey_school_dev_turn_secret.stat.mode == '0600'
+      - honey_school_dev_turn_secret.stat.pw_name == 'root'
+      - honey_school_dev_turn_secret.stat.gr_name == 'root'
+    fail_msg: Provision the independent Honey School dev TURN secret before RF dev delivery.
+  no_log: true
+
+- name: Read the independent dev relay secret
+  ansible.builtin.slurp:
+    src: "{{ rf_edge_dev_media_relay_secret_path }}"
+  register: honey_school_dev_turn_secret_value
+  no_log: true
+
+- name: Resolve and validate the independent dev relay secret
+  ansible.builtin.set_fact:
+    rf_edge_dev_media_relay_auth_secret: "{{ honey_school_dev_turn_secret_value.content | b64decode | trim }}"
+  no_log: true
+
+- name: Require a high-entropy independent dev relay secret
+  ansible.builtin.assert:
+    that:
+      - rf_edge_dev_media_relay_auth_secret is match('^[0-9a-f]{64}$')
+  no_log: true
+
+- name: Check the dev relay certificate files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ rf_edge_dev_media_relay_certificate_directory }}/fullchain.pem"
+    - "{{ rf_edge_dev_media_relay_certificate_directory }}/privkey.pem"
+  register: honey_school_dev_turn_certificate_files
+
+- name: Require the dev relay certificate before enablement
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.isreg
+    fail_msg: Issue the dev.turn.honeyschool.ru certificate before RF dev delivery.
+  loop: "{{ honey_school_dev_turn_certificate_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Install coturn-readable dev certificate copies
+  ansible.builtin.copy:
+    src: "{{ item.source }}"
+    dest: "{{ rf_edge_dev_media_relay_runtime_certificate_directory }}/{{ item.name }}"
+    remote_src: true
+    owner: root
+    group: honey-turn-dev
+    mode: "0640"
+  loop:
+    - source: "{{ rf_edge_dev_media_relay_certificate_directory }}/fullchain.pem"
+      name: fullchain.pem
+    - source: "{{ rf_edge_dev_media_relay_certificate_directory }}/privkey.pem"
+      name: privkey.pem
+  no_log: true
+  notify: restart Honey School dev coturn
+
+- name: Render the independent dev coturn configuration
+  ansible.builtin.template:
+    src: turnserver.conf.j2
+    dest: /etc/honeyschool/dev-turn/turnserver.conf
+    owner: root
+    group: honey-turn-dev
+    mode: "0640"
+  no_log: true
+  notify: restart Honey School dev coturn
+
+- name: Render the dev relay nftables isolation table
+  ansible.builtin.template:
+    src: dev-turn-firewall.nft.j2
+    dest: /etc/honeyschool/dev-turn/firewall.nft
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/nft --check --file %s
+  notify: restart Honey School dev relay firewall
+
+- name: Install the idempotent dev relay firewall loader
+  ansible.builtin.copy:
+    dest: /usr/local/sbin/honey-school-apply-dev-turn-firewall
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      set -eu
+      /usr/sbin/nft list table inet honey_school_dev_turn >/dev/null 2>&1 &&
+        /usr/sbin/nft delete table inet honey_school_dev_turn || true
+      /usr/sbin/nft -f /etc/honeyschool/dev-turn/firewall.nft
+  notify: restart Honey School dev relay firewall
+
+- name: Install the dev relay firewall unit
+  ansible.builtin.template:
+    src: honey-school-dev-turn-firewall.service.j2
+    dest: /etc/systemd/system/honey-school-dev-turn-firewall.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart Honey School dev relay firewall
+
+- name: Install the independent dev coturn unit
+  ansible.builtin.template:
+    src: honey-school-dev-turn.service.j2
+    dest: /etc/systemd/system/honey-school-dev-turn.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart Honey School dev coturn
+
+- name: Allow the bounded dev TURN listeners and relay range
+  community.general.ufw:
+    rule: allow
+    proto: "{{ item.proto }}"
+    port: "{{ item.port }}"
+  loop:
+    - { proto: udp, port: "3479" }
+    - { proto: tcp, port: "3479" }
+    - { proto: tcp, port: "5350" }
+    - { proto: udp, port: "49300:49399" }
+
+- name: Apply pending dev relay handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the dev firewall and relay services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - honey-school-dev-turn-firewall.service
+    - honey-school-dev-turn.service
+  when: not ansible_check_mode
+
+- name: Verify production coturn remains active
+  ansible.builtin.command:
+    cmd: systemctl is-active coturn
+  changed_when: false
+  when: not ansible_check_mode
