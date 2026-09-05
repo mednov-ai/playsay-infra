@@ -2,7 +2,7 @@
 set -eu
 
 usage() {
-  echo "Usage: $0 <40-character-infra-commit> <syntax|check|apply|bootstrap-check|bootstrap-apply|ingress-check|ingress-apply|logs-check|logs-apply|logs-packages-apply> [inventory]" >&2
+  echo "Usage: $0 <40-character-infra-commit> <syntax|check|apply|bootstrap-check|bootstrap-apply|ingress-check|ingress-apply|logs-check|logs-apply|logs-packages-apply|media-check|media-apply> [inventory]" >&2
   exit 2
 }
 
@@ -11,7 +11,7 @@ expected_ref=$1
 mode=$2
 case "$expected_ref" in *[!0-9a-f]*|'') usage ;; esac
 [ "${#expected_ref}" -eq 40 ] || usage
-case "$mode" in syntax|check|apply|bootstrap-check|bootstrap-apply|ingress-check|ingress-apply|logs-check|logs-apply|logs-packages-apply) ;; *) usage ;; esac
+case "$mode" in syntax|check|apply|bootstrap-check|bootstrap-apply|ingress-check|ingress-apply|logs-check|logs-apply|logs-packages-apply|media-check|media-apply) ;; *) usage ;; esac
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 actual_ref=$(git -C "$repo_root" rev-parse HEAD)
@@ -38,6 +38,8 @@ case "$mode" in
   ingress-check) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-ingress --check --diff ;;
   ingress-apply) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-ingress --diff ;;
   logs-packages-apply) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-log-packages --diff ;;
+  media-check) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-media --check --diff ;;
+  media-apply) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-media --diff ;;
   logs-check) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-logs --check --diff ;;
   logs-apply) exec ansible-playbook -i "$inventory" "$playbook" --tags rf-dev-logs --diff ;;
   syntax) exec ansible-playbook -i "$inventory" "$playbook" --syntax-check ;;

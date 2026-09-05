@@ -51,6 +51,12 @@ def main() -> None:
     assert "meta skuid {{ honey_school_dev_turn_uid }}" in firewall
     assert "rf_edge_dev_media_relay_sfu_min_port" in firewall
     assert "rf_edge_dev_media_relay_sfu_max_port" in firewall
+    assert "ct direction reply" in firewall
+    assert "meta skuid {{ honey_school_dev_turn_uid }} counter drop" in firewall
+    assert "udp sport {{ rf_edge_dev_media_relay_min_port }}" in firewall
+    assert "} | /usr/sbin/nft -f -" in tasks
+    firewall_unit = (role / "templates/honey-school-dev-turn-firewall.service.j2").read_text()
+    assert "ExecStop=/usr/sbin/nft delete" not in firewall_unit
 
     wrapper = ROOT / "scripts/apply-rf-edge-dev-release.sh"
     result = subprocess.run(["sh", "-n", str(wrapper)], capture_output=True, text=True)

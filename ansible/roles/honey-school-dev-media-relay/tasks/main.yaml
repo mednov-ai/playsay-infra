@@ -92,6 +92,7 @@
 - name: Check the dev relay certificate files
   ansible.builtin.stat:
     path: "{{ item }}"
+    follow: true
   loop:
     - "{{ rf_edge_dev_media_relay_certificate_directory }}/fullchain.pem"
     - "{{ rf_edge_dev_media_relay_certificate_directory }}/privkey.pem"
@@ -152,9 +153,14 @@
     content: |
       #!/bin/sh
       set -eu
-      /usr/sbin/nft list table inet honey_school_dev_turn >/dev/null 2>&1 &&
-        /usr/sbin/nft delete table inet honey_school_dev_turn || true
-      /usr/sbin/nft -f /etc/honeyschool/dev-turn/firewall.nft
+      if /usr/sbin/nft list table inet honey_school_dev_turn >/dev/null 2>&1; then
+        {
+          printf 'delete table inet honey_school_dev_turn\n'
+          cat /etc/honeyschool/dev-turn/firewall.nft
+        } | /usr/sbin/nft -f -
+      else
+        /usr/sbin/nft -f /etc/honeyschool/dev-turn/firewall.nft
+      fi
   notify: restart Honey School dev relay firewall
 
 - name: Install the dev relay firewall unit

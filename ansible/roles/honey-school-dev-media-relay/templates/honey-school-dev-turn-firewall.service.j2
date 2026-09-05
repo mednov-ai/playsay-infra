@@ -7,7 +7,7 @@ Type=oneshot
 RemainAfterExit=true
 ExecStart=/usr/local/sbin/honey-school-apply-dev-turn-firewall
 ExecReload=/usr/local/sbin/honey-school-apply-dev-turn-firewall
-ExecStop=/usr/sbin/nft delete table inet honey_school_dev_turn
+# Keep the UID deny rules when stopped; decommission is a separate operation.
 
 [Install]
 WantedBy=multi-user.target
