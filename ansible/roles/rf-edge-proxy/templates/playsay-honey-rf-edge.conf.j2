@@ -133,7 +133,7 @@ log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_ti
         allow ::1;
         allow {{ ansible_host }};
         deny all;
-        client_max_body_size 256k;
+        client_max_body_size 4m;
 {{ proxy_to_origin(route, forwarded_proto) }}
     }
 {% endif %}

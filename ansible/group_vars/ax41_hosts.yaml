@@ -144,7 +144,7 @@ edge_routes:
     argocd_upstream: 10.60.0.30:32080
     headlamp_upstream: 10.60.0.30:32081
     victoria_metrics_upstream: 10.60.0.30:32085
-    victoria_logs_upstream: 10.60.0.30:32086
+    victoria_logs_upstream: 10.60.0.30:32089
     victoria_logs_enabled: false
     victoria_logs_ingest_trusted_peers:
       - 94.102.89.213

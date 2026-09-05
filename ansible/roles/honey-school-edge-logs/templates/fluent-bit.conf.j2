@@ -51,7 +51,7 @@
     Format                   json_lines
     tls                      On
     tls.verify               On
-    HTTP_User                ${HONEY_SCHOOL_LOG_INGEST_USERNAME}
-    HTTP_Passwd              ${HONEY_SCHOOL_LOG_INGEST_PASSWORD}
+    HTTP_User                ${EDGE_LOG_INGEST_USERNAME}
+    HTTP_Passwd              ${EDGE_LOG_INGEST_PASSWORD}
     Retry_Limit              False
     storage.total_limit_size {{ honey_school_edge_logs_buffer_limit }}

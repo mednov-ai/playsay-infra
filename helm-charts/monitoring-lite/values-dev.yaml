@@ -11,7 +11,7 @@ victoriaLogs:
   enabled: true
   service:
     type: NodePort
-    nodePort: 32086
+    nodePort: 32089
 
 vmagent:
   scrapeInterval: 30s
