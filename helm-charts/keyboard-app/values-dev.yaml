@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-dev-91"
-  digest: sha256:d4f6a10b30aecebb25659e83ae95bf16d245aadfd07d9e2766d6d4ffbf8f0ab9
+  tag: "key-frontend-codex-route-rf-users-via-selectel-geoip-93"
+  digest: sha256:277b99c689d0cbfaba3a6f6a4a7dbd2c50dd91eceaf16bf676f9d4074853f5fc
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-dev-91
-  number: "91"
-  branch: develop
-  branchLabel: key-frontend-dev
-  commit: 90e91f4cd9399be1c22c43d59d11dba6096ddd36
-  commitShort: 90e91f4cd939
+  name: key-frontend-codex-route-rf-users-via-selectel-geoip-93
+  number: "93"
+  branch: codex/route-rf-users-via-selectel-geoip
+  branchLabel: key-frontend-codex-route-rf-users-via-selectel-geoip
+  commit: 5e09756004fad3c7b74c448920c67f684a8ed25e
+  commitShort: 5e09756004fa
 service:
   type: NodePort
   nodePort: 32087

@@ -10,7 +10,7 @@ const names = ["PLAYSAY_REGIONAL_RELAY_ENVIRONMENT", "PLAYSAY_REGIONAL_RELAY_MOD
 const matrix = [];
 for (const [scenario, file, extra, expected] of [
   ["prod", "prod", [], ["prod", "off", "rf-two-hop", "rf-turn-relay"]],
-  ["dev", "dev", [], ["dev", "off", "off", "off"]],
+  ["dev", "dev", [], ["dev", "off", "rf-two-hop", "rf-turn-relay"]],
   ["rollback", "prod", ["--set", "livekit.regionalRelay.mediaMode=off"], ["prod", "off", "rf-two-hop", "off"]],
 ]) {
   const rendered = execFileSync("helm", ["template", "api-gateway", chart, "-f", `${chart}/values-${file}.yaml`, ...extra], { encoding: "utf8" });

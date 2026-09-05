@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-151"
-  digest: sha256:cc428ae9c66288ba0c7a3db1bdeee49f608165e2d07942b6b5d257f9bd7b7633
+  tag: "api-codex-route-rf-users-via-selectel-geoip-159"
+  digest: sha256:baeed3057c49b671a582af10d7bbc41c3d36f494641548b6ebc59b5f3e0a0d87
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-151
-  number: "151"
-  branch: develop
-  branchLabel: api-dev
-  commit: 541bc558539e804ee597e044e9f87d0f977a83dc
-  commitShort: "541bc558539e"
+  name: api-codex-route-rf-users-via-selectel-geoip-159
+  number: "159"
+  branch: codex/route-rf-users-via-selectel-geoip
+  branchLabel: api-codex-route-rf-users-via-selectel-geoip
+  commit: 4be2794e5e191becca14bf5f13583b2626ea6332
+  commitShort: "4be2794e5e19"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -52,8 +52,8 @@ livekit:
   regionalRelay:
     environment: dev
     mode: off
-    signalingMode: off
-    mediaMode: off
+    signalingMode: rf-two-hop
+    mediaMode: rf-turn-relay
     signalingUrl: wss://dev.online.honeyschool.ru/livekit
 lessonTranslation:
   enabled: true
@@ -66,7 +66,7 @@ collaboration:
   websocketUrl: wss://dev.online.honey.school/collab/ws
   regionalRouting:
     environment: dev
-    mode: off
+    mode: rf-two-hop
     websocketUrl: wss://dev.online.honeyschool.ru/collab/ws
   httpBaseUrl: http://collaboration-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-collaboration

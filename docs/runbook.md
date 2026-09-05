@@ -1,12 +1,16 @@
 # Honey School Dev Runbook
 
+Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. GeoIP redirects remain disabled pending the IPinfo database and acceptance.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
 ## Active AX41 Dev/Prod Topology
 
-RF dev DNS and isolated HTTPS ingress are active on Selectel for dev.online.honeyschool.ru, dev.key.honeyschool.ru and the canonical dev.ops.honey.school issuer. Application authorization, regional TURN and full lesson acceptance remain pending. Other RF dev/GeoIP work remains preparation: see [RF dev preparation](rf-dev-preparation.md) for the environment map, independent TURN constraints, selected log design and protected provider-token references. Do not treat it as deployed state or as permission to change production. The prepared log path is Selectel Fluent Bit → authenticated `dev.ops.honey.school/victoria-logs/insert/` → VictoriaLogs in `playsay-dev`; its independent backend and collector flags are enabled in dev after authenticated synthetic ingestion; TURN-source acceptance remains open; isolated retry/backpressure recovery has passed. Dev media provisioning and exact-ref media-only delivery are documented in the same preparation guide.
+RF dev DNS, HTTPS/auth ingress, independent TURN and authenticated central log collection are active. Two-browser synthetic-media verification through RF dev passes camera/audio, collaboration, screen share and reconnect after the scoped dev SNAT and LiveKit uplink fixes. Real RF last-mile without VPN and long-duration acceptance remain open. See [RF dev preparation](rf-dev-preparation.md) for exact refs, evidence, isolation and provider-token requirements. GeoIP redirects remain disabled pending the IPinfo dataset.
+
+Dev VictoriaLogs uses NodePort 32089, seven-day retention, a 10 GiB PVC, 128 MiB requested/512 MiB maximum memory and 500m CPU maximum. Fluent Bit sends allowlisted records through authenticated dev ingestion; query access remains private. Stop the collector before disabling storage through GitOps and preserve the PVC for incident evidence.
 
 The active topology uses a third `playsay-ci` VM and restores the original domain ownership: `key.honey.school`/`dev.key.honey.school` serve the keyboard trainer, while Keycloak is published at `ops.honey.school/keycloak` and `dev.ops.honey.school/keycloak`. The shared Jenkins controller is rebuilt from Git in `playsay-ci`, is VPN-only at `jenkins.honey.school`, and receives public GitHub events only through restricted routes on `hooks.honey.school`. Jenkins may deploy dev through scoped remote RBAC and must not receive prod kubeconfig. The current status and remaining tasks are in [`../../specs/ax41-ci-migration.md`](../../specs/ax41-ci-migration.md); this supersedes the older instruction to install Jenkins inside `playsay-dev`.
 
@@ -2488,3 +2492,5 @@ The isolated `ansible/playbooks/ax41-dev-sfu-nat.yaml` owns only `table ip honey
 Run syntax/check and review the rendered 50 exact mappings from a clean pushed infra revision. After confirming zero participants, apply this play only, repeat check, inspect the dedicated table and verify two-browser media plus the existing forbidden-destination probes. New mappings affect new conntrack flows; never flush shared connections to accelerate a test. The service survives reboot and libvirt rule refresh because its table is independent. Rollback requires disabling RF dev media for new sessions through GitOps, draining dev sessions, then removing this dev-only service/table through the corresponding reviewed configuration change; stopping its unit alone deliberately leaves existing NAT rules intact.
 
 Dev LiveKit includes only VM uplink `enp1s0` for RTC candidates; CNI/Flannel candidates are excluded to avoid guest MASQUERADE port changes. This works together with the dev-only AX41 SNAT table. Inspect the actual uplink name after a VM rebuild before enabling RTC.
+
+The RTC interface filter is emitted only when explicitly configured; production values remain unchanged.
