@@ -62,6 +62,10 @@ def main():
     assert len(secret) == 64
     username = (str(int(time.time()) + 120) + ":dev-check-" + secrets.token_hex(8)).encode()
     password = base64.b64encode(hmac.new(secret, username, hashlib.sha1).digest())
+    # Use the other realm's actual REST key only in memory; do not allocate on prod.
+    production_secret = next(line.split("=", 1)[1].strip().encode() for line in Path("/etc/turnserver.conf").read_text().splitlines() if line.startswith("static-auth-secret="))
+    assert production_secret and production_secret != secret
+    foreign_password = base64.b64encode(hmac.new(production_secret, username, hashlib.sha1).digest())
     for transport in ("UDP", "TCP", "TLS"):
         udp = transport == "UDP"
         conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM if udp else socket.SOCK_STREAM)
@@ -78,6 +82,9 @@ def main():
             wrong = hashlib.md5(username + b":" + realm + b":invalid").digest()
             kind, fields = exchange(conn, *request(3, allocation + auth, wrong), udp)
             assert kind == 0x113 and fields[9][2:4] == b"\x04\x01"
+            foreign_key = hashlib.md5(username + b":" + realm + b":" + foreign_password).digest()
+            kind, fields = exchange(conn, *request(3, allocation + auth, foreign_key), udp)
+            assert kind == 0x113 and fields[9][2:4] == b"\x04\x01"
             key = hashlib.md5(username + b":" + realm + b":" + password).digest()
             kind, fields = exchange(conn, *request(3, allocation + auth, key), udp)
             assert kind == 0x103
@@ -86,7 +93,7 @@ def main():
             assert relay[1] == 1 and 49300 <= port <= 49399
             kind, _ = exchange(conn, *request(4, [attr(0x0D, b"\0\0\0\0")] + auth, key), udp)
             assert kind == 0x104
-        print("PASS dev TURN " + transport + " invalid-auth rejection, allocation range and release")
+        print("PASS dev TURN " + transport + " invalid/foreign-auth rejection, allocation range and release")
     print("Allocation checks only; bidirectional SFU media acceptance remains required")
 
 
