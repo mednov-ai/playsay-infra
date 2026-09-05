@@ -16,6 +16,9 @@
     - role: ax41-firewall
       tags:
         - ax41-firewall
+    - role: honey-school-dev-sfu-nat
+      tags:
+        - honey-school-dev-sfu-nat
     - role: wireguard-dns
       tags:
         - wireguard-dns

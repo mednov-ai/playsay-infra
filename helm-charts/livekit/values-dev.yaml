@@ -5,6 +5,8 @@ imagePullSecrets: []
 secret:
   existingName: livekit-keys
 rtc:
+  interfaces:
+    includes: [enp1s0]
   nodeIp: "65.109.55.110"
   tcpPort: 7882
   udpPortRangeStart: 51000
