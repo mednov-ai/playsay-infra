@@ -8,11 +8,13 @@ function sanitize_turn_event(tag, timestamp, record)
     elseif string.find(message, "cannot find credentials", 1, true) then
         event = "credential_missing"
         outcome = "failure"
-    elseif string.find(message, "allocation", 1, true) and
-           (string.find(message, "deleted", 1, true) or string.find(message, "closed", 1, true)) then
+    elseif string.find(message, "closed (2nd stage)", 1, true) or
+           (string.find(message, "allocation", 1, true) and
+            (string.find(message, "deleted", 1, true) or string.find(message, "closed", 1, true))) then
         event = "allocation_closed"
-    elseif string.find(message, "allocation", 1, true) and
-           (string.find(message, "created", 1, true) or string.find(message, "new", 1, true)) then
+    elseif string.find(message, "allocate processed, success", 1, true) or
+           (string.find(message, "allocation", 1, true) and
+            (string.find(message, "created", 1, true) or string.find(message, "new", 1, true))) then
         event = "allocation_created"
     elseif string.find(message, "error", 1, true) or string.find(message, "failed", 1, true) then
         event = "relay_error"
