@@ -2493,7 +2493,7 @@ Run syntax/check and review the rendered 50 exact mappings from a clean pushed i
 
 Dev LiveKit includes only VM uplink `enp1s0` for RTC candidates; CNI/Flannel candidates are excluded to avoid guest MASQUERADE port changes. This works together with the dev-only AX41 SNAT table. Inspect the actual uplink name after a VM rebuild before enabling RTC.
 
-The RTC interface filter is emitted only when explicitly configured; production values remain unchanged.
+The RTC interface filter is emitted only when explicitly configured. The regional-routing feature candidate carries the same uplink-only filter for production after read-only confirmation of enp1s0; this candidate is not deployed under the production hold. Keep the production port/resource/batch-IO profile when promoting.
 
 ### Browser connection diagnostics
 
