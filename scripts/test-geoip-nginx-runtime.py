@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
  config="pid "+str(root/"nginx.pid")+"; error_log "+str(root/"error.log")+" error; events {} http { access_log off; "
  config+='map $remote_addr $honey_school_geo_country_code { default ""; 127.0.0.1 RU; 127.0.0.2 RU; 127.0.0.3 US; ::1 RU; }\n'
  config+=data['policy']
- config+='server { listen 127.0.0.1:'+str(port)+'; listen [::1]:'+str(port)+'; server_name _; location / {'+data['snippet']+' return 204; } } }'
+ config+='server { listen 127.0.0.1:'+str(port)+'; listen [::1]:'+str(port)+'; server_name _; location / {'+data['snippet']+' add_header X-Test-Client $honey_school_client_ip always; add_header X-Test-Peer $remote_addr always; return 204; } } }'
  target=root/'nginx.conf';target.write_text(config)
  subprocess.run(['nginx','-t','-p',directory+'/', '-c',str(target)],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
  process=subprocess.Popen(['nginx','-p',directory+'/', '-c',str(target),'-g','daemon off;'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -37,6 +37,7 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
    ('non RU',204,{'source':'127.0.0.3'}),
    ('unknown country',204,{'source':'127.0.0.4'}),
    ('trusted RF peer with school upstream host',204,{'source':'127.0.0.2'}),
+   ('trusted RF normalized browser address',204,{'source':'127.0.0.2','headers':{'X-Real-IP':'2001:db8::5','X-Forwarded-For':'198.51.100.9'},'client':'2001:db8::5'}),
    ('spoofed client headers do not suppress direct RU',302,{'headers':{'X-Real-IP':'127.0.0.3','X-Forwarded-For':'127.0.0.3'}}),
    ('spoofed RU headers do not redirect non RU',204,{'source':'127.0.0.3','headers':{'X-Real-IP':'127.0.0.1','X-Forwarded-For':'127.0.0.1'}}),
    ('production flag off',204,{'host':'online.honey.school'}),
@@ -57,6 +58,9 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
    connection.request(options.get('method','GET'),path,headers=headers)
    response=connection.getresponse();response.read()
    assert response.status==expected,label
+   if expected!=302:
+    assert response.getheader('X-Test-Peer')==options.get('source','127.0.0.1'),label
+    assert response.getheader('X-Test-Client')==options.get('client',options.get('source','127.0.0.1')),label
    if expected==302:
     assert response.getheader('Location')=='https://dev.online.honeyschool.ru'+path,label
     assert response.getheader('Cache-Control')=='private, no-store',label
