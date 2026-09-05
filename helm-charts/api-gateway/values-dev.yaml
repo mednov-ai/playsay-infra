@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-155"
-  digest: sha256:92a1256883fb276acbdff9b30794718cf4c85af330049632ee609180423331fc
+  tag: "api-codex-route-rf-users-via-selectel-geoip-159"
+  digest: sha256:baeed3057c49b671a582af10d7bbc41c3d36f494641548b6ebc59b5f3e0a0d87
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-155
-  number: "155"
-  branch: develop
-  branchLabel: api-dev
-  commit: 639038349c11c117fde1724473d628bb813b5def
-  commitShort: "639038349c11"
+  name: api-codex-route-rf-users-via-selectel-geoip-159
+  number: "159"
+  branch: codex/route-rf-users-via-selectel-geoip
+  branchLabel: api-codex-route-rf-users-via-selectel-geoip
+  commit: 4be2794e5e191becca14bf5f13583b2626ea6332
+  commitShort: "4be2794e5e19"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
