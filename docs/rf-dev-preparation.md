@@ -1,6 +1,6 @@
 # Regional dev preparation
 
-This is local preparation for `route-rf-users-via-selectel-geoip`, not deployed state. Production remains under the owner's delivery hold. Existing production signaling and media settings must not be disabled merely to recreate an older canary baseline.
+This tracks preparation and the explicitly listed partial delivery evidence for `route-rf-users-via-selectel-geoip`. Production remains under the owner's delivery hold. Existing production signaling and media settings must not be disabled merely to recreate an older canary baseline.
 
 ## Environment mapping
 
@@ -64,3 +64,7 @@ Collector acceptance must inspect Fluent Bit input/output/drop/retry counters th
 RF dev ingress is rendered into `/etc/nginx/conf.d/honey-school-rf-dev.conf` through `honey-school-dev-ingress`. It reuses the existing upgrade map and safe signaling format and does not rewrite the production virtual-host file, landing, firewall, packages, coturn or logging services. Bootstrap installs only HTTP ACME challenge handlers and returns 404 for other HTTP requests. The existing registered ACME account issues independent dev certificates after DNS is authoritative; HTTPS enablement then uses `ingress-check` and `ingress-apply`. Each apply validates the whole nginx configuration before graceful reload and restores the prior dev file on failure.
 
 From a clean exact committed checkout, use `scripts/apply-rf-edge-dev-release.sh COMMIT bootstrap-check INVENTORY` before `bootstrap-apply`; after certificates exist, use `ingress-check` before `ingress-apply`. These modes select only `rf-dev-ingress`; host/environment assertions always run. The full `check/apply` modes additionally include independent media/log roles and are not required for initial ingress setup.
+
+## 2026-09-05 HTTP bootstrap evidence
+
+Infra commit `88e14db` was pushed to the topic branch and applied with the exact-ref wrapper in `bootstrap-apply` mode from the trusted workstation. The preflight reported production participant count 0. Check mode showed only the new `/etc/nginx/conf.d/honey-school-rf-dev.conf`; apply reported `failed=0`, full `nginx -t` passed and nginx was gracefully reloaded. The production virtual-host file, coturn, firewall and application workloads were not part of the play. Forced dev Host HTTP returns expected 404 until certificates enable HTTPS; production online still returns 200. DNS A records for dev.online/dev.key on the RF domain and independent dev certificates are absent. REG.RU browser session is not authenticated; owner sign-in is required before DNS work can proceed. This is not HTTPS, OIDC, TURN or lesson acceptance.
