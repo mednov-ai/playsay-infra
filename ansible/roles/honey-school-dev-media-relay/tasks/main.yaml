@@ -17,6 +17,7 @@
     fail_msg: The RF dev relay must remain separate from production listeners, credentials, certificate and SFU ports.
 
 - name: Install the isolated dev relay runtime
+  tags: [rf-dev-media-bootstrap]
   ansible.builtin.apt:
     name:
       - coturn
@@ -26,6 +27,7 @@
     cache_valid_time: 3600
 
 - name: Create the unprivileged dev relay account
+  tags: [rf-dev-media-bootstrap]
   ansible.builtin.user:
     name: honey-turn-dev
     system: true
