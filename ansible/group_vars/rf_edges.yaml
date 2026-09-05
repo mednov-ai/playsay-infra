@@ -80,7 +80,7 @@ rf_edge_development_routes:
     realm: playsay
     logs_ingest_proxy: true
 
-honey_school_edge_logs_enabled: false
+honey_school_edge_logs_enabled: true
 honey_school_edge_logs_environment: dev
 honey_school_edge_logs_endpoint_host: dev.ops.honey.school
 honey_school_edge_logs_credentials_path: /etc/honeyschool/secrets/edge-log-ingest.env

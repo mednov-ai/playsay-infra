@@ -25,6 +25,7 @@
         name: fluent-bit
         state: present
         update_cache: true
+        policy_rc_d: 101
 
     - name: Inspect protected log ingest credentials
       ansible.builtin.stat:
@@ -93,6 +94,15 @@
       notify:
         - Reload systemd for honey school edge logs
         - Restart honey school edge logs
+
+    - name: Validate collector configuration with protected credentials
+      ansible.builtin.shell: |
+        set -a
+        . {{ honey_school_edge_logs_credentials_path | quote }}
+        /opt/fluent-bit/bin/fluent-bit --dry-run -c /etc/fluent-bit/fluent-bit.conf
+      changed_when: false
+      no_log: true
+      when: not ansible_check_mode
 
     - name: Enable Fluent Bit
       ansible.builtin.systemd:
