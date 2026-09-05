@@ -1,0 +1,9 @@
+# Before libvirt's priority-100 MASQUERADE; scope is only dev SFU to RF edge.
+table ip honey_school_dev_sfu_nat {
+    chain postrouting {
+        type nat hook postrouting priority 99; policy accept;
+{% for port in range(51000, 51050) %}
+        ip saddr 10.60.0.30 ip daddr 94.102.89.213 udp sport {{ port }} udp dport 49300-49399 counter snat to 65.109.55.110:{{ port }}
+{% endfor %}
+    }
+}

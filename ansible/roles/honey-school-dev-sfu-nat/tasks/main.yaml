@@ -1,0 +1,48 @@
+---
+- name: Refuse any host outside the accepted AX41 dev topology
+  ansible.builtin.assert:
+    that:
+      - inventory_hostname == 'playsay-ax41'
+      - ansible_host == '65.109.55.110'
+      - ax41_dev_vm_address == '10.60.0.30'
+      - "'51000:51049' in ax41_dev_livekit_udp_ports"
+- name: Prepare dev NAT configuration directory
+  ansible.builtin.file:
+    path: /etc/honeyschool
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+- name: Render only the dev SFU SNAT table
+  ansible.builtin.template:
+    src: dev-sfu-nat.nft.j2
+    dest: /etc/honeyschool/dev-sfu-nat.nft
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/nft --check --file %s
+  notify: reconcile dev SFU NAT
+- name: Install atomic dev NAT loader
+  ansible.builtin.template:
+    src: apply-dev-sfu-nat.sh.j2
+    dest: /usr/local/sbin/honey-school-apply-dev-sfu-nat
+    owner: root
+    group: root
+    mode: '0755'
+    validate: /bin/sh -n %s
+  notify: reconcile dev SFU NAT
+- name: Install independent dev NAT service
+  ansible.builtin.template:
+    src: honey-school-dev-sfu-nat.service.j2
+    dest: /etc/systemd/system/honey-school-dev-sfu-nat.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reconcile dev SFU NAT
+- name: Enable independent dev NAT service
+  ansible.builtin.systemd:
+    name: honey-school-dev-sfu-nat.service
+    daemon_reload: true
+    enabled: true
+    state: started
+  when: not ansible_check_mode

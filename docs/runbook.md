@@ -2480,3 +2480,9 @@ Smoke выполняется двумя authenticated браузерами в о
 Group lesson, неподдерживаемый locale и участник вне lesson должны получать явный отказ без отправки аудио provider.
 
 Если provider недоступен или нужно быстро отключить контур, установите `lessonTranslation.enabled=false` и синхронизируйте ArgoCD. Это отключает только credential endpoint/translation control и не мешает основному LiveKit classroom. Не заменяйте этот rollback остановкой Docker, LiveKit, Amnezia или root site на `play-and-say.ru`.
+
+### Dev SFU source-port preservation toward Selectel
+
+The isolated `ansible/playbooks/ax41-dev-sfu-nat.yaml` owns only `table ip honey_school_dev_sfu_nat` and its independent systemd unit. Priority 99 precedes libvirt MASQUERADE: exact dev VM source ports 51000–51049 toward Selectel retain their exact public source ports. It does not reconcile the shared production/dev DNAT unit, flush conntrack, reload nginx or restart any VM/SFU. The dev TURN egress allowlist must not be broadened to arbitrary AX41 ports.
+
+Run syntax/check and review the rendered 50 exact mappings from a clean pushed infra revision. After confirming zero participants, apply this play only, repeat check, inspect the dedicated table and verify two-browser media plus the existing forbidden-destination probes. New mappings affect new conntrack flows; never flush shared connections to accelerate a test. The service survives reboot and libvirt rule refresh because its table is independent. Rollback requires disabling RF dev media for new sessions through GitOps, draining dev sessions, then removing this dev-only service/table through the corresponding reviewed configuration change; stopping its unit alone deliberately leaves existing NAT rules intact.

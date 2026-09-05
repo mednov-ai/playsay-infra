@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+candidate=$(mktemp /run/dev-sfu-nat.XXXXXX)
+trap 'rm -f "$candidate"' EXIT HUP INT TERM
+if /usr/sbin/nft list table ip honey_school_dev_sfu_nat >/dev/null 2>&1; then
+  echo 'delete table ip honey_school_dev_sfu_nat' >> "$candidate"
+fi
+cat /etc/honeyschool/dev-sfu-nat.nft >> "$candidate"
+/usr/sbin/nft --check --file "$candidate"
+/usr/sbin/nft --file "$candidate"

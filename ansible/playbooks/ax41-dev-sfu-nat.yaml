@@ -1,0 +1,9 @@
+---
+- name: Preserve only dev SFU source ports toward Selectel
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  roles:
+    - honey-school-dev-sfu-nat

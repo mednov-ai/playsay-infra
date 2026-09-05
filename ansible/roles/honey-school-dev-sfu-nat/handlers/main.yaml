@@ -1,0 +1,7 @@
+---
+- name: reconcile dev SFU NAT
+  ansible.builtin.systemd:
+    name: honey-school-dev-sfu-nat.service
+    daemon_reload: true
+    state: restarted
+  when: not ansible_check_mode
