@@ -22,6 +22,7 @@ ingress:
 websocket:
   allowedOriginPatterns:
     - https://dev.online.honey.school
+    - https://dev.online.honeyschool.ru
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
@@ -51,8 +52,9 @@ livekit:
   regionalRelay:
     environment: dev
     mode: off
-    signalingMode: off
-    mediaMode: off
+    signalingMode: rf-two-hop
+    mediaMode: rf-turn-relay
+    signalingUrl: wss://dev.online.honeyschool.ru/livekit
 lessonTranslation:
   enabled: true
   provider: openai
@@ -64,8 +66,8 @@ collaboration:
   websocketUrl: wss://dev.online.honey.school/collab/ws
   regionalRouting:
     environment: dev
-    mode: off
-    websocketUrl: ""
+    mode: rf-two-hop
+    websocketUrl: wss://dev.online.honeyschool.ru/collab/ws
   httpBaseUrl: http://collaboration-service.playsay-dev.svc.cluster.local
   existingSecret: playsay-collaboration
   tokenTtlSeconds: "900"
@@ -108,7 +110,7 @@ chatPush:
   enabled: "true"
   publicKey: "BMu9J0ktN1kANr61Kb04HcgXcwNA57UL14yTNt-Qz79hf7lG63nEoARoWAk6eYShHvTBtH87xrqcqT82pqaVlMY"
 publicAppUrl: https://dev.online.honey.school
-publicAppRfUrl: https://dev.online.honey.school
+publicAppRfUrl: https://dev.online.honeyschool.ru
 video:
   youtube:
     rfRelay:

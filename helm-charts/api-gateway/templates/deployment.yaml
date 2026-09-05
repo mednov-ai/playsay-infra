@@ -142,11 +142,17 @@ spec:
             {{- if and (eq $effectiveMediaMode "rf-turn-relay") (ne $effectiveSignalingMode "rf-two-hop") }}
             {{- fail "livekit.regionalRelay.mediaMode requires signalingMode=rf-two-hop" }}
             {{- end }}
-            {{- if and (or (eq $effectiveSignalingMode "rf-two-hop") (eq $effectiveMediaMode "rf-turn-relay")) (ne .Values.livekit.regionalRelay.environment "prod") }}
-            {{- fail "livekit.regionalRelay may be enabled only in prod" }}
+            {{- $relayEnvironment := .Values.livekit.regionalRelay.environment }}
+            {{- $supportedRelayEnvironment := or (eq $relayEnvironment "prod") (eq $relayEnvironment "dev") }}
+            {{- if and (or (eq $effectiveSignalingMode "rf-two-hop") (eq $effectiveMediaMode "rf-turn-relay")) (not $supportedRelayEnvironment) }}
+            {{- fail "livekit.regionalRelay may be enabled only in an allowlisted environment" }}
             {{- end }}
-            {{- if and (eq $effectiveSignalingMode "rf-two-hop") (ne $relaySignalingUrl "wss://online.honeyschool.ru/livekit") }}
-            {{- fail "livekit.regionalRelay.signalingUrl must be wss://online.honeyschool.ru/livekit when enabled" }}
+            {{- $expectedRelaySignalingUrl := ternary "wss://dev.online.honeyschool.ru/livekit" "wss://online.honeyschool.ru/livekit" (eq $relayEnvironment "dev") }}
+            {{- if and (ne $relaySignalingUrl "") (or (not $supportedRelayEnvironment) (ne $relaySignalingUrl $expectedRelaySignalingUrl)) }}
+            {{- fail "livekit.regionalRelay.signalingUrl does not match its environment allowlist" }}
+            {{- end }}
+            {{- if and (eq $effectiveSignalingMode "rf-two-hop") (ne $relaySignalingUrl $expectedRelaySignalingUrl) }}
+            {{- fail "livekit.regionalRelay.signalingUrl is required when enabled" }}
             {{- end }}
             - name: PLAYSAY_REGIONAL_RELAY_ENVIRONMENT
               value: {{ .Values.livekit.regionalRelay.environment | quote }}
@@ -189,11 +195,17 @@ spec:
             {{- if not (has $collaborationMode (list "off" "rf-two-hop")) }}
             {{- fail "collaboration.regionalRouting.mode must be off or rf-two-hop" }}
             {{- end }}
-            {{- if and (eq $collaborationMode "rf-two-hop") (ne .Values.collaboration.regionalRouting.environment "prod") }}
-            {{- fail "collaboration.regionalRouting may be enabled only in prod" }}
+            {{- $collaborationEnvironment := .Values.collaboration.regionalRouting.environment }}
+            {{- $supportedCollaborationEnvironment := or (eq $collaborationEnvironment "prod") (eq $collaborationEnvironment "dev") }}
+            {{- if and (eq $collaborationMode "rf-two-hop") (not $supportedCollaborationEnvironment) }}
+            {{- fail "collaboration.regionalRouting may be enabled only in an allowlisted environment" }}
             {{- end }}
-            {{- if and (eq $collaborationMode "rf-two-hop") (ne .Values.collaboration.regionalRouting.websocketUrl "wss://online.honeyschool.ru/collab/ws") }}
-            {{- fail "collaboration.regionalRouting.websocketUrl must be the exact RF collaboration URL when enabled" }}
+            {{- $expectedCollaborationUrl := ternary "wss://dev.online.honeyschool.ru/collab/ws" "wss://online.honeyschool.ru/collab/ws" (eq $collaborationEnvironment "dev") }}
+            {{- if and (ne .Values.collaboration.regionalRouting.websocketUrl "") (or (not $supportedCollaborationEnvironment) (ne .Values.collaboration.regionalRouting.websocketUrl $expectedCollaborationUrl)) }}
+            {{- fail "collaboration.regionalRouting.websocketUrl does not match its environment allowlist" }}
+            {{- end }}
+            {{- if and (eq $collaborationMode "rf-two-hop") (ne .Values.collaboration.regionalRouting.websocketUrl $expectedCollaborationUrl) }}
+            {{- fail "collaboration.regionalRouting.websocketUrl is required when enabled" }}
             {{- end }}
             - name: PLAYSAY_COLLABORATION_REGIONAL_ROUTING_ENVIRONMENT
               value: {{ .Values.collaboration.regionalRouting.environment | quote }}
