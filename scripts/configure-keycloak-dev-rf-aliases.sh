@@ -8,7 +8,7 @@ KEYCLOAK_REALM="${KEYCLOAK_REALM:-playsay}"
 KEYCLOAK_WEB_CLIENT_ID="${KEYCLOAK_WEB_CLIENT_ID:-playsay-web}"
 KEYCLOAK_CONTAINER="${KEYCLOAK_CONTAINER:-keycloak}"
 KEYCLOAK_SERVER="${KEYCLOAK_SERVER:-http://localhost:8080/keycloak}"
-KCADM_PATH="${KCADM_PATH:-/opt/bitnami/keycloak/bin/kcadm.sh}"
+KCADM_PATH="${KCADM_PATH:-/opt/keycloak/bin/kcadm.sh}"
 KCADM_CONFIG="${KCADM_CONFIG:-/tmp/kcadm-dev-rf-aliases.config}"
 
 ONLINE_REDIRECT="https://dev.online.honeyschool.ru/*"
