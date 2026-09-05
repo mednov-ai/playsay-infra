@@ -3,24 +3,28 @@
   when: honey_school_edge_logs_enabled | bool
   block:
     - name: Install Fluent Bit repository prerequisites
+      tags: [rf-dev-log-packages]
       ansible.builtin.apt:
         name: [ca-certificates, curl, gpg]
         state: present
         update_cache: true
 
     - name: Install the Fluent Bit signing key
+      tags: [rf-dev-log-packages]
       ansible.builtin.get_url:
         url: https://packages.fluentbit.io/fluentbit.key
         dest: /usr/share/keyrings/fluent-bit.asc
         mode: '0644'
 
     - name: Configure the Fluent Bit Noble repository
+      tags: [rf-dev-log-packages]
       ansible.builtin.apt_repository:
         repo: deb [signed-by=/usr/share/keyrings/fluent-bit.asc] https://packages.fluentbit.io/ubuntu/noble noble main
         filename: fluent-bit
         state: present
 
     - name: Install Fluent Bit
+      tags: [rf-dev-log-packages]
       ansible.builtin.apt:
         name: fluent-bit
         state: present
