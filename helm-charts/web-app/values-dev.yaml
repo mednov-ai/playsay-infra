@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-route-rf-users-via-selectel-geoip-304"
-  digest: sha256:7065ffbf2606c85cd22c7a84eb17bc78d2f219f80dfbb47d9a3a597241017c9f
+  tag: "web-codex-route-rf-users-via-selectel-geoip-305"
+  digest: sha256:5f23e15030d3a1ca6a4bda0988dd703929a67a54a7106c66bbfee5625cba8b95
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-route-rf-users-via-selectel-geoip-304
-  number: "304"
+  name: web-codex-route-rf-users-via-selectel-geoip-305
+  number: "305"
   branch: codex/route-rf-users-via-selectel-geoip
   branchLabel: web-codex-route-rf-users-via-selectel-geoip
-  commit: 0eb849eae3dab7c2df0346add5c0b7378ed025c4
-  commitShort: "0eb849eae3da"
+  commit: 803a12f1f9e5e4432e23cba70814a97325ccc4d9
+  commitShort: "803a12f1f9e5"
 service:
   type: NodePort
   nodePort: 32083
