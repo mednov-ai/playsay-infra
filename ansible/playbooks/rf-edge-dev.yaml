@@ -11,6 +11,11 @@
     rf_edge_routes: "{{ rf_edge_development_routes }}"
     rf_edge_render_globals: false
   pre_tasks:
+    - name: Select only the declared development routes
+      tags: [always]
+      ansible.builtin.set_fact:
+        rf_edge_routes: "{{ rf_edge_development_routes }}"
+
     - name: Prove the play targets only the established RF edge
       tags: [always]
       ansible.builtin.assert:

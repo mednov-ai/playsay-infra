@@ -41,4 +41,3 @@ case "$mode" in
   check) exec ansible-playbook -i "$inventory" "$playbook" --check --diff ;;
   apply) exec ansible-playbook -i "$inventory" "$playbook" --diff ;;
 esac
-
