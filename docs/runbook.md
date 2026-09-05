@@ -2494,3 +2494,7 @@ Run syntax/check and review the rendered 50 exact mappings from a clean pushed i
 Dev LiveKit includes only VM uplink `enp1s0` for RTC candidates; CNI/Flannel candidates are excluded to avoid guest MASQUERADE port changes. This works together with the dev-only AX41 SNAT table. Inspect the actual uplink name after a VM rebuild before enabling RTC.
 
 The RTC interface filter is emitted only when explicitly configured; production values remain unchanged.
+
+### Browser connection diagnostics
+
+The web application exposes its local connection panel with Ctrl+Alt+Shift+D on Windows/Linux or Cmd+Option+Shift+D on macOS, and a diagnostics button. Escape or the same shortcut closes it. The physical D key is layout-independent; editable controls and composition/repeated key events are excluded. The panel separates expected topology from observed public endpoints and selected TURN relay evidence, expires observations after 15 seconds, and remains readable when telemetry intake fails. An endpoint response alone does not certify the internal network path. Use separate publisher/subscriber media evidence and received-media events when assessing a lesson. UI availability in a source candidate is not production delivery evidence.

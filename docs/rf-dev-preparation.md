@@ -152,3 +152,20 @@ Web Jenkins #304 succeeded from merged platform `0eb849eae3dab7c2df0346add5c0b73
 The final RF-dev browser run passed built-in PUBLISHER/SUBSCRIBER flow evidence in shared-PC mode, actual inbound/outbound RTP, three consecutive 20-second media checks, bounded synthetic screen share, stop and student rejoin. Teacher WSS remained open 93 seconds; the student's first WSS closed at the intentional reload after 70 seconds. No unexpected reconnect marker appeared. A scoped HTTP-503 diagnostic-endpoint failure was actually exercised; local MEDIA/SUCCESS evidence and lesson media recovered after reload. This is bounded functional evidence, not the planned long-duration/no-VPN RF acceptance.
 
 Dev TURN and Fluent Bit remained active with NRestarts=0 and observed memory peaks below 7 MiB each. After the network corrections the dev deny counter stopped increasing on valid media; three explicit forbidden-destination probes still failed with EPERM. IPinfo protected download token remains absent. Automatic GeoIP redirects and this change's production rollout remain unperformed. The user-requested keyboard route panel is tracked separately as task 4.7 and is not implemented by the shared-PC diagnostic fix.
+
+## TURN parity audit, 2026-09-05
+
+Read-only comparison of running Selectel configurations confirms identical REST shared-secret authentication mode, total/user quotas 8/4, stale nonce 600 seconds, multicast/loopback/CLI restrictions and TLS 1.0/1.1 disablement. Both coturn services have zero restarts. Separate secrets and certificates are intentional environment isolation.
+
+| Setting | Dev | Production | Acceptance implication |
+| --- | --- | --- | --- |
+| Client UDP/TCP | 3479 | 3478 | Same offered protocol, different network reachability gate |
+| Client TLS/TCP | 5350 | 5349 | Same offered protocol, different network reachability gate |
+| Relay UDP range | 49300–49399 | 49152–49251 | Independent allocations; both 100 ports |
+| TCP peer relaying | Disabled | Not explicitly disabled | Dev isolates peers; client TURN/TCP still works |
+| DTLS | Disabled | Not explicitly disabled | DTLS is not an offered dev acceptance transport |
+| Lifecycle verbose | Enabled | Not enabled | Dev collector has independent resource/privacy limits |
+
+Do not remove dev isolation to achieve text-identical configuration. Dev UDP/TCP/TLS browser evidence validates the offered transport semantics, not production ports, credentials, ISP filtering or concurrency. Promotion must carry the tested application/configuration changes and explicitly recheck the production-specific differences in an authorized canary. The IPinfo protected token was rechecked and remains absent; real provider DB download and automatic geographic entry cannot be certified.
+
+The repeat policy gate passed all 19 isolated real-nginx cases (cold navigation, synthetic IPv4/IPv6 RU/non-RU/unknown classification, trusted hop and spoofed headers, cache isolation, route/host/environment exclusions and loop avoidance). GeoIP/updater, RF dev isolation and edge collector contract suites passed. This closes navigation-policy verification only; provider MMDB access remains a separate missing prerequisite.
