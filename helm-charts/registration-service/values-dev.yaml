@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-codex-route-rf-users-via-selectel-geoip-64"
-  digest: sha256:1eaffa8014b9fb3af0fd6c362437523907651d5d709c28a02231b9da1f75a0ad
+  tag: "registration-codex-hotfix-user-deletion-dev-65"
+  digest: sha256:0c527255cf996b9f8ac1df0058a3d014ba72e12745f85082022b33da465276a8
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-codex-route-rf-users-via-selectel-geoip-64
-  number: "64"
-  branch: codex/route-rf-users-via-selectel-geoip
-  branchLabel: registration-codex-route-rf-users-via-selectel-geoip
-  commit: 5e09756004fad3c7b74c448920c67f684a8ed25e
-  commitShort: "5e09756004fa"
+  name: registration-codex-hotfix-user-deletion-dev-65
+  number: "65"
+  branch: codex/hotfix-user-deletion-dev
+  branchLabel: registration-codex-hotfix-user-deletion-dev
+  commit: 68d77853f98f9f624e0874239e226896d641334e
+  commitShort: "68d77853f98f"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
