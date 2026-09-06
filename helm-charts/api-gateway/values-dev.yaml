@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-route-rf-users-via-selectel-geoip-159"
-  digest: sha256:baeed3057c49b671a582af10d7bbc41c3d36f494641548b6ebc59b5f3e0a0d87
+  tag: "api-codex-hotfix-user-deletion-dev-160"
+  digest: sha256:ce18215b15e75f897c83d38570b0043abd5cc6a8f522954556aba2354ab50097
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-route-rf-users-via-selectel-geoip-159
-  number: "159"
-  branch: codex/route-rf-users-via-selectel-geoip
-  branchLabel: api-codex-route-rf-users-via-selectel-geoip
-  commit: 4be2794e5e191becca14bf5f13583b2626ea6332
-  commitShort: "4be2794e5e19"
+  name: api-codex-hotfix-user-deletion-dev-160
+  number: "160"
+  branch: codex/hotfix-user-deletion-dev
+  branchLabel: api-codex-hotfix-user-deletion-dev
+  commit: 62ebc4105d13649071976df45cd0e3d3a730eadb
+  commitShort: "62ebc4105d13"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
