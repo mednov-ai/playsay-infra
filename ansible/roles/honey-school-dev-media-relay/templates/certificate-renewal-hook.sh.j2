@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+certificate_directory="{{ rf_edge_dev_media_relay_certificate_directory }}"
+[ "${RENEWED_LINEAGE:-}" = "$certificate_directory" ] || exit 0
+runtime_directory="{{ rf_edge_dev_media_relay_runtime_certificate_directory }}"
+openssl x509 -in "$certificate_directory/fullchain.pem" -noout -checkend 604800 >/dev/null
+install -o root -g honey-turn-dev -m 0640 "$certificate_directory/fullchain.pem" "$runtime_directory/fullchain.pem"
+install -o root -g honey-turn-dev -m 0640 "$certificate_directory/privkey.pem" "$runtime_directory/privkey.pem"
+touch /run/honey-school-dev-turn-certificate-reload-required
+# Restart only the dev relay in a verified zero-allocation window, then test TLS.

@@ -1,3 +1,4 @@
+{% if rf_edge_render_globals | default(true) | bool %}
 map $http_upgrade $playsay_rf_connection_upgrade {
     default upgrade;
     '' close;
@@ -7,7 +8,14 @@ map $http_upgrade $playsay_rf_connection_upgrade {
 # query, client/upstream addresses, headers, cookies, and identifiers.
 log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
 
+{% else %}
+# Dev virtual hosts can be loaded before the production format declaration.
+log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
+{% endif %}
+{% set signaling_log_format = 'playsay_livekit_signal' if rf_edge_render_globals | default(true) | bool else 'rf_dev_livekit_signal' %}
+
 {% macro proxy_to_origin(route, forwarded_proto) %}
+        # Normalize at the trusted RF boundary; ignore any client-supplied chain.
         proxy_pass https://{{ rf_edge_origin_address }};
         proxy_http_version 1.1;
         proxy_ssl_server_name on;
@@ -20,7 +28,7 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
         proxy_set_header Host {{ route.origin_hostname | default(route.hostname) }};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $playsay_rf_connection_upgrade;
@@ -70,7 +78,7 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
     # Dedicated signaling path: never apply response substitutions. Its bounded
     # access format contains only status/timing aggregates for canary evidence.
     location = /livekit {
-        access_log /var/log/nginx/playsay-rf-livekit-signaling.log playsay_livekit_signal;
+        access_log /var/log/nginx/{% if route.environment == 'dev' %}honey-school-dev-livekit-signaling.log{% else %}playsay-rf-livekit-signaling.log{% endif %} {{ signaling_log_format }};
         proxy_pass https://{{ rf_edge_origin_address }};
         proxy_http_version 1.1;
         proxy_ssl_server_name on;
@@ -83,7 +91,7 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
         proxy_set_header Host {{ route.origin_hostname }};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $playsay_rf_connection_upgrade;
@@ -94,7 +102,7 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
     }
 
     location ^~ /livekit/ {
-        access_log /var/log/nginx/playsay-rf-livekit-signaling.log playsay_livekit_signal;
+        access_log /var/log/nginx/{% if route.environment == 'dev' %}honey-school-dev-livekit-signaling.log{% else %}playsay-rf-livekit-signaling.log{% endif %} {{ signaling_log_format }};
         proxy_pass https://{{ rf_edge_origin_address }};
         proxy_http_version 1.1;
         proxy_ssl_server_name on;
@@ -107,7 +115,7 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
         proxy_set_header Host {{ route.origin_hostname }};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $playsay_rf_connection_upgrade;
@@ -119,6 +127,17 @@ log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_t
 {% endmacro %}
 
 {% macro keycloak_locations(route, forwarded_proto) %}
+{% if route.logs_ingest_proxy | default(false) | bool %}
+    location ^~ /victoria-logs/insert/ {
+        allow 127.0.0.1;
+        allow ::1;
+        allow {{ ansible_host }};
+        deny all;
+        client_max_body_size 4m;
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+{% endif %}
+
     location = /keycloak/realms/{{ route.realm }} {
 {{ proxy_to_origin(route, forwarded_proto) }}
     }
@@ -169,6 +188,8 @@ server {
     location / {
         return 301 https://$host$request_uri;
     }
+{% elif rf_edge_dev_bootstrap | default(false) | bool %}
+    location / { return 404; }
 {% elif route.kind == 'keycloak' %}
 {{ keycloak_locations(route, 'http') }}
 {% elif route.kind == 'landing' %}

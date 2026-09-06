@@ -6,18 +6,20 @@ rf_edge_certificate_directory: /etc/letsencrypt/live/honeyschool.ru
 rf_edge_acme_webroot: /var/www/playsay-rf-edge-acme
 rf_edge_tls_protocols: TLSv1.2
 rf_edge_tls_enabled: true
-rf_edge_routes:
+rf_edge_production_routes:
   - hostname: honeyschool.ru
     aliases:
       - www.honeyschool.ru
     document_root: /var/www/honeyschool.ru
     landing_source: honeyschool-landing/index.html
+    environment: prod
     kind: landing
   - hostname: online.honeyschool.ru
     origin_hostname: online.honey.school
     livekit_signaling_proxy: true
     collaboration_proxy: true
     certificate_directory: /etc/letsencrypt/live/online.honeyschool.ru
+    environment: prod
     kind: application
     tls_enabled: true
     response_replacements:
@@ -31,6 +33,7 @@ rf_edge_routes:
   - hostname: key.honeyschool.ru
     origin_hostname: key.honey.school
     certificate_directory: /etc/letsencrypt/live/key.honeyschool.ru
+    environment: prod
     kind: application
     tls_enabled: true
     response_replacements:
@@ -41,8 +44,70 @@ rf_edge_routes:
   - hostname: ops.honey.school
     origin_hostname: ops.honey.school
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
+    environment: prod
     kind: keycloak
     realm: playsay
+
+
+rf_edge_development_routes:
+  - hostname: dev.online.honeyschool.ru
+    origin_hostname: dev.online.honey.school
+    livekit_signaling_proxy: true
+    collaboration_proxy: true
+    certificate_directory: /etc/letsencrypt/live/dev.online.honeyschool.ru
+    environment: dev
+    kind: application
+    tls_enabled: true
+    response_replacements:
+      - source: https://dev.online.honey.school
+        target: https://dev.online.honeyschool.ru
+      - source: wss://dev.online.honey.school
+        target: wss://dev.online.honeyschool.ru
+  - hostname: dev.key.honeyschool.ru
+    origin_hostname: dev.key.honey.school
+    certificate_directory: /etc/letsencrypt/live/dev.key.honeyschool.ru
+    environment: dev
+    kind: application
+    tls_enabled: true
+    response_replacements:
+      - source: https://dev.key.honey.school
+        target: https://dev.key.honeyschool.ru
+  - hostname: dev.ops.honey.school
+    origin_hostname: dev.ops.honey.school
+    certificate_directory: /etc/letsencrypt/live/dev.ops.honey.school
+    environment: dev
+    kind: keycloak
+    realm: playsay
+    logs_ingest_proxy: true
+
+honey_school_edge_logs_enabled: true
+honey_school_edge_logs_environment: dev
+honey_school_edge_logs_endpoint_host: dev.ops.honey.school
+honey_school_edge_logs_credentials_path: /etc/honeyschool/secrets/edge-log-ingest.env
+honey_school_edge_logs_buffer_directory: /var/lib/honeyschool/edge-logs
+honey_school_edge_logs_buffer_limit: 64M
+honey_school_edge_logs_memory_max: 128M
+honey_school_edge_logs_cpu_quota: 10%
+
+rf_edge_routes: "{{ rf_edge_production_routes }}"
+
+rf_edge_dev_media_relay_hostname: dev.turn.honeyschool.ru
+rf_edge_dev_media_relay_realm: dev.turn.honeyschool.ru
+rf_edge_dev_media_relay_public_ipv4: "{{ ansible_host }}"
+rf_edge_dev_media_relay_listening_port: 3479
+rf_edge_dev_media_relay_tls_port: 5350
+rf_edge_dev_media_relay_min_port: 49300
+rf_edge_dev_media_relay_max_port: 49399
+rf_edge_dev_media_relay_sfu_ipv4: 65.109.55.110
+rf_edge_dev_media_relay_sfu_min_port: 51000
+rf_edge_dev_media_relay_sfu_max_port: 51049
+rf_edge_dev_media_relay_secret_path: /etc/honeyschool/secrets/dev-turn-rest-secret
+rf_edge_dev_media_relay_certificate_directory: /etc/letsencrypt/live/dev.turn.honeyschool.ru
+rf_edge_dev_media_relay_runtime_certificate_directory: /etc/honeyschool/dev-turn/certificates
+rf_edge_dev_media_relay_total_quota: 8
+rf_edge_dev_media_relay_user_quota: 4
+rf_edge_dev_media_relay_memory_high: 384M
+rf_edge_dev_media_relay_memory_max: 512M
 
 # One-lesson-only TURN service co-located with nginx on the already-paid RF
 # edge. A separate reviewed infrastructure change is required before resizing,

@@ -1,0 +1,57 @@
+[SERVICE]
+    Parsers_File              /etc/fluent-bit/honey-school-parsers.conf
+    Flush                     5
+    Grace                     10
+    Log_Level                 info
+    HTTP_Server               On
+    HTTP_Listen               127.0.0.1
+    HTTP_Port                 2020
+    storage.path              {{ honey_school_edge_logs_buffer_directory }}
+    storage.sync              normal
+    storage.checksum          on
+    storage.max_chunks_up     32
+
+[INPUT]
+    Name              tail
+    Tag               honey_school.signaling
+    Path              /var/log/nginx/honey-school-dev-livekit-signaling.log
+    Parser            honey_school_signaling
+    DB                {{ honey_school_edge_logs_buffer_directory }}/signaling.db
+    Mem_Buf_Limit     8M
+    storage.type      filesystem
+    Refresh_Interval  5
+
+[FILTER]
+    Name    modify
+    Match   honey_school.signaling
+    Add     environment {{ honey_school_edge_logs_environment }}
+    Add     source nginx_signaling
+    Add     event signaling_request
+
+[INPUT]
+    Name            systemd
+    Tag             honey_school.turn
+    Systemd_Filter  _SYSTEMD_UNIT=honey-school-dev-turn.service
+    DB              {{ honey_school_edge_logs_buffer_directory }}/turn.db
+    Mem_Buf_Limit   8M
+    storage.type    memory
+
+[FILTER]
+    Name    lua
+    Match   honey_school.turn
+    script  /etc/fluent-bit/privacy-filter.lua
+    call    sanitize_turn_event
+
+[OUTPUT]
+    Name                     http
+    Match                    honey_school.*
+    Host                     {{ honey_school_edge_logs_endpoint_host }}
+    Port                     443
+    URI                      /victoria-logs/insert/jsonline?_stream_fields=environment,source,event&_msg_field=outcome
+    Format                   json_lines
+    tls                      On
+    tls.verify               On
+    HTTP_User                ${EDGE_LOG_INGEST_USERNAME}
+    HTTP_Passwd              ${EDGE_LOG_INGEST_PASSWORD}
+    Retry_Limit              False
+    storage.total_limit_size {{ honey_school_edge_logs_buffer_limit }}

@@ -1,0 +1,144 @@
+#!/bin/sh
+set -eu
+umask 077
+mode=${1:-update}
+case "$mode" in update|--rollback-last-good) ;; *) exit 2 ;; esac
+
+state_dir={{ honey_school_geoip_state_directory | quote }}
+token_path={{ honey_school_geoip_token_path | quote }}
+nginx_config={{ honey_school_geoip_nginx_database_config | quote }}
+exec 9>"$state_dir/update.lock"
+flock -n 9 || exit 0
+active_db="$state_dir/ipinfo-lite.mmdb"
+last_good_db="$state_dir/ipinfo-lite.last-good.mmdb"
+metrics="$state_dir/update.prom"
+last_success="$state_dir/last-success-epoch"
+failure_count="$state_dir/update-failures"
+tmp_dir=$(mktemp -d "$state_dir/update.XXXXXX")
+trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
+
+write_metrics() {
+  now=$(date +%s)
+  success=0
+  failures=0
+  age=-1
+  [ -s "$last_success" ] && success=$(cat "$last_success")
+  [ -s "$failure_count" ] && failures=$(cat "$failure_count")
+  [ "$success" -gt 0 ] && age=$((now - success))
+  fresh=0
+  warning=0
+  [ "$age" -ge 0 ] && [ "$age" -le {{ honey_school_geoip_maximum_age_seconds }} ] && fresh=1
+  [ "$age" -gt {{ honey_school_geoip_warning_age_seconds }} ] && warning=1
+  metric_tmp="$tmp_dir/update.prom"
+  cat > "$metric_tmp" <<METRICS
+# HELP honey_school_geoip_last_success_timestamp_seconds Last successful validated IPinfo update.
+# TYPE honey_school_geoip_last_success_timestamp_seconds gauge
+honey_school_geoip_last_success_timestamp_seconds $success
+# HELP honey_school_geoip_database_age_seconds Age of the active validated database, or -1 when absent.
+# TYPE honey_school_geoip_database_age_seconds gauge
+honey_school_geoip_database_age_seconds $age
+# HELP honey_school_geoip_database_fresh Whether the database is within the maximum automatic-decision age.
+# TYPE honey_school_geoip_database_fresh gauge
+honey_school_geoip_database_fresh $fresh
+# HELP honey_school_geoip_database_age_warning Whether database age exceeds the warning threshold.
+# TYPE honey_school_geoip_database_age_warning gauge
+honey_school_geoip_database_age_warning $warning
+# HELP honey_school_geoip_update_failures_total Failed update attempts retained across runs.
+# TYPE honey_school_geoip_update_failures_total counter
+honey_school_geoip_update_failures_total $failures
+METRICS
+  chmod 0640 "$metric_tmp"
+  chown root:www-data "$metric_tmp"
+  mv -f "$metric_tmp" "$metrics"
+}
+
+disable_stale_database() {
+  now=$(date +%s)
+  success=0
+  [ -s "$last_success" ] && success=$(cat "$last_success")
+  [ "$success" -gt 0 ] || return 0
+  age=$((now - success))
+  [ "$age" -le {{ honey_school_geoip_maximum_age_seconds }} ] && return 0
+  config_tmp="$tmp_dir/geoip-stale.conf"
+  cat > "$config_tmp" <<'CONFIG'
+# The last validated database exceeded the automatic-decision limit.
+map $host $honey_school_geo_country_code { default ""; }
+CONFIG
+  chmod 0644 "$config_tmp"
+  mv -f "$config_tmp" "$nginx_config"
+  nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+}
+
+fail_update() {
+  failures=0
+  [ -s "$failure_count" ] && failures=$(cat "$failure_count")
+  failures=$((failures + 1))
+  printf '%s\n' "$failures" > "$failure_count"
+  disable_stale_database
+  write_metrics
+  logger -t honey-school-geoip 'update_failed reason=bounded_failure'
+  exit 1
+}
+
+download="$tmp_dir/ipinfo-lite.mmdb"
+candidate_success=$(date +%s)
+if [ "$mode" = --rollback-last-good ]; then
+  [ -s "$last_good_db" ] && [ -s "$state_dir/last-good-epoch" ] || fail_update
+  cp "$last_good_db" "$download"
+  candidate_success=$(cat "$state_dir/last-good-epoch")
+  case "$candidate_success" in *[!0-9]*|'') fail_update ;; esac
+  [ "$(( $(date +%s) - candidate_success ))" -le {{ honey_school_geoip_maximum_age_seconds }} ] || fail_update
+else
+[ -s "$token_path" ] || fail_update
+token=$(cat "$token_path")
+[ -n "$token" ] || fail_update
+case "$token" in *[!A-Za-z0-9_]*) fail_update ;; esac
+curl_config="$tmp_dir/curl.conf"
+printf 'url = "https://ipinfo.io/data/ipinfo_lite.mmdb?token=%s"\n' "$token" > "$curl_config"
+chmod 0600 "$curl_config"
+curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --connect-timeout 15 --max-time 180 --retry 2 --output "$download" --config "$curl_config" || fail_update
+unset token
+rm -f "$curl_config"
+
+fi
+
+[ "$(wc -c < "$download")" -ge {{ honey_school_geoip_minimum_database_bytes }} ] || fail_update
+for check_ip in 77.88.8.8 8.8.8.8 2001:4860:4860::8888; do
+  output=$(mmdblookup --file "$download" --ip "$check_ip" country_code 2>/dev/null) || fail_update
+  printf '%s\n' "$output" | grep -Eq '"[A-Z]{2}"' || fail_update
+done
+ru_output=$(mmdblookup --file "$download" --ip 77.88.8.8 country_code 2>/dev/null) || fail_update
+printf '%s\n' "$ru_output" | grep -q '"RU"' || fail_update
+
+chmod 0640 "$download"
+chown root:www-data "$download"
+if [ -f "$active_db" ]; then
+  cp -p "$active_db" "$last_good_db"
+  [ ! -s "$last_success" ] || cp -p "$last_success" "$state_dir/last-good-epoch"
+fi
+mv -f "$download" "$active_db"
+config_tmp="$tmp_dir/geoip.conf"
+cat > "$config_tmp" <<CONFIG
+geoip2 $active_db {
+    auto_reload 5m;
+    \$honey_school_geo_country_code source=\$remote_addr country_code;
+}
+CONFIG
+chmod 0644 "$config_tmp"
+cp "$nginx_config" "$tmp_dir/previous.conf"
+mv -f "$config_tmp" "$nginx_config"
+if ! nginx -t >/dev/null 2>&1; then
+  mv -f "$tmp_dir/previous.conf" "$nginx_config"
+  if [ -f "$last_good_db" ]; then cp -p "$last_good_db" "$active_db"; else rm -f "$active_db"; fi
+  fail_update
+fi
+if ! systemctl reload nginx; then
+  cp "$tmp_dir/previous.conf" "$nginx_config"
+  if [ -f "$last_good_db" ]; then cp -p "$last_good_db" "$active_db"; else rm -f "$active_db"; fi
+  nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+  fail_update
+fi
+printf '%s\n' "$candidate_success" > "$last_success"
+write_metrics
+logger -t honey-school-geoip 'update_succeeded country_schema=valid'

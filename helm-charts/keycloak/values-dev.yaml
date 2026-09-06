@@ -2,6 +2,7 @@ theme:
   appBaseUrl: https://dev.online.honey.school
   recoveryAllowedOrigins:
     - https://dev.online.honey.school
+    - https://dev.online.honeyschool.ru
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
   tag: "keycloak-dev-7"

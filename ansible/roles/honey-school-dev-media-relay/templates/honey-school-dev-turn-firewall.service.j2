@@ -1,0 +1,13 @@
+[Unit]
+Description=Honey School dev TURN egress isolation
+Before=honey-school-dev-turn.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/local/sbin/honey-school-apply-dev-turn-firewall
+ExecReload=/usr/local/sbin/honey-school-apply-dev-turn-firewall
+# Keep the UID deny rules when stopped; decommission is a separate operation.
+
+[Install]
+WantedBy=multi-user.target

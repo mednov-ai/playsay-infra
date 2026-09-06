@@ -1,0 +1,17 @@
+[Unit]
+Description=Update Honey School IPinfo Lite database
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/honey-school-update-ipinfo-lite
+User=root
+Group=root
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ honey_school_geoip_state_directory }} {{ honey_school_geoip_nginx_config_directory }} /run/nginx.pid /var/log/nginx /var/lib/nginx
+NoNewPrivileges=true
+LockPersonality=true
+MemoryDenyWriteExecute=true

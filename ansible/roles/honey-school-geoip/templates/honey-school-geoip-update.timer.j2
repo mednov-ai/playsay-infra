@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Honey School IPinfo Lite update
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 UTC
+RandomizedDelaySec=1800
+Persistent=true
+Unit=honey-school-geoip-update.service
+
+[Install]
+WantedBy=timers.target

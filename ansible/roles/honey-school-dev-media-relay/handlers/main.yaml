@@ -1,0 +1,14 @@
+---
+- name: restart Honey School dev relay firewall
+  when: not ansible_check_mode
+  ansible.builtin.systemd:
+    name: honey-school-dev-turn-firewall.service
+    state: restarted
+    daemon_reload: true
+
+- name: restart Honey School dev coturn
+  when: not ansible_check_mode
+  ansible.builtin.systemd:
+    name: honey-school-dev-turn.service
+    state: restarted
+    daemon_reload: true

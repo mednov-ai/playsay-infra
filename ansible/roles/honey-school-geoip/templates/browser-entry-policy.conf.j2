@@ -1,0 +1,57 @@
+# Geographic entry is a browser-navigation decision at the outer AX41 edge.
+# The MMDB updater owns only $honey_school_geo_country_code. All routing flags
+# remain declarative, disabled by default and independent between environments.
+map $host $honey_school_geo_redirect_flag {
+    default 0;
+    honey.school {{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }};
+    online.honey.school {{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }};
+    key.honey.school {{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }};
+    dev.online.honey.school {{ 1 if honey_school_geoip_redirect_dev_enabled | bool else 0 }};
+    dev.key.honey.school {{ 1 if honey_school_geoip_redirect_dev_enabled | bool else 0 }};
+}
+
+map $host $honey_school_geo_redirect_host {
+    default "";
+    honey.school honeyschool.ru;
+    online.honey.school online.honeyschool.ru;
+    key.honey.school key.honeyschool.ru;
+    dev.online.honey.school dev.online.honeyschool.ru;
+    dev.key.honey.school dev.key.honeyschool.ru;
+}
+
+map $remote_addr $honey_school_geo_direct_peer {
+    default 1;
+{% for trusted_address in honey_school_geoip_trusted_rf_proxy_addresses %}
+    {{ trusted_address }} 0;
+{% endfor %}
+}
+
+# Only the fixed RF peer may supply its normalized browser address. Keep
+# $remote_addr unchanged so routing and access controls retain peer identity.
+map "$honey_school_geo_direct_peer:$http_x_real_ip" $honey_school_client_ip {
+    default $remote_addr;
+    ~^0:.+$ $http_x_real_ip;
+}
+
+map "$request_method:$http_sec_fetch_mode:$http_accept" $honey_school_geo_browser_navigation {
+    default 0;
+    ~^(GET|HEAD):navigate: 1;
+    ~^(GET|HEAD)::.*text/html 1;
+}
+
+map $request_uri $honey_school_geo_excluded_path {
+    default 0;
+    ~^/\.well-known/acme-challenge/ 1;
+    ~^/(api|auth|keycloak|livekit|collab|ws)(/|\?|$) 1;
+}
+
+map $http_upgrade $honey_school_geo_no_upgrade {
+    default 0;
+    "" 1;
+}
+
+map "$honey_school_geo_country_code:$honey_school_geo_redirect_flag:$honey_school_geo_direct_peer:$honey_school_geo_browser_navigation:$honey_school_geo_excluded_path:$honey_school_geo_no_upgrade" $honey_school_geo_redirect_decision {
+    default 0;
+    "RU:1:1:1:0:1" 1;
+}
+

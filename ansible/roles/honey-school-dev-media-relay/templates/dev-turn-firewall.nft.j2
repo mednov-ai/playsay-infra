@@ -1,0 +1,11 @@
+table inet honey_school_dev_turn {
+    chain output {
+        type filter hook output priority filter; policy accept;
+        # Client control responses are replies to incoming TURN connections.
+        meta skuid {{ honey_school_dev_turn_uid }} ct direction reply udp sport {{ rf_edge_dev_media_relay_listening_port }} accept
+        meta skuid {{ honey_school_dev_turn_uid }} ct direction reply tcp sport { {{ rf_edge_dev_media_relay_listening_port }}, {{ rf_edge_dev_media_relay_tls_port }} } accept
+        # Relay sockets may reach only this environment's SFU UDP range.
+        meta skuid {{ honey_school_dev_turn_uid }} ip daddr {{ rf_edge_dev_media_relay_sfu_ipv4 }} udp sport {{ rf_edge_dev_media_relay_min_port }}-{{ rf_edge_dev_media_relay_max_port }} udp dport {{ rf_edge_dev_media_relay_sfu_min_port }}-{{ rf_edge_dev_media_relay_sfu_max_port }} accept
+        meta skuid {{ honey_school_dev_turn_uid }} counter drop
+    }
+}

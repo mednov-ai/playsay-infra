@@ -1,0 +1,24 @@
+    location ^~ /victoria-logs/insert/ {
+{% for peer in route.victoria_logs_ingest_trusted_peers | default([]) %}
+        allow {{ peer }};
+{% endfor %}
+        deny all;
+        auth_basic "Honey School edge logs";
+        auth_basic_user_file {{ route.victoria_logs_ingest_credentials_path }};
+        client_max_body_size 4m;
+        proxy_pass http://{{ route.victoria_logs_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+
+    location /victoria-logs/ {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        proxy_pass http://{{ route.victoria_logs_upstream }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }

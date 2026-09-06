@@ -1,0 +1,11 @@
+---
+- name: Validate nginx after geoip change
+  listen: reload nginx after geoip change
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Gracefully reload nginx after geoip change
+  listen: reload nginx after geoip change
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded

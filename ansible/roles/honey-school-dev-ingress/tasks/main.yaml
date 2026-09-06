@@ -1,0 +1,71 @@
+---
+- name: Require a valid existing nginx baseline
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  check_mode: false
+
+- name: Restrict bootstrap to HTTP challenge routes
+  ansible.builtin.set_fact:
+    rf_edge_routes: "{{ rf_edge_development_routes | map('combine', {'tls_enabled': false}) | list }}"
+  when: rf_edge_dev_bootstrap | default(false) | bool
+
+- name: Inspect independent dev certificates
+  ansible.builtin.stat:
+    path: "{{ item.certificate_directory }}/fullchain.pem"
+  loop: "{{ rf_edge_routes }}"
+  loop_control:
+    label: "{{ item.hostname }}"
+  register: honey_school_dev_certificates
+  when: not (rf_edge_dev_bootstrap | default(false) | bool)
+
+- name: Require certificates before dev HTTPS enablement
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: Independent dev certificate is required before HTTPS delivery.
+  loop: "{{ honey_school_dev_certificates.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.hostname | default('skipped') }}"
+  when: not (rf_edge_dev_bootstrap | default(false) | bool)
+
+- name: Install isolated dev virtual hosts with rollback on syntax failure
+  block:
+    - name: Render only dev routes without rewriting the production configuration
+      ansible.builtin.template:
+        src: "{{ role_path }}/../rf-edge-proxy/templates/playsay-honey-rf-edge.conf.j2"
+        dest: /etc/nginx/conf.d/honey-school-rf-dev.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      register: honey_school_dev_ingress_config
+
+    - name: Validate complete nginx configuration before reload
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Gracefully load the validated dev virtual hosts
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
+      when:
+        - not ansible_check_mode
+        - honey_school_dev_ingress_config.changed
+  rescue:
+    - name: Restore the prior dev virtual host file
+      ansible.builtin.copy:
+        src: "{{ honey_school_dev_ingress_config.backup_file }}"
+        dest: /etc/nginx/conf.d/honey-school-rf-dev.conf
+        remote_src: true
+        mode: '0644'
+      when: honey_school_dev_ingress_config.backup_file is defined
+
+    - name: Remove only the new invalid dev file when there was no predecessor
+      ansible.builtin.file:
+        path: /etc/nginx/conf.d/honey-school-rf-dev.conf
+        state: absent
+      when: honey_school_dev_ingress_config.backup_file is not defined
+
+    - name: Stop delivery after restoring the on-disk configuration
+      ansible.builtin.fail:
+        msg: Dev ingress failed validation or reload; previous dev file restored. Investigate before retry.

@@ -1,0 +1,13 @@
+[Unit]
+Description=Preserve dev SFU source ports toward the Selectel relay
+After=network-online.target libvirtd.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/honey-school-apply-dev-sfu-nat
+ExecReload=/usr/local/sbin/honey-school-apply-dev-sfu-nat
+
+[Install]
+WantedBy=multi-user.target

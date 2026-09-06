@@ -1,0 +1,9 @@
+---
+- name: Reload systemd for honey school edge logs
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart honey school edge logs
+  ansible.builtin.systemd:
+    name: fluent-bit
+    state: restarted

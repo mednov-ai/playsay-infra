@@ -97,6 +97,18 @@ edge_tls_protocols: TLSv1.2
 # JS/CSS transfers and retried them as tiny byte ranges. Keep ALPN on HTTP/1.1
 # until carrier-network acceptance proves HTTP/2 is safe on the AX41 route.
 edge_http2_enabled: false
+honey_school_geoip_token_path: /etc/honeyschool/secrets/ipinfo-lite-download-token
+honey_school_geoip_state_directory: /var/lib/honeyschool/geoip
+honey_school_geoip_nginx_database_config: /etc/nginx/conf.d/00-honey-school-geoip-database.conf
+honey_school_geoip_nginx_config_directory: /etc/nginx/conf.d
+honey_school_geoip_minimum_database_bytes: 1048576
+honey_school_geoip_warning_age_seconds: 604800
+honey_school_geoip_maximum_age_seconds: 2592000
+honey_school_geoip_redirect_prod_enabled: false
+honey_school_geoip_redirect_dev_enabled: true
+honey_school_geoip_updates_enabled: true
+honey_school_geoip_trusted_rf_proxy_addresses:
+  - 94.102.89.213
 # The RF path to the AX41 drops full-size TCP segments without returning usable
 # ICMP Packet Too Big feedback. Start PLPMTUD at a conservative MSS and probe
 # upward so fresh clients do not wait through repeated 15-30 second RTOs.
@@ -133,6 +145,11 @@ edge_routes:
     argocd_upstream: 10.60.0.30:32080
     headlamp_upstream: 10.60.0.30:32081
     victoria_metrics_upstream: 10.60.0.30:32085
+    victoria_logs_upstream: 10.60.0.30:32089
+    victoria_logs_enabled: true
+    victoria_logs_ingest_trusted_peers:
+      - 94.102.89.213
+    victoria_logs_ingest_credentials_path: /etc/honeyschool/secrets/edge-log-ingest.htpasswd
   - hostname: jenkins.honey.school
     kind: jenkins
     upstream: 10.60.0.40:32082
