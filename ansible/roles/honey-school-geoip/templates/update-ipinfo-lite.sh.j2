@@ -77,7 +77,7 @@ fail_update() {
 
 [ -s "$token_path" ] || fail_update
 token=$(cat "$token_path")
-[ "${#token}" -ge 16 ] || fail_update
+[ -n "$token" ] || fail_update
 case "$token" in *[!A-Za-z0-9_]*) fail_update ;; esac
 curl_config="$tmp_dir/curl.conf"
 download="$tmp_dir/ipinfo-lite.mmdb"

@@ -37,12 +37,12 @@ def install_stub(directory: Path, name: str, body: str) -> None:
     path.chmod(0o755)
 
 
-def updater_case(download_succeeds: bool) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+def updater_case(download_succeeds: bool, token_value: str = "test1234567890") -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     temporary = Path(tempfile.mkdtemp(prefix="honey-school-geoip-test-"))
     state = temporary / "state"
     state.mkdir()
     token = temporary / "token"
-    token.write_text("synthetic_test_token_123456\n")
+    token.write_text(token_value + "\n")
     token.chmod(0o600)
     nginx_config = temporary / "geoip.conf"
     nginx_config.write_text('map $host $honey_school_geo_country_code { default ""; }\n')
@@ -86,6 +86,19 @@ def test_success() -> None:
     metrics = (state / "update.prom").read_text()
     assert "honey_school_geoip_database_fresh 1" in metrics
     assert "honey_school_geoip_update_failures_total 0" in metrics
+
+
+def test_invalid_token_does_not_activate_database() -> None:
+    for value in ("", 'bad"token', "bad\ntoken", "bad&token"):
+        result, state, nginx_config = updater_case(True, value)
+        assert result.returncode != 0
+        assert not (state / "ipinfo-lite.mmdb").exists()
+        assert "geoip2" not in nginx_config.read_text()
+        assert not result.stdout
+        if value:
+            assert value not in result.stderr
+        else:
+            assert not result.stderr
 
 
 def test_failed_stale_update_preserves_database_and_disables_classification() -> None:
@@ -156,6 +169,7 @@ def test_static_nginx_contract() -> None:
 
 if __name__ == "__main__":
     test_success()
+    test_invalid_token_does_not_activate_database()
     test_failed_stale_update_preserves_database_and_disables_classification()
     test_redirect_matrix()
     test_static_nginx_contract()

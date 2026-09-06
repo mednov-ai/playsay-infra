@@ -1,6 +1,6 @@
 # Honey School Dev Runbook
 
-Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. GeoIP redirects remain disabled pending the IPinfo database and acceptance.
+Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. GeoIP redirects remain disabled pending the IPinfo database and acceptance. Provision the IPinfo token only in `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41 (root, `0600`), never in Git or command arguments. Provider-issued 14-character tokens are valid; do not impose a 16-character minimum. Token provisioning alone must not activate redirects or reload nginx.
 
 ## Sprint 0 Status
 
