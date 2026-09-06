@@ -77,4 +77,11 @@ The independent network canary completed 582 successful HTTPS checks across dire
 
 ## Remaining gates
 
-The protected IPinfo token remains absent on AX41. Actual MMDB download/entitlement/IPv4/IPv6 classification, activated GeoIP redirects and their live rollback are not certified. Real RF ISP/no-VPN acceptance, production-specific ports/credentials, live production panel checks, the production-specific 45-minute quality gate and capacity authorization remain open. The first long dev failure also remains an explicit release-assessment risk requiring observation in the RF canary. Production delivery remains on hold.
+At the end of the lesson verification the protected IPinfo token was absent on AX41; the subsequent provisioning result is recorded below. IPv4/IPv6 classification, activated GeoIP redirects and their live rollback are not certified. Real RF ISP/no-VPN acceptance, production-specific ports/credentials, live production panel checks, the production-specific 45-minute quality gate and capacity authorization remain open. The first long dev failure also remains an explicit release-assessment risk requiring observation in the RF canary. Production delivery remains on hold.
+
+
+## IPinfo token provisioning — 2026-09-06
+
+After explicit owner authorization and dashboard login, the token was transferred from the clipboard through SSH stdin to `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41. File metadata independently confirmed root ownership and mode `0600`. The token value was not included in Git or command arguments. An isolated authenticated HTTPS download succeeded (23,802,987 bytes); protected temporary curl configuration and downloaded database were removed. No active MMDB, nginx configuration, service restart or redirect activation was performed.
+
+The host has no `mmdblookup`, so actual country/ASN IPv4/IPv6 field checks remain pending and the complete provisioning acceptance task remains open. Infra commit `169e7e7` removes the incorrect 16-character token minimum and tests a synthetic 14-character token plus invalid-token rejection. Production delivery remains on hold.

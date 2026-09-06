@@ -45,9 +45,9 @@ Sources checked 2026-09-04:
 
 ## GeoIP provisioning dependency
 
-IPinfo Lite MMDB uses `country_code` and `asn`, not the old `country_asn` schema or MaxMind `country.iso_code`. Data is licensed CC BY-SA 4.0 with attribution to [IPinfo](https://ipinfo.io/developers/ipinfo-lite-database). No IPinfo secret reference was found in the checked-in infrastructure. Download entitlement and actual IPv4/IPv6 database verification remain open. The proposed AX41 token path was checked read-only and is absent.
+IPinfo Lite MMDB uses `country_code` and `asn`, not the old `country_asn` schema or MaxMind `country.iso_code`. Data is licensed CC BY-SA 4.0 with attribution to [IPinfo](https://ipinfo.io/developers/ipinfo-lite-database). No IPinfo secret reference was found in the checked-in infrastructure. On 2026-09-06 the owner-authorized token was provisioned on AX41 and an isolated authenticated download succeeded (23,802,987 bytes). Actual IPv4/IPv6 field verification remains open: `mmdblookup` is not installed on the host. The temporary download was removed without activating the database or reloading nginx.
 
-Protected token reference on the AX41 physical host: `/etc/honeyschool/secrets/ipinfo-lite-download-token`, root-owned mode 0600, provisioned through the owner's protected secret workflow. Do not put the token into chat, Git, shell command arguments or logs. No download with account credentials has been attempted and no provider data has been committed.
+Protected token reference on the AX41 physical host: `/etc/honeyschool/secrets/ipinfo-lite-download-token`, root-owned mode 0600, provisioned through the owner's protected secret workflow. Do not put the token into chat, Git, shell command arguments or logs. The token was transferred through SSH stdin, never command arguments. No provider data has been committed. Redirect flags remain disabled.
 
 ## Local verification
 
