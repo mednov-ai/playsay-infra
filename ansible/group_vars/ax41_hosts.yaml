@@ -105,7 +105,7 @@ honey_school_geoip_minimum_database_bytes: 1048576
 honey_school_geoip_warning_age_seconds: 604800
 honey_school_geoip_maximum_age_seconds: 2592000
 honey_school_geoip_redirect_prod_enabled: false
-honey_school_geoip_redirect_dev_enabled: false
+honey_school_geoip_redirect_dev_enabled: true
 honey_school_geoip_updates_enabled: false
 honey_school_geoip_trusted_rf_proxy_addresses:
   - 94.102.89.213
