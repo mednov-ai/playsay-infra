@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+umask 077
+mode=${1:-update}
+case "$mode" in update|--rollback-last-good) ;; *) exit 2 ;; esac
 
 state_dir={{ honey_school_geoip_state_directory | quote }}
 token_path={{ honey_school_geoip_token_path | quote }}
@@ -77,18 +80,28 @@ fail_update() {
   exit 1
 }
 
+download="$tmp_dir/ipinfo-lite.mmdb"
+candidate_success=$(date +%s)
+if [ "$mode" = --rollback-last-good ]; then
+  [ -s "$last_good_db" ] && [ -s "$state_dir/last-good-epoch" ] || fail_update
+  cp "$last_good_db" "$download"
+  candidate_success=$(cat "$state_dir/last-good-epoch")
+  case "$candidate_success" in *[!0-9]*|'') fail_update ;; esac
+  [ "$(( $(date +%s) - candidate_success ))" -le {{ honey_school_geoip_maximum_age_seconds }} ] || fail_update
+else
 [ -s "$token_path" ] || fail_update
 token=$(cat "$token_path")
 [ -n "$token" ] || fail_update
 case "$token" in *[!A-Za-z0-9_]*) fail_update ;; esac
 curl_config="$tmp_dir/curl.conf"
-download="$tmp_dir/ipinfo-lite.mmdb"
 printf 'url = "https://ipinfo.io/data/ipinfo_lite.mmdb?token=%s"\n' "$token" > "$curl_config"
 chmod 0600 "$curl_config"
 curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 \
   --connect-timeout 15 --max-time 180 --retry 2 --output "$download" --config "$curl_config" || fail_update
 unset token
 rm -f "$curl_config"
+
+fi
 
 [ "$(wc -c < "$download")" -ge {{ honey_school_geoip_minimum_database_bytes }} ] || fail_update
 for check_ip in 77.88.8.8 8.8.8.8 2001:4860:4860::8888; do
@@ -100,7 +113,10 @@ printf '%s\n' "$ru_output" | grep -q '"RU"' || fail_update
 
 chmod 0640 "$download"
 chown root:www-data "$download"
-[ ! -f "$active_db" ] || cp -p "$active_db" "$last_good_db"
+if [ -f "$active_db" ]; then
+  cp -p "$active_db" "$last_good_db"
+  [ ! -s "$last_success" ] || cp -p "$last_success" "$state_dir/last-good-epoch"
+fi
 mv -f "$download" "$active_db"
 config_tmp="$tmp_dir/geoip.conf"
 cat > "$config_tmp" <<CONFIG
@@ -123,7 +139,6 @@ if ! systemctl reload nginx; then
   nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
   fail_update
 fi
-now=$(date +%s)
-printf '%s\n' "$now" > "$last_success"
+printf '%s\n' "$candidate_success" > "$last_success"
 write_metrics
 logger -t honey-school-geoip 'update_succeeded country_schema=valid'

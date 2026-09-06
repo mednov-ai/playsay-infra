@@ -151,6 +151,22 @@ def test_activation_failure_restores_database_and_freshness() -> None:
         assert "honey_school_geoip_update_failures_total 1" in (state / "update.prom").read_text()
 
 
+def test_explicit_rollback_preserves_original_age_without_download() -> None:
+    result, state, config = updater_case(True)
+    assert result.returncode == 0
+    stamp = str(int(time.time()) - 86400)
+    (state / "ipinfo-lite.last-good.mmdb").write_bytes(b"old-valid-database" * 4)
+    (state / "last-good-epoch").write_text(stamp)
+    install_stub(state.parent / "bin", "curl", "exit 99\n")
+    env = os.environ.copy()
+    env["PATH"] = f"{state.parent / 'bin'}:{env['PATH']}"
+    env["TEST_SYSTEMCTL_LOG"] = str(state.parent / "systemctl.log")
+    result = subprocess.run([str(state.parent / "updater"), "--rollback-last-good"], env=env, capture_output=True)
+    assert result.returncode == 0
+    assert (state / "ipinfo-lite.mmdb").read_bytes() == b"old-valid-database" * 4
+    assert (state / "last-success-epoch").read_text().strip() == stamp
+
+
 def redirect_decision(country: str, enabled: bool, direct_peer: bool, method: str, sec_fetch_mode: str, accept: str, path: str, upgrade: str) -> bool:
     navigation = method in {"GET", "HEAD"} and (sec_fetch_mode == "navigate" or (not sec_fetch_mode and "text/html" in accept))
     excluded = path.startswith("/.well-known/acme-challenge/") or any(
@@ -189,6 +205,7 @@ def test_static_nginx_contract() -> None:
 
 if __name__ == "__main__":
     test_success()
+    test_explicit_rollback_preserves_original_age_without_download()
     test_activation_failure_restores_database_and_freshness()
     test_invalid_token_does_not_activate_database()
     test_failed_stale_update_preserves_database_and_disables_classification()

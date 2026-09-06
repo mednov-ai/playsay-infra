@@ -123,6 +123,6 @@
 - name: Enable the daily GeoIP update timer
   ansible.builtin.systemd:
     name: honey-school-geoip-update.timer
-    enabled: true
-    state: started
+    enabled: "{{ honey_school_geoip_updates_enabled | default(true) | bool }}"
+    state: "{{ 'started' if honey_school_geoip_updates_enabled | default(true) | bool else 'stopped' }}"
   when: not ansible_check_mode
