@@ -1,0 +1,26 @@
+---
+- name: Deliver isolated dev GeoIP on the AX41 ingress
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  vars:
+    honey_school_geoip_initial_download: false
+  pre_tasks:
+    - name: Enforce production redirect hold
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == "65.109.55.110"
+          - not (honey_school_geoip_redirect_prod_enabled | bool)
+  roles:
+    - honey-school-geoip
+  tasks:
+    - name: Reconcile dev-only route includes
+      ansible.builtin.command:
+        cmd: "python3 -{{ ' --check' if ansible_check_mode else '' }}"
+        stdin: "{{ lookup('file', '../roles/honey-school-geoip/files/reconcile-dev-geoip.py') }}"
+      check_mode: false
+      register: geoip_dev_routes
+      changed_when: geoip_dev_routes.stdout == 'changed'
+      notify: reload nginx after geoip change

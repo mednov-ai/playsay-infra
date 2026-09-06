@@ -4,6 +4,8 @@ set -eu
 state_dir={{ honey_school_geoip_state_directory | quote }}
 token_path={{ honey_school_geoip_token_path | quote }}
 nginx_config={{ honey_school_geoip_nginx_database_config | quote }}
+exec 9>"$state_dir/update.lock"
+flock -n 9 || exit 0
 active_db="$state_dir/ipinfo-lite.mmdb"
 last_good_db="$state_dir/ipinfo-lite.last-good.mmdb"
 metrics="$state_dir/update.prom"
@@ -83,7 +85,7 @@ curl_config="$tmp_dir/curl.conf"
 download="$tmp_dir/ipinfo-lite.mmdb"
 printf 'url = "https://ipinfo.io/data/ipinfo_lite.mmdb?token=%s"\n' "$token" > "$curl_config"
 chmod 0600 "$curl_config"
-curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 \
   --connect-timeout 15 --max-time 180 --retry 2 --output "$download" --config "$curl_config" || fail_update
 unset token
 rm -f "$curl_config"
@@ -100,8 +102,6 @@ chmod 0640 "$download"
 chown root:www-data "$download"
 [ ! -f "$active_db" ] || cp -p "$active_db" "$last_good_db"
 mv -f "$download" "$active_db"
-now=$(date +%s)
-printf '%s\n' "$now" > "$last_success"
 config_tmp="$tmp_dir/geoip.conf"
 cat > "$config_tmp" <<CONFIG
 geoip2 $active_db {
@@ -114,9 +114,16 @@ cp "$nginx_config" "$tmp_dir/previous.conf"
 mv -f "$config_tmp" "$nginx_config"
 if ! nginx -t >/dev/null 2>&1; then
   mv -f "$tmp_dir/previous.conf" "$nginx_config"
-  [ ! -f "$last_good_db" ] || cp -p "$last_good_db" "$active_db"
+  if [ -f "$last_good_db" ]; then cp -p "$last_good_db" "$active_db"; else rm -f "$active_db"; fi
   fail_update
 fi
-systemctl reload nginx || fail_update
+if ! systemctl reload nginx; then
+  cp "$tmp_dir/previous.conf" "$nginx_config"
+  if [ -f "$last_good_db" ]; then cp -p "$last_good_db" "$active_db"; else rm -f "$active_db"; fi
+  nginx -t >/dev/null 2>&1 && systemctl reload nginx || true
+  fail_update
+fi
+now=$(date +%s)
+printf '%s\n' "$now" > "$last_success"
 write_metrics
 logger -t honey-school-geoip 'update_succeeded country_schema=valid'

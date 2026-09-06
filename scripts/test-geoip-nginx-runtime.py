@@ -79,7 +79,7 @@ def main():
     parser.add_argument("--ssh-key")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    policy = (root / "ansible/roles/edge-proxy/templates/playsay-honey.conf.j2").read_text()
+    policy = (root / "ansible/roles/honey-school-geoip/templates/browser-entry-policy.conf.j2").read_text()
     policy = policy.split("limit_req_zone", 1)[0]
     policy = policy.replace("{{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }}", "0")
     policy = policy.replace("{{ 1 if honey_school_geoip_redirect_dev_enabled | bool else 0 }}", "1")

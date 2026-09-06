@@ -6,6 +6,7 @@
       - libnginx-mod-http-geoip2
       - mmdb-bin
     state: present
+    policy_rc_d: 101
     update_cache: true
     cache_valid_time: 3600
 
@@ -63,6 +64,15 @@
       map $host $honey_school_geo_country_code { default ""; }
   notify: reload nginx after geoip change
 
+- name: Install declarative browser-entry policy
+  ansible.builtin.template:
+    src: browser-entry-policy.conf.j2
+    dest: /etc/nginx/conf.d/01-honey-school-browser-entry-policy.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx after geoip change
+
 - name: Install the browser-entry redirect snippet
   ansible.builtin.copy:
     dest: /etc/nginx/snippets/honey-school-browser-entry.conf
@@ -107,6 +117,7 @@
   when:
     - not ansible_check_mode
     - honey_school_geoip_token.stat.exists
+    - honey_school_geoip_initial_download | default(true) | bool
   no_log: true
 
 - name: Enable the daily GeoIP update timer

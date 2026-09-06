@@ -51,6 +51,7 @@ def updater_case(download_succeeds: bool, token_value: str = "test1234567890") -
     updater.chmod(0o755)
     binaries = temporary / "bin"
     binaries.mkdir()
+    install_stub(binaries, "flock", "exit 0\n")
     install_stub(binaries, "chown", "exit 0\n")
     install_stub(binaries, "logger", "exit 0\n")
     install_stub(binaries, "nginx", "exit 0\n")
@@ -132,6 +133,24 @@ def rerun_failed_case(
 
 
 
+def test_activation_failure_restores_database_and_freshness() -> None:
+    for failure in ("nginx", "systemctl"):
+        result, state, config = updater_case(True)
+        assert result.returncode == 0
+        active = state / "ipinfo-lite.mmdb"
+        active.write_bytes(b"previous-valid-database")
+        previous_config = config.read_bytes()
+        stamp = str(int(time.time()) - 86400)
+        (state / "last-success-epoch").write_text(stamp)
+        install_stub(state.parent / "bin", failure, "exit 1\n")
+        result, _, _ = rerun_failed_case(result, state, config)
+        assert result.returncode != 0
+        assert active.read_bytes() == b"previous-valid-database"
+        assert config.read_bytes() == previous_config
+        assert (state / "last-success-epoch").read_text() == stamp
+        assert "honey_school_geoip_update_failures_total 1" in (state / "update.prom").read_text()
+
+
 def redirect_decision(country: str, enabled: bool, direct_peer: bool, method: str, sec_fetch_mode: str, accept: str, path: str, upgrade: str) -> bool:
     navigation = method in {"GET", "HEAD"} and (sec_fetch_mode == "navigate" or (not sec_fetch_mode and "text/html" in accept))
     excluded = path.startswith("/.well-known/acme-challenge/") or any(
@@ -155,20 +174,22 @@ def test_redirect_matrix() -> None:
 
 def test_static_nginx_contract() -> None:
     template = (ROOT / "ansible/roles/edge-proxy/templates/playsay-honey.conf.j2").read_text()
-    assert "honey_school_geoip_redirect_prod_enabled" in template
-    assert "honey_school_geoip_redirect_dev_enabled" in template
-    assert '"RU:1:1:1:0:1" 1;' in template
+    policy = (ROOT / "ansible/roles/honey-school-geoip/templates/browser-entry-policy.conf.j2").read_text()
+    assert "honey_school_geoip_redirect_prod_enabled" in policy
+    assert "honey_school_geoip_redirect_dev_enabled" in policy
+    assert '"RU:1:1:1:0:1" 1;' in policy
     assert "94.102.89.213" not in template
     assert "private, no-store" in (
         ROOT / "ansible/roles/honey-school-geoip/tasks/main.yaml"
     ).read_text()
     assert template.count("honey-school-browser-entry.conf") == 5
     for excluded in ("api", "auth", "keycloak", "livekit", "collab", "ws"):
-        assert excluded in template
+        assert excluded in policy
 
 
 if __name__ == "__main__":
     test_success()
+    test_activation_failure_restores_database_and_freshness()
     test_invalid_token_does_not_activate_database()
     test_failed_stale_update_preserves_database_and_disables_classification()
     test_redirect_matrix()
