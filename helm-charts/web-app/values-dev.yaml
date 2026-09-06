@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-route-rf-users-via-selectel-geoip-310"
-  digest: sha256:ad07df2a9e7fd56ba0ea7e5710346a4090abbc00eb2f94cea36f359bcf29b0a3
+  tag: "web-codex-hotfix-user-deletion-dev-311"
+  digest: sha256:a47761fb695c45152b954dcf9ff512f7b9295c541940fe3a542541558c27cfb2
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-route-rf-users-via-selectel-geoip-310
-  number: "310"
-  branch: codex/route-rf-users-via-selectel-geoip
-  branchLabel: web-codex-route-rf-users-via-selectel-geoip
-  commit: 00e53fe7e7beec3f68ace18d6852c8731a0cc9e7
-  commitShort: "00e53fe7e7be"
+  name: web-codex-hotfix-user-deletion-dev-311
+  number: "311"
+  branch: codex/hotfix-user-deletion-dev
+  branchLabel: web-codex-hotfix-user-deletion-dev
+  commit: 62ebc4105d13649071976df45cd0e3d3a730eadb
+  commitShort: "62ebc4105d13"
 service:
   type: NodePort
   nodePort: 32083
