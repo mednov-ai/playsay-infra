@@ -10,4 +10,6 @@ Audit: for every fetched remote branch containing `hotfix`, compare against the 
 
 Local validation passed: release-target contract, regional-routing finalizer contract, infra release preservation test, GeoIP updater contract, RF dev edge contract, and real API binding of rendered prod/dev/media-rollback Helm settings (Gradle RegionalMediaRoutingBindingTest). No repeated browser/long-duration lesson run was needed for this tree-identical merge. Production acceptance is not claimed by these checks.
 
-Build status and candidate SHA must be recorded after CI finishes. Creating or building release/01.007.00 does not authorize promotion; production remains on its prior release.
+Jenkins release dispatcher #67 completed SUCCESS. All affected module jobs completed SUCCESS: API #163, web #313, registration #67, keyboard frontend #94. Published infra candidate `9191c3674efd96d47706717c50a54eeacb1af499` has `status: ready`, platform/accepted SHA `ff739cb8292f105d3109935956776a108d351c94` and baseline release/01.006.14. The production pointer remains release/01.006.14. No production host operations, promotion, migrations or GeoIP activation were performed.
+
+The existing local shared Git stores contain malformed duplicate refs with a ` 2` suffix, causing fetch connectivity checks to fail. Fresh isolated clones were used for platform reconciliation and final remote infra verification; pre-existing working trees and duplicate refs were not altered.
