@@ -1,18 +1,14 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.006.14"
-baseRelease: "release/01.006.13"
-basePlatformCommit: "61a1bfdb945da03a06ed474e6eda7c1f25e66c47"
+status: building
+releaseBranch: "release/01.006.15"
+baseRelease: "release/01.006.14"
+basePlatformCommit: "751b8b7b977a7d57325d46b80db3562723f5818b"
 acceptedDevCommit: "751b8b7b977a7d57325d46b80db3562723f5818b"
-baseInfraCommit: "54ebf57466fb976926cc9d6b4169d6c2a83a880f"
+baseInfraCommit: "5f7f0ab58f019a7d56120fc780bfa987418c333f"
 platformCommit: "751b8b7b977a7d57325d46b80db3562723f5818b"
 affectedTargets:
-  - "api-gateway"
-  - "vocabulary-service"
-  - "web-app"
-  - "registration-service"
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "66"
-updatedAt: "2026-09-06T19:17:09Z"
+  build: "68"
+updatedAt: "2026-09-07T15:43:36Z"
