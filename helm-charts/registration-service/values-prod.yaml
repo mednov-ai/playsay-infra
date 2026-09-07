@@ -26,7 +26,7 @@ registrationService:
   lessonAuth:
     issuer: https://ops.honey.school/keycloak/realms/playsay
     allowedCallbackOrigins: https://online.honey.school,https://online.honeyschool.ru
-  publicBaseUrl: https://online.honey.school
+  publicBaseUrl: https://online.honeyschool.ru
   keycloak:
     baseUrl: http://keycloak.keycloak.svc.cluster.local/keycloak
     realm: playsay
