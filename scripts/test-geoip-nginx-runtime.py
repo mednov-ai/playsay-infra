@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
    ('trusted RF normalized browser address',204,{'source':'127.0.0.2','headers':{'X-Real-IP':'2001:db8::5','X-Forwarded-For':'198.51.100.9'},'client':'2001:db8::5'}),
    ('spoofed client headers do not suppress direct RU',302,{'headers':{'X-Real-IP':'127.0.0.3','X-Forwarded-For':'127.0.0.3'}}),
    ('spoofed RU headers do not redirect non RU',204,{'source':'127.0.0.3','headers':{'X-Real-IP':'127.0.0.1','X-Forwarded-For':'127.0.0.1'}}),
-   ('production flag off',204,{'host':'online.honey.school'}),
+   ('production flag',302 if data.get('production') else 204,{'host':'online.honey.school'}),
    ('ops excluded',204,{'host':'ops.honey.school'}),
    ('RF host excluded',204,{'host':'dev.online.honeyschool.ru'}),
    ('POST excluded',204,{'method':'POST'}),
@@ -51,6 +51,9 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
    ('collaboration excluded',204,{'path':'/collab/ws'}),
    ('upgrade excluded',204,{'headers':{'Upgrade':'websocket'}}),
   ]
+  if data.get('production'):
+   for host in ['honey.school','online.honey.school','key.honey.school']:
+    cases += [(host+' navigation',302,{'host':host}), (host+' foreign',204,{'host':host,'source':'127.0.0.3'}), (host+' API',204,{'host':host,'path':'/api/profile'}), (host+' callback',204,{'host':host,'path':'/auth/callback?code=synthetic'})]
   for label,expected,options in cases:
    headers={'Host':options.get('host','dev.online.honey.school'),'Accept':'text/html',**options.get('headers',{})}
    connection=http.client.HTTPConnection(options.get('destination','127.0.0.1'),port,timeout=3,source_address=(options.get('source','127.0.0.1'),0))
@@ -62,7 +65,8 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
     assert response.getheader('X-Test-Peer')==options.get('source','127.0.0.1'),label
     assert response.getheader('X-Test-Client')==options.get('client',options.get('source','127.0.0.1')),label
    if expected==302:
-    assert response.getheader('Location')=='https://dev.online.honeyschool.ru'+path,label
+    destination={'honey.school':'honeyschool.ru','online.honey.school':'online.honeyschool.ru','key.honey.school':'key.honeyschool.ru','dev.online.honey.school':'dev.online.honeyschool.ru'}[headers['Host']]
+    assert response.getheader('Location')=='https://'+destination+path,label
     assert response.getheader('Cache-Control')=='private, no-store',label
     assert response.getheader('Vary')=='Sec-Fetch-Mode, Accept',label
    connection.close()
@@ -77,11 +81,12 @@ with tempfile.TemporaryDirectory(prefix="geoip-policy-probe-") as directory:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ssh-key")
+    parser.add_argument("--production-enabled", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     policy = (root / "ansible/roles/honey-school-geoip/templates/browser-entry-policy.conf.j2").read_text()
     policy = policy.split("limit_req_zone", 1)[0]
-    policy = policy.replace("{{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }}", "0")
+    policy = policy.replace("{{ 1 if honey_school_geoip_redirect_prod_enabled | bool else 0 }}", "1" if args.production_enabled else "0")
     policy = policy.replace("{{ 1 if honey_school_geoip_redirect_dev_enabled | bool else 0 }}", "1")
     policy = re.sub(r"{% for trusted_address.*?{% endfor %}", "127.0.0.2 0;", policy, flags=re.S)
     tasks = (root / "ansible/roles/honey-school-geoip/tasks/main.yaml").read_text()
@@ -93,7 +98,7 @@ def main():
         import shlex
         command = ["ssh", "-o", "BatchMode=yes", "-i", args.ssh_key, "root@94.102.89.213",
                    "python3 -c " + shlex.quote(RUNNER)]
-    subprocess.run(command, input=json.dumps({"policy": policy, "snippet": snippet}).encode(), check=True)
+    subprocess.run(command, input=json.dumps({"policy": policy, "snippet": snippet, "production": args.production_enabled}).encode(), check=True)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,76 @@
+---
+- name: Reconcile production browser GeoIP without other host roles
+  hosts: all
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  tasks:
+    - name: Assert the established AX41 host
+      ansible.builtin.assert:
+        that: inventory_hostname == "65.109.55.110"
+    - name: Read current routing files for scoped rollback
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      loop:
+        - /etc/nginx/conf.d/playsay-honey.conf
+        - /etc/nginx/conf.d/01-honey-school-browser-entry-policy.conf
+      register: geoip_before
+      no_log: true
+    - name: Require the provisioned database and snippet
+      ansible.builtin.command:
+        cmd: "test -s {{ item }}"
+      loop:
+        - /var/lib/honeyschool/geoip/ipinfo-lite.mmdb
+        - /etc/nginx/snippets/honey-school-browser-entry.conf
+      check_mode: false
+      changed_when: false
+    - name: Activate validated production navigation policy
+      block:
+        - name: Reconcile only the six production root locations
+          ansible.builtin.command:
+            cmd: "python3 -{{ ' --check' if ansible_check_mode else '' }}"
+            stdin: "{{ lookup('file', '../roles/honey-school-geoip/files/reconcile-prod-geoip.py') }}"
+          check_mode: false
+          register: geoip_routes
+          changed_when: geoip_routes.stdout == 'changed'
+        - name: Render independent production and dev flags
+          ansible.builtin.template:
+            src: ../roles/honey-school-geoip/templates/browser-entry-policy.conf.j2
+            dest: /etc/nginx/conf.d/01-honey-school-browser-entry-policy.conf
+            owner: root
+            group: root
+            mode: "0644"
+          register: geoip_policy
+        - name: Validate complete nginx configuration
+          ansible.builtin.command: nginx -t
+          changed_when: false
+          when: not ansible_check_mode
+        - name: Gracefully reload validated changes
+          ansible.builtin.service:
+            name: nginx
+            state: reloaded
+          when: not ansible_check_mode and (geoip_routes.changed or geoip_policy.changed)
+      rescue:
+        - name: Restore both previous routing files
+          ansible.builtin.copy:
+            dest: "{{ item.source }}"
+            content: "{{ item.content | b64decode }}"
+            owner: root
+            group: root
+            mode: "0644"
+          loop: "{{ geoip_before.results }}"
+          no_log: true
+          when: not ansible_check_mode
+        - name: Validate restored configuration
+          ansible.builtin.command: nginx -t
+          changed_when: false
+          when: not ansible_check_mode
+        - name: Reload restored configuration
+          ansible.builtin.service:
+            name: nginx
+            state: reloaded
+          when: not ansible_check_mode
+        - name: Report rejected activation
+          ansible.builtin.fail:
+            msg: Production GeoIP activation failed; previous routing files restored.
