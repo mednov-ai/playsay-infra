@@ -8,6 +8,8 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Active AX41 Dev/Prod Topology
 
+Newest accepted production runtime is `release/01.007.00`, candidate `508bd21570231c6abf9a8889f1e4a6902208926a`, promoted after retaining registration-origin hotfix 01.006.15 and completing all seven schema checks. All 19 applications are Synced/Healthy; browser diagnostics passes on both online origins. See [production release evidence](../migrations/ax41/evidence/20260907-release-01.007.00.md). Earlier runtime paragraphs below are historical. Production GeoIP navigation remains disabled; application deployment alone does not activate the shared nginx flag.
+
 RF dev DNS, HTTPS/auth ingress, independent TURN and authenticated central log collection are active. Two-browser synthetic-media verification through RF dev passes camera/audio, collaboration, screen share and reconnect after the scoped dev SNAT and LiveKit uplink fixes. Real RF last-mile without VPN and long-duration acceptance remain open. See [RF dev preparation](rf-dev-preparation.md) for exact refs, evidence, isolation and provider-token requirements. Dev GeoIP and its daily updater are active; production remains disabled.
 
 Dev VictoriaLogs uses NodePort 32089, seven-day retention, a 10 GiB PVC, 128 MiB requested/512 MiB maximum memory and 500m CPU maximum. Fluent Bit sends allowlisted records through authenticated dev ingestion; query access remains private. Stop the collector before disabling storage through GitOps and preserve the PVC for incident evidence.
