@@ -825,6 +825,8 @@ Runtime wiring:
   - `PLAYSAY_CHAT_EMAIL_COOLDOWN` (default `PT10M`)
   - `PLAYSAY_CHAT_EMAIL_POLL_DELAY_MS` (default `30000`)
   - `PLAYSAY_CHAT_EMAIL_RETRY_DELAYS` (default `PT1M,PT5M,PT15M`)
+Production registration-service email links use `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL=https://online.honeyschool.ru` for confirmation and password reset. Dev retains its dev origin. Deliver this setting through a numeric GitOps hotfix; verify fresh confirmation/reset links and the runtime variable. Already sent messages and saved email-log replay retain their original URLs. Roll back the setting through GitOps.
+
 - registration-service env:
   - `PLAYSAY_REGISTRATION_SERVICE_TOKEN`
   - `PLAYSAY_REGISTRATION_PUBLIC_BASE_URL`
