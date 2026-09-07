@@ -1,6 +1,6 @@
 # Regional dev preparation
 
-This tracks preparation and the explicitly listed partial delivery evidence for `route-rf-users-via-selectel-geoip`. Production remains under the owner's delivery hold. Existing production signaling and media settings must not be disabled merely to recreate an older canary baseline.
+This tracks preparation and the explicitly listed partial delivery evidence for `route-rf-users-via-selectel-geoip`. Production release 01.007.00 and the separately authorized production GeoIP activation are complete; current operations and rollback are in the runbook. Existing production signaling and media settings must not be disabled merely to recreate an older canary baseline.
 
 ## Environment mapping
 
@@ -47,7 +47,7 @@ Sources checked 2026-09-04:
 
 IPinfo Lite MMDB uses `country_code` and `asn`, supports verified IPv4/IPv6 fixtures and is licensed CC BY-SA 4.0 with attribution to [IPinfo](https://ipinfo.io/developers/ipinfo-lite-database). The protected token on AX41 is `/etc/honeyschool/secrets/ipinfo-lite-download-token` (root, `0600`). Actual authenticated download, reader lookups, normal systemd updates and last-good rollback have passed. Values and provider data are excluded from Git and command arguments.
 
-Dev-only GeoIP entry and the daily timer are enabled through the dedicated exact-ref Ansible play; production entry remains disabled. Both controls and database rollback were exercised while a two-browser RF dev media session remained connected. [Acceptance and limitations](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md) distinguish actual MMDB/browser tests from the pending real RF no-VPN acceptance.
+Dev-only GeoIP entry and the daily timer are enabled through the dedicated exact-ref Ansible play; production entry was subsequently enabled through its own scoped play. Both controls and database rollback were exercised while a two-browser RF dev media session remained connected. [Acceptance and limitations](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md) distinguish actual MMDB/browser tests from the pending real RF no-VPN acceptance.
 
 ## Local verification
 
