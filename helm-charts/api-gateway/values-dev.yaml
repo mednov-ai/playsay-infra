@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-hotfix-user-deletion-dev-161"
-  digest: sha256:59fecdc1e39644057c97d26c767aa42c6cb3fba32c2fa52863b306f6252b8140
+  tag: "api-dev-165"
+  digest: sha256:721ac85c4b8489c3b35055676e15e05eaf7c4a26b7ebfff061d068cf6dc3edfc
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-hotfix-user-deletion-dev-161
-  number: "161"
-  branch: codex/hotfix-user-deletion-dev
-  branchLabel: api-codex-hotfix-user-deletion-dev
-  commit: afde004240394d54432a1cb47cf49b640c81fe0b
-  commitShort: "afde00424039"
+  name: api-dev-165
+  number: "165"
+  branch: develop
+  branchLabel: api-dev
+  commit: d564d9031b03d2b4a768e7c238f85609faf85df9
+  commitShort: "d564d9031b03"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
