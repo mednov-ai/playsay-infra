@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-user-deletion-dev-311"
-  digest: sha256:a47761fb695c45152b954dcf9ff512f7b9295c541940fe3a542541558c27cfb2
+  tag: "web-dev-314"
+  digest: sha256:1854d59b29d593f4e1ca339702c539ffde14469275bdd287f5f5bc5c7809f5da
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-user-deletion-dev-311
-  number: "311"
-  branch: codex/hotfix-user-deletion-dev
-  branchLabel: web-codex-hotfix-user-deletion-dev
-  commit: 62ebc4105d13649071976df45cd0e3d3a730eadb
-  commitShort: "62ebc4105d13"
+  name: web-dev-314
+  number: "314"
+  branch: develop
+  branchLabel: web-dev
+  commit: a0f30b17cd64c0f532286c7c4843c75fc11ece8a
+  commitShort: "a0f30b17cd64"
 service:
   type: NodePort
   nodePort: 32083
