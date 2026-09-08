@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: "vocabulary-codex-hotfix-user-deletion-dev-52"
-  digest: sha256:e9b51da38f03811362f54780c53fbea7264cb6f0abf0de1d861e2d0febae7138
+  tag: "vocabulary-dev-56"
+  digest: sha256:f2bb9cd3f682681556ed5be63c541a6b302c3e7a2558cffff13e25dd2a569062
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-codex-hotfix-user-deletion-dev-52, number: "52", branch: codex/hotfix-user-deletion-dev, branchLabel: vocabulary-codex-hotfix-user-deletion-dev, commit: 62ebc4105d13649071976df45cd0e3d3a730eadb, commitShort: 62ebc4105d13}
+build: {name: vocabulary-dev-56, number: "56", branch: develop, branchLabel: vocabulary-dev, commit: ea2b1c38c2948523990cd0d4c036aeec63625449, commitShort: ea2b1c38c294}
 service: {type: ClusterIP}
 updateStrategy:
   type: RollingUpdate
