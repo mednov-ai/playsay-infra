@@ -1457,6 +1457,8 @@ The local remediation record and outstanding toolchain/Keycloak blockers are in 
 
 On advisory/network failure, inspect the sanitized failure class and credential availability, then rerun with a healthy data source. On incompatible/corrupt cache errors, choose a fresh invocation without the seed. Do not purge a database another run might be using. Do not use debug logging with credentials. High/Critical findings outside an active exact owner-approved exception stop publication; remediate compatible direct/BOM/transitive versions and rerun affected tests/contracts/packages and the full scan. Validate Keycloak findings against its pinned runtime image, not solely compileOnly dependencies. No direct runtime changes are part of this procedure.
 
+A successful security stage must archive nonempty reports before image publication; verify the archived `status.txt` and both `gate.json` files through Jenkins. Report permissions permit the separate Jenkins agent UID to read them, while database directories remain private. The final post action also retains available failure reports.
+
 For authorized activation, verify the Jenkins credential binding, the full and selected-module reports, an intentional isolated failing fixture stopping publication, report retention on failure, and normal affected-target/branch-head guards. Record the CI revision and evidence; local CI contract tests do not prove an actual Jenkins run.
 
 
