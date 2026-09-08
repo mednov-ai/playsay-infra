@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-codex-hotfix-user-deletion-dev-65"
-  digest: sha256:0c527255cf996b9f8ac1df0058a3d014ba72e12745f85082022b33da465276a8
+  tag: "registration-dev-68"
+  digest: sha256:85c67486bad2df039e9f33c26ad8428520f5803fd9a31ef7ad081df2ef417a3a
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-codex-hotfix-user-deletion-dev-65
-  number: "65"
-  branch: codex/hotfix-user-deletion-dev
-  branchLabel: registration-codex-hotfix-user-deletion-dev
-  commit: 68d77853f98f9f624e0874239e226896d641334e
-  commitShort: "68d77853f98f"
+  name: registration-dev-68
+  number: "68"
+  branch: develop
+  branchLabel: registration-dev
+  commit: ea2b1c38c2948523990cd0d4c036aeec63625449
+  commitShort: "ea2b1c38c294"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
