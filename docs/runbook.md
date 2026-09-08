@@ -1430,6 +1430,34 @@ KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n playsay-dev rollout status deplo
 
 If callbacks accumulate, inspect only row counts, retry timestamps, and sanitized error classes. Do not select vocabulary snapshot, answer, or outbox payload columns into terminal output.
 
+## JVM Dependency Security
+
+The platform policy is owned by `playsay-platform/docs/dependency-security.md`. Every checked-in JVM module pipeline, including Keycloak and the manual full-backend path, runs the OWASP gate before testing, migrations or image publication. Deployment and remote CI execution still require separate authorization.
+
+Local commands, from `playsay-platform` (Java 21 and Gradle 8.14.4 are locally verified for inventory):
+
+```bash
+./scripts/ci/check-jvm-dependencies.sh inventory
+./scripts/ci/check-jvm-dependencies.sh all
+./scripts/ci/check-jvm-dependencies.sh api-gateway
+./scripts/ci/check-jvm-dependencies.sh keycloak-standalone
+```
+
+Use `GRADLE_BIN` to select an installed Gradle executable matching CI. `inventory` resolves dependencies and reports coverage only; it is not vulnerability clearance. Full verification includes all discovered JVM modules plus the separate build-logic build. Module verification includes its project dependency closure plus build-logic. Shared scanner/build changes fan out to all JVM publication targets, including Keycloak.
+
+For API access, request an NVD key at <https://nvd.nist.gov/developers/request-an-api-key>. Locally provide `NVD_API_KEY` through the environment or store only the raw value in `playsay-platform/.env.nvd-api-key` with mode `0600`; `.env.*` is ignored by Git. `NVD_API_KEY_FILE` can select another private file. The runner reads it as data, never executes it. Do not paste keys into chat, command arguments, commits or logs. Without a key, the runner uses official NVD JSON 2.0 feeds and requires modified-feed metadata no older than 48 hours; stale or unavailable data fails closed.
+
+Before authorized CI activation, provision Jenkins Secret Text credential `nvd-api-key` in the existing scoped credentials store. JVM Jenkinsfiles bind it as `NVD_API_KEY`. A missing credential stops the stage; do not weaken the gate to bypass provisioning. Configure any cache seed through `DEPENDENCY_SECURITY_CACHE_SEED`: use a completed database directory from the same scanner version/schema, supplied read-only, copied to a unique writable directory under `backend/build/dependency-security-data/` for each run. Never share a live H2 database between parallel jobs. A seed still requires successful advisory refresh. First bootstrap may take minutes; the pipeline bounds the security stage to 45 minutes, the JVM job to 75 minutes, and its agent pod to 90 minutes so initial advisory bootstrap has time to finish.
+
+Reports are retained at `backend/build/reports/dependency-security/<run-id>/`, including status, source revision/timestamps, advisory provenance/update time, module/configuration inventories and per-project HTML/JSON findings. Jenkins archives them in `post/always`, including failed runs. A nonzero exit or missing final state means failure/incomplete analysis; `inventory-only` is not a passing security gate. Keep before/after evidence when remediating dependencies. Database directories contain only scanner data and are not archived as build reports.
+
+The local remediation record and outstanding toolchain/Keycloak blockers are in `playsay-platform/docs/security/dependency-remediation-2026-09-08.md`. The owner-approved temporary exception in `playsay-platform/backend/gradle/dependency-security-accepted-risks.json` permits only the recorded CVE/package-version/build/module combinations for CVE-2026-53914 and CVE-2026-62380 until 2026-10-08 00:00 UTC. Keep these findings visible and retain `gate.json`; `passed-with-accepted-risks` is release eligibility under acceptance, not a clean scan. New/unlisted findings and expired exceptions still block. Do not automatically renew or broaden acceptance. Check official upstream fixes during release preparation; remove the corresponding exception after a compatible upgrade is verified.
+
+On advisory/network failure, inspect the sanitized failure class and credential availability, then rerun with a healthy data source. On incompatible/corrupt cache errors, choose a fresh invocation without the seed. Do not purge a database another run might be using. Do not use debug logging with credentials. High/Critical findings outside an active exact owner-approved exception stop publication; remediate compatible direct/BOM/transitive versions and rerun affected tests/contracts/packages and the full scan. Validate Keycloak findings against its pinned runtime image, not solely compileOnly dependencies. No direct runtime changes are part of this procedure.
+
+For authorized activation, verify the Jenkins credential binding, the full and selected-module reports, an intentional isolated failing fixture stopping publication, report retention on failure, and normal affected-target/branch-head guards. Record the CI revision and evidence; local CI contract tests do not prove an actual Jenkins run.
+
+
 ## Jenkins Branch Builds and Build Labels
 
 Jenkins platform jobs are configured by:
