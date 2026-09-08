@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "media-release-01.007.01-37"
-  digest: "sha256:169b3252a4e81040cddf2958b7c61617004db18c0dfa939c042d95f6bf1c0f91"
+  tag: "media-release-01.007.03-39"
+  digest: "sha256:db7b7d9fc325ee8ae5a71c97f29b23740f0a834d00f46131d92122acd6c1ffe1"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: media-release-01.007.01-37
-  number: "37"
-  branch: release/01.007.01
-  branchLabel: media-release-01.007.01
-  commit: d564d9031b03d2b4a768e7c238f85609faf85df9
-  commitShort: "d564d9031b03"
+  name: media-release-01.007.03-39
+  number: "39"
+  branch: release/01.007.03
+  branchLabel: media-release-01.007.03
+  commit: ea2b1c38c2948523990cd0d4c036aeec63625449
+  commitShort: "ea2b1c38c294"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
