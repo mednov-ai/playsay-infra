@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-email-service
-  tag: "email-dev-41"
-  digest: sha256:f05e184f25dded45d5652102bd4ca9d4db40fdb0ede4792bf1a4e6c679314843
+  tag: "email-dev-42"
+  digest: sha256:b5e44bc83fbf2a0b0d472347371e6764f1893a720da17593b8b2e18e9ff18127
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: email-dev-41
-  number: "41"
+  name: email-dev-42
+  number: "42"
   branch: develop
   branchLabel: email-dev
-  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
-  commitShort: "b15c57a619dd"
+  commit: ea2b1c38c2948523990cd0d4c036aeec63625449
+  commitShort: "ea2b1c38c294"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
