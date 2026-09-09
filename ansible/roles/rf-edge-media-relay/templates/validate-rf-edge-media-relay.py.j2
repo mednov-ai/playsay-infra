@@ -6,6 +6,7 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import socket
 import stat
@@ -20,6 +21,9 @@ CERTIFICATE_PATH = "{{ rf_edge_media_relay_runtime_certificate_directory }}/full
 TURN_PORT = "{{ rf_edge_media_relay_listening_port }}"
 TURNS_PORT = "{{ rf_edge_media_relay_tls_port }}"
 METRICS_PORT = "{{ rf_edge_media_relay_metrics_port }}"
+RELAY_MIN_PORT = "{{ rf_edge_media_relay_min_port }}"
+RELAY_MAX_PORT = "{{ rf_edge_media_relay_max_port }}"
+COLLECTOR_PATH = "/usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics"
 COMMAND_ENVIRONMENT = {**os.environ, "LC_ALL": "C"}
 
 
@@ -60,6 +64,51 @@ def capture(command: list[str], label: str) -> str:
     if result.returncode != 0:
         raise SystemExit(f"{label} did not succeed")
     return result.stdout
+
+
+def metric_integer(metrics: str, name: str) -> int:
+    samples = []
+    for line in metrics.splitlines():
+        fields = line.split()
+        if fields and fields[0] == name:
+            samples.append(fields)
+    if len(samples) != 1 or len(samples[0]) != 2 or re.fullmatch(r"[0-9]+", samples[0][1]) is None:
+        raise SystemExit(f"relay allocation metric is missing, duplicated, or malformed: {name}")
+    return int(samples[0][1])
+
+
+def relay_socket_count() -> int:
+    rows = capture(
+        [
+            "/usr/bin/ss",
+            "-H",
+            "-lun",
+            f"sport >= :{RELAY_MIN_PORT} and sport <= :{RELAY_MAX_PORT}",
+        ],
+        "bounded relay UDP socket query",
+    )
+    return sum(1 for line in rows.splitlines() if line.strip())
+
+
+def validate_allocation_metrics() -> None:
+    metric_names = (
+        "playsay_rf_edge_media_relay_udp_sockets",
+        "playsay_rf_edge_media_relay_active_udp_allocations",
+    )
+    for attempt in range(3):
+        probe([COLLECTOR_PATH], "relay allocation metric refresh")
+        metrics = capture(
+            ["/usr/bin/curl", "--fail", "--silent", "--show-error", f"http://127.0.0.1:{METRICS_PORT}/metrics"],
+            "loopback metrics",
+        )
+        exported = tuple(metric_integer(metrics, name) for name in metric_names)
+        kernel_count = relay_socket_count()
+        if exported[0] == exported[1] == kernel_count:
+            print("PASS relay allocation metrics match bounded UDP sockets")
+            return
+        if attempt < 2:
+            time.sleep(0.2)
+    raise SystemExit("relay allocation metrics disagree with bounded UDP sockets")
 
 
 def validate_configuration() -> None:
@@ -128,10 +177,7 @@ def validate_configuration() -> None:
     if "MemoryHigh=infinity" in service_limits or "MemoryMax=infinity" in service_limits:
         raise SystemExit("coturn memory limits are not bounded")
     print("PASS coturn systemd accounting and limits")
-    probe(
-        ["/usr/bin/curl", "--fail", "--silent", "--show-error", f"http://127.0.0.1:{METRICS_PORT}/metrics"],
-        "loopback metrics",
-    )
+    validate_allocation_metrics()
 
 
 def validate_allocations() -> None:

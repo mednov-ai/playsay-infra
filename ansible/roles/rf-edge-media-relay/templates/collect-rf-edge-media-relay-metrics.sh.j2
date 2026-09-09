@@ -6,7 +6,12 @@ temporary_file="${output_file}.tmp"
 service_value() { systemctl is-active --quiet "$1" && printf 1 || printf 0; }
 restart_count() { systemctl show "$1" --property=NRestarts --value 2>/dev/null || printf 0; }
 
-relay_sockets="$(ss -H -lun 2>/dev/null | awk '$5 ~ /:([0-9]+)$/ { split($5, address, ":"); port=address[length(address)]; if (port >= {{ rf_edge_media_relay_min_port }} && port <= {{ rf_edge_media_relay_max_port }}) count++ } END { print count + 0 }')"
+relay_socket_filter="sport >= :{{ rf_edge_media_relay_min_port }} and sport <= :{{ rf_edge_media_relay_max_port }}"
+if ! relay_socket_rows="$(ss -H -lun "$relay_socket_filter" 2>/dev/null)"; then
+  echo 'Unable to collect bounded relay UDP sockets.' >&2
+  exit 1
+fi
+relay_sockets="$(printf '%s\n' "$relay_socket_rows" | awk 'NF { count++ } END { print count + 0 }')"
 allocation_failures="$(journalctl -u coturn --since '-2 minutes' --no-pager 2>/dev/null | grep -Eci 'allocation (failed|error)|cannot create allocation' || true)"
 auth_failures="$(journalctl -u coturn --since '-2 minutes' --no-pager 2>/dev/null | grep -Eci 'unauthorized|wrong credentials|cannot find credentials' || true)"
 
