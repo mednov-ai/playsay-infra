@@ -3,11 +3,12 @@ set -eu
 
 usage() {
   cat >&2 <<'EOF'
-Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--inventory PATH]
+Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--monitoring-only] [--inventory PATH]
 
 Runs the shared nginx/coturn Selectel RF edge playbook only from a clean,
 pushed numeric release branch. --syntax is read-only and may run from a topic
-branch. Review --check in a zero-allocation window;
+branch. Review --check in a zero-allocation window. --monitoring-only limits
+check/apply to the collector and validator and cannot notify service handlers;
 --apply may restart coturn and also requires:
   PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN
 EOF
@@ -15,6 +16,7 @@ EOF
 }
 
 mode=""
+monitoring_only="false"
 inventory_path="${PLAYSAY_RF_EDGE_INVENTORY:-}"
 
 while [ "$#" -gt 0 ]; do
@@ -29,6 +31,10 @@ while [ "$#" -gt 0 ]; do
       inventory_path="$2"
       shift 2
       ;;
+    --monitoring-only)
+      monitoring_only="true"
+      shift
+      ;;
     *)
       usage
       ;;
@@ -36,6 +42,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$mode" ] || usage
+[ "$mode" != "--syntax" ] || [ "$monitoring_only" = "false" ] || usage
 
 repo_root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
@@ -100,9 +107,22 @@ if [ "$mode" = "--apply" ]; then
     echo "Set PLAYSAY_RF_EDGE_APPROVED_RELEASE=$release_branch for an approved production apply." >&2
     exit 2
   fi
+  if [ "$monitoring_only" = "true" ]; then
+    exec ansible-playbook \
+      -i "$inventory_path" \
+      "$repo_root/ansible/playbooks/rf-edge.yaml" \
+      --tags rf_edge_media_relay_monitoring
+  fi
+  exec ansible-playbook -i "$inventory_path" "$repo_root/ansible/playbooks/rf-edge.yaml"
+fi
+
+if [ "$monitoring_only" = "true" ]; then
   exec ansible-playbook \
     -i "$inventory_path" \
-    "$repo_root/ansible/playbooks/rf-edge.yaml"
+    "$repo_root/ansible/playbooks/rf-edge.yaml" \
+    --tags rf_edge_media_relay_monitoring \
+    --check \
+    --diff
 fi
 
 exec ansible-playbook \

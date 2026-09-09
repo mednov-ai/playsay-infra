@@ -190,6 +190,7 @@
   notify: restart node exporter
 
 - name: Install aggregate shared-edge metrics collector
+  tags: [rf_edge_media_relay_monitoring]
   ansible.builtin.template:
     src: collect-rf-edge-media-relay-metrics.sh.j2
     dest: /usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics
@@ -206,6 +207,7 @@
     mode: "0755"
 
 - name: Install privacy-safe relay configuration and allocation validator
+  tags: [rf_edge_media_relay_monitoring]
   ansible.builtin.template:
     src: validate-rf-edge-media-relay.py.j2
     dest: /usr/local/sbin/playsay-validate-rf-edge-media-relay

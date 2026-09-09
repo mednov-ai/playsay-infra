@@ -11,6 +11,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 COLLECTOR_TEMPLATE = ROOT / "ansible/roles/rf-edge-media-relay/templates/collect-rf-edge-media-relay-metrics.sh.j2"
 VALIDATOR_TEMPLATE = ROOT / "ansible/roles/rf-edge-media-relay/templates/validate-rf-edge-media-relay.py.j2"
+TASKS = ROOT / "ansible/roles/rf-edge-media-relay/tasks/main.yaml"
+RELEASE_WRAPPER = ROOT / "scripts/apply-rf-edge-release.sh"
 
 
 def render_collector(metrics_directory: Path) -> str:
@@ -100,6 +102,10 @@ def main() -> None:
     assert "metric_integer" in validator_source
     assert "relay_socket_count" in validator_source
     assert "relay allocation metrics disagree with bounded UDP sockets" in validator_source
+    assert TASKS.read_text().count("tags: [rf_edge_media_relay_monitoring]") == 2
+    wrapper_source = RELEASE_WRAPPER.read_text()
+    assert "--monitoring-only" in wrapper_source
+    assert "--tags rf_edge_media_relay_monitoring" in wrapper_source
     print("RF edge media relay monitoring tests passed")
 
 
