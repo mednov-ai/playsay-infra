@@ -226,8 +226,12 @@ parser = argparse.ArgumentParser()
 mode = parser.add_mutually_exclusive_group(required=True)
 mode.add_argument("--configuration", action="store_true")
 mode.add_argument("--allocations", action="store_true")
+mode.add_argument("--monitoring", action="store_true")
 arguments = parser.parse_args()
 
-validate_configuration()
-if arguments.allocations:
-    validate_allocations()
+if arguments.monitoring:
+    validate_allocation_metrics()
+else:
+    validate_configuration()
+    if arguments.allocations:
+        validate_allocations()

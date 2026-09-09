@@ -102,6 +102,8 @@ def main() -> None:
     assert "metric_integer" in validator_source
     assert "relay_socket_count" in validator_source
     assert "relay allocation metrics disagree with bounded UDP sockets" in validator_source
+    assert 'mode.add_argument("--monitoring", action="store_true")' in validator_source
+    assert "if arguments.monitoring:\n    validate_allocation_metrics()" in validator_source
     assert TASKS.read_text().count("tags: [rf_edge_media_relay_monitoring]") == 2
     wrapper_source = RELEASE_WRAPPER.read_text()
     assert "--monitoring-only" in wrapper_source
