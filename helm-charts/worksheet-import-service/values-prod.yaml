@@ -7,12 +7,12 @@ auth:
 storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: stub}
 image:
-  tag: worksheet-import-release-01.004.13-15
-  digest: sha256:c5e2b5df6d12e7d9c0f8443aa55af4663a3309d10e31ff53d834fbecd7ed2966
+  tag: worksheet-import-release-01.007.03-20
+  digest: sha256:4867d84c1e9a83bc4d4dad2730af1c66cf996283ea56219b0b5f1e4b94817847
 build:
-  name: worksheet-import-release-01.004.13-15
-  number: "15"
-  branch: release/01.004.13
-  branchLabel: worksheet-import-release-01.004.13
-  commit: b15c57a619dddd0e7172b7c9b7aea682f7d0e6f0
-  commitShort: b15c57a619dd
+  name: worksheet-import-release-01.007.03-20
+  number: "20"
+  branch: release/01.007.03
+  branchLabel: worksheet-import-release-01.007.03
+  commit: ea2b1c38c2948523990cd0d4c036aeec63625449
+  commitShort: ea2b1c38c294

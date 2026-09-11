@@ -1,16 +1,26 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.006.07"
-baseRelease: "release/01.006.06"
-basePlatformCommit: "da6b90235f35b49ac450355f4882c12ac723d0a4"
-acceptedDevCommit: "ea2ade672a7063f12619d01a94f7936cc1437570"
-baseInfraCommit: "2fe4237764b7a99326c2f106755e3990abd57d6f"
-platformCommit: "bc94b8b89ecd885aac36edacabd05cbe86cbcd26"
+status: building
+releaseBranch: "release/01.007.06"
+baseRelease: "release/01.007.03"
+basePlatformCommit: "ea2b1c38c2948523990cd0d4c036aeec63625449"
+acceptedDevCommit: "a5ae66a15d1fed1f6d74adaca72a5d6ee272e3d7"
+baseInfraCommit: "77f646028e35a119aa5b9f87cbdaba65aaa6fba3"
+platformCommit: "a5ae66a15d1fed1f6d74adaca72a5d6ee272e3d7"
 affectedTargets:
   - "api-gateway"
+  - "ai-tutor-service"
+  - "worksheet-import-service"
+  - "vocabulary-service"
   - "web-app"
+  - "media-service"
+  - "payment-service"
+  - "registration-service"
+  - "email-service"
+  - "keycloak"
+  - "keyboard-service"
 validationSuites:
+  - "ci-contracts"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "58"
-updatedAt: "2026-09-03T21:08:03Z"
+  build: "76"
+updatedAt: "2026-09-11T18:37:34Z"
