@@ -127,6 +127,7 @@
   notify: reload nginx
 
 - name: Render exact-host AX41 edge routes
+  tags: edge-proxy-routes
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
@@ -175,6 +176,7 @@
   register: edge_root_certificate_after
 
 - name: Render HTTPS for honey.school after certificate issuance
+  tags: edge-proxy-routes
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
