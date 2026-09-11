@@ -126,6 +126,13 @@ log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_ti
     }
 {% endmacro %}
 
+{% macro html_game_upload_locations(route, forwarded_proto) %}
+    location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+        client_max_body_size 21m;
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+{% endmacro %}
+
 {% macro keycloak_locations(route, forwarded_proto) %}
 {% if route.logs_ingest_proxy | default(false) | bool %}
     location ^~ /victoria-logs/insert/ {
@@ -195,6 +202,7 @@ server {
 {% elif route.kind == 'landing' %}
 {{ landing_location(route) }}
 {% else %}
+{{ html_game_upload_locations(route, 'http') }}
     location / {
 {{ proxy_to_origin(route, 'http') }}
     }
@@ -224,6 +232,7 @@ server {
 {% if route.collaboration_proxy | default(false) | bool %}
 {{ collaboration_location(route, 'https') }}
 {% endif %}
+{{ html_game_upload_locations(route, 'https') }}
     location / {
 {{ proxy_to_origin(route, 'https') }}
     }
