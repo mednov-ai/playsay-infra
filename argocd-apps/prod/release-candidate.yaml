@@ -2,10 +2,10 @@ schemaVersion: 1
 status: building
 releaseBranch: "release/01.007.05"
 baseRelease: "release/01.007.03"
-basePlatformCommit: "ea2b1c38c2948523990cd0d4c036aeec63625449"
-acceptedDevCommit: "f41dbb8b60bfad6cbb0a1626ac45404f982805a0"
-baseInfraCommit: "ea23a72a678976824909f055df4ac48f4abbf755"
-platformCommit: "f41dbb8b60bfad6cbb0a1626ac45404f982805a0"
+basePlatformCommit: "f41dbb8b60bfad6cbb0a1626ac45404f982805a0"
+acceptedDevCommit: "af467f645201c9abe7d501bafcfc8f8fa0ef3573"
+baseInfraCommit: "ec7de8a6a4d70cbf426d60a797d56c2cec76de46"
+platformCommit: "af467f645201c9abe7d501bafcfc8f8fa0ef3573"
 affectedTargets:
   - "api-gateway"
   - "ai-tutor-service"
@@ -22,5 +22,5 @@ validationSuites:
   - "ci-contracts"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "74"
-updatedAt: "2026-09-11T15:30:29Z"
+  build: "75"
+updatedAt: "2026-09-11T16:26:40Z"
