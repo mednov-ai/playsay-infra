@@ -5,6 +5,22 @@ map $http_upgrade $playsay_connection_upgrade {
 
 limit_req_zone $binary_remote_addr zone=playsay_hooks:10m rate=5r/s;
 
+{% macro html_game_upload_locations(route, forwarded_proto) %}
+    location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+        client_max_body_size 21m;
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+    }
+{% endmacro %}
+
 {% set root_certificate = edge_root_certificate_after | default(edge_root_certificate) %}
 server {
     listen 80;
@@ -72,6 +88,9 @@ server {
         return 301 https://$host$request_uri;
     }
 {% elif route.kind in ['online', 'keyboard'] %}
+{% if route.kind == 'online' %}
+{{ html_game_upload_locations(route, 'http') }}
+{% endif %}
     location / {
         proxy_pass http://{{ route.upstream }};
         proxy_http_version 1.1;
@@ -100,6 +119,7 @@ server {
     ssl_session_timeout 1d;
 
 {% if route.kind == 'online' %}
+{{ html_game_upload_locations(route, 'https') }}
 {% if route.livekit_upstream is defined %}
     location = /livekit {
         return 301 /livekit/;
