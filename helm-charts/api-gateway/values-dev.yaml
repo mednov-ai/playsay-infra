@@ -127,7 +127,7 @@ runtime:
 resources:
   requests:
     cpu: 50m
-    memory: 384Mi
+    memory: 512Mi
   limits:
     cpu: "1"
-    memory: 768Mi
+    memory: 1536Mi
