@@ -5,18 +5,18 @@ theme:
     - https://online.honey.school
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
-  tag: "keycloak-release-01.007.05-11"
-  digest: sha256:2084f417df8fc9585cdf490dcc9f486dc6f1df10e6fa93678f3c896982992342
+  tag: "keycloak-release-01.007.05-13"
+  digest: sha256:4e9213aa6369d1441ebaeaaa1641a89d94feaffebf1c0780682c65e937bafada
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: keycloak-release-01.007.05-11
-  number: "11"
+  name: keycloak-release-01.007.05-13
+  number: "13"
   branch: release/01.007.05
   branchLabel: keycloak-release-01.007.05
-  commit: f41dbb8b60bfad6cbb0a1626ac45404f982805a0
-  commitShort: f41dbb8b60bf
+  commit: af467f645201c9abe7d501bafcfc8f8fa0ef3573
+  commitShort: af467f645201
 global:
   security:
     allowInsecureImages: true
