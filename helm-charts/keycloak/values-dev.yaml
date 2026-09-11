@@ -5,18 +5,18 @@ theme:
     - https://dev.online.honeyschool.ru
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
-  tag: "keycloak-dev-8"
-  digest: sha256:b5bb57ca19b1dea0614fbf09308ce67451b4e49c948d06085f0ee99909c706d2
+  tag: "keycloak-dev-12"
+  digest: sha256:6ffb8662539101fa9e78dd6a186703116f02418e049fea7e70e9ca8c8b12d91d
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: keycloak-dev-8
-  number: "8"
+  name: keycloak-dev-12
+  number: "12"
   branch: develop
   branchLabel: keycloak-dev
-  commit: ea2b1c38c2948523990cd0d4c036aeec63625449
-  commitShort: ea2b1c38c294
+  commit: af467f645201c9abe7d501bafcfc8f8fa0ef3573
+  commitShort: af467f645201
 global:
   security:
     allowInsecureImages: true
