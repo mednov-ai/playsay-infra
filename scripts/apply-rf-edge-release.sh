@@ -3,7 +3,7 @@ set -eu
 
 usage() {
   cat >&2 <<'EOF'
-Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--monitoring-only] [--inventory PATH]
+Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--html-game-upload-only|--monitoring-only] [--inventory PATH]
 
 Runs the shared nginx/coturn Selectel RF edge playbook only from a clean,
 pushed numeric release branch. --syntax is read-only and may run from a topic
@@ -11,12 +11,16 @@ branch. Review --check in a zero-allocation window. --monitoring-only limits
 check/apply to the collector and validator and cannot notify service handlers;
 --apply may restart coturn and also requires:
   PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN
+
+--html-game-upload-only reconciles only the bounded production game-upload
+locations, validates nginx and performs the normal graceful reload handler.
 EOF
   exit 2
 }
 
 mode=""
 monitoring_only="false"
+html_game_upload_only="false"
 inventory_path="${PLAYSAY_RF_EDGE_INVENTORY:-}"
 
 while [ "$#" -gt 0 ]; do
@@ -35,6 +39,10 @@ while [ "$#" -gt 0 ]; do
       monitoring_only="true"
       shift
       ;;
+    --html-game-upload-only)
+      html_game_upload_only="true"
+      shift
+      ;;
     *)
       usage
       ;;
@@ -43,6 +51,8 @@ done
 
 [ -n "$mode" ] || usage
 [ "$mode" != "--syntax" ] || [ "$monitoring_only" = "false" ] || usage
+[ "$mode" != "--syntax" ] || [ "$html_game_upload_only" = "false" ] || usage
+[ "$monitoring_only" = "false" ] || [ "$html_game_upload_only" = "false" ] || usage
 
 repo_root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
@@ -113,6 +123,12 @@ if [ "$mode" = "--apply" ]; then
       "$repo_root/ansible/playbooks/rf-edge.yaml" \
       --tags rf_edge_media_relay_monitoring
   fi
+  if [ "$html_game_upload_only" = "true" ]; then
+    exec ansible-playbook \
+      -i "$inventory_path" \
+      "$repo_root/ansible/playbooks/rf-edge.yaml" \
+      --tags html-game-upload-routes
+  fi
   exec ansible-playbook -i "$inventory_path" "$repo_root/ansible/playbooks/rf-edge.yaml"
 fi
 
@@ -121,6 +137,15 @@ if [ "$monitoring_only" = "true" ]; then
     -i "$inventory_path" \
     "$repo_root/ansible/playbooks/rf-edge.yaml" \
     --tags rf_edge_media_relay_monitoring \
+    --check \
+    --diff
+fi
+
+if [ "$html_game_upload_only" = "true" ]; then
+  exec ansible-playbook \
+    -i "$inventory_path" \
+    "$repo_root/ansible/playbooks/rf-edge.yaml" \
+    --tags html-game-upload-routes \
     --check \
     --diff
 fi

@@ -85,6 +85,66 @@
     backup: true
   notify: reload nginx
 
+- name: Safely reconcile only the production HTML-game upload routes
+  tags: html-game-upload-routes
+  block:
+    - name: Read the active AX41 edge routes
+      ansible.builtin.slurp:
+        path: /etc/nginx/conf.d/playsay-honey.conf
+      register: active_ax41_edge_routes
+
+    - name: Install the bounded AX41 HTML-game upload location
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/conf.d/playsay-honey.conf
+        insertafter: '^    server_name online\.honey\.school;$'
+        marker: '    # {mark} HONEY SCHOOL HTML GAME UPLOAD ROUTES'
+        backup: true
+        block: |
+          location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+              client_max_body_size 21m;
+              proxy_pass http://10.60.0.20:32083;
+              proxy_http_version 1.1;
+              proxy_request_buffering off;
+              proxy_buffering off;
+              proxy_set_header Host $host;
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Proto https;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_read_timeout 660s;
+              proxy_send_timeout 660s;
+          }
+      when: "'schedule/lessons/[^/]+/html-game-page' not in (active_ax41_edge_routes.content | b64decode)"
+      register: ax41_html_game_routes
+      notify: reload nginx
+
+    - name: Validate the AX41 nginx configuration after HTML-game route reconciliation
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+  rescue:
+    - name: Restore the previous AX41 route file after failed validation
+      ansible.builtin.copy:
+        src: "{{ ax41_html_game_routes.backup_file }}"
+        dest: /etc/nginx/conf.d/playsay-honey.conf
+        owner: root
+        group: root
+        mode: "0644"
+        remote_src: true
+      when: ax41_html_game_routes.changed | default(false)
+
+    - name: Verify the restored AX41 nginx configuration
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+
+    - name: Stop after restoring the invalid AX41 route change
+      ansible.builtin.fail:
+        msg: The HTML-game upload route failed nginx validation and the previous AX41 configuration was restored.
+
+- name: Activate the validated AX41 HTML-game upload routes
+  tags: html-game-upload-routes
+  ansible.builtin.meta: flush_handlers
+
 - name: Create the AX41 nginx snippets directory
   tags: edge-proxy-routes
   ansible.builtin.file:

@@ -182,3 +182,78 @@
     name: nginx
     enabled: true
     state: started
+
+- name: Safely reconcile only the RF production HTML-game upload routes
+  tags: html-game-upload-routes
+  block:
+    - name: Read the active RF edge routes
+      ansible.builtin.slurp:
+        path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+      register: active_rf_edge_routes
+
+    - name: Install the bounded RF HTML-game upload location
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+        insertafter: '^    server_name online\.honeyschool\.ru;$'
+        marker: '    # {mark} HONEY SCHOOL HTML GAME UPLOAD ROUTES'
+        backup: true
+        block: |
+          location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+              client_max_body_size 21m;
+              proxy_pass https://{{ rf_edge_origin_address }};
+              proxy_http_version 1.1;
+              proxy_ssl_server_name on;
+              proxy_ssl_name online.honey.school;
+              proxy_ssl_protocols TLSv1.2;
+              proxy_ssl_session_reuse off;
+              proxy_ssl_verify on;
+              proxy_ssl_verify_depth 3;
+              proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+              proxy_set_header Host online.honey.school;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-For $remote_addr;
+              proxy_set_header X-Forwarded-Proto https;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection $playsay_rf_connection_upgrade;
+              proxy_read_timeout 3600s;
+              proxy_send_timeout 3600s;
+              proxy_request_buffering off;
+              proxy_buffering off;
+              proxy_set_header Accept-Encoding "";
+              sub_filter_once off;
+              sub_filter_types application/javascript text/javascript text/css;
+              sub_filter 'https://online.honey.school' 'https://online.honeyschool.ru';
+              sub_filter 'wss://online.honey.school' 'wss://online.honeyschool.ru';
+          }
+      when: "'schedule/lessons/[^/]+/html-game-page' not in (active_rf_edge_routes.content | b64decode)"
+      register: rf_html_game_routes
+      notify: reload nginx
+
+    - name: Validate the RF nginx configuration after HTML-game route reconciliation
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+  rescue:
+    - name: Restore the previous RF route file after failed validation
+      ansible.builtin.copy:
+        src: "{{ rf_html_game_routes.backup_file }}"
+        dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+        owner: root
+        group: root
+        mode: "0644"
+        remote_src: true
+      when: rf_html_game_routes.changed | default(false)
+
+    - name: Verify the restored RF nginx configuration
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+
+    - name: Stop after restoring the invalid RF route change
+      ansible.builtin.fail:
+        msg: The HTML-game upload route failed nginx validation and the previous RF configuration was restored.
+
+- name: Activate the validated RF HTML-game upload routes
+  tags: html-game-upload-routes
+  ansible.builtin.meta: flush_handlers
