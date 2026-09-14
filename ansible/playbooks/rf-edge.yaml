@@ -9,6 +9,7 @@
     - ../group_vars/rf_edges.yaml
   pre_tasks:
     - name: Prove the play targets only the established RF edge
+      tags: always
       ansible.builtin.assert:
         that:
           - inventory_hostname == 'playsay-selectel-rf-edge'

@@ -17,4 +17,18 @@ for (const [name, relativePath, expectedLimits, expectedInvocations] of cases) {
   assert.doesNotMatch(template, /location \/ \{\s*client_max_body_size 21m;/);
 }
 
+const ax41Tasks = readFileSync(resolve(repositoryRoot, "ansible/roles/edge-proxy/tasks/main.yaml"), "utf8");
+const rfTasks = readFileSync(resolve(repositoryRoot, "ansible/roles/rf-edge-proxy/tasks/main.yaml"), "utf8");
+const rfWrapper = readFileSync(resolve(repositoryRoot, "scripts/apply-rf-edge-release.sh"), "utf8");
+for (const [name, tasks] of [["AX41", ax41Tasks], ["RF edge", rfTasks]]) {
+  assert.match(tasks, /tags: html-game-upload-routes/);
+  assert.match(tasks, /insertafter: '\^    server_name online\\\.(?:honey\\\.school|honeyschool\\\.ru);\$'/);
+  assert.match(tasks, /client_max_body_size 21m;/);
+  assert.match(tasks, /cmd: nginx -t/);
+  assert.match(tasks, /ansible\.builtin\.meta: flush_handlers/);
+  assert.doesNotMatch(tasks, /html-game-upload-routes[\s\S]{0,250}(?:ufw|coturn|landing)/i, `${name} emergency tag must remain route-only`);
+}
+assert.match(rfWrapper, /--html-game-upload-only/);
+assert.match(rfWrapper, /--tags html-game-upload-routes/);
+
 console.log("AX41 and RF-edge HTML-game upload limit contracts passed");
