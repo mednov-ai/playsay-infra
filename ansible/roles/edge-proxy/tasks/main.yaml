@@ -113,7 +113,10 @@
               proxy_read_timeout 660s;
               proxy_send_timeout 660s;
           }
-      when: "'schedule/lessons/[^/]+/html-game-page' not in (active_ax41_edge_routes.content | b64decode)"
+      when: >-
+        'schedule/lessons/[^/]+/html-game-page' not in
+        (((active_ax41_edge_routes.content | b64decode).split('server_name online.honey.school;'))[2]
+        .split('server_name dev.online.honey.school;')[0])
       register: ax41_html_game_routes
       notify: reload nginx
 
