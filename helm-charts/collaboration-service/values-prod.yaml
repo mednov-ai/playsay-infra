@@ -20,6 +20,10 @@ apiGateway:
   baseUrl: http://api-gateway.playsay-prod.svc.cluster.local
 collaboration:
   existingSecret: playsay-collaboration
+  gameRealtimeMode: "off"
+  externalActivityRealtime:
+    enabled: true
+    required: true
   snapshotIntervalMs: "10000"
 resources:
   requests:

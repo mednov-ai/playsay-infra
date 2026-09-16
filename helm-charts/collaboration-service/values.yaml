@@ -31,6 +31,12 @@ apiGateway:
 collaboration:
   existingSecret: playsay-collaboration
   gameRealtimeMode: "off"
+  externalActivityRealtime:
+    enabled: false
+    required: false
+    maxPendingMessages: "64"
+    softLimitBytes: "131072"
+    hardLimitBytes: "524288"
   tokenSecretKey: token-secret
   serviceTokenKey: service-token
   snapshotIntervalMs: "10000"

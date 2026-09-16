@@ -1,3 +1,6 @@
+{{- if and .Values.collaboration.externalActivityRealtime.required (not .Values.collaboration.externalActivityRealtime.enabled) -}}
+{{- fail "external activity realtime is required for this web-enabled environment" -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -52,6 +55,14 @@ spec:
               value: {{ .Values.collaboration.snapshotIntervalMs | quote }}
             - name: GAME_REALTIME_MODE
               value: {{ .Values.collaboration.gameRealtimeMode | quote }}
+            - name: EXTERNAL_ACTIVITY_REALTIME_ENABLED
+              value: {{ .Values.collaboration.externalActivityRealtime.enabled | quote }}
+            - name: EXTERNAL_ACTIVITY_MAX_PENDING_MESSAGES
+              value: {{ .Values.collaboration.externalActivityRealtime.maxPendingMessages | quote }}
+            - name: EXTERNAL_ACTIVITY_WEBSOCKET_SOFT_LIMIT_BYTES
+              value: {{ .Values.collaboration.externalActivityRealtime.softLimitBytes | quote }}
+            - name: EXTERNAL_ACTIVITY_WEBSOCKET_HARD_LIMIT_BYTES
+              value: {{ .Values.collaboration.externalActivityRealtime.hardLimitBytes | quote }}
             - name: WEBSOCKET_SOFT_LIMIT_BYTES
               value: {{ .Values.collaboration.websocket.softLimitBytes | quote }}
             - name: WEBSOCKET_HARD_LIMIT_BYTES
