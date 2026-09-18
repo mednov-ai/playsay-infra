@@ -179,7 +179,7 @@
   tags: classroom-route-observability
   ansible.builtin.replace:
     path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
-    regexp: '(^    location (?:= /livekit|\^~ /livekit/) \{\n(?:[^\n]*\n)*?^        proxy_set_header Connection \$playsay_rf_connection_upgrade;\n)(?!        proxy_set_header X-PlaySay-Signal-Request-Id )'
+    regexp: '(^    location (?:= /livekit|\^~ /livekit/) \{\n(?:(?!^    \})[^\n]*\n)*?^        proxy_set_header Connection \$playsay_rf_connection_upgrade;\n)(?!        proxy_set_header X-PlaySay-Signal-Request-Id )'
     replace: '\g<1>        proxy_set_header X-PlaySay-Signal-Request-Id $request_id;\n'
   notify: reload nginx
 
