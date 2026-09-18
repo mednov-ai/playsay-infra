@@ -27,6 +27,14 @@ for template in "$repo_root/ansible/roles/rf-edge-proxy/templates/playsay-honey-
 done
 grep -q 'mmin +{{ rf_edge_observability_queue_retention_minutes }} -delete' "$repo_root/ansible/roles/rf-edge-media-relay/templates/probe-rf-to-ax41.sh.j2"
 
+ansible localhost -c local -i localhost, -m ansible.builtin.template \
+  -a "src=$repo_root/ansible/roles/rf-edge-media-relay/templates/collect-nginx-signal-metrics.py.j2 dest=$temporary_directory/rendered-collector.py" \
+  -e "nginx_signal_metrics_log_path=$temporary_directory/signal.log" \
+  -e "nginx_signal_metrics_state_directory=$temporary_directory/state" \
+  -e "nginx_signal_metrics_output_path=$temporary_directory/metrics.prom" \
+  -e 'nginx_signal_metrics_edge=test' >/dev/null
+python3 -m py_compile "$temporary_directory/rendered-collector.py"
+
 python3 - "$repo_root" "$temporary_directory" <<'PY'
 import subprocess, sys
 from pathlib import Path

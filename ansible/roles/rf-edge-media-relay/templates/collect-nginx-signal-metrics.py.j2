@@ -48,6 +48,9 @@ state_tmp.replace(STATE)
 output_tmp = OUTPUT.with_suffix(".tmp")
 with output_tmp.open("w", encoding="utf-8") as handle:
     for outcome in OUTCOMES:
-        handle.write(f'playsay_nginx_signal_outcomes_total{{edge="{EDGE}",outcome="{outcome}"}} {state["counters"][outcome]}\n')
+        handle.write(
+            'playsay_nginx_signal_outcomes_total{edge="%s",outcome="%s"} %s\n'
+            % (EDGE, outcome, state["counters"][outcome])
+        )
 os.chmod(output_tmp, 0o644)
 output_tmp.replace(OUTPUT)
