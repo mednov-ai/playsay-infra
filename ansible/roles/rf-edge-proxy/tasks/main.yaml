@@ -163,8 +163,27 @@
       /usr/sbin/nginx -t
       /usr/bin/systemctl reload nginx
 
-- name: Render the Russian production ingress routes
+- name: Reconcile only the privacy-safe RF signaling log format
   tags: classroom-route-observability
+  ansible.builtin.lineinfile:
+    path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+    regexp: '^log_format playsay_livekit_signal '
+    line: >-
+      log_format playsay_livekit_signal 'msec=$msec request_id=$request_id status=$status
+      request_time=$request_time upstream_connect_time=$upstream_connect_time
+      upstream_header_time=$upstream_header_time upstream_response_time=$upstream_response_time
+      upstream_status=$upstream_status';
+  notify: reload nginx
+
+- name: Reconcile only the shared signaling request id on RF
+  tags: classroom-route-observability
+  ansible.builtin.replace:
+    path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+    regexp: '(^    location (?:= /livekit|\^~ /livekit/) \{\n(?:[^\n]*\n)*?^        proxy_set_header Connection \$playsay_rf_connection_upgrade;\n)(?!        proxy_set_header X-PlaySay-Signal-Request-Id )'
+    replace: '\g<1>        proxy_set_header X-PlaySay-Signal-Request-Id $request_id;\n'
+  notify: reload nginx
+
+- name: Render the Russian production ingress routes
   ansible.builtin.template:
     src: playsay-honey-rf-edge.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
@@ -180,7 +199,6 @@
   changed_when: false
 
 - name: Enable and start nginx on the Russian ingress
-  tags: classroom-route-observability
   ansible.builtin.service:
     name: nginx
     enabled: true
