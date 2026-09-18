@@ -233,7 +233,7 @@
           {{ edge_rf_observability_source_ipv4 }} 1;
       }
       map "$playsay_rf_signal_source:$http_x_playsay_signal_request_id" $playsay_signal_request_id {
-          ~^1:(?<playsay_rf_request_id>[0-9a-f]{32})$ $playsay_rf_request_id;
+          "~^1:(?<playsay_rf_request_id>[0-9a-f]{32})$" $playsay_rf_request_id;
           default $request_id;
       }
       log_format playsay_livekit_signal 'msec=$msec request_id=$playsay_signal_request_id status=$status request_time=$request_time upstream_connect_time=$upstream_connect_time upstream_header_time=$upstream_header_time upstream_response_time=$upstream_response_time upstream_status=$upstream_status';
