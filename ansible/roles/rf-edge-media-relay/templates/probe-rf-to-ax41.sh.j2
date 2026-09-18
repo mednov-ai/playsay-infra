@@ -1,0 +1,88 @@
+#!/bin/sh
+set -eu
+
+queue_directory="{{ rf_edge_observability_queue_directory }}"
+auth_config="{{ rf_edge_observability_auth_config_path }}"
+probe_hostname="{{ rf_edge_observability_probe_hostname }}"
+probe_url="https://${probe_hostname}{{ rf_edge_observability_probe_path }}"
+remote_write_url="{{ rf_edge_observability_remote_write_url }}"
+timestamp_seconds="$(date +%s)"
+timestamp_milliseconds="${timestamp_seconds}000"
+sample_file="${queue_directory}/${timestamp_milliseconds}-$$.prom"
+temporary_file="${sample_file}.tmp"
+memory_available_bytes=0
+[ ! -r /proc/meminfo ] || memory_available_bytes="$(awk '/^MemAvailable:/ { print $2 * 1024 }' /proc/meminfo)"
+conntrack_entries="$(cat /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null || printf 0)"
+conntrack_limit="$(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null || printf 0)"
+nic_error_drop_total=0
+[ ! -r /proc/net/dev ] || nic_error_drop_total="$(awk -F '[: ]+' 'NR > 2 && $1 != "lo" { total += $4 + $5 + $12 + $13 } END { print total + 0 }' /proc/net/dev)"
+udp_error_total=0
+[ ! -r /proc/net/snmp ] || udp_error_total="$(awk '/^Udp:/ { if (++row == 2) print $4 + $6 + $7 }' /proc/net/snmp)"
+clock_synchronized=0
+timedatectl show --property=NTPSynchronized --value 2>/dev/null | grep -qx yes && clock_synchronized=1 || true
+clock_offset_seconds="$(curl --silent --show-error --max-time 1 http://127.0.0.1:{{ rf_edge_media_relay_metrics_port }}/metrics 2>/dev/null | awk '$1 == "node_timex_offset_seconds" { print $2; exit }')"
+
+probe_output=""
+probe_exit_code=0
+probe_output="$(curl --silent --show-error --output /dev/null \
+  --connect-timeout 2 --max-time 4 \
+  --resolve "${probe_hostname}:443:{{ rf_edge_origin_address }}" \
+  --write-out '%{time_connect} %{time_appconnect} %{http_code}' \
+  "$probe_url" 2>/dev/null)" || probe_exit_code=$?
+
+set -- $probe_output
+connect_seconds="${1:-0}"
+tls_seconds="${2:-0}"
+http_status="${3:-0}"
+tcp_success=0
+tls_success=0
+http_success=0
+awk "BEGIN { exit !(${connect_seconds:-0} > 0) }" && tcp_success=1 || true
+awk "BEGIN { exit !(${tls_seconds:-0} > 0) }" && tls_success=1 || true
+if [ "$probe_exit_code" -eq 0 ] && [ "$http_status" = "{{ rf_edge_observability_expected_status }}" ]; then
+  http_success=1
+fi
+
+umask 077
+{
+  printf 'playsay_path_probe_success{direction="rf_to_ax41",phase="tcp"} %s %s\n' "$tcp_success" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_success{direction="rf_to_ax41",phase="tls"} %s %s\n' "$tls_success" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_success{direction="rf_to_ax41",phase="http"} %s %s\n' "$http_success" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_duration_seconds{direction="rf_to_ax41",phase="tcp"} %s %s\n' "${connect_seconds:-0}" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_duration_seconds{direction="rf_to_ax41",phase="tls"} %s %s\n' "${tls_seconds:-0}" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_http_status{direction="rf_to_ax41"} %s %s\n' "${http_status:-0}" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_curl_exit_code{direction="rf_to_ax41"} %s %s\n' "$probe_exit_code" "$timestamp_milliseconds"
+  printf 'playsay_path_probe_timestamp_seconds{direction="rf_to_ax41"} %s %s\n' "$timestamp_seconds" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_memory_available_bytes %s %s\n' "$memory_available_bytes" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_conntrack_entries %s %s\n' "$conntrack_entries" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_conntrack_limit %s %s\n' "$conntrack_limit" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_nic_error_drop_total %s %s\n' "$nic_error_drop_total" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_udp_error_total %s %s\n' "${udp_error_total:-0}" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_clock_synchronized %s %s\n' "$clock_synchronized" "$timestamp_milliseconds"
+  printf 'playsay_rf_host_clock_offset_seconds %s %s\n' "${clock_offset_seconds:-NaN}" "$timestamp_milliseconds"
+  for metrics_file in "{{ rf_edge_media_relay_metrics_directory }}/rf_edge_media_relay.prom" "{{ rf_edge_media_relay_metrics_directory }}/nginx_signal.prom"; do
+    [ ! -f "$metrics_file" ] || awk -v timestamp="$timestamp_milliseconds" '!/^#/ && NF >= 2 { print $0, timestamp }' "$metrics_file"
+  done
+} >"$temporary_file"
+mv "$temporary_file" "$sample_file"
+
+find "$queue_directory" -maxdepth 1 -type f -name '*.prom' \
+  -mmin +{{ rf_edge_observability_queue_retention_minutes }} -delete
+
+uploaded_files=0
+for queued_file in "$queue_directory"/*.prom; do
+  [ -f "$queued_file" ] || break
+  if curl --silent --show-error --fail \
+    --connect-timeout 2 --max-time 4 \
+    --resolve "ops.honey.school:443:{{ rf_edge_origin_address }}" \
+    --config "$auth_config" \
+    -H 'Content-Type: text/plain' \
+    --data-binary "@${queued_file}" \
+    "$remote_write_url" >/dev/null 2>&1; then
+    rm -f -- "$queued_file"
+    uploaded_files=$((uploaded_files + 1))
+    [ "$uploaded_files" -lt 12 ] || break
+  else
+    break
+  fi
+done

@@ -4,6 +4,7 @@
     name:
       - nginx
       - certbot
+      - curl
     state: present
     update_cache: true
 
@@ -76,6 +77,61 @@
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
   register: edge_root_certificate
+
+- name: Check the protected RF observability server credentials
+  ansible.builtin.stat:
+    path: "{{ edge_rf_observability_htpasswd_path }}"
+  register: edge_rf_observability_htpasswd
+  when: edge_rf_observability_enabled | bool
+  no_log: true
+
+- name: Require protected RF observability server credentials
+  ansible.builtin.assert:
+    that:
+      - edge_rf_observability_htpasswd.stat.exists
+      - edge_rf_observability_htpasswd.stat.mode == '0640'
+      - edge_rf_observability_htpasswd.stat.pw_name == 'root'
+      - edge_rf_observability_htpasswd.stat.gr_name == 'www-data'
+    fail_msg: Deliver the root-owned RF observability htpasswd file for nginx before enabling its ingestion endpoint.
+  when: edge_rf_observability_enabled | bool
+  no_log: true
+
+- name: Create the protected AX41 edge observability directory
+  ansible.builtin.file:
+    path: "{{ edge_observability_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install the privacy-safe AX41 nginx signaling counter collector
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../roles/rf-edge-media-relay/templates/collect-nginx-signal-metrics.py.j2"
+    dest: /usr/local/sbin/playsay-collect-nginx-signal-metrics
+    owner: root
+    group: root
+    mode: "0750"
+  vars:
+    nginx_signal_metrics_log_path: /var/log/nginx/playsay-livekit-signaling.log
+    nginx_signal_metrics_state_directory: "{{ edge_observability_directory }}"
+    nginx_signal_metrics_output_path: "{{ edge_observability_directory }}/nginx_signal.prom"
+    nginx_signal_metrics_edge: ax41
+
+- name: Install the AX41 nginx signaling metric pusher
+  ansible.builtin.template:
+    src: push-nginx-signal-metrics.sh.j2
+    dest: /usr/local/sbin/playsay-push-nginx-signal-metrics
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Schedule AX41 nginx signaling counter export
+  ansible.builtin.copy:
+    dest: /etc/cron.d/playsay-ax41-nginx-signal-metrics
+    owner: root
+    group: root
+    mode: "0644"
+    content: "* * * * * root /usr/local/sbin/playsay-push-nginx-signal-metrics\n"
 
 - name: Enforce the AX41 TLS protocol policy in the nginx HTTP context
   ansible.builtin.lineinfile:
@@ -165,8 +221,16 @@
     group: root
     mode: "0644"
     content: |
-      # Excludes URI/query, addresses, headers, cookies, credentials and identifiers.
-      log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
+      # Excludes URI/query, addresses, headers, cookies, credentials and identities.
+      map $remote_addr $playsay_rf_signal_source {
+          default 0;
+          {{ edge_rf_observability_source_ipv4 }} 1;
+      }
+      map "$playsay_rf_signal_source:$http_x_playsay_signal_request_id" $playsay_signal_request_id {
+          ~^1:(?<playsay_rf_request_id>[0-9a-f]{32})$ $playsay_rf_request_id;
+          default $request_id;
+      }
+      log_format playsay_livekit_signal 'msec=$msec request_id=$playsay_signal_request_id status=$status request_time=$request_time upstream_connect_time=$upstream_connect_time upstream_header_time=$upstream_header_time upstream_response_time=$upstream_response_time upstream_status=$upstream_status';
   notify: reload nginx
 
 - name: Install the privacy-safe LiveKit signaling location snippet

@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+/usr/local/sbin/playsay-collect-nginx-signal-metrics
+timestamp_milliseconds="$(date +%s)000"
+temporary_file="{{ edge_observability_directory }}/nginx-signal-push.prom"
+awk -v timestamp="$timestamp_milliseconds" '!/^#/ && NF >= 2 { print $0, timestamp }' \
+  "{{ edge_observability_directory }}/nginx_signal.prom" >"$temporary_file"
+curl --silent --show-error --fail --connect-timeout 2 --max-time 4 \
+  -H 'Content-Type: text/plain' --data-binary "@${temporary_file}" \
+  "{{ edge_observability_import_url }}" >/dev/null
+rm -f -- "$temporary_file"

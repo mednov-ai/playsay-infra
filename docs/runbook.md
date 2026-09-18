@@ -267,6 +267,19 @@ After owner authorization and a fresh zero-participant check, inspect the actual
 
 Checks/development authorization is distinct from commit/push/CI/deploy authorization. Report the local result and obtain the owner's explicit delivery instruction; recheck zero active lessons immediately before any rollout. No service restart, DNS/secret rotation, capacity expansion or paid VM is implied.
 
+For continuous signaling-route evidence, deliver an independent random Basic-auth credential through the protected operator channel before applying either host. Store its AX41 verifier at `/etc/playsay/rf-edge-observability.htpasswd` as `root:www-data` mode `0640`; store the matching curl configuration at `/etc/playsay/rf-edge-observability-curl.conf` on RF as `root:root` mode `0600`. Never reuse or print the TURN secret. The RF timer probes every five seconds, keeps at most 24 hours of timestamped samples under `/var/lib/playsay/rf-edge-observability`, and sends only to the exact authenticated VictoriaMetrics import location. Require fresh RF→AX41 phase metrics, independent AX41→RF and AX41-nginx→LiveKit probes, both nginx outcome counters, and a fresh RF timestamp before relying on route alerts.
+
+After a route alert, wait through the five-minute post-alert interval, then run on the production guest:
+
+```bash
+scripts/collect-classroom-route-incident.sh \
+  --base-url http://127.0.0.1:32085/victoria-metrics \
+  --alert-epoch <epoch> \
+  --output /protected/evidence/classroom-route-incident-<epoch>
+```
+
+The bundle contains only aggregate probe phases, nginx outcomes, allowlisted LiveKit disconnect reasons, TURN outcomes, NIC/conntrack/UDP/resource values, and clock status/offset. Keep it at most seven days. An RF→AX41-only failure with healthy reverse/local probes localizes the boundary but does not prove a named carrier or provider block.
+
 The Russian classroom TURN contour runs on the existing Selectel RF edge; no paid VM, resize, disk, address, or provider resource is added. The bounded contract is [`rf-edge-media-relay.md`](rf-edge-media-relay.md). LiveKit remains on AX41. coturn has configuration, secret, `turn.honeyschool.ru` certificate/key, listeners, quotas, service limits, and metrics independent from nginx, but both services deliberately share the 1-vCPU/2-GiB host and kernel.
 
 Use only the established ignored `ansible/inventories/rf-edge/hosts.yaml`, `ansible/playbooks/rf-edge.yaml`, and numeric-release wrapper shown above. The playbook accepts only the established inventory identity `playsay-selectel-rf-edge`, then applies `rf-edge-proxy` followed by `rf-edge-media-relay`. Before check/apply, point `turn.honeyschool.ru` at the established edge, issue its independent certificate, and deliver the same independently generated 64-character lowercase hex secret to `/etc/playsay/rf-edge-media-relay-auth-secret` and the protected production api-gateway Secret without printing it. The role keeps the ACME archive root-only and installs `root:turnserver 0640` runtime certificate/key copies below `/etc/coturn/certificates`; renewal refreshes those copies and queues a zero-allocation coturn reload without touching nginx. Review check mode during a zero-active-lesson window because a pending coturn change may require restart; nginx must never be restarted as part of relay rollback.

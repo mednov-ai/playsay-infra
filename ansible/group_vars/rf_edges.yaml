@@ -128,6 +128,13 @@ rf_edge_media_relay_total_quota: 8
 rf_edge_media_relay_user_quota: 4
 rf_edge_media_relay_memory_high: 512M
 rf_edge_media_relay_memory_max: 768M
+rf_edge_observability_probe_hostname: online.honey.school
+rf_edge_observability_probe_path: /
+rf_edge_observability_expected_status: 200
+rf_edge_observability_remote_write_url: https://ops.honey.school/victoria-metrics/api/v1/import/prometheus
+rf_edge_observability_auth_config_path: /etc/playsay/rf-edge-observability-curl.conf
+rf_edge_observability_queue_directory: /var/lib/playsay/rf-edge-observability
+rf_edge_observability_queue_retention_minutes: 1440
 rf_edge_media_relay_forbidden_addresses:
   - 65.109.55.110
   - 10.60.0.20

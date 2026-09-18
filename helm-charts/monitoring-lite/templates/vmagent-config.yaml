@@ -65,6 +65,27 @@ data:
             target_label: instance
           - target_label: __address__
             replacement: {{ include "monitoring-lite.fullname" . }}-blackbox-exporter:{{ .Values.blackboxExporter.service.port }}
+
+      {{- range .Values.blackboxExporter.pathProbes }}
+      - job_name: {{ printf "path-probe-%s" .name | quote }}
+        scrape_interval: 5s
+        scrape_timeout: 5s
+        metrics_path: /probe
+        params:
+          module: [{{ .module }}]
+        static_configs:
+          - targets:
+              - {{ .target | quote }}
+            labels:
+              direction: {{ .direction | quote }}
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: {{ include "monitoring-lite.fullname" $ }}-blackbox-exporter:{{ $.Values.blackboxExporter.service.port }}
+      {{- end }}
       {{- end }}
 
       {{- if .Values.alerts.livekit.enabled }}

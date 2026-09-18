@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Honey School RF-to-AX41 path probe every five seconds
+
+[Timer]
+OnBootSec=5s
+OnUnitActiveSec=5s
+AccuracySec=1s
+Unit=playsay-rf-to-ax41-probe.service
+
+[Install]
+WantedBy=timers.target

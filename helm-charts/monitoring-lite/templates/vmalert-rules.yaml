@@ -127,6 +127,78 @@ data:
               description: "За 5 минут как минимум два входа дошли до signaling, но не установили RTC; проверьте TURN/LiveKit порты и AX41 LIBVIRT_FWI."
       {{- end }}
 
+      {{- if .Values.alerts.routeObservability.enabled }}
+      - name: playsay-classroom-route
+        rules:
+          - alert: PlaySayRfToAx41RouteWarning
+            expr: max_over_time(playsay_path_probe_success{direction="rf_to_ax41",phase="http"}[10s]) == 0
+            for: 0s
+            labels:
+              severity: warning
+            annotations:
+              summary: "RF edge не достигает AX41"
+              description: "Две последовательные пятисекундные RF-to-AX41 пробы не дошли до ожидаемого HTTP-ответа; сравните TCP и TLS phase metrics."
+
+          - alert: PlaySayRfToAx41RouteCritical
+            expr: max_over_time(playsay_path_probe_success{direction="rf_to_ax41",phase="http"}[30s]) == 0
+            for: 0s
+            labels:
+              severity: critical
+            annotations:
+              summary: "RF-to-AX41 route недоступен 30 секунд"
+              description: "Selectel не получает ожидаемый ответ AX41 непрерывно 30 секунд."
+
+          - alert: PlaySayAx41ToRfRouteWarning
+            expr: max_over_time(probe_success{direction="ax41_to_rf"}[10s]) == 0
+            for: 0s
+            labels:
+              severity: warning
+            annotations:
+              summary: "AX41 не достигает RF edge"
+              description: "Две последовательные пятисекундные AX41-to-RF пробы завершились ошибкой."
+
+          - alert: PlaySayAx41ToRfRouteCritical
+            expr: max_over_time(probe_success{direction="ax41_to_rf"}[30s]) == 0
+            for: 0s
+            labels:
+              severity: critical
+            annotations:
+              summary: "AX41-to-RF route недоступен 30 секунд"
+              description: "Обратное направление AX41-to-Selectel недоступно непрерывно 30 секунд."
+
+          - alert: PlaySayAx41NginxToLiveKitCritical
+            expr: max_over_time(probe_success{direction="ax41_nginx_to_livekit"}[30s]) == 0
+            for: 0s
+            labels:
+              severity: critical
+            annotations:
+              summary: "AX41 nginx не достигает LiveKit"
+              description: "Независимая локальная nginx-to-LiveKit проба не получает ожидаемый ответ 30 секунд."
+
+          - alert: PlaySayClassroomRouteFailureWithActiveParticipants
+            expr: |
+              min(
+                playsay_path_probe_success{direction="rf_to_ax41",phase="http"}
+                or probe_success{direction=~"ax41_to_rf|ax41_nginx_to_livekit"}
+              ) == 0
+              and on() sum(livekit_participant_total) > 0
+            for: 0s
+            labels:
+              severity: critical
+            annotations:
+              summary: "Classroom route failure во время активного урока"
+              description: "Path probe отказал при ненулевом числе LiveKit participants; требуется немедленная проверка направления и фазы."
+
+          - alert: PlaySayRfPathTelemetryStale
+            expr: absent(playsay_path_probe_timestamp_seconds{direction="rf_to_ax41"}) or (time() - max(playsay_path_probe_timestamp_seconds{direction="rf_to_ax41"}) > 20)
+            for: 0s
+            labels:
+              severity: critical
+            annotations:
+              summary: "RF path telemetry отсутствует или устарела"
+              description: "Центральное хранилище не получало свежую timestamped RF probe sample больше 20 секунд; отсутствие данных не означает healthy."
+      {{- end }}
+
       {{- if .Values.alerts.capacity.enabled }}
       - name: playsay-capacity
         rules:

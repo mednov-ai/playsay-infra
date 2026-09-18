@@ -6,11 +6,11 @@ map $http_upgrade $playsay_rf_connection_upgrade {
 
 # Privacy-safe signaling access records: deliberately excludes the request,
 # query, client/upstream addresses, headers, cookies, and identifiers.
-log_format playsay_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
+log_format playsay_livekit_signal 'msec=$msec request_id=$request_id status=$status request_time=$request_time upstream_connect_time=$upstream_connect_time upstream_header_time=$upstream_header_time upstream_response_time=$upstream_response_time upstream_status=$upstream_status';
 
 {% else %}
 # Dev virtual hosts can be loaded before the production format declaration.
-log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_time upstream_status=$upstream_status upstream_duration=$upstream_response_time';
+log_format rf_dev_livekit_signal 'msec=$msec request_id=$request_id status=$status request_time=$request_time upstream_connect_time=$upstream_connect_time upstream_header_time=$upstream_header_time upstream_response_time=$upstream_response_time upstream_status=$upstream_status';
 {% endif %}
 {% set signaling_log_format = 'playsay_livekit_signal' if rf_edge_render_globals | default(true) | bool else 'rf_dev_livekit_signal' %}
 
@@ -95,6 +95,7 @@ log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_ti
         proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $playsay_rf_connection_upgrade;
+        proxy_set_header X-PlaySay-Signal-Request-Id $request_id;
         proxy_read_timeout 7200s;
         proxy_send_timeout 7200s;
         proxy_request_buffering off;
@@ -119,6 +120,7 @@ log_format rf_dev_livekit_signal 'msec=$msec status=$status duration=$request_ti
         proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $playsay_rf_connection_upgrade;
+        proxy_set_header X-PlaySay-Signal-Request-Id $request_id;
         proxy_read_timeout 7200s;
         proxy_send_timeout 7200s;
         proxy_request_buffering off;

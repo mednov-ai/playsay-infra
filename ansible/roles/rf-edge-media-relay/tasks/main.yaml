@@ -52,6 +52,21 @@
     group: root
     mode: "0700"
 
+- name: Check the protected RF observability client configuration
+  ansible.builtin.stat:
+    path: "{{ rf_edge_observability_auth_config_path }}"
+  register: rf_edge_observability_auth_config
+  no_log: true
+
+- name: Require protected RF observability credentials
+  ansible.builtin.assert:
+    that:
+      - rf_edge_observability_auth_config.stat.exists
+      - rf_edge_observability_auth_config.stat.mode == '0600'
+      - rf_edge_observability_auth_config.stat.pw_name == 'root'
+    fail_msg: Deliver the root-only curl auth configuration before enabling RF path telemetry.
+  no_log: true
+
 - name: Check the independent relay secret
   ansible.builtin.stat:
     path: "{{ rf_edge_media_relay_secret_path }}"
@@ -179,6 +194,53 @@
     group: prometheus
     mode: "0750"
 
+- name: Create the bounded RF observability queue
+  ansible.builtin.file:
+    path: "{{ rf_edge_observability_queue_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install the privacy-safe RF-to-AX41 phase probe
+  ansible.builtin.template:
+    src: probe-rf-to-ax41.sh.j2
+    dest: /usr/local/sbin/playsay-probe-rf-to-ax41
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install the privacy-safe RF nginx signaling counter collector
+  ansible.builtin.template:
+    src: collect-nginx-signal-metrics.py.j2
+    dest: /usr/local/sbin/playsay-collect-nginx-signal-metrics
+    owner: root
+    group: root
+    mode: "0750"
+  vars:
+    nginx_signal_metrics_log_path: /var/log/nginx/playsay-rf-livekit-signaling.log
+    nginx_signal_metrics_state_directory: "{{ rf_edge_observability_queue_directory }}"
+    nginx_signal_metrics_output_path: "{{ rf_edge_media_relay_metrics_directory }}/nginx_signal.prom"
+    nginx_signal_metrics_edge: rf
+
+- name: Install the RF-to-AX41 probe service
+  ansible.builtin.template:
+    src: rf-to-ax41-probe.service.j2
+    dest: /etc/systemd/system/playsay-rf-to-ax41-probe.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
+- name: Install the five-second RF-to-AX41 probe timer
+  ansible.builtin.template:
+    src: rf-to-ax41-probe.timer.j2
+    dest: /etc/systemd/system/playsay-rf-to-ax41-probe.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
 - name: Bind node exporter to loopback with textfile collection
   ansible.builtin.copy:
     dest: /etc/default/prometheus-node-exporter
@@ -223,6 +285,14 @@
     mode: "0644"
     content: "* * * * * root /usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics\n"
 
+- name: Schedule RF nginx signaling counter collection
+  ansible.builtin.copy:
+    dest: /etc/cron.d/playsay-rf-nginx-signal-metrics
+    owner: root
+    group: root
+    mode: "0644"
+    content: "* * * * * root /usr/local/sbin/playsay-collect-nginx-signal-metrics\n"
+
 - name: Install non-disruptive relay certificate renewal hook
   ansible.builtin.template:
     src: certificate-renewal-hook.sh.j2
@@ -250,6 +320,14 @@
   loop:
     - coturn
     - prometheus-node-exporter
+  when: not ansible_check_mode
+
+- name: Enable and start the RF-to-AX41 probe timer
+  ansible.builtin.systemd:
+    name: playsay-rf-to-ax41-probe.timer
+    enabled: true
+    state: started
+    daemon_reload: true
   when: not ansible_check_mode
 
 - name: Apply relay configuration before joint validation

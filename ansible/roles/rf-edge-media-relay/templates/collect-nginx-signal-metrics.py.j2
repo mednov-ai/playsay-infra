@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+from pathlib import Path
+
+LOG = Path("{{ nginx_signal_metrics_log_path }}")
+STATE = Path("{{ nginx_signal_metrics_state_directory }}/nginx-signal.state")
+OUTPUT = Path("{{ nginx_signal_metrics_output_path }}")
+EDGE = "{{ nginx_signal_metrics_edge }}"
+OUTCOMES = ("101", "499", "502", "504", "upstream_connect_failure")
+FIELD = re.compile(r"(?:^| )([a-z_]+)=([^ ]*)")
+
+state = {"inode": 0, "offset": 0, "counters": {name: 0 for name in OUTCOMES}}
+try:
+    saved = json.loads(STATE.read_text(encoding="utf-8"))
+    if isinstance(saved, dict) and isinstance(saved.get("counters"), dict):
+        state.update(saved)
+except (FileNotFoundError, json.JSONDecodeError, OSError):
+    pass
+for outcome in OUTCOMES:
+    state["counters"][outcome] = int(state["counters"].get(outcome, 0))
+
+try:
+    stat = LOG.stat()
+    offset = int(state.get("offset", 0)) if int(state.get("inode", 0)) == stat.st_ino else 0
+    if offset > stat.st_size:
+        offset = 0
+    with LOG.open("r", encoding="utf-8", errors="replace") as handle:
+        handle.seek(offset)
+        for line in handle:
+            fields = dict(FIELD.findall(line.rstrip("\n")))
+            status = fields.get("status", "")
+            if status in ("101", "499", "502", "504"):
+                state["counters"][status] += 1
+            if fields.get("upstream_status", "-") == "-" and fields.get("upstream_connect_time", "-") == "-":
+                state["counters"]["upstream_connect_failure"] += 1
+        state["offset"] = handle.tell()
+    state["inode"] = stat.st_ino
+except FileNotFoundError:
+    pass
+
+STATE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+state_tmp = STATE.with_suffix(".tmp")
+state_tmp.write_text(json.dumps(state, separators=(",", ":")), encoding="utf-8")
+os.chmod(state_tmp, 0o600)
+state_tmp.replace(STATE)
+output_tmp = OUTPUT.with_suffix(".tmp")
+with output_tmp.open("w", encoding="utf-8") as handle:
+    for outcome in OUTCOMES:
+        handle.write(f'playsay_nginx_signal_outcomes_total{{edge="{EDGE}",outcome="{outcome}"}} {state["counters"][outcome]}\n')
+os.chmod(output_tmp, 0o644)
+output_tmp.replace(OUTPUT)

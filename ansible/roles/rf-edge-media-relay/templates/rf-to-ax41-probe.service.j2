@@ -1,0 +1,15 @@
+[Unit]
+Description=Honey School privacy-safe RF-to-AX41 path probe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/sbin/playsay-probe-rf-to-ax41
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ rf_edge_observability_queue_directory }}

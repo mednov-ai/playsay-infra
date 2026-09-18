@@ -24,6 +24,9 @@ vmagent:
       metricsPath: /metrics
       target: collaboration-service.playsay-prod.svc.cluster.local:80
 
+vmalert:
+  evaluationInterval: 5s
+
 blackboxExporter:
   targets:
     - https://online.honey.school/
@@ -31,6 +34,15 @@ blackboxExporter:
     - https://ops.honey.school/keycloak/realms/playsay/.well-known/openid-configuration
     - https://online.honeyschool.ru/
     - https://key.honeyschool.ru/
+  pathProbes:
+    - name: ax41-to-rf
+      direction: ax41_to_rf
+      module: http_2xx
+      target: https://online.honeyschool.ru/
+    - name: ax41-nginx-to-livekit
+      direction: ax41_nginx_to_livekit
+      module: http_livekit_expected
+      target: https://online.honey.school/livekit/
 
 alertmanager:
   telegram:
@@ -46,3 +58,5 @@ alerts:
     livekitMemoryRatio: 0.80
     networkBitsPerSecond: 700000000
     conntrackRatio: 0.70
+  routeObservability:
+    enabled: true

@@ -101,6 +101,7 @@ blackboxExporter:
     - https://key.play-and-say.ru/
     - https://online.play-and-say.ru/
     - https://ops.play-and-say.ru:18443/argocd/
+  pathProbes: []
   resources:
     requests:
       cpu: 10m
@@ -162,3 +163,5 @@ alerts:
     enabled: true
   blackbox:
     enabled: true
+  routeObservability:
+    enabled: false

@@ -114,6 +114,11 @@ honey_school_geoip_trusted_rf_proxy_addresses:
 # upward so fresh clients do not wait through repeated 15-30 second RTOs.
 edge_tcp_mtu_probing: 2
 edge_tcp_base_mss: 1024
+edge_rf_observability_enabled: true
+edge_rf_observability_source_ipv4: 94.102.89.213
+edge_rf_observability_htpasswd_path: /etc/playsay/rf-edge-observability.htpasswd
+edge_observability_directory: /var/lib/playsay/edge-observability
+edge_observability_import_url: http://10.60.0.20:32085/victoria-metrics/api/v1/import/prometheus
 edge_routes:
   - hostname: online.honey.school
     kind: online

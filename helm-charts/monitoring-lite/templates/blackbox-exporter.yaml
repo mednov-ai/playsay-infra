@@ -16,6 +16,15 @@ data:
           preferred_ip_protocol: ip4
           tls_config:
             insecure_skip_verify: true
+      http_livekit_expected:
+        prober: http
+        timeout: 5s
+        http:
+          method: GET
+          preferred_ip_protocol: ip4
+          valid_status_codes: [200, 400, 404]
+          tls_config:
+            insecure_skip_verify: false
 ---
 apiVersion: v1
 kind: Service

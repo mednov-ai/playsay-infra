@@ -34,13 +34,15 @@ static_check() {
   require_literal "$rf_template" 'proxy_send_timeout 7200s;'
   require_literal "$rf_template" 'proxy_request_buffering off;'
   require_literal "$rf_template" 'proxy_buffering off;'
-  require_literal "$rf_template" "log_format playsay_livekit_signal 'msec=\$msec status=\$status duration=\$request_time upstream_status=\$upstream_status upstream_duration=\$upstream_response_time';"
-  require_literal "$rf_template" 'access_log /var/log/nginx/playsay-rf-livekit-signaling.log playsay_livekit_signal;'
+  require_literal "$rf_template" "log_format playsay_livekit_signal 'msec=\$msec request_id=\$request_id status=\$status request_time=\$request_time upstream_connect_time=\$upstream_connect_time upstream_header_time=\$upstream_header_time upstream_response_time=\$upstream_response_time upstream_status=\$upstream_status';"
+  require_literal "$rf_template" 'playsay-rf-livekit-signaling.log'
+  require_literal "$rf_template" 'proxy_set_header X-PlaySay-Signal-Request-Id $request_id;'
   require_literal "$ax41_template" 'location = /livekit {'
   require_literal "$ax41_template" 'location /livekit/ {'
   require_literal "$ax41_template" 'include /etc/nginx/snippets/playsay-livekit-signaling.conf;'
   require_literal "$ax41_template" 'proxy_set_header Upgrade $http_upgrade;'
   require_literal "$ax41_template" 'proxy_set_header Connection $playsay_connection_upgrade;'
+  require_literal "$ax41_template" 'proxy_set_header X-PlaySay-Signal-Request-Id $playsay_signal_request_id;'
   require_literal "$ax41_template" 'proxy_buffering off;'
   signaling_call_line=$(grep -nF -- "{{ livekit_signaling_locations(route, 'https') }}" "$rf_template" | cut -d: -f1)
   generic_location_line=$(grep -nF -- '    location / {' "$rf_template" | tail -1 | cut -d: -f1)
