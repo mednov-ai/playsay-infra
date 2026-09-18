@@ -69,16 +69,19 @@
   changed_when: true
 
 - name: Check whether the shared honey.school certificate exists
+  tags: classroom-route-observability
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem"
   register: edge_certificate
 
 - name: Check whether the honey.school root certificate exists
+  tags: classroom-route-observability
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
   register: edge_root_certificate
 
 - name: Check the protected RF observability server credentials
+  tags: classroom-route-observability
   ansible.builtin.stat:
     path: "{{ edge_rf_observability_htpasswd_path }}"
   register: edge_rf_observability_htpasswd
@@ -86,6 +89,7 @@
   no_log: true
 
 - name: Require protected RF observability server credentials
+  tags: classroom-route-observability
   ansible.builtin.assert:
     that:
       - edge_rf_observability_htpasswd.stat.exists
@@ -97,6 +101,7 @@
   no_log: true
 
 - name: Create the protected AX41 edge observability directory
+  tags: classroom-route-observability
   ansible.builtin.file:
     path: "{{ edge_observability_directory }}"
     state: directory
@@ -105,6 +110,7 @@
     mode: "0700"
 
 - name: Install the privacy-safe AX41 nginx signaling counter collector
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: "{{ playbook_dir }}/../roles/rf-edge-media-relay/templates/collect-nginx-signal-metrics.py.j2"
     dest: /usr/local/sbin/playsay-collect-nginx-signal-metrics
@@ -118,6 +124,7 @@
     nginx_signal_metrics_edge: ax41
 
 - name: Install the AX41 nginx signaling metric pusher
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: push-nginx-signal-metrics.sh.j2
     dest: /usr/local/sbin/playsay-push-nginx-signal-metrics
@@ -126,6 +133,7 @@
     mode: "0750"
 
 - name: Schedule AX41 nginx signaling counter export
+  tags: classroom-route-observability
   ansible.builtin.copy:
     dest: /etc/cron.d/playsay-ax41-nginx-signal-metrics
     owner: root
@@ -205,7 +213,7 @@
   ansible.builtin.meta: flush_handlers
 
 - name: Create the AX41 nginx snippets directory
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.file:
     path: /etc/nginx/snippets
     state: directory
@@ -214,7 +222,7 @@
     mode: "0755"
 
 - name: Install the privacy-safe LiveKit signaling log format
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.copy:
     dest: /etc/nginx/conf.d/00-playsay-livekit-log-format.conf
     owner: root
@@ -234,7 +242,7 @@
   notify: reload nginx
 
 - name: Install the privacy-safe LiveKit signaling location snippet
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.copy:
     dest: /etc/nginx/snippets/playsay-livekit-signaling.conf
     owner: root
@@ -246,7 +254,7 @@
   notify: reload nginx
 
 - name: Reconcile only the LiveKit signaling includes in the active AX41 routes
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.replace:
     path: /etc/nginx/conf.d/playsay-honey.conf
     regexp: '(^\s+location (?:= /livekit|/livekit/) \{\n)(?!\s+include /etc/nginx/snippets/playsay-livekit-signaling\.conf;)'
@@ -254,7 +262,7 @@
   notify: reload nginx
 
 - name: Render exact-host AX41 edge routes
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
@@ -298,12 +306,13 @@
   changed_when: edge_root_certificate_issue.rc == 0
 
 - name: Recheck the honey.school root certificate
+  tags: classroom-route-observability
   ansible.builtin.stat:
     path: "/etc/letsencrypt/live/{{ edge_root_site.certificate_name }}/fullchain.pem"
   register: edge_root_certificate_after
 
 - name: Render HTTPS for honey.school after certificate issuance
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.template:
     src: playsay-honey.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey.conf
@@ -325,13 +334,13 @@
       systemctl reload nginx
 
 - name: Validate final nginx configuration
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.command:
     cmd: nginx -t
   changed_when: false
 
 - name: Enable and start nginx
-  tags: edge-proxy-routes
+  tags: [edge-proxy-routes, classroom-route-observability]
   ansible.builtin.service:
     name: nginx
     enabled: true
