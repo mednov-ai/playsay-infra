@@ -31,6 +31,7 @@ for template in "$repo_root/ansible/roles/rf-edge-proxy/templates/playsay-honey-
   fi
 done
 grep -q 'mmin +{{ rf_edge_observability_queue_retention_minutes }} -delete' "$repo_root/ansible/roles/rf-edge-media-relay/templates/probe-rf-to-ax41.sh.j2"
+grep -Fq '"~^1:(?<playsay_rf_request_id>[0-9a-f]{32})$"' "$repo_root/ansible/roles/edge-proxy/tasks/main.yaml"
 
 ansible localhost -c local -i localhost, -m ansible.builtin.template \
   -a "src=$repo_root/ansible/roles/rf-edge-media-relay/templates/collect-nginx-signal-metrics.py.j2 dest=$temporary_directory/rendered-collector.py" \
