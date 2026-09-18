@@ -1,19 +1,16 @@
 schemaVersion: 1
-status: ready
+status: building
 releaseBranch: "release/01.007.10"
 baseRelease: "release/01.007.09"
-basePlatformCommit: "23d61f9446099ee4eddd6ccd18facecac091d720"
-acceptedDevCommit: "437556ff664d89a04766852f2605ef0ccc1e18a3"
-baseInfraCommit: "9e49d5dc319acd65f16c125a4bbcbd4ebeaa5d3c"
-platformCommit: "437556ff664d89a04766852f2605ef0ccc1e18a3"
+basePlatformCommit: "437556ff664d89a04766852f2605ef0ccc1e18a3"
+acceptedDevCommit: "2d140f6f767a805b9501fdb0065fe58b42707c9d"
+baseInfraCommit: "11b55ecd349ed676afdf4b020af2c9a29dc838b8"
+platformCommit: "2d140f6f767a805b9501fdb0065fe58b42707c9d"
 affectedTargets:
-  - "api-gateway"
-  - "web-app"
   - "game-adapter-service"
-  - "collaboration-service"
-  - "keyboard-app"
 validationSuites:
+  - "ci-contracts"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "81"
-updatedAt: "2026-09-18T14:12:45Z"
+  build: "82"
+updatedAt: "2026-09-18T14:22:51Z"
