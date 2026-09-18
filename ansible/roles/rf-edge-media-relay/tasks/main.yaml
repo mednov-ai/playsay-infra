@@ -53,12 +53,14 @@
     mode: "0700"
 
 - name: Check the protected RF observability client configuration
+  tags: classroom-route-observability
   ansible.builtin.stat:
     path: "{{ rf_edge_observability_auth_config_path }}"
   register: rf_edge_observability_auth_config
   no_log: true
 
 - name: Require protected RF observability credentials
+  tags: classroom-route-observability
   ansible.builtin.assert:
     that:
       - rf_edge_observability_auth_config.stat.exists
@@ -187,6 +189,7 @@
   notify: restart coturn
 
 - name: Create node-exporter textfile directory
+  tags: classroom-route-observability
   ansible.builtin.file:
     path: "{{ rf_edge_media_relay_metrics_directory }}"
     state: directory
@@ -195,6 +198,7 @@
     mode: "0750"
 
 - name: Create the bounded RF observability queue
+  tags: classroom-route-observability
   ansible.builtin.file:
     path: "{{ rf_edge_observability_queue_directory }}"
     state: directory
@@ -203,6 +207,7 @@
     mode: "0700"
 
 - name: Install the privacy-safe RF-to-AX41 phase probe
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: probe-rf-to-ax41.sh.j2
     dest: /usr/local/sbin/playsay-probe-rf-to-ax41
@@ -211,6 +216,7 @@
     mode: "0750"
 
 - name: Install the privacy-safe RF nginx signaling counter collector
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: collect-nginx-signal-metrics.py.j2
     dest: /usr/local/sbin/playsay-collect-nginx-signal-metrics
@@ -224,6 +230,7 @@
     nginx_signal_metrics_edge: rf
 
 - name: Install the RF-to-AX41 probe service
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: rf-to-ax41-probe.service.j2
     dest: /etc/systemd/system/playsay-rf-to-ax41-probe.service
@@ -233,6 +240,7 @@
   notify: reload systemd
 
 - name: Install the five-second RF-to-AX41 probe timer
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: rf-to-ax41-probe.timer.j2
     dest: /etc/systemd/system/playsay-rf-to-ax41-probe.timer
@@ -286,6 +294,7 @@
     content: "* * * * * root /usr/local/sbin/playsay-collect-rf-edge-media-relay-metrics\n"
 
 - name: Schedule RF nginx signaling counter collection
+  tags: classroom-route-observability
   ansible.builtin.copy:
     dest: /etc/cron.d/playsay-rf-nginx-signal-metrics
     owner: root
@@ -323,6 +332,7 @@
   when: not ansible_check_mode
 
 - name: Enable and start the RF-to-AX41 probe timer
+  tags: classroom-route-observability
   ansible.builtin.systemd:
     name: playsay-rf-to-ax41-probe.timer
     enabled: true

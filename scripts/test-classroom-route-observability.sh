@@ -8,6 +8,11 @@ trap cleanup EXIT HUP INT TERM
 sh -n "$repo_root/scripts/collect-classroom-route-incident.sh"
 sh -n "$repo_root/ansible/roles/rf-edge-media-relay/templates/probe-rf-to-ax41.sh.j2"
 sh -n "$repo_root/ansible/roles/edge-proxy/templates/push-nginx-signal-metrics.sh.j2"
+sh -n "$repo_root/scripts/apply-rf-edge-release.sh"
+grep -q -- '--route-observability-only' "$repo_root/scripts/apply-rf-edge-release.sh"
+grep -q 'classroom-route-observability' "$repo_root/ansible/roles/edge-proxy/tasks/main.yaml"
+grep -q 'classroom-route-observability' "$repo_root/ansible/roles/rf-edge-proxy/tasks/main.yaml"
+grep -q 'classroom-route-observability' "$repo_root/ansible/roles/rf-edge-media-relay/tasks/main.yaml"
 "$repo_root/scripts/validate-rf-classroom-signaling-route.sh" --static >/dev/null
 helm lint "$repo_root/helm-charts/monitoring-lite" -f "$repo_root/helm-charts/monitoring-lite/values-prod.yaml" >/dev/null
 helm template monitoring-lite "$repo_root/helm-charts/monitoring-lite" -f "$repo_root/helm-charts/monitoring-lite/values-prod.yaml" >"$temporary_directory/monitoring.yaml"

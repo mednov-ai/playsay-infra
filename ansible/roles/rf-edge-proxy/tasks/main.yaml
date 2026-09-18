@@ -164,6 +164,7 @@
       /usr/bin/systemctl reload nginx
 
 - name: Render the Russian production ingress routes
+  tags: classroom-route-observability
   ansible.builtin.template:
     src: playsay-honey-rf-edge.conf.j2
     dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
@@ -173,11 +174,13 @@
   notify: reload nginx
 
 - name: Validate the Russian ingress nginx configuration
+  tags: classroom-route-observability
   ansible.builtin.command:
     cmd: nginx -t
   changed_when: false
 
 - name: Enable and start nginx on the Russian ingress
+  tags: classroom-route-observability
   ansible.builtin.service:
     name: nginx
     enabled: true
