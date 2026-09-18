@@ -1,5 +1,5 @@
 schemaVersion: 1
-status: building
+status: ready
 releaseBranch: "release/01.007.10"
 baseRelease: "release/01.007.09"
 basePlatformCommit: "23d61f9446099ee4eddd6ccd18facecac091d720"
@@ -16,4 +16,4 @@ validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
   build: "81"
-updatedAt: "2026-09-18T12:59:57Z"
+updatedAt: "2026-09-18T14:12:45Z"
