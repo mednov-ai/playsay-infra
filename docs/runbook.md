@@ -1515,6 +1515,10 @@ A successful security stage must archive nonempty reports before image publicati
 For authorized activation, verify the Jenkins credential binding, the full and selected-module reports, an intentional isolated failing fixture stopping publication, report retention on failure, and normal affected-target/branch-head guards. Record the CI revision and evidence; local CI contract tests do not prove an actual Jenkins run.
 
 
+### Dev vocabulary memory headroom
+
+DEV vocabulary retains a 256 MiB JVM heap and uses a 768 MiB container limit. The extra container headroom covers JVM native memory and image/Key processing; the previous 512 MiB limit produced an observed OOMKilled exit during authenticated vocabulary acceptance. Resource changes go through `helm-charts/vocabulary-service/values-dev.yaml` and ArgoCD. Monitor container restarts and working-set memory during acceptance; a successful restart alone does not close the failed user flow.
+
 ## Jenkins Branch Builds and Build Labels
 
 Jenkins platform jobs are configured by:
