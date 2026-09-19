@@ -1515,6 +1515,12 @@ A successful security stage must archive nonempty reports before image publicati
 For authorized activation, verify the Jenkins credential binding, the full and selected-module reports, an intentional isolated failing fixture stopping publication, report retention on failure, and normal affected-target/branch-head guards. Record the CI revision and evidence; local CI contract tests do not prove an actual Jenkins run.
 
 
+### Vocabulary returned-work migration
+
+Vocabulary migration `2026-09-19-001-vocabulary-rework-archive.xml` adds recipe archival and immutable child sessions for returned homework. It runs through the vocabulary Jenkins migration stage with runtime Liquibase disabled. Verify the vocabulary image and successful migration before accepting gateway RETURN behavior. If gateway reaches the new version first, a failed return leaves its review unchanged and may be retried after vocabulary is ready.
+
+After a rework child has been created, an image that assumes one session per practice/owner is not a compatible rollback. Preserve the new schema and history and deploy a forward fix; do not drop child sessions, restore the old uniqueness constraint, or manually rewrite assignment pointers. For acceptance, use two synthetic learners (one with a wrong answer, one all correct), return both, verify 1 versus full frozen item count, finish and accept, then confirm old-session callbacks cannot overwrite current progress. Recipe deletion must return 204 on repeat and leave historical plans readable.
+
 ### Dev vocabulary memory headroom
 
 DEV vocabulary retains a 256 MiB JVM heap and uses a 768 MiB container limit. The extra container headroom covers JVM native memory and image/Key processing; the previous 512 MiB limit produced an observed OOMKilled exit during authenticated vocabulary acceptance. Resource changes go through `helm-charts/vocabulary-service/values-dev.yaml` and ArgoCD. Monitor container restarts and working-set memory during acceptance; a successful restart alone does not close the failed user flow.
