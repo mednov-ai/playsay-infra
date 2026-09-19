@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-334"
-  digest: sha256:36bcca7a6f230e3fd7a02a34eeffcd668e8cb2bfc47acfc5e444f9bd92ff30a9
+  tag: "web-dev-335"
+  digest: sha256:65a700152c53245628a44bc6fc3f0ce1366aa047da1781f7c39fbe1c7ba4269f
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-334
-  number: "334"
+  name: web-dev-335
+  number: "335"
   branch: develop
   branchLabel: web-dev
-  commit: a4a31eb4fbe087cb2801a79cf41a62cfe0c9eee8
-  commitShort: "a4a31eb4fbe0"
+  commit: 5a3c59e196b26d186dd438414b1da5594908db45
+  commitShort: "5a3c59e196b2"
 service:
   type: NodePort
   nodePort: 32083
