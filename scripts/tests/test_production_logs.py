@@ -85,7 +85,10 @@ class LogsTest(unittest.TestCase):
             box=c.Outbox(directory); reader=c.FileReader(box,{'livekit':directory+'/missing-*'})
             reader.poll(); self.assertFalse(reader.available['livekit'])
             c.metrics(box,['livekit'],False,Path(directory)/'metrics',reader.available)
-            self.assertIn('honey_prod_logs_input_ok{source="livekit"} 0',(Path(directory)/'metrics').read_text())
+            output=(Path(directory)/'metrics').read_text()
+            self.assertIn('honey_prod_logs_input_ok{source="livekit"} 0',output)
+            self.assertIn('honey_prod_logs_dropped_total{source="livekit"} 0',output)
+            self.assertIn('honey_prod_logs_read_errors_total{source="livekit"} 0',output)
 
 class WindowTest(unittest.TestCase):
     def test_deduplication_and_coverage_do_not_infer_udp(self):
@@ -101,5 +104,8 @@ class WindowTest(unittest.TestCase):
         self.assertEqual(report['coverage']['collaboration']['state'],'input_unavailable')
         self.assertEqual(report['coverage']['api_route']['state'],'missing_telemetry')
         self.assertIn('does not establish UDP',report['attribution'])
+        stored=[dict(row, _msg=row['event']) for row in rows]
+        for row in stored: row.pop('event')
+        self.assertEqual(window.report(stored),report)
 
 if __name__ == '__main__': unittest.main()

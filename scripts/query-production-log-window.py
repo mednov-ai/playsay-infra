@@ -16,7 +16,7 @@ def timestamp(value):
 def report(records):
     counts=collections.Counter(); hearts=collections.Counter(); bad_inputs=collections.Counter(); ids=set(); requests=collections.defaultdict(set)
     for row in records:
-        source=row.get('source'); event=row.get('event'); event_id=row.get('event_id','')
+        source=row.get('source'); event=row.get('event') or row.get('_msg'); event_id=row.get('event_id','')
         if source not in SOURCES or not re.fullmatch(r'[a-f0-9-]{36}',event_id) or event_id in ids: continue
         ids.add(event_id)
         if event=='collector_heartbeat':
