@@ -107,5 +107,9 @@ class WindowTest(unittest.TestCase):
         stored=[dict(row, _msg=row['event']) for row in rows]
         for row in stored: row.pop('event')
         self.assertEqual(window.report(stored),report)
+        heartbeat={'source':'rf_nginx','_msg':'collector_heartbeat','input_ok':'1','event_id':'00000000-0000-4000-8000-000000000005','_time':'2026-10-04T06:49:00Z'}
+        coverage=window.report([heartbeat], '2026-10-04T06:48:00Z', '2026-10-04T06:50:00Z')['coverage']
+        self.assertEqual(coverage['rf_nginx']['state'],'incomplete_telemetry')
+        self.assertEqual(coverage['rf_nginx']['max_heartbeat_gap_seconds'],60)
 
 if __name__ == '__main__': unittest.main()
