@@ -2642,7 +2642,7 @@ Rollback sets only `honey_school_geoip_redirect_prod_enabled: false` in Git and 
 
 ## Production classroom logs hotfix
 
-**Status: locally prepared, not deployed.** Production VictoriaLogs and collaboration lifecycle events are the desired change described in [production-classroom-logs.md](production-classroom-logs.md). Read-only 2026-10-04 inventory observed production `release/01.007.10`; earlier release-status paragraphs above are historical snapshots and must not be used as delivery pointers. Recheck live revision/digests and zero active lessons before authorized delivery. AX41 is the only active platform; the former VDSina was deleted and is never a logging fallback or rollback target.
+**Status 2026-10-04: technically deployed as `release/01.007.11`; real RF classroom acceptance pending.** Production VictoriaLogs, three sanitized collectors and opt-in collaboration lifecycle output are running. [Delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.11-production-logs.md) records the gates and remaining canary. The production root is on `.11`, while `current-release.txt` intentionally remains `.10` until full acceptance. Do not prepare another candidate from that pointer without reconciling the live release and this acceptance hold. Earlier release-status paragraphs are historical snapshots. Recheck live revision/digests and zero active lessons before authorized delivery. AX41 is the only active platform; the former VDSina was deleted and is never a logging fallback or rollback target.
 
 ### Local checks
 

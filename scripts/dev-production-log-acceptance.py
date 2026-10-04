@@ -14,9 +14,13 @@ events.append(c.sanitize('collaboration',stamp+' stdout F {"event":"connection_c
 assert all('CANARY_SECRET' not in json.dumps(event) for event in events)
 payload={'code':base64.b64encode(collector.read_bytes()).decode(),'events':events,'project':project}
 remote=r'''
-import base64,json,os,shlex,subprocess,tempfile,time,types
+import base64,datetime as dt,json,os,shlex,subprocess,tempfile,time,types
 from pathlib import Path
 DATA=PAYLOAD
+scope=Path('/proc/self/cgroup').read_text().strip().split('::',1)[1]
+cgroup=Path('/sys/fs/cgroup')/scope.lstrip('/')
+assert int((cgroup/'memory.max').read_text())==128*1024*1024
+quota,period=map(int,(cgroup/'cpu.max').read_text().split()); assert quota/period==0.1
 c=types.ModuleType('collector'); exec(compile(base64.b64decode(DATA['code']),'<reviewed-collector>','exec'),c.__dict__)
 secret={}
 for line in Path('/etc/honeyschool/secrets/edge-log-ingest.env').read_text().splitlines():
@@ -24,6 +28,20 @@ for line in Path('/etc/honeyschool/secrets/edge-log-ingest.env').read_text().spl
         k,v=line.split('=',1); parts=shlex.split(v); secret[k.strip()]=parts[0] if parts else ''
 with tempfile.TemporaryDirectory(prefix='honey-dev-log-acceptance-') as directory:
     root=Path(directory); box=c.Outbox(root/'spool')
+    fixture=root/'collaboration.log'
+    original=DATA['events'][0]['timestamp']
+    cri=dt.datetime.fromisoformat(original.replace('Z','+00:00')).astimezone(dt.timezone(dt.timedelta(hours=3))).isoformat(timespec='milliseconds')
+    fixture.write_text(cri+' stdout P {"event":"connection_opened",\n')
+    reader=c.FileReader(box, {'collaboration':str(fixture)}); reader.poll(); assert not box.batch()
+    with fixture.open('a') as out: out.write(cri+' stdout F "channel":"yjs","token":"CANARY_SECRET"}\n')
+    reader.poll(); assert len(box.batch())==1
+    fixture.rename(root/'rotated.log'); fixture.write_text(cri+' stderr F {"event":"connection_error","channel":"game"}\n')
+    reader.poll(); assert len(box.batch())==2
+    retained=box.batch()
+    for _, handle in reader.handles.values(): handle.close()
+    box.db.close(); box=c.Outbox(root/'spool'); reader=c.FileReader(box, {'collaboration':str(fixture)}); reader.poll()
+    assert box.batch()==retained, 'cold outbox/cursor restart duplicated or lost records'
+    for _, handle in reader.handles.values(): handle.close()
     for event in DATA['events']: box.enqueue(event['source'],event)
     before=box.batch()
     failed=root/'failed.curl'; failed.write_text('url = "https://127.0.0.1:1/insert/jsonline"\n'); failed.chmod(0o600)
@@ -38,10 +56,10 @@ with tempfile.TemporaryDirectory(prefix='honey-dev-log-acceptance-') as director
     assert max(lags)<=30, 'normal delivery exceeds 30 seconds'
     box.db.close()
     assert all(b'CANARY_SECRET' not in f.read_bytes() for f in (root/'spool').iterdir())
-    print(json.dumps({'delivered':len(before),'sources':len({e['source'] for e in DATA['events']}),'max_ack_lag_seconds':round(max(lags),3),'retry_preserved':True,'sanitized_spool':True}))
+    print(json.dumps({'delivered':len(before),'sources':len({e['source'] for e in DATA['events']}),'max_ack_lag_seconds':round(max(lags),3),'retry_preserved':True,'sanitized_spool':True,'Linux_input_rotation_and_cold_restart':True,'cgroup_memory_bytes':128*1024*1024,'cgroup_CPU_percent':10}))
 '''
 ssh=['ssh','-i',args.ssh_key,'-o','IdentitiesOnly=yes','-o','BatchMode=yes']
-result=subprocess.run(ssh+['root@94.102.89.213','python3 -'],input=('PAYLOAD='+repr(payload)+'\n'+remote).encode(),capture_output=True,check=True)
+result=subprocess.run(ssh+['root@94.102.89.213','systemd-run --quiet --wait --pipe --collect --property=MemoryMax=128M --property=CPUQuota=10% --property=UMask=0077 --unit=honey-dev-log-acceptance-'+project+' python3 -'],input=('PAYLOAD='+repr(payload)+'\n'+remote).encode(),capture_output=True,check=True)
 print(result.stdout.decode().strip())
 time.sleep(2)
 query=r'''
@@ -50,7 +68,7 @@ url='http://127.0.0.1:32089/victoria-logs/select/logsql/query'
 body=urllib.parse.urlencode({'query':'environment:prod','limit':'100'}).encode()
 req=urllib.request.Request(url,data=body,headers={'AccountID':'10004','ProjectID':PROJECT})
 rows=[json.loads(line) for line in urllib.request.urlopen(req,timeout=10).read().splitlines()]
-assert len(rows)==7 and len({r['event_id'] for r in rows})==7
+assert len(rows)==9 and len({r['event_id'] for r in rows})==9
 assert len({r['source'] for r in rows})==6
 assert all(r['_time'].replace('Z','.000Z')[:19]==STAMP[:19] for r in rows)
 assert all('CANARY_SECRET' not in json.dumps(r) for r in rows)

@@ -1,6 +1,6 @@
 # Production classroom log observability
 
-This is the desired contract for `hotfix-production-victorialogs`. Local implementation is not evidence of production deployment. The baseline and current local verification are in [production-log-baseline-20261004.md](production-log-baseline-20261004.md); executable delivery/acceptance is in the [runbook](runbook.md#production-classroom-logs-hotfix).
+This is the contract for `hotfix-production-victorialogs`. Technical deployment of `release/01.007.11` was verified on 2026-10-04; the real two-participant RF classroom canary remains pending. See [delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.11-production-logs.md), the historical [baseline](production-log-baseline-20261004.md), and the [runbook](runbook.md#production-classroom-logs-hotfix).
 
 ## Storage and access
 
@@ -49,7 +49,7 @@ Rollback of observability disables collectors, removes only the logging ingress 
 
 ### Isolated live DEV acceptance
 
-After operational authorization, `python3 scripts/dev-production-log-acceptance.py --ssh-key /protected/key/path` exercises the reviewed sanitizer/outbox from a temporary RF client against verified TLS DEV ingestion. It reads existing dev transport credentials only in memory, uses separate AccountID/ProjectID headers, tests retained stable IDs after a failed transport, and queries seven sanitized records across six sources from the dev guest. Temporary curl files and queue are removed. It changes no product services or dev collector settings. Local rotation/privacy/overflow tests remain complementary; this synthetic check does not establish real production input coverage or RF media acceptance.
+After operational authorization, `python3 scripts/dev-production-log-acceptance.py --ssh-key /protected/key/path` exercises the reviewed sanitizer/outbox from a temporary RF client against verified TLS DEV ingestion. It reads existing dev transport credentials only in memory, uses separate AccountID/ProjectID headers, tests retained stable IDs after a failed transport, and queries nine sanitized records across six sources, including Linux CRI partial-record/rename-rotation and cold outbox/cursor restart fixtures from the dev guest. The temporary client runs with verified systemd cgroup limits of 128 MiB memory and 10% CPU. Temporary curl files and queue are removed. It changes no product services or dev collector settings. Local rotation/privacy/overflow tests remain complementary; this synthetic check does not establish real production input coverage or RF media acceptance.
 
 VictoriaLogs stores the configured `event` message field as `_msg`; the exact-window report recognizes both stored `_msg` and pre-ingestion fixture `event`. Every source exports explicit zero accepted/rejected/dropped/read-error counters before a first failure, so a first loss has an observable zero baseline.
 
