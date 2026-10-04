@@ -1,0 +1,5 @@
+production_logs_enabled: false
+production_logs_profile: ""
+production_logs_state_dir: /var/lib/honey-production-logs
+production_logs_curl_config: /etc/honeyschool/secrets/production-logs.curl
+production_logs_metrics_curl_config: /etc/honeyschool/secrets/production-log-metrics.curl

@@ -1,0 +1,18 @@
+{
+  "state_dir": {{ production_logs_state_dir | to_json }},
+  "curl_config": {{ production_logs_curl_config | to_json }},
+  "metrics_curl_config": {{ production_logs_metrics_curl_config | to_json }},
+  "metrics_file": {{ (production_logs_state_dir + "/collector.prom") | to_json }},
+{% if production_logs_profile == 'rf' %}
+  "files": {"rf_nginx": "/var/log/nginx/playsay-rf-livekit-signaling.log"},
+  "journal_unit": "coturn.service"
+{% elif production_logs_profile == 'ax41' %}
+  "files": {"ax41_nginx": "/var/log/nginx/playsay-livekit-signaling.log"}
+{% else %}
+  "files": {
+    "livekit": "/var/log/containers/*_livekit_livekit-*.log",
+    "api_route": "/var/log/containers/*_playsay-prod_api-gateway-*.log",
+    "collaboration": "/var/log/containers/*_playsay-prod_collaboration-service-*.log"
+  }
+{% endif %}
+}

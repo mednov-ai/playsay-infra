@@ -1,0 +1,117 @@
+---
+- name: Require current physical AX41 and production ops route only
+  ansible.builtin.assert:
+    that:
+      - ansible_host == '65.109.55.110'
+      - production_logs_ingress_enabled is defined
+
+- name: Inspect dedicated production basic-auth file
+  ansible.builtin.stat:
+    path: /etc/honeyschool/secrets/production-log-ingest.htpasswd
+  register: prod_logs_auth
+  no_log: true
+  when: production_logs_ingress_enabled | bool
+
+- name: Require protected dedicated credentials readable by nginx
+  ansible.builtin.assert:
+    that:
+      - prod_logs_auth.stat.exists
+      - prod_logs_auth.stat.uid == 0
+      - prod_logs_auth.stat.mode == '0640'
+      - prod_logs_auth.stat.gr_name == 'www-data'
+  no_log: true
+  when: production_logs_ingress_enabled | bool
+
+- name: Render scoped production logging locations locally
+  ansible.builtin.set_fact:
+    prod_logs_locations: "{{ lookup('template', playbook_dir + '/../roles/edge-proxy/templates/production-log-ingress.conf.j2') }}"
+  vars:
+    route: "{{ (edge_routes | selectattr('hostname', 'equalto', 'ops.honey.school') | first) | combine({'victoria_logs_ingress_enabled': production_logs_ingress_enabled | bool}) }}"
+
+- name: Read current routing configuration without logging its contents
+  ansible.builtin.slurp:
+    src: /etc/nginx/conf.d/playsay-honey.conf
+  register: prod_logs_original_config
+  no_log: true
+
+- name: Inspect previous snippet
+  ansible.builtin.stat:
+    path: /etc/nginx/snippets/honey-production-logs.conf
+  register: prod_logs_previous_snippet
+
+- name: Save previous snippet in memory only
+  ansible.builtin.slurp:
+    src: /etc/nginx/snippets/honey-production-logs.conf
+  register: prod_logs_original_snippet
+  when: prod_logs_previous_snippet.stat.exists
+  no_log: true
+
+- name: Generate candidate while preserving every existing route
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "{{ lookup('file', playbook_dir + '/../roles/production-log-ingress/files/install-include.py') }}"
+      - /etc/nginx/conf.d/playsay-honey.conf
+  register: prod_logs_candidate
+  changed_when: false
+  check_mode: false
+  no_log: true
+
+- name: Activate only logging include with validation and restoration
+  block:
+    - name: Write protected logging snippet
+      ansible.builtin.copy:
+        dest: /etc/nginx/snippets/honey-production-logs.conf
+        content: "{{ prod_logs_locations }}\n"
+        mode: '0644'
+        owner: root
+        group: root
+      register: prod_logs_snippet_write
+    - name: Insert one logging include into existing prod ops TLS server
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/playsay-honey.conf
+        content: "{{ prod_logs_candidate.stdout }}\n"
+        mode: '0644'
+        owner: root
+        group: root
+      register: prod_logs_config_write
+      no_log: true
+    - name: Validate nginx before reload
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+    - name: Gracefully reload nginx only after scoped changes
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+      when: not ansible_check_mode and (prod_logs_snippet_write.changed or prod_logs_config_write.changed)
+  rescue:
+    - name: Restore the original routing configuration
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/playsay-honey.conf
+        content: "{{ prod_logs_original_config.content | b64decode }}"
+        mode: '0644'
+      no_log: true
+    - name: Restore old logging snippet if present
+      ansible.builtin.copy:
+        dest: /etc/nginx/snippets/honey-production-logs.conf
+        content: "{{ prod_logs_original_snippet.content | b64decode }}"
+        mode: '0644'
+      when: prod_logs_previous_snippet.stat.exists
+      no_log: true
+    - name: Remove only the newly created logging snippet on failure
+      ansible.builtin.file:
+        path: /etc/nginx/snippets/honey-production-logs.conf
+        state: absent
+      when: not prod_logs_previous_snippet.stat.exists
+    - name: Validate restored config
+      ansible.builtin.command: nginx -t
+      changed_when: false
+    - name: Reload restored routing config
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
+    - name: Report failed logging ingress activation
+      ansible.builtin.fail:
+        msg: Production logging activation failed; original routing config restored.

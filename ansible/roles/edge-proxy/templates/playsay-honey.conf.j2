@@ -284,7 +284,11 @@ server {
 
 {% if route.victoria_logs_enabled | default(false) | bool %}
     # BEGIN DEV LOG INGRESS
+{% if route.victoria_logs_production | default(false) | bool %}
+{% include 'production-log-ingress.conf.j2' %}
+{% else %}
 {% include 'dev-log-ingress.conf.j2' %}
+{% endif %}
     # END DEV LOG INGRESS
 {% endif %}
 

@@ -1,0 +1,9 @@
+---
+- name: Deliver only protected production log ingress on physical AX41
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  roles:
+    - production-log-ingress

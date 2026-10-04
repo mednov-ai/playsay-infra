@@ -27,6 +27,9 @@ metadata:
   name: {{ include "monitoring-lite.fullname" . }}-victoria-logs
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    {{- if eq .Values.environment.name "prod" }}
+    helm.sh/resource-policy: keep
+    {{- end }}
 spec:
   accessModes: [ReadWriteOnce]
   resources:
@@ -59,10 +62,16 @@ spec:
       enableServiceLinks: false
       containers:
         - name: victoria-logs
-          image: "{{ .Values.victoriaLogs.image.repository }}:{{ .Values.victoriaLogs.image.tag }}"
+          image: {{ if .Values.victoriaLogs.image.digest }}"{{ .Values.victoriaLogs.image.repository }}@{{ .Values.victoriaLogs.image.digest }}"{{ else }}"{{ .Values.victoriaLogs.image.repository }}:{{ .Values.victoriaLogs.image.tag }}"{{ end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           args:
             - -retentionPeriod={{ .Values.victoriaLogs.retentionPeriod }}
+            {{- with .Values.victoriaLogs.maxDiskSpaceUsageBytes }}
+            - -retention.maxDiskSpaceUsageBytes={{ . }}
+            {{- end }}
+            {{- with .Values.victoriaLogs.minFreeDiskSpaceBytes }}
+            - -storage.minFreeDiskSpaceBytes={{ . }}
+            {{- end }}
             - -storageDataPath=/storage
             - -httpListenAddr=:{{ .Values.victoriaLogs.service.port }}
             - -http.pathPrefix={{ .Values.victoriaLogs.httpPathPrefix }}

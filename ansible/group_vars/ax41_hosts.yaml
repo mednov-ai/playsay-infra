@@ -144,6 +144,15 @@ edge_routes:
     argocd_upstream: 10.60.0.20:32080
     headlamp_upstream: 10.60.0.20:32081
     victoria_metrics_upstream: 10.60.0.20:32085
+    victoria_logs_upstream: 10.60.0.20:32089
+    victoria_logs_enabled: true
+    victoria_logs_production: true
+    victoria_logs_ingress_enabled: true
+    victoria_logs_ingest_trusted_peers:
+      - 94.102.89.213
+      - 127.0.0.1
+      - 10.60.0.20
+    victoria_logs_ingest_credentials_path: /etc/honeyschool/secrets/production-log-ingest.htpasswd
   - hostname: dev.ops.honey.school
     kind: ops
     keycloak_upstream: 10.60.0.30:32084

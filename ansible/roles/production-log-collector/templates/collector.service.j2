@@ -1,0 +1,32 @@
+[Unit]
+Description=Honey School sanitized production diagnostic collector
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/honey-production-logs/collector.py --config /etc/honeyschool/production-logs.json
+Restart=on-failure
+RestartSec=10
+MemoryMax=128M
+CPUQuota=10%
+TasksMax=8
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ production_logs_state_dir }}
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,84 @@
+---
+- name: Validate explicit production collector selection
+  ansible.builtin.assert:
+    that:
+      - production_logs_profile in ['rf', 'ax41', 'prod']
+      - (production_logs_profile == 'rf' and ansible_host == '94.102.89.213') or (production_logs_profile == 'ax41' and ansible_host == '65.109.55.110') or (production_logs_profile == 'prod' and ansible_host == '10.60.0.20')
+    fail_msg: Production collectors may only target the current RF, AX41 host and production guest.
+
+- name: Inspect dedicated transport credentials without reading them
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ production_logs_curl_config }}"
+    - "{{ production_logs_metrics_curl_config }}"
+  register: production_logs_credentials
+  when: production_logs_enabled | bool
+  no_log: true
+
+- name: Require root-owned private transport configuration
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+      - item.stat.uid == 0
+      - item.stat.mode == '0600'
+  loop: "{{ production_logs_credentials.results | default([]) }}"
+  when: production_logs_enabled | bool
+  no_log: true
+
+- name: Install standard-library runtime and transport
+  ansible.builtin.apt:
+    name: [python3, curl]
+    state: present
+  when: production_logs_enabled | bool
+
+- name: Create independent production collector directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - /opt/honey-production-logs
+    - /etc/honeyschool
+    - "{{ production_logs_state_dir }}"
+
+- name: Install sanitizing collector
+  ansible.builtin.copy:
+    src: collector.py
+    dest: /opt/honey-production-logs/collector.py
+    owner: root
+    group: root
+    mode: '0700'
+  notify: Restart production log collector
+
+- name: Configure only selected production inputs
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: /etc/honeyschool/production-logs.json
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Restart production log collector
+
+- name: Install bounded collector unit
+  ansible.builtin.template:
+    src: collector.service.j2
+    dest: /etc/systemd/system/honey-production-logs.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: production_logs_unit
+  notify: Restart production log collector
+
+- name: Reload systemd only when unit changes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  when: production_logs_unit.changed
+
+- name: Set collector state without touching product services
+  ansible.builtin.systemd_service:
+    name: honey-production-logs
+    enabled: "{{ production_logs_enabled | bool }}"
+    state: "{{ 'started' if production_logs_enabled | bool else 'stopped' }}"

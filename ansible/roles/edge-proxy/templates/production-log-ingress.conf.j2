@@ -1,0 +1,48 @@
+{% if route.victoria_logs_ingress_enabled | default(true) %}
+    location = /victoria-logs/insert/jsonline {
+{% for peer in route.victoria_logs_ingest_trusted_peers %}
+        allow {{ peer }};
+{% endfor %}
+        deny all;
+        auth_basic "Honey School production logs";
+        auth_basic_user_file {{ route.victoria_logs_ingest_credentials_path }};
+        limit_except POST { deny all; }
+        access_log off;
+        client_max_body_size 256k;
+        proxy_pass http://{{ route.victoria_logs_upstream }}/victoria-logs/insert/jsonline?_time_field=timestamp&_stream_fields=environment,source,event&_msg_field=event;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Authorization "";
+        proxy_set_header Content-Type "application/stream+json";
+    }
+
+    location = /production-log-metrics {
+{% for peer in route.victoria_logs_ingest_trusted_peers %}
+        allow {{ peer }};
+{% endfor %}
+        deny all;
+        auth_basic "Honey School production logs";
+        auth_basic_user_file {{ route.victoria_logs_ingest_credentials_path }};
+        limit_except POST { deny all; }
+        access_log off;
+        client_max_body_size 64k;
+        proxy_pass http://{{ route.victoria_metrics_upstream }}/victoria-metrics/api/v1/import/prometheus;
+        proxy_set_header Content-Type "text/plain";
+        proxy_set_header Authorization "";
+    }
+
+    location ^~ /victoria-logs/insert/ { return 403; }
+    location ^~ /victoria-logs/select/vmalert/ { return 403; }
+    location ^~ /victoria-logs/select/ {
+        allow {{ edge_vpn_subnet }};
+        deny all;
+        access_log off;
+        proxy_pass http://{{ route.victoria_logs_upstream }};
+        proxy_set_header Authorization "";
+    }
+    location = /victoria-logs/ { return 302 /victoria-logs/select/vmui/; }
+    location /victoria-logs/ { return 403; }
+{% else %}
+    location ^~ /victoria-logs/ { return 403; }
+    location = /production-log-metrics { return 403; }
+{% endif %}

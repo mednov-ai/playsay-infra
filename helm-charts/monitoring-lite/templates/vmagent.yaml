@@ -18,7 +18,11 @@ spec:
   template:
     metadata:
       annotations:
+        {{- if and .Values.victoriaLogs.enabled (eq .Values.environment.name "prod") }}
+        checksum/config: {{ include (print $.Template.BasePath "/vmagent-config.yaml") . | sha256sum }}
+        {{- else }}
         checksum/config: {{ printf "%s:%s:%s" (toYaml .Values.vmagent) (toYaml .Values.blackboxExporter) (toYaml .Values.alerts.livekit) | sha256sum }}
+        {{- end }}
       labels:
         app.kubernetes.io/name: {{ include "monitoring-lite.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
