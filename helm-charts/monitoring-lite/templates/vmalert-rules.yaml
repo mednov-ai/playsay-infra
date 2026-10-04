@@ -306,9 +306,9 @@ data:
       {{- if and .Values.victoriaLogs.enabled (eq .Values.environment.name "prod") }}
       - name: honey-production-logs
         interval: 15s
-        eval_delay: 0s
+        eval_delay: 1s
         params:
-          latency_offset: ["0s"]
+          latency_offset: ["1s"]
         rules:
           {{- range $source := list "rf_nginx" "ax41_nginx" "rf_coturn" "livekit" "api_route" "collaboration" }}
           - alert: HoneyProductionLogSourceMissing
