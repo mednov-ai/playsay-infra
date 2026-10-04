@@ -321,6 +321,8 @@ class JournalReader:
 
 def metrics(outbox, sources, success, file_path, available=None):
     rows = outbox.db.execute('SELECT source,name,value FROM counters').fetchall()
+    present = {(source,name) for source,name,value in rows}
+    rows += [(source,name,0) for source in sources for name in ('accepted','rejected','dropped','read_errors') if (source,name) not in present]
     lines = [f'honey_prod_logs_{name}_total{{source="{source}"}} {value}' for source,name,value in rows]
     lines += [f'honey_prod_logs_{name}{{source="{source}"}} {value}' for source,name,value in outbox.db.execute('SELECT source,name,value FROM gauges')]
     batch = outbox.db.execute('SELECT body FROM events ORDER BY id LIMIT 1').fetchone()
