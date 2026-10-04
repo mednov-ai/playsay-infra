@@ -17,6 +17,10 @@ remote=r'''
 import base64,datetime as dt,json,os,shlex,subprocess,tempfile,time,types
 from pathlib import Path
 DATA=PAYLOAD
+scope=Path('/proc/self/cgroup').read_text().strip().split('::',1)[1]
+cgroup=Path('/sys/fs/cgroup')/scope.lstrip('/')
+assert int((cgroup/'memory.max').read_text())==128*1024*1024
+quota,period=map(int,(cgroup/'cpu.max').read_text().split()); assert quota/period==0.1
 c=types.ModuleType('collector'); exec(compile(base64.b64decode(DATA['code']),'<reviewed-collector>','exec'),c.__dict__)
 secret={}
 for line in Path('/etc/honeyschool/secrets/edge-log-ingest.env').read_text().splitlines():
@@ -52,10 +56,10 @@ with tempfile.TemporaryDirectory(prefix='honey-dev-log-acceptance-') as director
     assert max(lags)<=30, 'normal delivery exceeds 30 seconds'
     box.db.close()
     assert all(b'CANARY_SECRET' not in f.read_bytes() for f in (root/'spool').iterdir())
-    print(json.dumps({'delivered':len(before),'sources':len({e['source'] for e in DATA['events']}),'max_ack_lag_seconds':round(max(lags),3),'retry_preserved':True,'sanitized_spool':True,'Linux_input_rotation_and_cold_restart':True}))
+    print(json.dumps({'delivered':len(before),'sources':len({e['source'] for e in DATA['events']}),'max_ack_lag_seconds':round(max(lags),3),'retry_preserved':True,'sanitized_spool':True,'Linux_input_rotation_and_cold_restart':True,'cgroup_memory_bytes':128*1024*1024,'cgroup_CPU_percent':10}))
 '''
 ssh=['ssh','-i',args.ssh_key,'-o','IdentitiesOnly=yes','-o','BatchMode=yes']
-result=subprocess.run(ssh+['root@94.102.89.213','python3 -'],input=('PAYLOAD='+repr(payload)+'\n'+remote).encode(),capture_output=True,check=True)
+result=subprocess.run(ssh+['root@94.102.89.213','systemd-run --quiet --wait --pipe --collect --property=MemoryMax=128M --property=CPUQuota=10% --property=UMask=0077 --unit=honey-dev-log-acceptance-'+project+' python3 -'],input=('PAYLOAD='+repr(payload)+'\n'+remote).encode(),capture_output=True,check=True)
 print(result.stdout.decode().strip())
 time.sleep(2)
 query=r'''
