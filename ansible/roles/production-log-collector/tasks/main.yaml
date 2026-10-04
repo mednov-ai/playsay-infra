@@ -38,7 +38,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0700'
+    mode: "{{ '0755' if item == '/etc/honeyschool' else '0700' }}"
   loop:
     - /opt/honey-production-logs
     - /etc/honeyschool
