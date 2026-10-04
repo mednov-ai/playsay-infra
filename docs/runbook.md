@@ -2642,7 +2642,7 @@ Rollback sets only `honey_school_geoip_redirect_prod_enabled: false` in Git and 
 
 ## Production classroom logs hotfix
 
-**Status 2026-10-04: technically deployed as `release/01.007.11`; real RF classroom acceptance pending.** Production VictoriaLogs, three sanitized collectors and opt-in collaboration lifecycle output are running. [Delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.11-production-logs.md) records the gates and remaining canary. The production root and operational `current-release.txt` baseline are `.11`. The pointer was reconciled for the separately authorized lesson-time hotfix and does not certify the pending RF classroom/logging acceptance. Preserve the running `.11` images and declarative configuration in subsequent candidates. Earlier release-status paragraphs are historical snapshots. Recheck live revision/digests and zero active lessons before authorized delivery. AX41 is the only active platform; the former VDSina was deleted and is never a logging fallback or rollback target.
+**Status 2026-10-04: technically deployed as `release/01.007.11`; real RF classroom acceptance pending.** Production VictoriaLogs, three sanitized collectors and opt-in collaboration lifecycle output are running. [Delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.11-production-logs.md) records the gates and remaining canary. The current production root and operational `current-release.txt` baseline are `.12` after the separately authorized lesson-time hotfix ([delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.12-lesson-time.md)). This does not certify the pending real RF classroom/logging acceptance of `.11`. Preserve the current running digests and declarative configuration in subsequent candidates. Earlier release-status paragraphs are historical snapshots. Recheck live revision/digests and zero active lessons before authorized delivery. AX41 is the only active platform; the former VDSina was deleted and is never a logging fallback or rollback target.
 
 ### Local checks
 
@@ -2693,7 +2693,7 @@ Production log missing-source timing must be observed live: launch polling befor
 
 ## Server-authoritative lesson time and extension rollout
 
-This procedure applies to the `hotfix-server-lesson-time-and-extension` implementation after separate delivery authorization; it does not describe an already deployed release.
+This procedure applies to the `hotfix-server-lesson-time-and-extension` implementation after separate delivery authorization. The scoped production delivery status is recorded below.
 
 1. Refresh actual runtime and numeric release pointers. Validate the additive API migration `2026-10-04-001-lesson-access-extension.xml` against existing rows: zero extension seconds, zero initial revision, unchanged scheduled start/end. Use the approved migration job/review process; do not run an ad-hoc production SQL migration.
 2. Accept on DEV with authenticated teacher/student clients. Shift browser wall clocks by ±10 minutes, change them mid-lesson and restore a sleeping tab. Check initial cutoff = scheduled end +10 minutes, teacher offer at cutoff -2 minutes, two repeat extensions, concurrent teacher tabs, missed realtime update, uncertain response and student rejoin after the original cutoff.
@@ -2701,3 +2701,10 @@ This procedure applies to the `hotfix-server-lesson-time-and-extension` implemen
 4. Verify both production online origins, teacher permission, student inability to extend, new deadline propagation, unchanged planned times and cutoff denial. Record deployment health, authenticated browser behavior and physical-device checks separately. Require semantic develop integration evidence for all affected repositories before closure.
 
 Rollback preserves the additive columns and data. A previous backend ignores extension seconds and can shorten active extended lessons: drain those lessons or wait for their persisted effective deadlines before reverting the API. Inspect authorized deadline metadata without exposing participant identities, tokens or lesson content. Roll back declarative images/revisions using the current release runbook; do not drop columns or restart media services as a workaround.
+
+
+### Lesson-time delivery status — 2026-10-04
+
+Production baseline is `release/01.007.12`: reviewed ready infra `d7abfaf5ff2baf8b89d7917a3b7cd9e4bea2f9c7`, accepted platform `9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1`. Only API/web changed after protected backups, the approved additive migration and all-seven schema convergence. All 19 applications were Synced/Healthy. Both online origins passed repeated +600-second extension and natural server cutoff, plus separate actual video rejoin after the old grace deadline with ±10-minute clocks. [Delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.12-lesson-time.md) records exact digests, timestamps and limits.
+
+The regional TURN credential guard still depends on Date.now; a +20-minute student clock prevented .ru media recovery in the stress run while server access remained valid. This release fixes lesson-policy time, not global authentication/media-clock behavior. General DEV shared image-focus smoke failures and real RF/physical/45-minute media-log acceptance remain separate. Do not infer those gates from Synced/Healthy or the scoped cutoff PASS.
