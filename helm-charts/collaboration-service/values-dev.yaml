@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-dev-45"
-  digest: sha256:274ea5833672a9f98ccf6dc1ee04d6032df8cce1443a6ccd554a10e876406920
+  tag: "collab-codex-hotfix-production-victorialogs-46"
+  digest: sha256:85f9a3f9696d70c7bc1111263bc1dc59658044d1e91c8c7286d58b1870ce7bec
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-dev-45
-  number: "45"
-  branch: develop
-  branchLabel: collab-dev
-  commit: 34658d54193ecb37411ba7cd8dcef563bad15e29
-  commitShort: "34658d54193e"
+  name: collab-codex-hotfix-production-victorialogs-46
+  number: "46"
+  branch: codex/hotfix-production-victorialogs
+  branchLabel: collab-codex-hotfix-production-victorialogs
+  commit: 35024e832b192dc90d106f3ac79e7b4e3a34aafa
+  commitShort: "35024e832b19"
 service:
   type: NodePort
   nodePort: 32086
