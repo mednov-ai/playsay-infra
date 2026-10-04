@@ -1,6 +1,6 @@
 # Production classroom log observability
 
-This is the desired contract for `hotfix-production-victorialogs`. Local implementation is not evidence of production deployment. The baseline and current local verification are in [production-log-baseline-20261004.md](production-log-baseline-20261004.md); executable delivery/acceptance is in the [runbook](runbook.md#production-classroom-logs-hotfix).
+This is the contract for `hotfix-production-victorialogs`. Technical deployment of `release/01.007.11` was verified on 2026-10-04; the real two-participant RF classroom canary remains pending. See [delivery evidence](../migrations/ax41/evidence/20261004-release-01.007.11-production-logs.md), the historical [baseline](production-log-baseline-20261004.md), and the [runbook](runbook.md#production-classroom-logs-hotfix).
 
 ## Storage and access
 
