@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-lesson-time-prod-candidate-198"
-  digest: sha256:1fb47d761b05589497d9a6c9f9d08cca3cc0477cff78072176381b1195d2d52c
+  tag: "api-dev-200"
+  digest: sha256:be555af9f5719fde3e41096ff50d35c643b9ca59ac52feb66a99df9b47bc782b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-lesson-time-prod-candidate-198
-  number: "198"
-  branch: codex/lesson-time-prod-candidate
-  branchLabel: api-codex-lesson-time-prod-candidate
-  commit: 9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1
-  commitShort: "9124b4bff3c9"
+  name: api-dev-200
+  number: "200"
+  branch: develop
+  branchLabel: api-dev
+  commit: 15c9048b8bf087076bd66b69369bb01d01bc5086
+  commitShort: "15c9048b8bf0"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
