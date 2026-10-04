@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-349"
-  digest: sha256:2d03041683b20bce65a552bc7997b02244d2cd56208e2219800a2bf213dbc794
+  tag: "web-codex-lesson-time-prod-candidate-350"
+  digest: sha256:59d04dbf298740d6826a3cbea3bfdd37173288d3486ccca78c72ad8fcba15920
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-349
-  number: "349"
-  branch: develop
-  branchLabel: web-dev
-  commit: b4036a43db9101c0d567bd9ff59a0c8f6d062795
-  commitShort: "b4036a43db91"
+  name: web-codex-lesson-time-prod-candidate-350
+  number: "350"
+  branch: codex/lesson-time-prod-candidate
+  branchLabel: web-codex-lesson-time-prod-candidate
+  commit: f66bebd99fc8a58bb35eb7b7bf273e4f3d4a5ea3
+  commitShort: "f66bebd99fc8"
 service:
   type: NodePort
   nodePort: 32083
