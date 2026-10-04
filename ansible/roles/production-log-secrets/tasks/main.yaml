@@ -1,0 +1,61 @@
+---
+- name: Validate production secret destinations
+  ansible.builtin.assert:
+    that:
+      - production_logs_profile in ['rf', 'ax41', 'prod']
+      - (production_logs_profile == 'rf' and ansible_host == '94.102.89.213') or (production_logs_profile == 'ax41' and ansible_host == '65.109.55.110') or (production_logs_profile == 'prod' and ansible_host == '10.60.0.20')
+      - production_logs_local_secrets_dir is defined
+
+- name: Inspect shared directory permissions without changing them
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /etc/honeyschool
+    - /etc/honeyschool/secrets
+  register: production_logs_parent_dirs
+
+- name: Create missing shared parent only
+  ansible.builtin.file:
+    path: /etc/honeyschool
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not production_logs_parent_dirs.results[0].stat.exists
+
+- name: Create missing secret directory without altering existing verifiers
+  ansible.builtin.file:
+    path: /etc/honeyschool/secrets
+    state: directory
+    owner: root
+    group: "{{ 'www-data' if production_logs_profile == 'ax41' else 'root' }}"
+    mode: "{{ '0710' if production_logs_profile == 'ax41' else '0700' }}"
+  when: not production_logs_parent_dirs.results[1].stat.exists
+
+- name: Install only dedicated per-host production curl credentials
+  ansible.builtin.copy:
+    src: "{{ production_logs_local_secrets_dir }}/{{ production_logs_profile }}/{{ item }}"
+    dest: "/etc/honeyschool/secrets/{{ item }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop:
+    - production-logs.curl
+    - production-log-metrics.curl
+  no_log: true
+
+- name: Install isolated production verifier on AX41 only
+  ansible.builtin.copy:
+    src: "{{ production_logs_local_secrets_dir }}/production-log-ingest.htpasswd"
+    dest: /etc/honeyschool/secrets/production-log-ingest.htpasswd
+    owner: root
+    group: www-data
+    mode: '0640'
+  when: production_logs_profile == 'ax41'
+  no_log: true
+
+- name: Verify nginx worker can traverse and read production verifier
+  ansible.builtin.command:
+    argv: [/usr/sbin/runuser, -u, www-data, --, /usr/bin/test, -r, /etc/honeyschool/secrets/production-log-ingest.htpasswd]
+  changed_when: false
+  when: production_logs_profile == 'ax41' and not ansible_check_mode
