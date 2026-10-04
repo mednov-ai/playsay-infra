@@ -1,0 +1,8 @@
+[
+  {"source":"rf_nginx","input":"msec=1791096539.324 request_id=00000000000000000000000000000001 status=101 request_time=22.425 upstream_connect_time=0.059 upstream_header_time=0.083 upstream_response_time=22.425 upstream_status=101"},
+  {"source":"ax41_nginx","input":"msec=1791096539.319 request_id=00000000000000000000000000000001 status=101 request_time=22.420 upstream_connect_time=0.001 upstream_header_time=0.001 upstream_response_time=22.420 upstream_status=101"},
+  {"source":"rf_coturn","input":{"__REALTIME_TIMESTAMP":"1791096537069390","MESSAGE":"ERROR: TLS/TCP socket error: Connection reset by peer"}},
+  {"source":"livekit","input":"2026-10-04T09:48:59.516120990+03:00 stderr F 2026-10-04T06:48:59.516Z\tWARN\tlivekit\terror reading data channel\t{\"error\":\"dtls timeout: read/write timeout: context deadline exceeded\"}"},
+  {"source":"api_route","input":"2026-10-04T09:49:20.518914575+03:00 stdout F 2026-10-04T06:49:20.518Z INFO c.p.g.s.RegionalRouteDiagnosticService : regional_route_diagnostic attempt_id=00000000-0000-4000-8000-000000000001 stage=MEDIA outcome=SUCCESS connection_role=PUBLISHER transport_class=TURN_UDP regional_endpoint_matched=true"},
+  {"source":"collaboration","input":"2026-10-04T09:49:00.000000000+03:00 stderr F snapshot persistence failed for document synthetic-fixture: HTTP 503","expected_event":"snapshot_failure","required_discard":["synthetic-fixture"]}
+]

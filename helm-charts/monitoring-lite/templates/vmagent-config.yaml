@@ -10,6 +10,12 @@ data:
       scrape_interval: {{ .Values.vmagent.scrapeInterval }}
 
     scrape_configs:
+      {{- if and .Values.victoriaLogs.enabled (eq .Values.environment.name "prod") }}
+      - job_name: victoria-logs
+        metrics_path: {{ .Values.victoriaLogs.httpPathPrefix }}/metrics
+        static_configs:
+          - targets: [{{ printf "%s-victoria-logs:%v" (include "monitoring-lite.fullname" .) .Values.victoriaLogs.service.port | quote }}]
+      {{- end }}
       {{- range .Values.vmagent.applicationScrapes }}
       - job_name: {{ .jobName | quote }}
         metrics_path: {{ .metricsPath | quote }}

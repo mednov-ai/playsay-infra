@@ -1,0 +1,8 @@
+---
+# Use a reviewed combined inventory containing only these three hosts.
+- name: Deploy or disable independent sanitized production log collectors
+  hosts: production_log_collectors
+  become: true
+  gather_facts: false
+  roles:
+    - production-log-collector

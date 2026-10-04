@@ -302,3 +302,53 @@ data:
               summary: "Collaboration удалил зависшее Yjs-соединение"
               description: "Heartbeat обнаружил соединение без pong; проверьте reconnect и рост активных Yjs-сокетов."
       {{- end }}
+
+      {{- if and .Values.victoriaLogs.enabled (eq .Values.environment.name "prod") }}
+      - name: honey-production-logs
+        interval: 15s
+        rules:
+          {{- range $source := list "rf_nginx" "ax41_nginx" "rf_coturn" "livekit" "api_route" "collaboration" }}
+          - alert: HoneyProductionLogSourceMissing
+            expr: (time() - honey_prod_logs_heartbeat_seconds{source="{{ $source }}"} > 60) or absent(honey_prod_logs_heartbeat_seconds{source="{{ $source }}"})
+            for: 30s
+            labels:
+              severity: critical
+              source: {{ $source | quote }}
+            annotations:
+              summary: "Production log collector heartbeat missing: {{ $source }}"
+          {{- end }}
+          - alert: HoneyProductionLogDeliveryFailed
+            expr: honey_prod_logs_delivery_ok == 0 or honey_prod_logs_input_ok == 0
+            for: 30s
+            labels:
+              severity: critical
+            annotations:
+              summary: "Production log ingestion or source input unavailable"
+          - alert: HoneyProductionLogBacklog
+            expr: honey_prod_logs_oldest_seconds > 30 or honey_prod_logs_backlog_bytes > 12582912
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "Production sanitized log backlog exceeds freshness budget"
+          - alert: HoneyProductionLogLoss
+            expr: increase(honey_prod_logs_dropped_total[2m]) > 0 or increase(honey_prod_logs_read_errors_total[2m]) > 0 or increase(playsay_collaboration_connection_diagnostics_suppressed_total[2m]) > 0
+            labels:
+              severity: warning
+            annotations:
+              summary: "Production diagnostic coverage lost events"
+          - alert: HoneyProductionLogParserDrift
+            expr: rate(honey_prod_logs_rejected_total[5m]) / clamp_min(rate(honey_prod_logs_accepted_total[5m]) + rate(honey_prod_logs_rejected_total[5m]), 0.001) > 0.95
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Review production diagnostic parser coverage; raw input is not retained"
+          - alert: HoneyProductionLogStorageUnavailable
+            expr: up{job="victoria-logs"} == 0 or absent(up{job="victoria-logs"}) or vl_storage_is_read_only == 1 or vl_free_disk_space_bytes < 2147483648 or sum(vl_data_size_bytes) > 7516192768
+            for: 30s
+            labels:
+              severity: critical
+            annotations:
+              summary: "Production VictoriaLogs unavailable or disk pressure"
+      {{- end }}
