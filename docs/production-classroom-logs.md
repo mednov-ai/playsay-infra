@@ -54,3 +54,5 @@ After operational authorization, `python3 scripts/dev-production-log-acceptance.
 VictoriaLogs stores the configured `event` message field as `_msg`; the exact-window report recognizes both stored `_msg` and pre-ingestion fixture `event`. Every source exports explicit zero accepted/rejected/dropped/read-error counters before a first failure, so a first loss has an observable zero baseline.
 
 Exact-window coverage includes the largest heartbeat gap, including window boundaries. A gap above 45 seconds is `incomplete_telemetry`, even when another heartbeat or event is present; do not infer healthy silence across that gap. Future window ends are rejected.
+
+The production log alert group explicitly uses zero `eval_delay` and query `latency_offset` with its 15-second interval and 60-second stale threshold/30-second hold. This avoids the default 30-second query/evaluation delay extending detection beyond two minutes. Other alert groups keep their current defaults. See [upstream data-delay and group options](https://docs.victoriametrics.com/victoriametrics/vmalert/).
