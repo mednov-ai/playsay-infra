@@ -1,12 +1,12 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-lesson-time-prod-candidate-352"
-  digest: sha256:fd5a94ad42664717e7f103d4482aee7018584a1ad668d1d17e0251519d934a37
+  tag: "web-codex-lesson-time-prod-candidate-353"
+  digest: sha256:7aefc737191ab52ca003ae6a196108522658c98075834fc8efbbb89151e7be8b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-lesson-time-prod-candidate-352
-  number: "352"
+  name: web-codex-lesson-time-prod-candidate-353
+  number: "353"
   branch: codex/lesson-time-prod-candidate
   branchLabel: web-codex-lesson-time-prod-candidate
   commit: 9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1
