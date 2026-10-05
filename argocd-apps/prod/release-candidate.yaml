@@ -1,16 +1,18 @@
 schemaVersion: 1
 status: ready
-releaseBranch: "release/01.007.12"
-baseRelease: "release/01.007.11"
-basePlatformCommit: "35024e832b192dc90d106f3ac79e7b4e3a34aafa"
-acceptedDevCommit: "9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1"
-baseInfraCommit: "550363683655888e0af056ab3b56cdc63731ede4"
-platformCommit: "9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1"
+releaseBranch: "release/01.007.14"
+baseRelease: "release/01.007.12"
+basePlatformCommit: "9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1"
+acceptedDevCommit: "789c6237d0be7ffb779f01feeaeb20efc72ff3ba"
+baseInfraCommit: "71801ecef1091151d0871e53278569148a8d855d"
+platformCommit: "789c6237d0be7ffb779f01feeaeb20efc72ff3ba"
 affectedTargets:
-  - "api-gateway"
   - "web-app"
+  - "game-adapter-service"
+  - "keyboard-app"
 validationSuites:
+  - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "85"
-updatedAt: "2026-10-04T20:04:01Z"
+  build: "89"
+updatedAt: "2026-10-05T12:11:06Z"
