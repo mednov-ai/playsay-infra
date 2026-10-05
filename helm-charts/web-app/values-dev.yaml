@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-dev-355"
-  digest: sha256:88346fac14636b5198dced08a7d84ee1c98362c17aa3e04fe11cd3abf1d9a576
+  tag: "web-codex-html-game-stop-promote-platform-357"
+  digest: sha256:acbdbd8f5ad6a48ca0795f6b0e1242f9a98dce99a04af97625485cc9d7f1358f
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-dev-355
-  number: "355"
-  branch: develop
-  branchLabel: web-dev
-  commit: 15c9048b8bf087076bd66b69369bb01d01bc5086
-  commitShort: "15c9048b8bf0"
+  name: web-codex-html-game-stop-promote-platform-357
+  number: "357"
+  branch: codex/html-game-stop-promote-platform
+  branchLabel: web-codex-html-game-stop-promote-platform
+  commit: 762402828eb45c826c09383b3b2cbe4c7635dbb2
+  commitShort: "762402828eb4"
 service:
   type: NodePort
   nodePort: 32083
