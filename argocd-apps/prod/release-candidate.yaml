@@ -4,13 +4,13 @@ releaseBranch: "release/01.007.14"
 baseRelease: "release/01.007.13"
 basePlatformCommit: "762402828eb45c826c09383b3b2cbe4c7635dbb2"
 acceptedDevCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
-baseInfraCommit: "71801ecef1091151d0871e53278569148a8d855d"
+baseInfraCommit: "238736300d75fc90c5c3607a0fa3e34eaab12a01"
 platformCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
 affectedTargets:
-  - web-app
+  - "web-app"
 validationSuites:
-  - smoke-syntax
+  - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "89"
-updatedAt: "2026-10-05T12:11:06Z"
+  build: "90"
+updatedAt: "2026-10-05T13:52:59Z"
