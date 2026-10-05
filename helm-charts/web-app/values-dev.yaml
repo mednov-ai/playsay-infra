@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-text-annotation-release15-361"
-  digest: sha256:1ff270d88f7f20024a132c419cb42a448b5e5c7234e071c99e1807e539b8295f
+  tag: "web-codex-text-release14-rebase13-363"
+  digest: sha256:d0bb3b6ebfdaf202a0111759e14bafe03a5288bebd4209aa43089025bfb3709b
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-text-annotation-release15-361
-  number: "361"
-  branch: codex/text-annotation-release15
-  branchLabel: web-codex-text-annotation-release15
-  commit: 092a8228a21b9421d1e078894a51855f4957fcf9
-  commitShort: "092a8228a21b"
+  name: web-codex-text-release14-rebase13-363
+  number: "363"
+  branch: codex/text-release14-rebase13
+  branchLabel: web-codex-text-release14-rebase13
+  commit: d7090c2b731e970869f865ae07ae264b0af5ebe0
+  commitShort: "d7090c2b731e"
 service:
   type: NodePort
   nodePort: 32083
