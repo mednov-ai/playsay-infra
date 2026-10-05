@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-dev-47"
-  digest: sha256:8f22011415e6a3ff1c66e2014b06ffa494b996750bc4897d2dc097307ec9e62d
+  tag: "collab-codex-html-game-stop-promote-platform-50"
+  digest: sha256:cac3f50b581ac9239738ae92b1b06bd6a2eb9b89bf2d975f8db64bb4cb784fcd
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-dev-47
-  number: "47"
-  branch: develop
-  branchLabel: collab-dev
-  commit: 3912df69dce10acffcbb7c4ad2f4b1dc5c2e88c2
-  commitShort: "3912df69dce1"
+  name: collab-codex-html-game-stop-promote-platform-50
+  number: "50"
+  branch: codex/html-game-stop-promote-platform
+  branchLabel: collab-codex-html-game-stop-promote-platform
+  commit: 762402828eb45c826c09383b3b2cbe4c7635dbb2
+  commitShort: "762402828eb4"
 service:
   type: NodePort
   nodePort: 32086
