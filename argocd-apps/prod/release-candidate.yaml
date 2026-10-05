@@ -1,17 +1,15 @@
 schemaVersion: 1
-status: ready
+status: building
 releaseBranch: "release/01.007.14"
-baseRelease: "release/01.007.12"
-basePlatformCommit: "9124b4bff3c9d35ed6aa4924d70300ec4fa5cab1"
-acceptedDevCommit: "789c6237d0be7ffb779f01feeaeb20efc72ff3ba"
+baseRelease: "release/01.007.13"
+basePlatformCommit: "762402828eb45c826c09383b3b2cbe4c7635dbb2"
+acceptedDevCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
 baseInfraCommit: "71801ecef1091151d0871e53278569148a8d855d"
-platformCommit: "789c6237d0be7ffb779f01feeaeb20efc72ff3ba"
+platformCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
 affectedTargets:
-  - "web-app"
-  - "game-adapter-service"
-  - "keyboard-app"
+  - web-app
 validationSuites:
-  - "smoke-syntax"
+  - smoke-syntax
 dispatcher:
   job: "playsay-platform-dispatch-release"
   build: "89"
