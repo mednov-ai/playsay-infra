@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-game-adapter-service
-  tag: "game-adapter-dev-36"
-  digest: "sha256:f3ebd71263b4867c9425ad942234658a2aa74358da5069ffe613b523f92b81d9"
+  tag: "game-adapter-codex-hotfix-classroom-collaboration-recovery-38"
+  digest: "sha256:a24e2fe47c215faad9ad2cc6c60e17294fac9edc9ebb92f07986d06ccdc47715"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: game-adapter-dev-36
-  number: "36"
-  branch: develop
-  branchLabel: game-adapter-dev
-  commit: 10d9d80a4053bd76a5b48af19ab5cd6ac9bf7469
-  commitShort: 10d9d80a4053
+  name: game-adapter-codex-hotfix-classroom-collaboration-recovery-38
+  number: "38"
+  branch: codex/hotfix-classroom-collaboration-recovery
+  branchLabel: game-adapter-codex-hotfix-classroom-collaboration-recovery
+  commit: e50e5d4c82765342f2ba51e05fd9490378f0b21b
+  commitShort: e50e5d4c8276
 adapter:
   model: gpt-5.6-sol
   reasoningEffort: medium
