@@ -136,6 +136,10 @@ def sanitize(source, raw, timestamp=None):
                         event['close_class'] = fields['close_class']
                         if 'age_seconds' in fields:
                             event['age_seconds'] = number(fields['age_seconds'])
+                elif name == 'snapshot_outcome':
+                    if fields.get('outcome') not in ('retry', 'document_invalid', 'unsaved'):
+                        return None
+                    event.update(event=name, outcome=fields['outcome'], severity='warn')
                 elif name == 'external_activity_input_failure':
                     event.update(event=name, severity='warn', reason='input_failure')
                 else:
