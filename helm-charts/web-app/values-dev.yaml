@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-classroom-collaboration-recovery-366"
-  digest: sha256:b2ce9d28f71aaa1576714ec8353408bcb851a1f30468f7c54eef99e9e464f6b0
+  tag: "web-dev-368"
+  digest: sha256:9390136dcbbdefa14b9ed98f084af8c15fd12e310b70a6b928ef0ca7895519fa
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-classroom-collaboration-recovery-366
-  number: "366"
-  branch: codex/hotfix-classroom-collaboration-recovery
-  branchLabel: web-codex-hotfix-classroom-collaboration-recovery
-  commit: e50e5d4c82765342f2ba51e05fd9490378f0b21b
-  commitShort: "e50e5d4c8276"
+  name: web-dev-368
+  number: "368"
+  branch: develop
+  branchLabel: web-dev
+  commit: af7e2e2128860ce7e790dab737b600a32a56ed8d
+  commitShort: "af7e2e212886"
 service:
   type: NodePort
   nodePort: 32083
