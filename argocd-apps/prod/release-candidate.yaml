@@ -1,16 +1,17 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.007.14"
-baseRelease: "release/01.007.13"
-basePlatformCommit: "762402828eb45c826c09383b3b2cbe4c7635dbb2"
-acceptedDevCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
-baseInfraCommit: "238736300d75fc90c5c3607a0fa3e34eaab12a01"
-platformCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
+status: building
+releaseBranch: "release/01.007.15"
+baseRelease: "release/01.007.14"
+basePlatformCommit: "d7090c2b731e970869f865ae07ae264b0af5ebe0"
+acceptedDevCommit: "e50e5d4c82765342f2ba51e05fd9490378f0b21b"
+baseInfraCommit: "8de933f7818685d1b5e21c1a59b1b8da8f4b1739"
+platformCommit: "e50e5d4c82765342f2ba51e05fd9490378f0b21b"
 affectedTargets:
   - "web-app"
+  - "game-adapter-service"
+  - "collaboration-service"
 validationSuites:
-  - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "90"
-updatedAt: "2026-10-05T14:02:06Z"
+  build: "94"
+updatedAt: "2026-10-06T15:22:25Z"
