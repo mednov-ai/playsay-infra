@@ -26,6 +26,16 @@ class LogsTest(unittest.TestCase):
             contents = b''.join(p.read_bytes() for p in Path(directory).iterdir())
             self.assertNotIn(b'CANARY_SECRET', contents); self.assertNotIn(b'PRIVATE_USER', contents)
 
+    def test_snapshot_outcomes_are_bounded_and_private(self):
+        prefix='2026-10-06T10:00:00Z stdout F '
+        for outcome in ('retry', 'document_invalid', 'unsaved'):
+            raw=prefix+json.dumps({'event':'snapshot_outcome','outcome':outcome,'documentId':'PRIVATE_ID','error':'CANARY_SECRET'})
+            event=c.sanitize('collaboration',raw)
+            self.assertEqual(event['outcome'],outcome)
+            self.assertNotIn('PRIVATE_ID',json.dumps(event))
+            self.assertNotIn('CANARY_SECRET',json.dumps(event))
+        self.assertIsNone(c.sanitize('collaboration',prefix+json.dumps({'event':'snapshot_outcome','outcome':'CANARY_SECRET'})))
+
     def test_unknown_invalid_and_forbidden_values(self):
         for source in c.SOURCES:
             self.assertIsNone(c.sanitize(source, 'CANARY_SECRET random unrecognized payload'))
