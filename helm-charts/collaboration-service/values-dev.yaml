@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-codex-hotfix-classroom-collaboration-recovery-53"
-  digest: sha256:dcee68436b30cedf697cd90b7cf093243d08192b2ba45d4d8f297baa4de0d352
+  tag: "collab-dev-54"
+  digest: sha256:90b34b384cba891807f6eb1e947f4bba904bd6c14eba449a74374d0a729e7e25
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-codex-hotfix-classroom-collaboration-recovery-53
-  number: "53"
-  branch: codex/hotfix-classroom-collaboration-recovery
-  branchLabel: collab-codex-hotfix-classroom-collaboration-recovery
-  commit: b0b2921ce2942a9009ab43f3c8c5877b87c1784e
-  commitShort: "b0b2921ce294"
+  name: collab-dev-54
+  number: "54"
+  branch: develop
+  branchLabel: collab-dev
+  commit: af7e2e2128860ce7e790dab737b600a32a56ed8d
+  commitShort: "af7e2e212886"
 service:
   type: NodePort
   nodePort: 32086
