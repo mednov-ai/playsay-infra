@@ -19,6 +19,7 @@ auth:
 apiGateway:
   baseUrl: http://api-gateway.playsay-prod.svc.cluster.local
 collaboration:
+  recoveryProbesEnabled: true
   connectionDiagnostics:
     enabled: true
   existingSecret: playsay-collaboration
