@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/01.007.16
+    targetRevision: release/01.007.17
     path: helm-charts/monitoring-lite
     helm:
       releaseName: monitoring-lite

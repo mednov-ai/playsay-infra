@@ -1,16 +1,16 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.007.16"
-baseRelease: "release/01.007.15"
-basePlatformCommit: "e50e5d4c82765342f2ba51e05fd9490378f0b21b"
-acceptedDevCommit: "b3da7da314702765d04a5616233a29f6e696be09"
-baseInfraCommit: "c1ffd9de5d7ba8249b3c48ddfa3dbd924e8d0d84"
-platformCommit: "b3da7da314702765d04a5616233a29f6e696be09"
+status: building
+releaseBranch: "release/01.007.17"
+baseRelease: "release/01.007.16"
+basePlatformCommit: "b3da7da314702765d04a5616233a29f6e696be09"
+acceptedDevCommit: "33e7177e9fc0d1375624ec491591097e228a3520"
+baseInfraCommit: "5c4bca75c75d64e145388b981d26ad2a667940c2"
+platformCommit: "4297273f1639a23e08cb91a5639e810db3acc3bb"
 affectedTargets:
   - "web-app"
 validationSuites:
   - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "104"
-updatedAt: "2026-10-09T16:07:17Z"
+  build: "105"
+updatedAt: "2026-10-09T19:06:19Z"
