@@ -2006,6 +2006,16 @@ KUBECONFIG=/etc/rancher/k3s/k3s.yaml kubectl -n "$TARGET_NAMESPACE" get deploy v
 
 Expected values are provider `openai`, model `gpt-5.6-sol`, draft effort `high` and all three lightweight efforts `low`. Run authenticated smokes for material draft, answer suggestions, HTML-game metadata and vocabulary suggestions; record no prompt, user content or secret values.
 
+## Browser session recovery hotfix acceptance
+
+The online browser recovery contract is documented in platform `docs/browser-session-recovery.md` and workspace `sign-in.md`. Keycloak expiry/revocation and lesson admission remain authoritative. Temporary renewal/API failure retains credentials; definitive rejection gets at most one silent OIDC attempt per episode and then explicit sign-in. An active classroom requires a user action before recovery navigation and is not automatically finished.
+
+Before accepting this change on dev, record the exact platform commit/image and exercise both declared dev online origins with disposable accounts: expired local refresh with valid SSO, fully expired SSO, 429/5xx/deadline with Retry, concurrent REST/realtime renewal, logout/new-login racing old responses, foreground restoration, independent module failure and an active two-participant classroom. Verify the mounted room survives transient failure and any terminal-recovery navigation requires explicit continuation. Also run the complete disposable registration/confirmation/password-reset/sign-in flow required for authentication changes, including old-password rejection and cleanup. Local synthetic browser routes prove frontend behavior only.
+
+Use only allowlisted recovery outcomes, attempt counts and timings in evidence. The frontend summary is bounded local memory, not a new backend collector. Server diagnosis still correlates timestamps and sanitized Keycloak `REFRESH_TOKEN_ERROR` categories with nginx statuses and route probes; a match by network/browser characteristics is not account attribution. Do not export user identifiers, tokens, query strings, raw provider bodies or lesson content.
+
+A numeric production fix candidate requires separately authorized promotion, current immutable GitOps evidence, fresh full security gates, the mandatory schema-convergence check even without a migration, both-origin recovery acceptance and the normal hotfix integration gate. Existing exceptions for other candidates do not automatically cover this hotfix. Rollback returns the web application to its previously verified numeric GitOps state, then checks password and explicit-passkey login on both production origins; this frontend change introduces no Keycloak/database rollback. Record source/resulting published develop SHAs, mapping where needed, semantic content and regression results for platform and affected infra documentation.
+
 ## Web App Auth
 
 `web-app` uses Keycloak Authorization Code + PKCE with the public client `playsay-web`.
