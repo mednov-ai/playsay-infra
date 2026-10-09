@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-session-recovery-release-candidate-371"
-  digest: sha256:b761efecaa467811d9c006c77485a824b3637bbe3552c8ef78d9b25fca31d846
+  tag: "web-dev-375"
+  digest: sha256:1e2b7d7ae69725b4970db6006bc200157636beccc1ba001cdd48a7dfa07d0cf4
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-session-recovery-release-candidate-371
-  number: "371"
-  branch: codex/session-recovery-release-candidate
-  branchLabel: web-codex-session-recovery-release-candidate
-  commit: 900d7ffe80f507d1122750d9909f3c6e59600275
-  commitShort: "900d7ffe80f5"
+  name: web-dev-375
+  number: "375"
+  branch: develop
+  branchLabel: web-dev
+  commit: a744c1e89c60c7120fc03bb0c57df27bec218203
+  commitShort: "a744c1e89c60"
 service:
   type: NodePort
   nodePort: 32083
