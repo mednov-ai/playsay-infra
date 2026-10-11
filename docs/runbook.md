@@ -1060,6 +1060,17 @@ Managed-student invite smoke:
 2. Open the returned `/join#ABC123` style link in a clean browser context. The fragment is a 6-character manual-entry invite code and must not be sent as a `?token=` query parameter; the SPA must read and clear it, call `/api/student-invites/consume`, store the returned Keycloak token set, and redirect to `/lessons/{lessonId}/classroom` without showing the Keycloak login form.
 3. Reopen the same invite link in another clean context; it must fail as already consumed or invalid.
 
+### Student planned-lesson visibility regression
+
+Run after the exact candidate web image has passed scoped tests and rolled out to the authorized environment. Use isolated disposable teacher/student accounts and record only sanitized outcomes; do not reuse learner data or repair roster with SQL.
+
+1. Keep the student's schedule open. As its authorized teacher, create an assigned lesson for tomorrow. Verify the student's planned card appears after schedule notification/recovery before either actor enters the classroom.
+2. Wait through several clock updates, reload the student page, then reconnect after a missed schedule update. The future card must remain visible on desktop and mobile; join must remain unavailable. A direct classroom/room-token attempt must still enforce the existing server admission policy.
+3. Create a lesson inside the opening window. Confirm it is visible while SCHEDULED, then start it as the teacher and join as the student. The same card updates without duplication. Reschedule it into the future: the classroom closes and the planned card remains.
+4. Cancel, complete or delete disposable lessons and recover the schedule; confirm they leave the student's current list. Remove a fixture student from the roster and verify its next snapshot excludes the lesson; a second unrelated student must never see it. Teacher/admin archive behavior stays unchanged.
+5. Keep deadline regression automated: before server-clock synchronization do not prune using device time; accepted extensions remain visible until the exact effective cutoff. Preserve the existing stale-revision reconciliation and admission checks.
+6. Remove only the task's disposable fixtures through existing account/application cleanup procedures. Report UI/card, admission, actual media join and physical-device acceptance separately. Production acceptance must use fresh accounts on both supported online origins after GitOps promotion, mandatory schema convergence and current security gates.
+
 ### Schedule reschedule and classroom/email smoke
 
 Run this after `api-gateway`, `email-service`, and `web-app` have all rolled out. Use the existing `teacher-demo` and `student-demo` browser profiles; do not repair lesson state with SQL.
