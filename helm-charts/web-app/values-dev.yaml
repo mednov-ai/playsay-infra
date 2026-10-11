@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-text-hotfix-release-candidate-386"
-  digest: sha256:735cbb609ba2a8badb0caff77242ef3ae2b49ef9126e17c835edddb923abc42e
+  tag: "web-codex-fix-student-planned-lesson-visibility-388"
+  digest: sha256:d98da301f68d107f5ad7b5226dc27f805e1442e989ccfadf8dbbd87c3b1a3561
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-text-hotfix-release-candidate-386
-  number: "386"
-  branch: codex/text-hotfix-release-candidate
-  branchLabel: web-codex-text-hotfix-release-candidate
-  commit: 4297273f1639a23e08cb91a5639e810db3acc3bb
-  commitShort: "4297273f1639"
+  name: web-codex-fix-student-planned-lesson-visibility-388
+  number: "388"
+  branch: codex/fix-student-planned-lesson-visibility
+  branchLabel: web-codex-fix-student-planned-lesson-visibility
+  commit: cdabe471ba2810ff468df65217911430fb6e912a
+  commitShort: "cdabe471ba28"
 service:
   type: NodePort
   nodePort: 32083
