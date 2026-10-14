@@ -8,3 +8,4 @@ resources:
   - workload-rbac.yaml
   - migration-runner.yaml
   - migration-admission.yaml
+  - keycloak-rollout-rbac.yaml
