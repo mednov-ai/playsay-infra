@@ -1,15 +1,29 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.007.18"
-baseRelease: "release/01.007.17"
-basePlatformCommit: "4297273f1639a23e08cb91a5639e810db3acc3bb"
-acceptedDevCommit: "cdabe471ba2810ff468df65217911430fb6e912a"
-baseInfraCommit: "daafb47a02ec448188566f95988a0de494f29e55"
-platformCommit: "cdabe471ba2810ff468df65217911430fb6e912a"
+status: building
+releaseBranch: "release/01.007.19"
+baseRelease: "release/01.007.18"
+basePlatformCommit: "cdabe471ba2810ff468df65217911430fb6e912a"
+acceptedDevCommit: "75c3060d2a8cb0f5d78e2d9be19071fd9c4bc2e6"
+baseInfraCommit: "3890b103d6026b6dacb8bad176ee1469e254dc0b"
+platformCommit: "75c3060d2a8cb0f5d78e2d9be19071fd9c4bc2e6"
 affectedTargets:
+  - "api-gateway"
+  - "ai-tutor-service"
+  - "worksheet-import-service"
+  - "vocabulary-service"
   - "web-app"
+  - "game-adapter-service"
+  - "collaboration-service"
+  - "media-service"
+  - "payment-service"
+  - "registration-service"
+  - "email-service"
+  - "keyboard-service"
+  - "keyboard-app"
 validationSuites:
+  - "ci-contracts"
+  - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "107"
-updatedAt: "2026-10-11T22:31:17Z"
+  build: "108"
+updatedAt: "2026-10-14T06:54:03Z"
