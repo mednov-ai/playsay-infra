@@ -1071,6 +1071,16 @@ Run after the exact candidate web image has passed scoped tests and rolled out t
 5. Keep deadline regression automated: before server-clock synchronization do not prune using device time; accepted extensions remain visible until the exact effective cutoff. Preserve the existing stale-revision reconciliation and admission checks.
 6. Remove only the task's disposable fixtures through existing account/application cleanup procedures. Report UI/card, admission, actual media join and physical-device acceptance separately. Production acceptance must use fresh accounts on both supported online origins after GitOps promotion, mandatory schema convergence and current security gates.
 
+### Near-term lesson creation and schedule visibility acceptance
+
+Run on the exact authorized DEV web image after its source, immutable digest and ArgoCD revision are verified. Use disposable teacher/student accounts with an explicit authorized roster; retain sanitized results and remove only task-created lessons, application profiles and identity accounts through their existing APIs.
+
+1. Keep the assigned student's schedule open. In the teacher's normal assignment wizard, select the current local date/minute, the default 45-minute duration and that student. Submit once without first creating a future lesson or rescheduling it. Verify HTTP 201 and the exact selected start/end with planned status.
+2. Verify the new lesson is returned in both authorized schedule snapshots and rendered in both lists. Wait through clock updates, reload both pages and verify the same card remains visible without classroom entry or duplication.
+3. Repeat for ten minutes ahead, retaining the same student, duration and material selection. Verify the selected interval is not shifted, both cards remain visible after reconnect and the mobile schedule has no horizontal overflow.
+4. Keep creation separate from classroom start/admission; visible planned cards do not grant room credentials. Cover native duration validation in automation: 45 minutes and 35/55-minute adjustment results must permit submission within the existing 10–180-minute bounds.
+5. Record current-runtime checks separately from a locally overlaid candidate and from post-rollout acceptance. A browser-only candidate overlay may verify a local bundle against DEV APIs but does not prove the deployed image or published develop integration. Record source-to-develop mapping and regressions as required by the hotfix integration gate; existing dependency exceptions must explicitly cover the candidate before image publication.
+
 ### Schedule reschedule and classroom/email smoke
 
 Run this after `api-gateway`, `email-service`, and `web-app` have all rolled out. Use the existing `teacher-demo` and `student-demo` browser profiles; do not repair lesson state with SQL.
