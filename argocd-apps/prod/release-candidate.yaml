@@ -2,10 +2,10 @@ schemaVersion: 1
 status: building
 releaseBranch: "release/01.007.19"
 baseRelease: "release/01.007.18"
-basePlatformCommit: "cdabe471ba2810ff468df65217911430fb6e912a"
-acceptedDevCommit: "75c3060d2a8cb0f5d78e2d9be19071fd9c4bc2e6"
-baseInfraCommit: "3890b103d6026b6dacb8bad176ee1469e254dc0b"
-platformCommit: "75c3060d2a8cb0f5d78e2d9be19071fd9c4bc2e6"
+basePlatformCommit: "75c3060d2a8cb0f5d78e2d9be19071fd9c4bc2e6"
+acceptedDevCommit: "79e89e1fb7b4d6f0d6cc935a46f43a6797fad6ab"
+baseInfraCommit: "7d5a1b5d7f5c111a940bd9ddba2ec628b5c3b7fb"
+platformCommit: "87a9389c41afba98757ca3375399c7dd1963aced"
 affectedTargets:
   - "api-gateway"
   - "ai-tutor-service"
@@ -18,6 +18,7 @@ affectedTargets:
   - "payment-service"
   - "registration-service"
   - "email-service"
+  - "keycloak"
   - "keyboard-service"
   - "keyboard-app"
 validationSuites:
@@ -25,5 +26,5 @@ validationSuites:
   - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "108"
-updatedAt: "2026-10-14T06:54:03Z"
+  build: "110"
+updatedAt: "2026-10-14T15:32:34Z"
