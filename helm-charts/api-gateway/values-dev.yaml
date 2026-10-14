@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-203"
-  digest: sha256:094e7c11f3a90ea6e14596b7e50e0fcc408ad0dac269260185b0692369e9c56b
+  tag: "api-codex-near-term-keycloak-fix-only-release-204"
+  digest: sha256:69a848aa774915235c212f63762cc375e37a17e4ce9830a686bdf52cb9c00850
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-203
-  number: "203"
-  branch: develop
-  branchLabel: api-dev
-  commit: bda8e4265d697fe2abd5e9f6b6a9d156bd18b4a8
-  commitShort: "bda8e4265d69"
+  name: api-codex-near-term-keycloak-fix-only-release-204
+  number: "204"
+  branch: codex/near-term-keycloak-fix-only-release
+  branchLabel: api-codex-near-term-keycloak-fix-only-release
+  commit: 6d4ef22fbe4d47dc8ff0daac10f29c76c54a4b4e
+  commitShort: "6d4ef22fbe4d"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
