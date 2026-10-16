@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-206"
-  digest: sha256:c77e33416b231dce608501ad32cef0244f8c0bc047cec4542c176c4840c8b130
+  tag: "api-dev-209"
+  digest: sha256:a4432f7d8c1d2733fd24d6a142f5119dfd2918b570ad13ef8398f38a86092d3e
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-206
-  number: "206"
+  name: api-dev-209
+  number: "209"
   branch: develop
   branchLabel: api-dev
-  commit: eed588a90ba65f67944724e964e727c0262644ff
-  commitShort: "eed588a90ba6"
+  commit: de3060983fa0d7d3f79d915b079f6cb6936f39fd
+  commitShort: "de3060983fa0"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -131,7 +131,6 @@ resources:
   limits:
     cpu: "1"
     memory: 1536Mi
-
 # Keep the compatible reader/registration deployment write-paused until DEV backfill completes.
 games:
   writesEnabled: false
