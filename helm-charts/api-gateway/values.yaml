@@ -211,10 +211,11 @@ games:
     drained: false
     runId: inventory
     activeDeadlineSeconds: 1800
+    javaToolOptions: "-Xms128m -Xmx384m -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=64m -XX:ActiveProcessorCount=1 -XX:+UseSerialGC"
     resources:
       requests:
         cpu: 100m
         memory: 384Mi
       limits:
         cpu: 500m
-        memory: 768Mi
+        memory: 1Gi

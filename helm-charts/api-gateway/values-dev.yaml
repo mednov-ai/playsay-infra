@@ -136,7 +136,7 @@ games:
   writesEnabled: false
   maintenance: true
   migration:
-    enabled: true
+    enabled: false
     dryRun: false
     drained: true
     runId: dev-cutover-1016-a
