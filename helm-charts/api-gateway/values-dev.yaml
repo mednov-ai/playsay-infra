@@ -137,6 +137,6 @@ games:
   maintenance: true
   migration:
     enabled: true
-    dryRun: true
-    drained: false
-    runId: dev-inventory-1016-b
+    dryRun: false
+    drained: true
+    runId: dev-cutover-1016-b
