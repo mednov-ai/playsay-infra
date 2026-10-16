@@ -134,9 +134,9 @@ resources:
 # Keep the compatible reader/registration deployment write-paused until DEV backfill completes.
 games:
   writesEnabled: false
-  maintenance: true
+  maintenance: false
   migration:
-    enabled: true
+    enabled: false
     dryRun: false
     drained: true
     runId: dev-cutover-1016-b
