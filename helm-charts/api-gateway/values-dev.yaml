@@ -136,7 +136,7 @@ games:
   writesEnabled: false
   maintenance: true
   migration:
-    enabled: false
-    dryRun: true
-    drained: false
-    runId: dev-inventory-1016-a
+    enabled: true
+    dryRun: false
+    drained: true
+    runId: dev-cutover-1016-a
