@@ -1,0 +1,31 @@
+{{- if .Values.games.migration.enabled }}
+{{- if not .Values.image.digest }}{{ fail "Game migration requires an immutable image digest" }}{{- end }}
+{{- if and (not .Values.games.migration.dryRun) (or (not .Values.games.migration.drained) (not .Values.games.maintenance) .Values.games.writesEnabled) }}{{ fail "Game migration requires drained contexts and disabled API game writes" }}{{- end }}
+{{- if not (regexMatch "^[a-z0-9][a-z0-9-]{0,31}$" .Values.games.migration.runId) }}{{ fail "Invalid game migration runId" }}{{- end }}
+{{- $deployment := include (print $.Template.BasePath "/deployment.yaml") . | fromYaml }}
+{{- $pod := deepCopy $deployment.spec.template.spec }}
+{{- $container := index $pod.containers 0 }}
+{{- $_ := unset $container "livenessProbe" }}
+{{- $_ := unset $container "readinessProbe" }}
+{{- $_ := unset $container "startupProbe" }}
+{{- $_ := set $container "args" (list "--playsay.games.migration.enabled=true" (printf "--playsay.games.migration.dry-run=%t" .Values.games.migration.dryRun) (printf "--playsay.games.migration.drained=%t" .Values.games.migration.drained) "--playsay.games.writes-enabled=false" "--playsay.scheduling.enabled=false" "--spring.liquibase.enabled=false" "--server.port=0") }}
+{{- $_ := set $container "resources" .Values.games.migration.resources }}
+{{- $_ := set $pod "restartPolicy" "Never" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-game-library-%s" (include "api-gateway.fullname" .) .Values.games.migration.runId | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "api-gateway.labels" . | nindent 4 }}
+    {{- include "api-gateway.buildLabels" . | nindent 4 }}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ .Values.games.migration.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: game-library-migration
+    spec:
+      {{- toYaml $pod | nindent 6 }}
+{{- end }}

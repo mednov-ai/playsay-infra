@@ -162,7 +162,7 @@
         marker: '    # {mark} HONEY SCHOOL HTML GAME UPLOAD ROUTES'
         backup: true
         block: |
-          location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+          location ~ ^/api/(?:games(?:/[^/]+/revisions)?|materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
               client_max_body_size 21m;
               proxy_pass http://10.60.0.20:32083;
               proxy_http_version 1.1;
