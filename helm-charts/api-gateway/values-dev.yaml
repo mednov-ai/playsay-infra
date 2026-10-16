@@ -134,9 +134,9 @@ resources:
 # Keep the compatible reader/registration deployment write-paused until DEV backfill completes.
 games:
   writesEnabled: false
-  maintenance: false
+  maintenance: true
   migration:
-    enabled: true
+    enabled: false
     dryRun: true
     drained: false
     runId: dev-inventory-1016-a
