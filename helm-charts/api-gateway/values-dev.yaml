@@ -131,7 +131,7 @@ resources:
   limits:
     cpu: "1"
     memory: 1536Mi
-# Keep the compatible reader/registration deployment write-paused until DEV backfill completes.
+# DEV backfill reconciled; normal library writes and lesson admission are enabled.
 games:
   writesEnabled: true
   maintenance: false
