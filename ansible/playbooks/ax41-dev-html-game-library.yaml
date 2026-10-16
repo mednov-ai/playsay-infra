@@ -1,0 +1,47 @@
+---
+- name: Reconcile only AX41 DEV HTML-game library upload routes
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars:
+    game_route_pattern: '(?m)(^[ \t]*server_name dev\.online\.honey\.school;\n(?:(?!^\}).*\n)*?^[ \t]*location ~ \^/api/\(\?:)materials/'
+    game_route_replacement: '\1games(?:/[^/]+/revisions)?|materials/'
+  tasks:
+    - name: Require the declared active AX41 host
+      ansible.builtin.assert:
+        that: ansible_host == '65.109.55.110'
+    - name: Read current shared configuration
+      ansible.builtin.slurp:
+        path: /etc/nginx/conf.d/playsay-honey.conf
+      register: game_routes_before
+    - name: Validate and activate only the reviewed DEV change
+      block:
+        - name: Extend only the existing DEV upload expression
+          ansible.builtin.replace:
+            path: /etc/nginx/conf.d/playsay-honey.conf
+            regexp: "{{ game_route_pattern }}"
+            replace: "{{ game_route_replacement }}"
+            backup: true
+          register: game_routes_edit
+        - name: Validate complete nginx configuration
+          ansible.builtin.command: nginx -t
+          changed_when: false
+          when: not ansible_check_mode
+        - name: Reload the verified scoped route change
+          ansible.builtin.systemd:
+            name: nginx
+            state: reloaded
+          when:
+            - not ansible_check_mode
+            - game_routes_edit.changed
+      rescue:
+        - name: Restore the scoped pre-change configuration
+          ansible.builtin.copy:
+            src: "{{ game_routes_edit.backup_file }}"
+            dest: /etc/nginx/conf.d/playsay-honey.conf
+            remote_src: true
+            mode: '0644'
+          when: game_routes_edit.backup_file is defined
+        - name: Stop after restoring invalid configuration
+          ansible.builtin.fail:
+            msg: DEV upload routes failed validation; previous configuration restored.
