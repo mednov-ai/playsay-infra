@@ -129,7 +129,7 @@ log_format rf_dev_livekit_signal 'msec=$msec request_id=$request_id status=$stat
 {% endmacro %}
 
 {% macro html_game_upload_locations(route, forwarded_proto) %}
-    location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
+    location ~ ^/api/(?:games(?:/[^/]+/revisions)?|materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {
         client_max_body_size 21m;
 {{ proxy_to_origin(route, forwarded_proto) }}
     }
