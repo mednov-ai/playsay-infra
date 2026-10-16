@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-shared-html-game-library-delivery-395"
-  digest: sha256:a0e2ef19f5a7d27dbccdd784673345164a0c924a7f552dee37b329d33643df0c
+  tag: "web-dev-398"
+  digest: sha256:59e0def7188abd50d7b99b7ff950124a7da68a551b354d6b5cf0600b2715f111
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-shared-html-game-library-delivery-395
-  number: "395"
-  branch: codex/shared-html-game-library-delivery
-  branchLabel: web-codex-shared-html-game-library-delivery
-  commit: 85ce60c0c4bf1dcd50d3df0f8fd74ce30874c41b
-  commitShort: "85ce60c0c4bf"
+  name: web-dev-398
+  number: "398"
+  branch: develop
+  branchLabel: web-dev
+  commit: de3060983fa0d7d3f79d915b079f6cb6936f39fd
+  commitShort: "de3060983fa0"
 service:
   type: NodePort
   nodePort: 32083
