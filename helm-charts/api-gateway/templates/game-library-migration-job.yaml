@@ -10,6 +10,12 @@
 {{- $_ := unset $container "startupProbe" }}
 {{- $_ := set $container "args" (list "--playsay.games.migration.enabled=true" (printf "--playsay.games.migration.dry-run=%t" .Values.games.migration.dryRun) (printf "--playsay.games.migration.drained=%t" .Values.games.migration.drained) "--playsay.games.writes-enabled=false" "--playsay.scheduling.enabled=false" "--spring.liquibase.enabled=false" "--server.port=0") }}
 {{- $_ := set $container "resources" .Values.games.migration.resources }}
+{{- $env := list }}
+{{- range $container.env }}
+{{- if ne .name "JAVA_TOOL_OPTIONS" }}{{- $env = append $env . }}{{- end }}
+{{- end }}
+{{- $env = append $env (dict "name" "JAVA_TOOL_OPTIONS" "value" .Values.games.migration.javaToolOptions) }}
+{{- $_ := set $container "env" $env }}
 {{- $_ := set $pod "restartPolicy" "Never" }}
 apiVersion: batch/v1
 kind: Job
