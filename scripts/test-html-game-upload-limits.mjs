@@ -41,3 +41,9 @@ assert.match(
 );
 
 console.log("AX41 and RF-edge HTML-game upload limit contracts passed");
+
+const devPlay=readFileSync(new URL('../ansible/playbooks/ax41-dev-html-game-library.yaml',import.meta.url),'utf8');
+assert.match(devPlay,/server_name dev/);
+assert.match(devPlay,/rescue:/);
+assert.match(devPlay,/backup: true/);
+assert.doesNotMatch(devPlay,/10\.60\.0\.20/);
