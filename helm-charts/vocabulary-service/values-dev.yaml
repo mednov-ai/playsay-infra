@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: "vocabulary-codex-game-library-vocabulary-ci-memory-74"
-  digest: sha256:e4c1bea853c7ed14537923fdfa0d90483a33f9f458ffce1502f54a1dcae58c09
+  tag: "vocabulary-dev-75"
+  digest: sha256:f76128c5cf0a63b8635a7bebb08df6ae16cc3d1e598fc1c0f7edd492e71dc4fd
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-codex-game-library-vocabulary-ci-memory-74, number: "74", branch: codex/game-library-vocabulary-ci-memory, branchLabel: vocabulary-codex-game-library-vocabulary-ci-memory, commit: 435b46c7aed50a62eb1215db5cc10acf8c15641d, commitShort: 435b46c7aed5}
+build: {name: vocabulary-dev-75, number: "75", branch: develop, branchLabel: vocabulary-dev, commit: de3060983fa0d7d3f79d915b079f6cb6936f39fd, commitShort: de3060983fa0}
 service: {type: ClusterIP}
 updateStrategy:
   type: RollingUpdate
