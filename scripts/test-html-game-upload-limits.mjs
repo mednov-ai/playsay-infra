@@ -12,6 +12,10 @@ for (const [name, relativePath, expectedLimits, expectedInvocations] of cases) {
   const template = readFileSync(resolve(repositoryRoot, relativePath), "utf8");
   assert.match(template, /materials\/\[\^\/\]\+\/assets\/html-games/);
   assert.match(template, /schedule\/lessons\/\[\^\/\]\+\/html-game-page/);
+  const pattern = template.match(/location ~ (\^\/api\/[^\n]+) \{/)[1];
+  const route = new RegExp(pattern);
+  for (const path of ["/api/games", "/api/games/game-1/revisions", "/api/materials/material-1/assets/html-games", "/api/schedule/lessons/lesson-1/html-game-page"]) assert.ok(route.test(path), `${name}: ${path}`);
+  for (const path of ["/api/games/game-1/fork", "/api/games/game-1/revisions/rev/content", "/api/games/", "/api/materials/material-1/assets/images", "/api/me"]) assert.equal(route.test(path), false, `${name}: ${path}`);
   assert.equal((template.match(/client_max_body_size 21m;/g) ?? []).length, expectedLimits, `${name} must define one scoped 21m ceiling`);
   assert.equal((template.match(/html_game_upload_locations\(route, '(?:http|https)'\)/g) ?? []).length, expectedInvocations, `${name} must render the ceiling for HTTP bootstrap and HTTPS`);
   assert.doesNotMatch(template, /location \/ \{\s*client_max_body_size 21m;/);
@@ -37,3 +41,9 @@ assert.match(
 );
 
 console.log("AX41 and RF-edge HTML-game upload limit contracts passed");
+
+const devPlay=readFileSync(new URL('../ansible/playbooks/ax41-dev-html-game-library.yaml',import.meta.url),'utf8');
+assert.match(devPlay,/server_name dev/);
+assert.match(devPlay,/rescue:/);
+assert.match(devPlay,/backup: true/);
+assert.doesNotMatch(devPlay,/10\.60\.0\.20/);

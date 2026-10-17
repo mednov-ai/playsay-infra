@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-near-term-keycloak-fix-only-release-392"
-  digest: sha256:119805728505009a95ad28138ac818be368dbf707bdd1e800955b58d03a898d9
+  tag: "web-dev-401"
+  digest: sha256:05c3b6c584b38eaf04a35f5360b7b2029b3473385e865814f68c3bf3d7b0bccf
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-near-term-keycloak-fix-only-release-392
-  number: "392"
-  branch: codex/near-term-keycloak-fix-only-release
-  branchLabel: web-codex-near-term-keycloak-fix-only-release
-  commit: 6d4ef22fbe4d47dc8ff0daac10f29c76c54a4b4e
-  commitShort: "6d4ef22fbe4d"
+  name: web-dev-401
+  number: "401"
+  branch: develop
+  branchLabel: web-dev
+  commit: 977a504e6c886cee4891ce5661cea4f5798b8ae6
+  commitShort: "977a504e6c88"
 service:
   type: NodePort
   nodePort: 32083
