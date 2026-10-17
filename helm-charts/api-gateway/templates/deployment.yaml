@@ -44,6 +44,8 @@ spec:
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
               value: {{ .Values.auth.jwkSetUri | quote }}
+            - name: PLAYSAY_WHITEBOARD_ENABLED
+              value: {{ .Values.whiteboard.enabled | quote }}
             - name: PLAYSAY_LESSON_ACCESS_ENABLED
               value: {{ .Values.lessonAccess.enabled | quote }}
             - name: PLAYSAY_LESSON_ACCESS_HMAC_KEY_VERSION

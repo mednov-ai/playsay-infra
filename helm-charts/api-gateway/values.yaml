@@ -28,6 +28,10 @@ auth:
   issuerUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
   jwkSetUri: https://ops.play-and-say.ru:18443/keycloak/realms/playsay/protocol/openid-connect/certs
 
+# Enabled only after aligned rollout outside lessons and refreshed-client acceptance.
+whiteboard:
+  enabled: false
+
 lessonAccess:
   enabled: false
   existingSecret: playsay-lesson-access
