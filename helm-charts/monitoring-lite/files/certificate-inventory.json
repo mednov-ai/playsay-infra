@@ -1,0 +1,242 @@
+{
+  "version": 1,
+  "certificates": [
+    {
+      "owner": "ax41",
+      "lineage": "online.honey.school",
+      "environment": "shared",
+      "names": [
+        "online.honey.school",
+        "key.honey.school",
+        "dev.online.honey.school",
+        "dev.key.honey.school",
+        "ops.honey.school",
+        "dev.ops.honey.school",
+        "jenkins.honey.school",
+        "hooks.honey.school"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "online.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "key.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "dev.online.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "dev.key.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "ops.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "dev.ops.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "jenkins.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        },
+        {
+          "hostname": "hooks.honey.school",
+          "connect": "65.109.55.110",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "ax41",
+      "lineage": "honey.school",
+      "environment": "prod",
+      "names": [
+        "honey.school"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "honey.school",
+          "connect": "honey.school",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "honeyschool.ru",
+      "environment": "prod",
+      "names": [
+        "honeyschool.ru",
+        "www.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "honeyschool.ru",
+          "connect": "honeyschool.ru",
+          "port": 443
+        },
+        {
+          "hostname": "www.honeyschool.ru",
+          "connect": "www.honeyschool.ru",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "online.honeyschool.ru",
+      "environment": "prod",
+      "names": [
+        "online.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "online.honeyschool.ru",
+          "connect": "online.honeyschool.ru",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "key.honeyschool.ru",
+      "environment": "prod",
+      "names": [
+        "key.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "key.honeyschool.ru",
+          "connect": "key.honeyschool.ru",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "ops.honey.school",
+      "environment": "prod",
+      "names": [
+        "ops.honey.school"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "ops.honey.school",
+          "connect": "ops.honey.school",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "dev.online.honeyschool.ru",
+      "environment": "dev",
+      "names": [
+        "dev.online.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "dev.online.honeyschool.ru",
+          "connect": "dev.online.honeyschool.ru",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "dev.key.honeyschool.ru",
+      "environment": "dev",
+      "names": [
+        "dev.key.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "dev.key.honeyschool.ru",
+          "connect": "dev.key.honeyschool.ru",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "dev.ops.honey.school",
+      "environment": "dev",
+      "names": [
+        "dev.ops.honey.school"
+      ],
+      "method": "webroot",
+      "activation": "nginx",
+      "probes": [
+        {
+          "hostname": "dev.ops.honey.school",
+          "connect": "dev.ops.honey.school",
+          "port": 443
+        }
+      ]
+    },
+    {
+      "owner": "selectel",
+      "lineage": "turn.honeyschool.ru",
+      "environment": "prod",
+      "names": [
+        "turn.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "deferred-turn",
+      "probes": [
+        {
+          "hostname": "turn.honeyschool.ru",
+          "connect": "turn.honeyschool.ru",
+          "port": 5349
+        }
+      ],
+      "pending_marker": "/run/playsay-rf-edge-media-relay-certificate-reload-required"
+    },
+    {
+      "owner": "selectel",
+      "lineage": "dev.turn.honeyschool.ru",
+      "environment": "dev",
+      "names": [
+        "dev.turn.honeyschool.ru"
+      ],
+      "method": "webroot",
+      "activation": "deferred-turn",
+      "probes": [
+        {
+          "hostname": "dev.turn.honeyschool.ru",
+          "connect": "dev.turn.honeyschool.ru",
+          "port": 5350
+        }
+      ],
+      "pending_marker": "/run/honey-school-dev-turn-certificate-reload-required"
+    }
+  ]
+}

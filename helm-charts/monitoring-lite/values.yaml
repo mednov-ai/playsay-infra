@@ -165,3 +165,6 @@ alerts:
     enabled: true
   routeObservability:
     enabled: false
+
+certificates:
+  enabled: false

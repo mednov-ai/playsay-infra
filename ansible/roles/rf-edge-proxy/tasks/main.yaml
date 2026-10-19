@@ -1,4 +1,7 @@
 ---
+- name: Validate declared ACME fallback routes
+  ansible.builtin.import_tasks: validate-acme.yaml
+
 - name: Ensure the Russian ingress dependencies are installed
   ansible.builtin.apt:
     name:
@@ -278,3 +281,7 @@
 - name: Activate the validated RF HTML-game upload routes
   tags: html-game-upload-routes
   ansible.builtin.meta: flush_handlers
+
+- name: Safely reconcile only ACME ingress
+  ansible.builtin.import_tasks: acme-ingress.yaml
+  tags: [never, certificate-acme-ingress]

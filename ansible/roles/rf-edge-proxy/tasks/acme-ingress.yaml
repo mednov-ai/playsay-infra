@@ -1,0 +1,56 @@
+---
+- name: Validate scoped ACME forwarding
+  ansible.builtin.import_tasks: validate-acme.yaml
+
+- name: Require a valid nginx baseline
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  check_mode: false
+
+- name: Require the existing production virtual host file
+  ansible.builtin.stat:
+    path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+  register: certificate_ingress_baseline
+
+- name: Refuse first-time bootstrap through the hotfix path
+  ansible.builtin.assert:
+    that: certificate_ingress_baseline.stat.exists
+
+- name: Reconcile only production ingress with rollback
+  block:
+    - name: Render production virtual hosts
+      ansible.builtin.template:
+        src: playsay-honey-rf-edge.conf.j2
+        dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      register: certificate_ingress_config
+    - name: Validate candidate nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+    - name: Gracefully load validated production configuration
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
+      when: not ansible_check_mode and certificate_ingress_config.changed
+  rescue:
+    - name: Restore only the previous production configuration
+      ansible.builtin.copy:
+        src: "{{ certificate_ingress_config.backup_file }}"
+        dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+        remote_src: true
+        mode: '0644'
+      when: certificate_ingress_config.backup_file is defined
+    - name: Validate restored nginx configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+    - name: Safely load the restored configuration
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
+    - name: Report failed ingress delivery
+      ansible.builtin.fail:
+        msg: ACME ingress failed; previous production configuration restored. No media services changed.

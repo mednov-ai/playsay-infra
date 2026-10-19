@@ -187,11 +187,7 @@ server {
     listen [::]:80;
     server_name {{ route_server_names | join(' ') }};
 
-    location ^~ /.well-known/acme-challenge/ {
-        root {{ rf_edge_acme_webroot }};
-        default_type text/plain;
-        try_files $uri =404;
-    }
+{% include 'certificate-acme-location.conf.j2' %}
 
 {% if route_tls_enabled %}
     location / {

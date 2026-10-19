@@ -1,0 +1,20 @@
+---
+- name: Manage only the AX41 certificate lifecycle
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars:
+    certificate_owner: ax41
+    certificate_metrics_url: http://10.60.0.20:32085/victoria-metrics/api/v1/import/prometheus
+  roles:
+    - honey-school-certificate-lifecycle
+
+- name: Manage only the established Selectel certificate lifecycle
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  vars:
+    certificate_owner: selectel
+    certificate_metrics_url: https://ops.honey.school/victoria-metrics/api/v1/import/prometheus
+  roles:
+    - honey-school-certificate-lifecycle

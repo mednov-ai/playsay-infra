@@ -2870,3 +2870,164 @@ For whiteboards, `Saved` requires a durable state vector and canonical delete-se
 If persistence fails, preserve the process and bounded pending queue, investigate sanitized `snapshot_outcome`/queue metrics and reconnect the same authorized document when allowed. Do not promise history contains unsaved edits or restart a terminal queue away. Retain the last durable history snapshot while investigating; process loss before acknowledgement remains outside the guarantee. Reuse the existing two-successive-zero-polls drain requirement before any image/config change.
 
 Rollback disables `whiteboard.enabled` through GitOps outside lessons and returns new sessions to material presentation. Preserve additive tables, snapshots, provenance and manual category choices. Use a compatible reader for saved boards; do not drop columns/tables, recreate deleted generations, restart LiveKit/coturn or restore a database as an automatic UI rollback. Application delivery and develop integration still require their own authorization and evidence.
+
+## Certificate renewal: AX41 and Selectel
+
+The declared inventory is `helm-charts/monitoring-lite/files/certificate-inventory.json`.
+It owns only active Honey School lineages: AX41 shared eight-SAN and root certificates;
+Selectel root/www, production and DEV online/key/ops, and the independent production/DEV
+TURN certificates. Other hosted services and deleted/archived resources are excluded.
+Inventory is a desired-state list, not proof that its files, renewal configuration or
+served chains currently exist. Before delivery reconcile every entry against the
+actual host and active route map; an uncovered or missing lineage fails acceptance.
+Keep AX41 keys on AX41 and Selectel keys on Selectel.
+
+The shared RF template serves local HTTP-01 files first. Only the exact production
+`ops.honey.school` and DEV `dev.ops.honey.school` opt into fixed AX41 HTTP fallback
+for a missing local token. The raw token path must be one base64url segment and the
+method GET/HEAD. Credentials, cookies, request bodies and forwarded headers are not
+proxied. This HTTP-only challenge route continues working when origin TLS has
+expired; application/auth upstreams retain verified TLS and the existing issuer.
+
+### Local validation
+
+Use an isolated infra checkout; do not copy the dirty primary checkout into a
+candidate. Use a Python environment with Jinja2/PyYAML (the external Ansible runtime
+already provides them). Docker tests use an isolated local nginx container and remove
+only their own container/fixtures. No test calls Certbot or a production endpoint.
+
+```sh
+python3 -m unittest discover -s scripts/tests -p 'test_certificate_*.py' -v
+python3 scripts/test-rf-edge-dev-contract.py
+python3 scripts/test-rf-edge-media-relay-monitoring.py
+python3 scripts/test-edge-log-collector-contract.py
+helm lint helm-charts/monitoring-lite -f helm-charts/monitoring-lite/values-prod.yaml
+python3 scripts/tests/check_certificate_alerts.py --promtool /absolute/path/to/external/promtool
+scripts/apply-certificate-lifecycle-release.sh --syntax --owner ax41
+```
+
+### Scoped numeric-release delivery
+
+The coding/apply workflow does not authorize publication or live operations. After
+explicit delivery authority, refresh refs, select the next unused numeric infra
+release, record exact SHAs, preserve running application image/digest and ArgoCD
+pointers, and satisfy all applicable release/activity/schema/backup gates. A host-only
+candidate changes ingress and certificate management; do not run the platform image
+dispatcher or switch application ArgoCD revisions merely to repair a host certificate.
+Retain protected backups/checksums of affected nginx files and Certbot metadata/keys
+on their owning hosts. Never print keys, authenticated callback URLs or provider data.
+
+Deliver and test DEV ingress first through its existing exact-commit wrapper. Apply
+production ingress only with the new bounded option; it selects no media roles:
+
+```sh
+scripts/apply-rf-edge-dev-release.sh <accepted-40-character-infra-sha> ingress-check <ignored-rf-inventory>
+scripts/apply-rf-edge-dev-release.sh <accepted-40-character-infra-sha> ingress-apply <ignored-rf-inventory>
+scripts/apply-rf-edge-release.sh --check --acme-only --inventory <ignored-rf-inventory>
+PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN \
+  scripts/apply-rf-edge-release.sh --apply --acme-only --inventory <ignored-rf-inventory>
+```
+
+Review the whole template-render diff, not only ACME lines; unrelated differences
+block apply. Validate nginx before graceful reload. The production scoped path requires
+a pre-existing vhost file and restores its backup on validation/reload failure; DEV
+keeps its separate rollback owner. Test local-only, origin-only, collision and absent
+challenge files over public HTTP for both ops names, then remove only task-owned
+probe files and prove their absence. Never place a real secret in a challenge fixture.
+
+After staging validation succeeds, renew the existing AX41 shared lineage through the
+reviewed issuance/renewal script, validate nginx and gracefully reload it. Retain all
+eight SANs and the original lineage path. Compare disk and served fingerprints for
+all names, using direct AX41 IP plus each SNI name for ops names routed publicly to
+Selectel; separately validate public Selectel chains. A new file or timer alone is
+not proof that nginx serves the new certificate. Do not roll back to an expired chain.
+
+After initial TLS recovery, use the certificate-only playbook for each host owner:
+
+```sh
+scripts/apply-certificate-lifecycle-release.sh --check --owner ax41 --inventory <ignored-ax41-inventory>
+PLAYSAY_CERTIFICATES_APPROVED_RELEASE=release/NN.NNN.NN \
+  scripts/apply-certificate-lifecycle-release.sh --apply --owner ax41 --inventory <ignored-ax41-inventory>
+scripts/apply-certificate-lifecycle-release.sh --check --owner selectel --inventory <ignored-rf-inventory>
+PLAYSAY_CERTIFICATES_APPROVED_RELEASE=release/NN.NNN.NN \
+  scripts/apply-certificate-lifecycle-release.sh --apply --owner selectel --inventory <ignored-rf-inventory>
+```
+
+This play touches only the inventory/runner and certificate systemd schedules; it
+neither runs general infrastructure/media roles nor restarts an active media service.
+It refuses unknown package/effective Certbot service arguments. Review any such
+rejection before changing the wrapper; do not discard a custom operator workflow.
+Reconcile non-package duplicate cron/timers during authorized preflight; never remove
+unrelated service automation. Existing package Certbot cron is normally disabled by
+its own systemd-host guard. No second production renewal timer is added: the existing
+`certbot.timer` remains the owner. Its observer renews the same existing lineages by
+name, continues after one failure and preserves processing of non-Honey-School
+lineages without editing their configuration or exporting their metadata.
+
+Deploy focused monitoring rules through reviewed GitOps, with unchanged application
+images. The existing protected metrics import route/config on Selectel must already
+exist; do not synthesize/reuse credentials. A missing exporter path is a failing
+acceptance condition. AX41 uses the existing private VictoriaMetrics import path;
+Selectel uses the existing protected config and direct AX41 TLS/SNI import route.
+
+### Automatic checks and activation
+
+| Owner | Schedule | Evidence |
+|---|---|---|
+| Existing `certbot.timer` | 00:00 and 12:00 host time, persistent | Per-lineage eligibility time/result, `not_due` versus actual renewal |
+| `honey-school-certificate-health.timer` | Hourly at minute 05, persistent | Disk and actual served chain/name/expiry, fingerprint agreement |
+| `honey-school-certificate-rehearse.timer` | Sunday 03:15 host time, persistent | Staging HTTP-01 rehearsal for every owned lineage |
+| `honey-school-certificate-publish.timer` | Every five minutes | Existing monitoring receives state values with original observation times |
+
+State is protected under `/var/lib/honeyschool/certificates`; inventory is under
+`/etc/honeyschool/certificates/inventory.json`. Native renewal eligibility and locking
+remain in force. Internal per-command random sleep is disabled because the existing
+owner timer already schedules the bounded batch; preserve supported-client validation
+during delivery. A lineage not yet due is a successful check; do not use forced
+production renewal to demonstrate a schedule. Weekly staging runs suppress directory
+and configured pre/post/deploy activation hooks and never replace production material.
+Validate installed-version support during delivery. Failed commands expose only safe
+stage/outcome metadata, never raw provider output. Test hooks separately against valid
+production material in an approved rehearsal/harness.
+
+Health probes use normal trust validation and protocol-appropriate TLS, not an HTTP
+200 requirement; ops/VPN/TURN restrictions do not justify skipping TLS checks. Origin
+probes do not follow public DNS to Selectel. Generic availability probes with skipped
+verification cannot substitute for these checks.
+
+nginx activation uses the existing validated graceful reload hooks. After a real renewal,
+the observer checks the served fingerprint and validates/gracefully reloads nginx only
+if the hooks have not already activated it; failed activation is reported explicitly. A served mismatch
+for 15 minutes is critical. Production/DEV TURN renewal keeps the existing marker and
+zero-allocation activation procedure. Monitor both marker age and the still-served
+chain; never restart active allocations to clear an alert. Marker pending for an hour
+warns; an invalid or at-most-14-day served TURN certificate remains critical even when
+its disk replacement is valid.
+
+### Alerts and acceptance
+
+Existing monitoring rules evaluate at least once per minute and use the existing
+Alertmanager route. Certificate warning/critical thresholds are 30/14 days for disk
+or served chains. Invalid chain/name/expiry is critical. Renewal/rehearsal failures
+warn without waiting for expiry and become critical after 24 hours. Expected-inventory
+recording rules detect missing series independently of the failed collector. Health
+older than two hours, eligibility older than 26 hours and rehearsal older than eight
+days fail freshness checks. Re-publishing an old value never refreshes observation
+success. Monitoring does not issue certificates or restart services.
+
+Acceptance requires: complete inventory; enabled/persistent timers; safe eligibility
+checks and staging validation; verified served chains; controlled near-expiry, invalid,
+missing/stale and activation-mismatch fixtures; and approved firing/resolved receiver
+delivery. Do not send test notifications or emails without the appropriate explicit
+authority and test recipient. Public readiness is not authenticated acceptance.
+Verify application login and Mailjet separately: harmless authenticated `[]` callback
+must return 200, missing/wrong credentials 401, all seven expected registrations must
+be healthy, and an actual approved provider event must be received and processed
+independently of polling. Do not claim success from `alive` or an empty callback alone.
+
+Rollback only task-changed nginx/configuration/scheduler/rules through their reviewed
+owners, retaining valid renewed chains, the pre-existing Certbot schedule, unrelated
+alerts and protected backups. Never disable global renewal as a shortcut. A temporary
+coverage reduction needs an owner/restoration deadline and keeps prevention acceptance
+pending. Record source/release/target SHAs, focused checks, acceptance gaps and remote
+`develop` ancestry/content evidence. Recovery alone does not close the hotfix.

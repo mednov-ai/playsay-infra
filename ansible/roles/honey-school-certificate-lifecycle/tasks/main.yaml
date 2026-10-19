@@ -1,0 +1,123 @@
+---
+- name: Require the existing fixed host and approved package renewal baseline
+  ansible.builtin.assert:
+    that:
+      - certificate_owner in ['ax41', 'selectel']
+      - (certificate_owner == 'ax41' and ansible_host == '65.109.55.110') or (certificate_owner == 'selectel' and ansible_host == '94.102.89.213')
+
+- name: Read the original package Certbot service
+  ansible.builtin.slurp:
+    src: /usr/lib/systemd/system/certbot.service
+  register: certificate_native_service
+
+- name: Reject custom package renewal arguments instead of overwriting their meaning
+  ansible.builtin.assert:
+    that:
+      - (certificate_native_service.content | b64decode) is search('(?m)^ExecStart=/usr/bin/certbot -q renew( --no-random-sleep-on-renew)?$')
+    fail_msg: Review custom Certbot service arguments before installing the renewal observer.
+
+- name: Inspect effective renewal service before replacing its invocation
+  ansible.builtin.command: systemctl show certbot.service --property=ExecStart --value
+  register: certificate_effective_service
+  changed_when: false
+  check_mode: false
+
+- name: Preserve custom renewal service overrides
+  ansible.builtin.assert:
+    that:
+      - "'argv[]=/usr/bin/certbot -q renew ;' in certificate_effective_service.stdout or 'argv[]=/usr/bin/certbot -q renew --no-random-sleep-on-renew ;' in certificate_effective_service.stdout or 'argv[]=/usr/local/sbin/honey-school-certificates renew --owner ' in certificate_effective_service.stdout"
+    fail_msg: Unrecognized effective Certbot service requires review; no existing automation was replaced.
+
+- name: Create protected certificate lifecycle directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop:
+    - /etc/honeyschool/certificates
+    - /var/lib/honeyschool/certificates
+    - /etc/systemd/system/certbot.service.d
+    - /etc/systemd/system/certbot.timer.d
+
+- name: Install declared certificate inventory
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../helm-charts/monitoring-lite/files/certificate-inventory.json"
+    dest: /etc/honeyschool/certificates/inventory.json
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Install certificate lifecycle runner
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/certificate-lifecycle.py"
+    dest: /usr/local/sbin/honey-school-certificates
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Check the declared inventory before enabling schedules
+  ansible.builtin.command: "/usr/local/sbin/honey-school-certificates validate --owner {{ certificate_owner }}"
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Observe each renewal through the existing package service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/certbot.service.d/honey-school.conf
+    mode: '0644'
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/local/sbin/honey-school-certificates renew --owner {{ certificate_owner }} --include-unmanaged
+      TimeoutStartSec=3h
+
+- name: Keep one persistent twice daily Certbot timer
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/certbot.timer.d/honey-school.conf
+    mode: '0644'
+    content: |
+      [Timer]
+      OnCalendar=
+      OnCalendar=*-*-* 00,12:00:00
+      RandomizedDelaySec=0
+      Persistent=true
+
+- name: Install health rehearsal and metrics services
+  ansible.builtin.template:
+    src: lifecycle.service.j2
+    dest: "/etc/systemd/system/honey-school-certificate-{{ item.mode }}.service"
+    mode: '0644'
+  loop:
+    - {mode: health}
+    - {mode: rehearse}
+    - {mode: publish}
+
+- name: Install persistent lifecycle timers
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/honey-school-certificate-{{ item.mode }}.timer"
+    mode: '0644'
+    content: |
+      [Unit]
+      Description=Honey School certificate {{ item.mode }} schedule
+      [Timer]
+      OnCalendar={{ item.calendar }}
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+  loop:
+    - {mode: health, calendar: '*-*-* *:05:00'}
+    - {mode: rehearse, calendar: 'Sun *-*-* 03:15:00'}
+    - {mode: publish, calendar: '*-*-* *:0/5:30'}
+
+- name: Enable existing and declared lifecycle timers
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - certbot.timer
+    - honey-school-certificate-health.timer
+    - honey-school-certificate-rehearse.timer
+    - honey-school-certificate-publish.timer

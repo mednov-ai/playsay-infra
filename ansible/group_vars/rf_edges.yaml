@@ -42,6 +42,7 @@ rf_edge_production_routes:
       - source: https://ops.play-and-say.ru:18443/keycloak/realms/playsay
         target: https://ops.honey.school/keycloak/realms/playsay
   - hostname: ops.honey.school
+    origin_acme_fallback: true
     origin_hostname: ops.honey.school
     certificate_directory: /etc/letsencrypt/live/ops.honey.school
     environment: prod
@@ -73,6 +74,7 @@ rf_edge_development_routes:
       - source: https://dev.key.honey.school
         target: https://dev.key.honeyschool.ru
   - hostname: dev.ops.honey.school
+    origin_acme_fallback: true
     origin_hostname: dev.ops.honey.school
     certificate_directory: /etc/letsencrypt/live/dev.ops.honey.school
     environment: dev
