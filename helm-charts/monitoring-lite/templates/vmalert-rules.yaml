@@ -355,3 +355,82 @@ data:
             annotations:
               summary: "Production VictoriaLogs unavailable or disk pressure"
       {{- end }}
+
+  {{- if .Values.certificates.enabled }}
+  certificates.yaml: |
+    groups:
+      - name: honey-school-certificates
+        interval: 1m
+        rules:
+          {{- range (fromJson (.Files.Get "files/certificate-inventory.json")).certificates }}
+          - record: hs_certificate_inventory_expected
+            expr: vector(1)
+            labels:
+              owner: {{ .owner | quote }}
+              lineage: {{ .lineage | quote }}
+              certificate_environment: {{ .environment | quote }}
+              activation: {{ .activation | quote }}
+          {{- end }}
+          - alert: HoneySchoolCertificateInventoryGap
+            expr: hs_certificate_inventory_expected unless on(owner,lineage) hs_certificate_health_checked_at
+            labels: {severity: critical}
+            annotations:
+              summary: "Owned certificate has no observed lifecycle metrics"
+          - alert: HoneySchoolCertificateHealthStale
+            expr: time() - hs_certificate_health_checked_at > 7200
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate health observations are absent or older than two hours"
+          - alert: HoneySchoolCertificateInvalid
+            expr: hs_certificate_health_healthy == 0
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate disk or served identity, chain or validity check failed"
+          - alert: HoneySchoolCertificateExpiring
+            expr: (hs_certificate_health_disk_expiry > 0 and hs_certificate_health_disk_expiry - time() <= 2592000) or (hs_certificate_health_served_expiry > 0 and hs_certificate_health_served_expiry - time() <= 2592000)
+            labels: {severity: warning}
+            annotations:
+              summary: "Certificate expires within 30 days"
+          - alert: HoneySchoolCertificateExpiryCritical
+            expr: (hs_certificate_health_disk_expiry > 0 and hs_certificate_health_disk_expiry - time() <= 1209600) or (hs_certificate_health_served_expiry > 0 and hs_certificate_health_served_expiry - time() <= 1209600)
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate expires within 14 days"
+          - alert: HoneySchoolCertificateActivationFailed
+            expr: hs_certificate_renewal_activation_success == 0
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate safe activation failed"
+          - alert: HoneySchoolCertificateActivationMismatch
+            expr: hs_certificate_health_mismatch_since{activation="nginx"} > 0 and time() - hs_certificate_health_mismatch_since{activation="nginx"} > 900
+            labels: {severity: critical}
+            annotations:
+              summary: "nginx has not served the renewed certificate after 15 minutes"
+          - alert: HoneySchoolTurnCertificateActivationPending
+            expr: hs_certificate_health_pending_since{activation="deferred-turn"} > 0 and time() - hs_certificate_health_pending_since{activation="deferred-turn"} > 3600
+            labels: {severity: warning}
+            annotations:
+              summary: "TURN certificate activation awaits a verified zero-allocation window"
+          {{- range $kind, $deadline := dict "renewal" 93600 "rehearsal" 691200 }}
+          - alert: {{ printf "HoneySchoolCertificate%sMissing" ($kind | title) }}
+            expr: hs_certificate_inventory_expected unless on(owner,lineage) hs_certificate_{{ $kind }}_checked_at
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate {{ $kind }} observations disappeared"
+          - alert: {{ printf "HoneySchoolCertificate%sStale" ($kind | title) }}
+            expr: time() - hs_certificate_{{ $kind }}_checked_at > {{ $deadline }}
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate {{ $kind }} schedule has not produced a fresh result"
+          - alert: {{ printf "HoneySchoolCertificate%sFailed" ($kind | title) }}
+            expr: hs_certificate_{{ $kind }}_success == 0 and hs_certificate_{{ $kind }}_checked_at > 0
+            labels: {severity: warning}
+            annotations:
+              summary: "Certificate {{ $kind }} failed; inspect the owned lineage before expiry"
+          - alert: {{ printf "HoneySchoolCertificate%sFailurePersistent" ($kind | title) }}
+            expr: hs_certificate_{{ $kind }}_failure_since > 0 and time() - hs_certificate_{{ $kind }}_failure_since > 86400
+            labels: {severity: critical}
+            annotations:
+              summary: "Certificate {{ $kind }} failure persists for 24 hours"
+          {{- end }}
+  {{- end }}

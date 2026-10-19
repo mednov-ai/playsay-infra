@@ -1,0 +1,9 @@
+[Unit]
+Description=Honey School certificate {{ item.mode }}
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+UMask=0077
+TimeoutStartSec=1h
+ExecStart=/usr/local/sbin/honey-school-certificates {{ item.mode }} --owner {{ certificate_owner }}{% if item.mode == 'publish' %} --push-url {{ certificate_metrics_url }}{% if certificate_owner == 'selectel' %} --curl-config /etc/playsay/rf-edge-observability-curl.conf --resolve ops.honey.school:443:65.109.55.110{% endif %}{% endif %}

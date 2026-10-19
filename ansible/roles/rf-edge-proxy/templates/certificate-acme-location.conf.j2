@@ -1,0 +1,32 @@
+    location ^~ /.well-known/acme-challenge/ {
+        # Inspect the raw URI as well as nginx's normalized location.
+        if ($request_uri !~ "^/\.well-known/acme-challenge/[A-Za-z0-9_-]+$") { return 404; }
+        limit_except GET { deny all; }
+        root {{ rf_edge_acme_webroot }};
+        default_type text/plain;
+        add_header Cache-Control "no-store" always;
+{% if route.origin_acme_fallback | default(false) | bool %}
+        try_files $uri @ax41_acme_challenge;
+{% else %}
+        try_files $uri =404;
+{% endif %}
+    }
+{% if route.origin_acme_fallback | default(false) | bool %}
+    location @ax41_acme_challenge {
+        internal;
+        if ($request_uri !~ "^/\.well-known/acme-challenge/[A-Za-z0-9_-]+$") { return 404; }
+        limit_except GET { deny all; }
+        proxy_pass http://{{ rf_edge_origin_address }};
+        proxy_pass_request_headers off;
+        proxy_pass_request_body off;
+        proxy_set_header Host {{ route.hostname }};
+        proxy_set_header Connection "";
+        proxy_set_header Content-Length "";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 5s;
+        proxy_send_timeout 5s;
+        proxy_cache off;
+        proxy_redirect off;
+        add_header Cache-Control "no-store" always;
+    }
+{% endif %}

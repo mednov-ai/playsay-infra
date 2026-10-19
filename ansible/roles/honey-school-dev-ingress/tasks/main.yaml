@@ -1,4 +1,7 @@
 ---
+- name: Validate declared DEV ACME fallback routes
+  ansible.builtin.import_tasks: ../../rf-edge-proxy/tasks/validate-acme.yaml
+
 - name: Require a valid existing nginx baseline
   ansible.builtin.command: nginx -t
   changed_when: false
@@ -65,6 +68,15 @@
         path: /etc/nginx/conf.d/honey-school-rf-dev.conf
         state: absent
       when: honey_school_dev_ingress_config.backup_file is not defined
+
+    - name: Validate restored complete configuration
+      ansible.builtin.command: nginx -t
+      changed_when: false
+
+    - name: Safely load restored configuration
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
 
     - name: Stop delivery after restoring the on-disk configuration
       ansible.builtin.fail:

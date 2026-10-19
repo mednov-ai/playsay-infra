@@ -1,0 +1,13 @@
+---
+- name: Restrict cross-edge ACME forwarding to the two owned ops names
+  ansible.builtin.assert:
+    that:
+      - rf_edge_origin_address == '65.109.55.110'
+      - item.hostname in ['ops.honey.school', 'dev.ops.honey.school']
+      - item.kind == 'keycloak'
+      - item.origin_hostname == item.hostname
+      - item.aliases | default([]) | length == 0
+    fail_msg: Cross-edge ACME refuses undeclared names or origin destinations.
+  loop: "{{ rf_edge_routes | selectattr('origin_acme_fallback', 'defined') | selectattr('origin_acme_fallback') | list }}"
+  loop_control:
+    label: "{{ item.hostname }}"

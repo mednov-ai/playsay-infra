@@ -76,3 +76,6 @@ victoriaLogs:
   storage:
     enabled: true
     size: 10Gi
+
+certificates:
+  enabled: true
