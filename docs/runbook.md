@@ -2968,7 +2968,12 @@ name, continues after one failure and preserves processing of non-Honey-School
 lineages without editing their configuration or exporting their metadata.
 
 Deploy focused monitoring rules through reviewed GitOps, with unchanged application
-images. The existing protected metrics import route/config on Selectel must already
+images. For an infra-only certificate release, the production root may select the
+numeric infra branch while every product child retains its accepted runtime branch;
+only monitoring-lite selects the certificate release. Keep `current-release.txt` and
+the application candidate manifest at the real platform baseline so subsequent
+platform release tooling can resolve that platform source. Record the host overlay
+separately; never manufacture a platform release or ready application manifest. The existing protected metrics import route/config on Selectel must already
 exist; do not synthesize/reuse credentials. A missing exporter path is a failing
 acceptance condition. AX41 uses the existing private VictoriaMetrics import path;
 Selectel uses the existing protected config and direct AX41 TLS/SNI import route.
