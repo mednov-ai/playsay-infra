@@ -121,3 +121,4 @@
     - honey-school-certificate-health.timer
     - honey-school-certificate-rehearse.timer
     - honey-school-certificate-publish.timer
+  when: not ansible_check_mode or item == 'certbot.timer'
