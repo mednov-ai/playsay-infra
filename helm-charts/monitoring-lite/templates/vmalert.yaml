@@ -32,7 +32,7 @@ spec:
           args:
             - -datasource.url={{ include "monitoring-lite.vmUrl" . }}
             {{- if .Values.certificates.enabled }}
-            - -remoteWrite.url={{ include "monitoring-lite.vmUrl" . }}/api/v1/write
+            - -remoteWrite.url={{ include "monitoring-lite.vmUrl" . }}
             {{- end }}
             - -notifier.url={{ include "monitoring-lite.alertmanagerUrl" . }}
             - -rule=/rules/*.yaml

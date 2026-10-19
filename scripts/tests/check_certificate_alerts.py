@@ -15,7 +15,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--promtool',required=True);args=parser.parse_args()
     output=subprocess.check_output(['helm','template','monitoring-lite',str(ROOT/'helm-charts/monitoring-lite'),'-f',str(ROOT/'helm-charts/monitoring-lite/values-prod.yaml')],text=True)
     deployment=next(doc for doc in yaml.safe_load_all(output) if doc and doc.get('kind')=='Deployment' and doc['metadata']['name']=='monitoring-lite-vmalert')
-    assert any(arg.startswith('-remoteWrite.url=') and arg.endswith('/victoria-metrics/api/v1/write') for arg in deployment['spec']['template']['spec']['containers'][0]['args']), 'vmalert recording rules require remote-write configuration'
+    assert any(arg.startswith('-remoteWrite.url=') and arg.endswith('/victoria-metrics') for arg in deployment['spec']['template']['spec']['containers'][0]['args']), 'vmalert recording rules require its base remote-write URL; the client appends /api/v1/write'
     config=next(doc for doc in yaml.safe_load_all(output) if doc and doc.get('kind')=='ConfigMap' and 'certificates.yaml' in doc.get('data',{}))
     full=yaml.safe_load(config['data']['certificates.yaml'])
     fixture=copy.deepcopy(full)
