@@ -7,20 +7,55 @@
   changed_when: false
   check_mode: false
 
-- name: Require the existing production virtual host file
-  ansible.builtin.stat:
-    path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
-  register: certificate_ingress_baseline
+- name: Create protected temporary candidate directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: honey-certificate-ingress-
+  register: certificate_ingress_temporary
+  check_mode: false
 
-- name: Refuse first-time bootstrap through the hotfix path
-  ansible.builtin.assert:
-    that: certificate_ingress_baseline.stat.exists
-
-- name: Reconcile only production ingress with rollback
+- name: Reconcile only the existing production ACME location with rollback
   block:
-    - name: Render production virtual hosts
+    - name: Render the bounded production challenge snippet
       ansible.builtin.template:
-        src: playsay-honey-rf-edge.conf.j2
+        src: certificate-acme-location.conf.j2
+        dest: "{{ certificate_ingress_temporary.path }}/snippet"
+        mode: '0600'
+      vars:
+        route: "{{ rf_edge_production_routes | selectattr('hostname', 'equalto', 'ops.honey.school') | first }}"
+      check_mode: false
+    - name: Install the reviewed candidate builder temporarily
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../scripts/patch-certificate-acme-ingress.py"
+        dest: "{{ certificate_ingress_temporary.path }}/patch.py"
+        mode: '0700'
+      check_mode: false
+    - name: Build a candidate preserving every other configuration byte
+      ansible.builtin.command:
+        argv:
+          - python3
+          - "{{ certificate_ingress_temporary.path }}/patch.py"
+          - --config
+          - /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+          - --snippet
+          - "{{ certificate_ingress_temporary.path }}/snippet"
+          - --hostname
+          - ops.honey.school
+          - --webroot
+          - "{{ rf_edge_acme_webroot }}"
+          - --output
+          - "{{ certificate_ingress_temporary.path }}/candidate"
+      changed_when: false
+      check_mode: false
+    - name: Read the bounded candidate
+      ansible.builtin.slurp:
+        src: "{{ certificate_ingress_temporary.path }}/candidate"
+      register: certificate_ingress_candidate
+      no_log: true
+      check_mode: false
+    - name: Install only the production ACME location change
+      ansible.builtin.copy:
+        content: "{{ certificate_ingress_candidate.content | b64decode }}"
         dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
         owner: root
         group: root
@@ -51,6 +86,13 @@
       ansible.builtin.systemd:
         name: nginx
         state: reloaded
+      when: certificate_ingress_config.backup_file is defined
     - name: Report failed ingress delivery
       ansible.builtin.fail:
-        msg: ACME ingress failed; previous production configuration restored. No media services changed.
+        msg: ACME ingress failed; previous production configuration preserved. No media services changed.
+  always:
+    - name: Remove only the task-owned candidate directory
+      ansible.builtin.file:
+        path: "{{ certificate_ingress_temporary.path }}"
+        state: absent
+      check_mode: false

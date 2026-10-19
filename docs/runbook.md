@@ -2929,7 +2929,10 @@ PLAYSAY_RF_EDGE_APPROVED_RELEASE=release/NN.NNN.NN \
 ```
 
 Review the whole template-render diff, not only ACME lines; unrelated differences
-block apply. Validate nginx before graceful reload. The production scoped path requires
+block apply. The production ACME-only owner uses a conservative candidate builder
+that replaces only the known HTTP challenge block of `ops.honey.school` in the
+existing file. It preserves every other byte and refuses an unknown block; it does
+not reconcile accumulated full-template changes as part of certificate recovery. Validate nginx before graceful reload. The production scoped path requires
 a pre-existing vhost file and restores its backup on validation/reload failure; DEV
 keeps its separate rollback owner. Test local-only, origin-only, collision and absent
 challenge files over public HTTP for both ops names, then remove only task-owned

@@ -98,3 +98,9 @@ Both archive listings verify. SHA256: AX41
 `d699568f8b9734b76e2a0b8f3fa764c8b45e8366b6979eb650642d20e268937a`.
 No private material was copied from the hosts. Live delivery and acceptance below
 remain pending until individually verified.
+
+Production check exposed unrelated accumulated full-template route differences.
+The ACME-only owner now builds its candidate from the existing file, replacing only
+the recognized HTTP challenge block for ops.honey.school. Unknown/ambiguous blocks
+fail closed. Regression proves byte preservation and repeat-apply idempotency.
+DEV full-template check changes only its three HTTP ACME locations.
