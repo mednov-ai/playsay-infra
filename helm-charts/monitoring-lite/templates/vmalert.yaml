@@ -31,6 +31,9 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           args:
             - -datasource.url={{ include "monitoring-lite.vmUrl" . }}
+            {{- if .Values.certificates.enabled }}
+            - -remoteWrite.url={{ include "monitoring-lite.vmUrl" . }}/api/v1/write
+            {{- end }}
             - -notifier.url={{ include "monitoring-lite.alertmanagerUrl" . }}
             - -rule=/rules/*.yaml
             - -evaluationInterval={{ .Values.vmalert.evaluationInterval }}
