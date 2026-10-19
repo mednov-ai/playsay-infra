@@ -3039,3 +3039,30 @@ alerts and protected backups. Never disable global renewal as a shortcut. A temp
 coverage reduction needs an owner/restoration deadline and keeps prevention acceptance
 pending. Record source/release/target SHAs, focused checks, acceptance gaps and remote
 `develop` ancestry/content evidence. Recovery alone does not close the hotfix.
+
+### Certificate hotfix delivery status — 2026-10-19
+
+The shared AX41 certificate has been renewed through the original eight-name lineage
+and now expires 2027-01-17 09:53:52 UTC. Infra-only release/01.007.20 owns the scoped
+HTTP-01 repair and certificate monitoring overlay; all product children, images and
+the operational platform baseline remain release/01.007.19. All 11 owned lineages
+pass strict disk/served health, eligibility evaluation and staging rehearsal.
+[Delivery evidence](../migrations/ax41/evidence/20261019-certificate-renewal-production.md)
+records gates, authenticated recovery, actual existing Mailjet callback processing,
+fixture cleanup and rollback.
+
+External notification acceptance remains open: production Alertmanager's effective
+receiver is `noop`, and `monitoring/playsay-telegram-alerts` is absent in both contours.
+A healthy chart or firing rule does not prove a delivered alert. After an approved
+recipient and protected credential source are supplied, provision the secret through
+the current reviewed GitOps secret owner, reconcile Alertmanager through GitOps and
+verify one bounded firing/resolved test. Do not follow the historical manual Secret/
+rollout snippet as an exception to current GitOps rules, copy an unrelated service's
+credentials, print tokens, or send an unsolicited test. Keep notification and coverage
+acceptance pending until verified; never disable renewal while awaiting that input.
+
+Certificate inventory recording rules require vmalert remote writes. Configure the
+VictoriaMetrics base URL with its existing path prefix; vmalert appends `/api/v1/write`.
+Validate the installed binary and query the persisted expected-inventory series, in
+addition to PromQL syntax fixtures. See the official
+[vmalert remote-write documentation](https://docs.victoriametrics.com/victoriametrics/vmalert/).
