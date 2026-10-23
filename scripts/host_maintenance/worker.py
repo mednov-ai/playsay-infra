@@ -8,7 +8,7 @@ import subprocess
 import threading
 import time
 
-from .collect import package_busy, service_runtime, synchronized
+from .collect import package_busy, package_read_lock, service_runtime, synchronized
 from .model import Deferred, Journal, atomic_json, within_window
 from .packages import Planner, audit_archive, apt_hook_fingerprint, digest, package_database_clean
 from .wire import Client
@@ -116,6 +116,9 @@ class Worker:
         if not good:raise Deferred('package_transaction_failed')
 
     def restart(self,unit):
+        with package_read_lock():return self.restart_locked(unit)
+
+    def restart_locked(self,unit):
         options=self.config['services'][unit]
         before=service_runtime(unit,options.get('optional',False))
         if before is None:raise Deferred('service_health_unknown')

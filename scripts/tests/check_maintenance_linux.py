@@ -25,7 +25,7 @@ import unittest.mock as mock
 assert Path('/.dockerenv').exists() and os.environ.get('HONEY_MAINTENANCE_FIXTURE')=='1', 'disposable_container_required'
 sys.path.insert(0,'/source')
 from host_maintenance.agent import Agent
-from host_maintenance.collect import mapped_runtime_pending
+from host_maintenance.collect import mapped_runtime_pending,package_read_lock,package_busy
 from host_maintenance.fence import AdmissionFence
 from host_maintenance.model import Deferred,GUEST_FIELDS,HOST_FIELDS,TURN_FIELDS,atomic_json
 from host_maintenance.packages import Planner,apt_hook_fingerprint,apt_source_fingerprint,audit_archive
@@ -72,6 +72,13 @@ def main():
             fence.install_nft();assert fence.nft_closed()
             command(['nft','delete','table','inet','honey_school_maintenance'])
         print('PASS real nft: AX41 pre-DNAT and Selectel input barriers, exact JSON and idempotence',flush=True)
+        writer=['/usr/bin/python3','-c','import fcntl; f=open("/var/lib/dpkg/lock-frontend","a"); fcntl.lockf(f,fcntl.LOCK_EX|fcntl.LOCK_NB)']
+        with package_read_lock():
+            assert package_busy() is False
+            assert subprocess.run(writer,capture_output=True).returncode!=0, 'Nested status query dropped native ownership'
+        assert subprocess.run(writer,capture_output=True).returncode==0
+        print('PASS retained native restart locks exclude package writers and survive nested status checks',flush=True)
+
         # Native APT repository is signed with a disposable fixture-only key. The root
         # fixture policy explicitly approves its exact source/key/config fingerprint.
         home=root/'gpg';home.mkdir(mode=0o700)

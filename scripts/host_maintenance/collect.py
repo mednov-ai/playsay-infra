@@ -1,4 +1,7 @@
 """Bounded root-local readers. No application writes, identifiers or credentials emitted."""
+from contextlib import contextmanager
+import fcntl
+import threading
 import hashlib
 import ipaddress
 import json
@@ -282,15 +285,41 @@ def ingress_snapshot():
 
 
 
-def package_busy():
-    """Read locks conflict with native apt/dpkg write locks without changing files."""
-    import fcntl
-    handles=[]
-    try:
-        for filename in ('/var/lib/dpkg/lock-frontend','/var/lib/dpkg/lock'):
-            stream=open(filename,'rb');handles.append(stream)
-            fcntl.lockf(stream,fcntl.LOCK_SH|fcntl.LOCK_NB)
-        return False
-    except (BlockingIOError,OSError):return True
+_package_guard=threading.RLock()
+_package_handles=[]
+_package_users=0
+
+
+@contextmanager
+def package_read_lock():
+    """Retain native shared locks through a restart; never steal a package writer.
+
+    POSIX closing ANY fd for a locked file drops that process's locks, so nested
+    status checks share handles/refcounts instead of opening/closing another fd.
+    """
+    global _package_handles,_package_users
+    with _package_guard:
+        if not _package_users:
+            handles=[]
+            try:
+                for filename in ('/var/lib/dpkg/lock-frontend','/var/lib/dpkg/lock'):
+                    stream=open(filename,'rb');handles.append(stream)
+                    fcntl.lockf(stream,fcntl.LOCK_SH|fcntl.LOCK_NB)
+            except (BlockingIOError,OSError) as error:
+                for stream in handles:stream.close()
+                raise Deferred('package_lock_busy') from error
+            _package_handles=handles
+        _package_users+=1
+    try:yield
     finally:
-        for stream in handles:stream.close()
+        with _package_guard:
+            _package_users-=1
+            if not _package_users:
+                for stream in _package_handles:stream.close()
+                _package_handles=[]
+
+
+def package_busy():
+    try:
+        with package_read_lock():return False
+    except Deferred:return True
