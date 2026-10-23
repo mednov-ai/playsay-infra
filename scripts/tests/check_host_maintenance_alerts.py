@@ -43,6 +43,9 @@ with tempfile.TemporaryDirectory() as directory:
             {'series': 'playsay_rf_host_nic_checked_at{semantics_version="2"}', 'values': '0+5x180'},
         ], 'promql_expr_test': [{'eval_time': '15m', 'expr': expression,
                                 'exp_samples': [{'labels': '{semantics_version="2"}', 'value': 0}] if expected else []}]})
+    nic_fixture = {'rule_files': ['rules.yaml'], 'evaluation_interval': '5s', 'tests': fixture['tests'][1:]}
+    fixture['tests'] = fixture['tests'][:1]
+    (root/'nic-tests.yaml').write_text(yaml.safe_dump(nic_fixture))
     (root/'tests.yaml').write_text(yaml.safe_dump(fixture))
     subprocess.run([args.promtool, 'check', 'rules', 'rules.yaml'], cwd=root, check=True)
-    subprocess.run([args.promtool, 'test', 'rules', 'tests.yaml'], cwd=root, check=True)
+    subprocess.run([args.promtool, 'test', 'rules', 'tests.yaml', 'nic-tests.yaml'], cwd=root, check=True)
