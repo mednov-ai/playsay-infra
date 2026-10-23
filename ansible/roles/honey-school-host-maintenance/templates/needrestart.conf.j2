@@ -1,0 +1,4 @@
+# Add to the existing selection policy; do not replace operator overrides.
+{% for service in maintenance_services[maintenance_owner] %}
+$nrconf{override_rc}->{qr(^{{ service | regex_escape }}(?:\.service)?$)} = 0;
+{% endfor %}

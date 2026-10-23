@@ -144,3 +144,6 @@ rf_edge_media_relay_forbidden_addresses:
   - 10.60.0.40
   - 146.103.126.15
   - 89.124.113.223
+
+# Explicit external NIC ownership; local kernel counters, not end-to-end loss.
+rf_edge_observability_external_interfaces: [eth0]

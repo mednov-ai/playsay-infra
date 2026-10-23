@@ -3066,3 +3066,135 @@ VictoriaMetrics base URL with its existing path prefix; vmalert appends `/api/v1
 Validate the installed binary and query the persisted expected-inventory series, in
 addition to PromQL syntax fixtures. See the official
 [vmalert remote-write documentation](https://docs.victoriametrics.com/victoriametrics/vmalert/).
+
+## Lesson-safe host maintenance (candidate; live acceptance pending)
+
+The dedicated owner is `ansible/playbooks/host-maintenance.yaml`, limited to
+`ax41_hosts` or `rf_edges`. It must never run the common/bootstrap/proxy/media roles.
+The candidate retains existing product images, guest configuration, certificate
+lifecycle, crash recovery and unrelated services. Selectel has no needrestart inspector; do not install one as a hotfix prerequisite.
+Its restart discovery is explicitly incomplete while installation and reboot debt
+remain visible. The new 99 APT snippet takes
+precedence over common's 20 snippet. It keeps daily metadata/download work and
+sets periodic installation to zero, shutdown installation to false and unattended reboot to false. The native
+upgrade service becomes a non-disruptive observer; its explicit Moscow timer is
+03:00 and 04:00 daily with zero randomness and persistent catch-up. Runtime
+eligibility is [03:00,05:00) Europe/Moscow with a synchronized clock; catch-up
+cannot grant daytime maintenance. A five-minute observer keeps debt visible.
+
+**Current safe fallback:** the observer contains no package installation or
+service restart operation. Even two fresh zero snapshots cannot authorize work:
+admission exclusion is unavailable. This is deferred security work, not patched
+runtime or completed autonomous maintenance. Do not enable installation by changing
+the 99 snippet or restoring the old upgrade service. Do not substitute a reload
+for a library restart. Manual emergency work requires separate authorization and
+the current drain, backup and recovery gates.
+
+### Inventory and unresolved capabilities
+
+Before live installation, reconcile actual service units and installed restart
+policy versions; the candidate inventory is in the role defaults. AX41 covers
+nginx, virtualization, container runtimes and networking. Selectel covers nginx,
+production/DEV TURN (`coturn` and `honey-school-dev-turn`), container runtimes
+and networking. Reconcile names before each delivery; do not restart a missing unit. Preserve all existing operator needrestart overrides;
+the additive snippet marks owned services unselected without blacklisting their
+runtime inspection. Validate the installed needrestart version and forced apt-hook
+options. Never replace policy-rc.d, intercept systemctl or mask critical services.
+
+Audit **all** apt cron/systemd/custom automation, package hooks, needrestart command
+options, reboot paths and operator policy before delivery. A direct package hook
+is not contained by needrestart. Unknown entry points must be disabled/deferred
+before installing any package; this candidate does not prove that live inventory.
+Finish an already-running dpkg transaction rather than killing it. The play refuses
+transition while the native upgrade service is active. Check other package owners
+and lock holders separately in the approved preflight; no lock is stolen.
+
+Required activity input covers authoritative PROD/DEV access windows with grace,
+extensions and next opening, LiveKit rooms/participants, Yjs/game/external channels,
+snapshot queue and both TURN allocation surfaces. Unknown deadlines and historical
+IN_PROGRESS rows do not grant admission or permit data cleanup. The optional
+root-only `activity.json` contract contains exactly two snapshots with `observed_at`,
+`authoritative`, complete `counts` (see `SOURCES` in the observer), and a known
+`next_opening_at`. Samples must each be <=30s old, >=10s apart, all zero and leave
+600s operation bound plus 120s margin before the next opening. Missing, malformed,
+future, stale or busy input defers. There is currently **no installed producer or
+proven exclusion lease**. The file contract is local validation scaffolding, not
+an operational activity source. A guest aggregate producer and its local read
+privileges, plus Selectel's fixed authenticated aggregate read route, remain to be
+reviewed. Do not transfer DB/Kube/SSH credentials or reuse metrics-import credentials
+for reads. No automatic disruptive owner may be added until admission and ongoing
+connection/token exclusion are proven together.
+
+### State, monitoring and validation
+
+Root-only `/var/lib/honeyschool/maintenance` owns the advisory lock, atomic state
+and metrics. Simulation (`apt-get -s upgrade`) counts pending installations;
+`needrestart -b -r l` inspects restart debt without restarting. Failed discovery
+preserves existing debt; retries and successful package installation do not reset
+restart age. Corrupt existing state fails visibly rather than forgetting old debt.
+Aggregate observation time and discovery health are published using the existing
+private VM import route (AX41) or protected curl config (Selectel); credentials and
+command output are never retained in evidence. Import authority grants no query
+rights. Publication failure cannot refresh the central observation timestamp.
+A real producer, source freshness and package-list freshness still require live
+acceptance; simulation is not a guarantee that every security upgrade is installable.
+
+Production monitoring enables `hostMaintenance.enabled`, checks expected owners
+for observations older than 15 minutes, warns on failed discovery, and warns at
+24h / escalates at 72h of debt. NIC collection unhealthy/missing/older than 45s also
+warns. Alert firing does not authorize maintenance. Existing external receiver
+acceptance is pending; do not send unsolicited delivery tests or claim notification
+success from local PromQL fixtures.
+
+Local checks (external Ansible Python supplies Jinja2/PyYAML):
+
+```sh
+python3 -m unittest discover -s scripts/tests -p 'test_host_maintenance.py' -v
+/path/to/ansible/python scripts/tests/check_host_maintenance_alerts.py --promtool /path/to/promtool
+scripts/apply-host-maintenance-release.sh --syntax --owner ax41
+scripts/apply-host-maintenance-release.sh --syntax --owner selectel --component counters
+helm lint helm-charts/monitoring-lite -f helm-charts/monitoring-lite/values-prod.yaml
+```
+
+### NIC semantics migration
+
+Only declared external interfaces (`rf_edge_observability_external_interfaces`,
+currently eth0) contribute. Read named kernel rx_errors/rx_dropped/tx_errors/
+tx_dropped counters and export four components and their exact sum with
+`semantics_version="2"`. Do not interpret these as end-to-end loss percentages.
+Failed reads emit collection health zero, omit counter values and do not publish
+a new healthy observation time. Route probes, imports, timestamps and other host
+telemetry retain their existing owner. The narrow `rf-nic-observability.yaml` play
+installs only the collector and existing probe script, with no service restart.
+The full media role also declares the collector for future source convergence.
+
+Deliver probe and all consumers together. Old unversioned history was packet
+traffic and is invalid NIC-loss evidence. Never rewrite it or splice series.
+Incident queries select v2 and reset-aware increase, require >=175 observations
+in 15 minutes, healthy reads and evidence at both window boundaries (10s tolerance).
+Missing or pre-cutover coverage returns NaN/unavailable. Counter reset/reboot is
+handled by increase; no continuity offset is added. Preserve all raw historical
+series until normal retention expiry.
+
+### Review, delivery and rollback
+
+The wrapper requires a clean published numeric infra release, fixed host group
+and `PLAYSAY_MAINTENANCE_APPROVED_RELEASE` for apply. `--component policy` is the
+default; `--component counters --owner selectel` selects only the counter play.
+Before any remote check/apply, obtain delivery authority, refresh source refs and
+review exact source SHA/diff, immutable application refs, backup/schema applicability,
+active package owners, all restart paths and aggregate capabilities. Capture protected
+policy/unit backups, checksums, service PIDs and timers. Check mode is a preview,
+not proof that live candidate units or installed package-hook semantics are valid.
+The play installs suppression before scheduler replacement, validates Perl/unit
+candidates, reloads the manager and starts only observer timers. No critical restart
+handler exists. Missing prerequisites cause failure without installing them.
+
+Rollback through the same reviewed owner: keep the 99 installation/reboot deferral
+and non-disruptive upgrade entry point until an equally safe replacement is ready.
+Restore only task-owned collector/policy/unit files from protected backups, preserving
+state/debt, certs, running services and existing operator overrides. Never blindly
+restore unrestricted unattended upgrades. A failed unit validation leaves installation
+deferred; repair candidates before manager reload. Revert counter consumers only to
+unavailable evidence, never to the packet-derived series. Actual two-host acceptance,
+idempotence, fresh metrics/PIDs and remote develop integration remain required.
