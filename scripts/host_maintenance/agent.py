@@ -95,6 +95,8 @@ class Agent:
 
     def release(self,actor,lease_id):
         with self.journal.locked('coordinator') as state:
+            if state.get('last_released_owner')==actor and state.get('last_released_lease_id')==lease_id:
+                return {'phase':'idle'}  # A lost ACK cannot reopen or modify a later lease.
             assert_owner(state,actor,lease_id)
             if state['phase']=='step_running':raise Deferred('step_still_running')
             # Aborting pre-install is safe. Destructive completion needs an explicit local worker verification.
@@ -111,7 +113,7 @@ class Agent:
         self.fence.open(lease_id)
         with self.journal.locked('coordinator') as state:
             assert_owner(state,actor,lease_id)
-            state.update(phase='idle',last_released_at=int(self.clock()))
+            state.update(phase='idle',last_released_at=int(self.clock()),last_released_owner=actor,last_released_lease_id=lease_id)
             state.pop('zero_baseline',None)
         return {'phase':'idle'}
 
@@ -204,8 +206,10 @@ class Agent:
                 if any(v is None for v in services.values()):raise Deferred('service_health_unknown')
             with self.journal.locked('coordinator') as state:
                 assert_owner(state,actor,data['lease_id'])
-                if state['phase'] not in ('fenced','verifying'):raise Deferred('lease_phase_invalid')
-                state['phase']='verified'
+                if state['phase'] not in ('fenced','verifying','verified','releasing'):raise Deferred('lease_phase_invalid')
+                if state['phase']=='releasing':
+                    if not state.get('release_verified'):raise Deferred('runtime_not_verified')
+                else:state['phase']='verified'
             return {'verified':True}
         if path=='/lease/preflight':
             state=self.read('coordinator');assert_owner(state,actor,data['lease_id'])
@@ -247,7 +251,11 @@ class Agent:
         if path=='/lease/complete-step':
             with self.journal.locked('coordinator') as state:
                 assert_owner(state,actor,data['lease_id'])
+                if (state.get('last_completed_step_id')==data.get('step_id') and
+                    state.get('last_completed_success') is data.get('success')):
+                    return {'completed':True}
                 if state.get('step_id')!=data.get('step_id') or state['phase']!='step_running':raise Deferred('step_identity_mismatch')
+                state.update(last_completed_step_id=data['step_id'],last_completed_success=data.get('success'))
                 if data.get('success') is not True:
                     state['phase']='failed_unsafe'
                 else:

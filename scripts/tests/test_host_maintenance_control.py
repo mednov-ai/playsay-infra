@@ -193,6 +193,30 @@ class Protocol(unittest.TestCase):
         self.assertEqual(self.agent.release('ax41','a'*32)['phase'],'idle')
         self.assertFalse(self.closed)
 
+    def test_lost_completion_ack_does_not_renew_time_or_finish_a_new_step(self):
+        self.own('step_running',step_id='c'*32,destructive_started=True)
+        data={'lease_id':'a'*32,'step_id':'c'*32,'success':True}
+        self.agent.dispatch('ax41','/lease/complete-step',data)
+        completed=self.agent.read('coordinator')['last_step_completed_at']
+        self.now+=5
+        self.agent.dispatch('ax41','/lease/complete-step',data)
+        self.assertEqual(self.agent.read('coordinator')['last_step_completed_at'],completed)
+        self.own('step_running',step_id='d'*32)
+        self.agent.dispatch('ax41','/lease/complete-step',data)
+        self.assertEqual(self.agent.read('coordinator')['phase'],'step_running')
+        with self.assertRaises(Deferred):
+            self.agent.dispatch('selectel','/lease/complete-step',data)
+
+    def test_lost_release_ack_cannot_touch_a_later_lease(self):
+        self.own('fenced');self.closed=True;self.peer_closed=True
+        self.agent.release('ax41','a'*32)
+        self.own('step_running')
+        with self.agent.journal.locked('coordinator') as state:state['lease_id']='b'*32
+        self.closed=True;self.peer_closed=True
+        self.assertEqual(self.agent.release('ax41','a'*32)['phase'],'idle')
+        self.assertTrue(self.closed);self.assertTrue(self.peer_closed)
+        self.assertEqual(self.agent.read('coordinator')['lease_id'],'b'*32)
+
     def test_guest_cannot_issue_host_or_other_guest_operations(self):
         with self.assertRaisesRegex(Deferred,'role_forbidden'):self.agent.dispatch('prod','/lease/claim',{})
         sample=copy.deepcopy(self.sample['guests']['prod']);sample['generation']='a'*64

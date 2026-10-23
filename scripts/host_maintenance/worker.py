@@ -45,6 +45,16 @@ class Worker:
     def request(self,path,**data):
         return self.coordinator.request(path,{'lease_id':self.lease,**data})
 
+    def acknowledge(self,path,**data):
+        # Only idempotent completion/open operations retry; never replay a grant
+        # or a disruptive command when an acknowledgement is lost.
+        deadline=time.monotonic()+60
+        while True:
+            try:return self.request(path,**data)
+            except Deferred as error:
+                if error.code not in ('control_unavailable','lock_busy','fence_busy') or time.monotonic()>=deadline:raise
+                time.sleep(3)
+
     def proof(self,operation,service=None):
         deadline=time.monotonic()+45
         while True:
@@ -56,7 +66,7 @@ class Worker:
                 if result.get('eligible') is True:
                     # The step token cannot be queued for a later timer or resumed after a process crash.
                     if not 0<=time.time()-result['granted_at']<=5:
-                        self.request('/lease/complete-step',step_id=result['step_id'],success=True)
+                        self.acknowledge('/lease/complete-step',step_id=result['step_id'],success=True)
                         raise Deferred('step_grant_stale')
                     return result['step_id']
             except Deferred as error:
@@ -104,7 +114,7 @@ class Worker:
                 if check.returncode or check.stdout!=item['old_version']:unchanged=False
             if unchanged:
                 self.state('verifying',step_id=token,reason='native_preinstall_deferred')
-                self.request('/lease/complete-step',step_id=token,success=True)
+                self.acknowledge('/lease/complete-step',step_id=token,success=True)
                 raise Deferred('native_preinstall_deferred')
         if good:
             # Verify exactly the audited installed versions, never infer success from a log line.
@@ -112,7 +122,7 @@ class Worker:
                 result=subprocess.run(['/usr/bin/dpkg-query','-W','-f=${Version}',item['name']],capture_output=True,text=True)
                 if result.returncode or result.stdout!=item['version']:good=False
         self.state('verifying' if good else 'failed_unsafe',step_id=token)
-        self.request('/lease/complete-step',step_id=token,success=good)
+        self.acknowledge('/lease/complete-step',step_id=token,success=good)
         if not good:raise Deferred('package_transaction_failed')
 
     def restart(self,unit):
@@ -133,7 +143,7 @@ class Worker:
         try:self.request('/lease/preflight',step_id=token,operation='restart')
         except Deferred:
             self.state('verifying',step_id=token)
-            self.request('/lease/complete-step',step_id=token,success=True)
+            self.acknowledge('/lease/complete-step',step_id=token,success=True)
             raise
         self.state('restarting',step_id=token,service=unit)
         job=subprocess.run(['/usr/bin/systemctl','--no-block','restart',unit],capture_output=True)
@@ -149,7 +159,7 @@ class Worker:
                 good=True;break
             time.sleep(2)
         self.state('verifying' if good else 'failed_unsafe',step_id=token,service=unit)
-        self.request('/lease/complete-step',step_id=token,success=good)
+        self.acknowledge('/lease/complete-step',step_id=token,success=good)
         if not good:raise Deferred('service_restart_not_verified')
 
     def verify_release(self):
@@ -158,10 +168,10 @@ class Worker:
             try:
                 self.request('/lease/verify');break
             except Deferred as error:
-                if error.code not in ('source_stale','source_unhealthy','activity_busy','observations_precede_fence','post_step_observation_pending') or time.monotonic()>=deadline:raise
+                if error.code not in ('source_stale','source_unhealthy','activity_busy','observations_precede_fence','post_step_observation_pending','control_unavailable','lock_busy','package_lock_busy','service_health_unknown') or time.monotonic()>=deadline:raise
                 time.sleep(3)
         self.state('verified')
-        self.request('/lease/release')
+        self.acknowledge('/lease/release')
         self.state('idle',last_completed_at=int(time.time()))
 
     def run(self):
@@ -203,7 +213,7 @@ class Worker:
                 if not destructive:
                     # No install/restart was started: promptly reopen on new activity,
                     # source failure or a partial fence acknowledgement.
-                    try:self.request('/lease/release');self.state('deferred',reason=error.code)
+                    try:self.acknowledge('/lease/release');self.state('deferred',reason=error.code)
                     except Deferred:self.state('recovery_required',reason='release_unavailable')
                 elif json.loads((self.root/'worker.json').read_text()).get('phase') not in UNSAFE_PHASES:
                     try:self.verify_release()
