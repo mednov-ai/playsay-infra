@@ -450,7 +450,7 @@ data:
             annotations:
               summary: "Host maintenance observation missing or stale"
           - alert: HoneyHostMaintenanceDiscoveryFailed
-            expr: honey_host_maintenance_discovery_healthy == 0
+            expr: (honey_host_maintenance_discovery_healthy == 0) unless on(owner) (honey_host_executor_enabled == 1)
             for: 10m
             labels:
               severity: warning

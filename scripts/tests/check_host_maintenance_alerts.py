@@ -38,6 +38,10 @@ with tempfile.TemporaryDirectory() as directory:
         for hour,name,severity in [(25,'HoneyHostExecutorRuntimeDebtWarning','warning'),(73,'HoneyHostExecutorRuntimeDebtCritical','critical')]:
             fixture['tests'][0]['alert_rule_test'].append({'eval_time':str(hour)+'h','alertname':name,'exp_alerts':[{'exp_labels':{'owner':'selectel','service':'nginx','severity':severity},'exp_annotations':{'summary':'Service runtime restart deferred for more than '+('24' if severity=='warning' else '72')+' hours'}}]})
         fixture['tests'][0]['alert_rule_test'].append({'eval_time':'75h','alertname':'HoneyHostExecutorRuntimeDebtWarning','exp_alerts':[]})
+    fixture['tests'].append({'interval':'1m','input_series':[
+        {'series':'honey_host_maintenance_discovery_healthy{owner="selectel"}','values':'0+0x15'},
+        {'series':'honey_host_executor_enabled{owner="selectel"}','values':'1+0x15'}],
+        'alert_rule_test':[{'eval_time':'15m','alertname':'HoneyHostMaintenanceDiscoveryFailed','exp_alerts':[]}]})
     import shlex
     expression = next(shlex.split(line)[2] for line in (repo/'scripts/collect-classroom-route-incident.sh').read_text().splitlines()
                       if line.startswith('query_value rf_nic_error_drop_increase '))
