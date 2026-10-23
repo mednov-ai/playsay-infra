@@ -24,6 +24,20 @@ def digest(path):
         return hashlib.file_digest(stream,'sha256').hexdigest()
 
 
+def archive_identity(metadata, text):
+    # Ubuntu mirrors may advertise SHA512 while the installed archive is still
+    # independently verified against signed candidate SHA256 metadata.
+    fields=shlex.split(text.strip())
+    if len(fields)!=4 or not re.fullmatch(r'[a-zA-Z0-9+.%~:_-]+\.deb',fields[1]):
+        raise Deferred('package_archive_identity_unknown')
+    algorithm,separator,supplied=fields[3].partition(':')
+    length={'SHA256':64,'SHA512':128}.get(algorithm)
+    expected=re.findall(r'^'+re.escape(algorithm)+r': ([0-9a-f]+)$',metadata,re.M)
+    if not separator or length is None or not re.fullmatch('[0-9a-f]{'+str(length)+'}',supplied) or set(expected)!={supplied}:
+        raise Deferred('package_archive_identity_unknown')
+    return fields[1]
+
+
 def candidate_rows(text):
     result=[]
     for line in text.splitlines():
@@ -162,9 +176,7 @@ class Planner:
                 metadata=run(['/usr/bin/apt-cache','show',name+'='+version])
                 sizes=re.findall(r'^Size: (\d+)$',metadata,re.M);hashes=re.findall(r'^SHA256: ([0-9a-f]{64})$',metadata,re.M)
                 if len(set(hashes))!=1 or not sizes or max(map(int,sizes))>100*1024*1024:raise Deferred('package_metadata_unknown')
-                uri=shlex.split(run(['/usr/bin/apt-get','--print-uris','download',name+'='+version]).strip())
-                if len(uri)!=4 or not re.fullmatch(r'[a-zA-Z0-9+.%~:_-]+\.deb',uri[1]) or uri[3]!='SHA256:'+hashes[0]:raise Deferred('package_archive_identity_unknown')
-                archive_name=uri[1]
+                archive_name=archive_identity(metadata,run(['/usr/bin/apt-get','--print-uris','download',name+'='+version]))
                 archive=download/(hashes[0]+'.deb')
                 if not archive.exists():
                     # download is a separate non-disruptive stage; no installer or package hook runs.

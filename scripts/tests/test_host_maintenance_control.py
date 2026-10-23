@@ -317,3 +317,12 @@ class DirectActivity(unittest.TestCase):
         with self.assertRaisesRegex(Deferred,'source_unhealthy'):validate_recovery(sample,1000)
 
 if __name__=='__main__':unittest.main()
+
+class PackageIdentity(unittest.TestCase):
+    def test_signed_sha256_and_sha512_uri_identity_and_tampering(self):
+        from host_maintenance.packages import archive_identity
+        metadata='SHA256: '+'a'*64+'\nSHA512: '+'b'*128+'\n'
+        for algorithm,value in [('SHA256','a'*64),('SHA512','b'*128)]:
+            self.assertEqual(archive_identity(metadata,"'https://invalid.example/x' package_1_amd64.deb 1 "+algorithm+':'+value),'package_1_amd64.deb')
+        for tail in ['SHA256:'+'b'*64,'SHA512:'+'a'*128,'MD5Sum:'+'a'*32]:
+            with self.assertRaises(Deferred):archive_identity(metadata,"'https://invalid.example/x' package_1_amd64.deb 1 "+tail)
