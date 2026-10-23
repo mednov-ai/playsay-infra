@@ -52,6 +52,14 @@
   check_mode: false
   when: not maintenance_control_guest
 
+- name: Retain a protected owning-host backup before any control-plane changes
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../../scripts/backup-maintenance-control.py --owner {{ maintenance_control_role }}"
+    executable: /usr/bin/python3
+  changed_when: false
+  when: not ansible_check_mode
+  register: control_backup
+
 - name: Create root-owned code and configuration directories
   ansible.builtin.file:
     path: "{{ item }}"
