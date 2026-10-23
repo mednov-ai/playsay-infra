@@ -1,0 +1,11 @@
+[Unit]
+Description=Restore a persisted Honey School admission barrier before serving
+After=nftables.service ufw.service
+Before=nginx.service coturn.service honey-school-dev-turn.service libvirtd.service playsay-livekit-nat.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/honey-school-maintenance-restore
+RemainAfterExit=true
+UMask=0077
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Honey School per-service runtime debt and producer freshness
+After=honey-school-maintenance-agent.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/honey-school-maintenance-observe
+UMask=0077
+TimeoutStartSec=90
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/honeyschool/maintenance

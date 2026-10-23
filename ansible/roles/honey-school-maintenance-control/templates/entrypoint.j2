@@ -1,0 +1,10 @@
+#!/usr/bin/python3 -I
+# Root-owned stdlib entrypoint; caller cwd/PYTHONPATH/site packages are not imported.
+import sys
+sys.path.insert(0, '/usr/local/lib/honey-school-maintenance')
+from host_maintenance.cli import main
+from host_maintenance.model import Deferred
+try:
+    main({{ item | to_json }})
+except Deferred as error:
+    raise SystemExit('deferred=' + error.code)

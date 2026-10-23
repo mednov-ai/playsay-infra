@@ -1,0 +1,20 @@
+{
+  "package_names": [
+    "libapparmor1",
+    "libaudit1",
+    "libgssapi-krb5-2",
+    "libk5crypto3",
+    "libkrb5-3",
+    "libkrb5support0",
+    "libproc2-0",
+    "libxmlb2",
+    "libpciaccess0",
+    "libopeniscsiusr"
+  ],
+  "apt_hook_fingerprint": "51accc883c89ad81d86065beb7e2f43131913069e9b4546c50c2a8a161cbc63a",
+  "maintainer_script_sha256": [],
+  "installed_trigger_sha256": [
+    "11993c6ae210c6fa149dcaf55bb46db7f9c301bb986d70115ce817f4db962caf"
+  ],
+  "apt_source_fingerprint": "6d80f61b994e59789a87dafc4fefc95080957215672fb3fcccc0da387c62c9d9"
+}

@@ -1,0 +1,24 @@
+---
+- name: Bootstrap the bounded AX41 coordinator only
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars:
+    maintenance_control_role: ax41
+  roles: [honey-school-maintenance-control]
+
+- name: Bootstrap the bounded Selectel agent only
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  vars:
+    maintenance_control_role: selectel
+  roles: [honey-school-maintenance-control]
+
+- name: Install aggregate-only guest producers
+  hosts: ax41_guests
+  become: true
+  gather_facts: false
+  vars:
+    maintenance_control_role: "{{ {'playsay-prod':'prod','playsay-dev':'dev'}[inventory_hostname] }}"
+  roles: [honey-school-maintenance-control]

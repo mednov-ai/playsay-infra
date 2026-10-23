@@ -1,0 +1,16 @@
+[Unit]
+Description=Honey School authenticated maintenance coordinator and bounded readers
+After=network-online.target nginx.service
+Wants=network-online.target
+[Service]
+ExecStart=/usr/local/sbin/honey-school-maintenance-agent
+LoadCredential=keys:/etc/honey-school-maintenance/keys.json
+UMask=0077
+Restart=on-failure
+RestartSec=3
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/honeyschool/maintenance /var/lib/honey-school-maintenance-admission
+[Install]
+WantedBy=multi-user.target

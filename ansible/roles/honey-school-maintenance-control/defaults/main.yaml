@@ -1,0 +1,24 @@
+---
+maintenance_execution_enabled: false
+maintenance_keys_dir: "{{ lookup('env', 'PLAYSAY_MAINTENANCE_KEYS_DIR') }}"
+maintenance_control_guest: "{{ maintenance_control_role in ['prod', 'dev'] }}"
+maintenance_control_services:
+  ax41:
+    nginx: {optional: false}
+    honey-production-logs: {optional: false}
+    libvirtd: {optional: false}
+    systemd-networkd: {optional: false}
+    virtqemud: {optional: true}
+    virtnetworkd: {optional: true}
+    docker: {optional: true}
+    containerd: {optional: true}
+    networking: {optional: true}
+  selectel:
+    nginx: {optional: false}
+    coturn: {optional: false}
+    honey-school-dev-turn: {optional: false}
+    honey-production-logs: {optional: false}
+    systemd-networkd: {optional: false}
+    docker: {optional: true}
+    containerd: {optional: true}
+    networking: {optional: true}
