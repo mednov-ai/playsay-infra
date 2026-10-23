@@ -434,3 +434,52 @@ data:
               summary: "Certificate {{ $kind }} failure persists for 24 hours"
           {{- end }}
   {{- end }}
+
+{{- if .Values.hostMaintenance.enabled }}
+  host-maintenance.yaml: |
+    groups:
+      - name: honey-host-maintenance
+        rules:
+          - record: honey_host_maintenance_expected
+            expr: label_replace(vector(1), "owner", "ax41", "", "") or label_replace(vector(1), "owner", "selectel", "", "")
+          - alert: HoneyHostMaintenanceObserverStale
+            expr: honey_host_maintenance_expected unless on(owner) (time() - honey_host_maintenance_checked_at < 900)
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Host maintenance observation missing or stale"
+          - alert: HoneyHostMaintenanceDiscoveryFailed
+            expr: honey_host_maintenance_discovery_healthy == 0
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pending security work cannot be inspected"
+          - alert: HoneyHostMaintenancePackageListsStale
+            expr: time() - honey_host_maintenance_package_lists_checked_at > 172800
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Package metadata discovery is stale"
+          - alert: HoneyHostMaintenanceDebtWarning
+            expr: (time() - honey_host_maintenance_installation_first_pending_at > 86400) or (time() - honey_host_maintenance_restart_first_pending_at > 86400) or (time() - honey_host_maintenance_reboot_first_pending_at > 86400)
+            labels:
+              severity: warning
+            annotations:
+              summary: "Security work deferred for more than 24 hours"
+          - alert: HoneyHostMaintenanceDebtCritical
+            expr: (time() - honey_host_maintenance_installation_first_pending_at > 259200) or (time() - honey_host_maintenance_restart_first_pending_at > 259200) or (time() - honey_host_maintenance_reboot_first_pending_at > 259200)
+            labels:
+              severity: critical
+            annotations:
+              summary: "Security work deferred for more than 72 hours"
+          - alert: HoneyRfNicCounterUnavailable
+            expr: (playsay_rf_host_nic_collection_healthy{semantics_version="2"} == 0) or absent(playsay_rf_host_nic_checked_at{semantics_version="2"}) or (time() - playsay_rf_host_nic_checked_at{semantics_version="2"} > 45)
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "RF kernel NIC counters unavailable; packet-loss evidence unknown"
+{{- end }}

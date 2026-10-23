@@ -79,3 +79,6 @@ victoriaLogs:
 
 certificates:
   enabled: true
+
+hostMaintenance:
+  enabled: true

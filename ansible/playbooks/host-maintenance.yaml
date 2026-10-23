@@ -1,0 +1,16 @@
+---
+- name: Protect AX41 host maintenance only
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars:
+    maintenance_owner: ax41
+  roles: [honey-school-host-maintenance]
+
+- name: Protect Selectel host maintenance only
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  vars:
+    maintenance_owner: selectel
+  roles: [honey-school-host-maintenance]

@@ -1,0 +1,135 @@
+---
+- name: Validate fixed owner
+  ansible.builtin.assert:
+    that:
+      - maintenance_owner in ['ax41', 'selectel']
+      - ansible_host == {'ax41':'65.109.55.110', 'selectel':'94.102.89.213'}[maintenance_owner]
+
+- name: Inspect current package transaction owner
+  ansible.builtin.command: /usr/bin/systemctl is-active apt-daily-upgrade.service
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  register: maintenance_upgrade_active
+
+- name: Refuse transition during an existing unattended transaction
+  ansible.builtin.assert:
+    that: maintenance_upgrade_active.stdout | trim not in ['active', 'activating', 'deactivating', 'reloading']
+    fail_msg: Existing package transaction must finish; do not kill dpkg or restart it
+
+# No apt task here: installing a prerequisite could itself run the offending hooks.
+- name: Check existing prerequisites without package installation
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: [/usr/bin/python3]
+  register: maintenance_prerequisites
+
+- name: Require installed inspection tools
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: Missing prerequisite; defer and review separately without installing packages
+  loop: "{{ maintenance_prerequisites.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Preserve protected policy backup before writes
+  ansible.builtin.script: "{{ playbook_dir }}/../../scripts/backup-host-maintenance.py"
+  args:
+    executable: /usr/bin/python3
+  when: not ansible_check_mode
+  changed_when: false
+  register: maintenance_backup
+
+- name: Create only owned directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ '0700' if item == '/var/lib/honeyschool/maintenance' else '0755' }}"
+  loop:
+    - /var/lib/honeyschool/maintenance
+    - /etc/systemd/system/apt-daily-upgrade.service.d
+    - /etc/systemd/system/apt-daily-upgrade.timer.d
+
+# Protect installation BEFORE any scheduler changes; 99 sorts after common's 20.
+- name: Defer automatic installation and reboot while retaining discovery and downloads
+  ansible.builtin.template:
+    src: 99-honey-school-maintenance.conf.j2
+    dest: /etc/apt/apt.conf.d/99-honey-school-maintenance
+    validate: /usr/bin/apt-config -c %s dump
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+
+- name: Discover optional existing needrestart policy
+  ansible.builtin.stat:
+    path: /etc/needrestart/needrestart.conf
+  register: maintenance_needrestart
+
+- name: Create needrestart snippet directory only for installed inspector
+  ansible.builtin.file:
+    path: /etc/needrestart/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: maintenance_needrestart.stat.exists
+
+- name: Preserve protected services in needrestart selection
+  ansible.builtin.template:
+    src: needrestart.conf.j2
+    dest: /etc/needrestart/conf.d/zz-honey-school-maintenance.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+    validate: /usr/bin/perl -c %s
+  when: maintenance_needrestart.stat.exists
+
+- name: Install non-disruptive observer
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/host-maintenance.py"
+    dest: /usr/local/sbin/honey-school-host-maintenance
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Install only maintenance units and dropins
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  loop:
+    - {src: upgrade-service.conf.j2, dest: /etc/systemd/system/apt-daily-upgrade.service.d/honey-school.conf}
+    - {src: upgrade-timer.conf.j2, dest: /etc/systemd/system/apt-daily-upgrade.timer.d/honey-school.conf}
+    - {src: observer.service.j2, dest: /etc/systemd/system/honey-school-maintenance-observer.service}
+    - {src: observer.timer.j2, dest: /etc/systemd/system/honey-school-maintenance-observer.timer}
+
+- name: Validate installed unit candidates before manager reload
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/systemd-analyze
+      - verify
+      - apt-daily-upgrade.service
+      - apt-daily-upgrade.timer
+      - /etc/systemd/system/honey-school-maintenance-observer.service
+      - /etc/systemd/system/honey-school-maintenance-observer.timer
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Load maintenance units without restarting any critical service
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Schedule observers only
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: [apt-daily-upgrade.timer, honey-school-maintenance-observer.timer]
+  when: not ansible_check_mode

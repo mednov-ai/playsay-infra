@@ -1,0 +1,4 @@
+[Service]
+ExecStart=
+ExecStart=/usr/local/sbin/honey-school-host-maintenance --owner {{ maintenance_owner }} --publish
+# Observer does not install packages or restart services, even inside the window.

@@ -1,0 +1,5 @@
+---
+# Installation remains deferred until admission exclusion and all activity producers exist.
+maintenance_services:
+  ax41: [nginx, honey-production-logs, libvirtd, virtqemud, virtnetworkd, docker, containerd, networking, systemd-networkd]
+  selectel: [nginx, coturn, honey-school-dev-turn, docker, containerd, networking, systemd-networkd]

@@ -14,8 +14,7 @@ memory_available_bytes=0
 [ ! -r /proc/meminfo ] || memory_available_bytes="$(awk '/^MemAvailable:/ { print $2 * 1024 }' /proc/meminfo)"
 conntrack_entries="$(cat /proc/sys/net/netfilter/nf_conntrack_count 2>/dev/null || printf 0)"
 conntrack_limit="$(cat /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null || printf 0)"
-nic_error_drop_total=0
-[ ! -r /proc/net/dev ] || nic_error_drop_total="$(awk -F '[: ]+' 'NR > 2 && $1 != "lo" { total += $4 + $5 + $12 + $13 } END { print total + 0 }' /proc/net/dev)"
+nic_metrics="$(/usr/local/sbin/honey-school-rf-nic-counters{% for interface in rf_edge_observability_external_interfaces %} --interface {{ interface | quote }}{% endfor %})" || true
 udp_error_total=0
 [ ! -r /proc/net/snmp ] || udp_error_total="$(awk '/^Udp:/ { if (++row == 2) print $4 + $6 + $7 }' /proc/net/snmp)"
 clock_synchronized=0
@@ -56,7 +55,7 @@ umask 077
   printf 'playsay_rf_host_memory_available_bytes %s %s\n' "$memory_available_bytes" "$timestamp_milliseconds"
   printf 'playsay_rf_host_conntrack_entries %s %s\n' "$conntrack_entries" "$timestamp_milliseconds"
   printf 'playsay_rf_host_conntrack_limit %s %s\n' "$conntrack_limit" "$timestamp_milliseconds"
-  printf 'playsay_rf_host_nic_error_drop_total %s %s\n' "$nic_error_drop_total" "$timestamp_milliseconds"
+  printf '%s\n' "$nic_metrics" | awk -v timestamp="$timestamp_milliseconds" 'NF >= 2 { print $0, timestamp }'
   printf 'playsay_rf_host_udp_error_total %s %s\n' "${udp_error_total:-0}" "$timestamp_milliseconds"
   printf 'playsay_rf_host_clock_synchronized %s %s\n' "$clock_synchronized" "$timestamp_milliseconds"
   printf 'playsay_rf_host_clock_offset_seconds %s %s\n' "${clock_offset_seconds:-NaN}" "$timestamp_milliseconds"

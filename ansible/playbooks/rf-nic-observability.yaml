@@ -1,0 +1,29 @@
+---
+# Scoped counter/probe owner; never invoke the full media relay role.
+- name: Upgrade only RF NIC observation semantics
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/rf_edges.yaml
+  tasks:
+    - name: Refuse every other host
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-selectel-rf-edge'
+          - ansible_host == '94.102.89.213'
+    - name: Install named NIC collector
+      ansible.builtin.copy:
+        src: ../../scripts/collect-rf-nic-counters.py
+        dest: /usr/local/sbin/honey-school-rf-nic-counters
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Update existing probe without changing its unit or route
+      ansible.builtin.template:
+        src: ../roles/rf-edge-media-relay/templates/probe-rf-to-ax41.sh.j2
+        dest: /usr/local/sbin/playsay-probe-rf-to-ax41
+        owner: root
+        group: root
+        mode: '0755'
+        validate: /bin/sh -n %s

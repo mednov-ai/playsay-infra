@@ -41,7 +41,8 @@ query_value turn_allocation_failures_max 'max_over_time(playsay_rf_edge_media_re
 query_value turn_auth_failures_max 'max_over_time(playsay_rf_edge_media_relay_auth_failures[900s])'
 query_value rf_memory_available_min 'min_over_time(playsay_rf_host_memory_available_bytes[900s])'
 query_value rf_conntrack_ratio_max 'max_over_time((playsay_rf_host_conntrack_entries / playsay_rf_host_conntrack_limit)[900s:5s])'
-query_value rf_nic_error_drop_increase 'increase(playsay_rf_host_nic_error_drop_total[900s])'
+query_value rf_nic_collection_healthy_min 'min_over_time(playsay_rf_host_nic_collection_healthy{semantics_version="2"}[900s])'
+query_value rf_nic_error_drop_increase 'increase(playsay_rf_host_nic_error_drop_total{semantics_version="2"}[900s]) and on() (count_over_time(playsay_rf_host_nic_error_drop_total{semantics_version="2"}[900s]) >= 175) and on() (min_over_time(playsay_rf_host_nic_collection_healthy{semantics_version="2"}[900s]) == 1) and on() (count_over_time(playsay_rf_host_nic_checked_at{semantics_version="2"}[900s]) >= 175) and on() (min_over_time(playsay_rf_host_nic_checked_at{semantics_version="2"}[900s]) <= time() - 890) and on() (max_over_time(playsay_rf_host_nic_checked_at{semantics_version="2"}[900s]) >= time() - 10)'
 query_value rf_udp_error_increase 'increase(playsay_rf_host_udp_error_total[900s])'
 query_value rf_clock_synchronized_min 'min_over_time(playsay_rf_host_clock_synchronized[900s])'
 query_value rf_clock_offset_seconds_abs_max 'max_over_time(abs(playsay_rf_host_clock_offset_seconds)[900s:5s])'
@@ -59,6 +60,6 @@ for reason in PEER_CONNECTION_DISCONNECTED DTLS_TIMEOUT SIGNAL_SOURCE_CLOSE ROOM
 done
 {
   printf 'window_start_epoch=%s\nalert_epoch=%s\nwindow_end_epoch=%s\n' "$window_start" "$alert_epoch" "$window_end"
-  printf '%s\n' 'retention=delete within seven days after incident review' 'privacy=no identities rooms addresses URIs query strings tokens SDP ICE candidates or raw logs retained'
+  printf '%s\n' 'retention=delete within seven days after incident review' 'nic_semantics=2; old unversioned intervals are invalid NIC-loss evidence; NaN means unavailable' 'privacy=no identities rooms addresses URIs query strings tokens SDP ICE candidates or raw logs retained'
 } >"$output_directory/window.txt"
 chmod 0600 "$output_directory"/*

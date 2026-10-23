@@ -52,6 +52,15 @@
     group: root
     mode: "0700"
 
+- name: Install named RF NIC counter collector
+  tags: classroom-route-observability
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/collect-rf-nic-counters.py"
+    dest: /usr/local/sbin/honey-school-rf-nic-counters
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Check the protected RF observability client configuration
   tags: classroom-route-observability
   ansible.builtin.stat:

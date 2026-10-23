@@ -168,3 +168,6 @@ alerts:
 
 certificates:
   enabled: false
+
+hostMaintenance:
+  enabled: false
