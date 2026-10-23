@@ -51,6 +51,7 @@ def archive(root,version,library,script=None):
 
 class Fence:
     def __init__(self):self.flag=False
+    def table(self):return None
     def closed(self):return self.flag
     def close(self,*args):self.flag=True
     def hold(self,*args):assert self.flag

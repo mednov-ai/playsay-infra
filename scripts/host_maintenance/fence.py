@@ -119,6 +119,8 @@ class AdmissionFence:
                 try:port=int(fields[4].rsplit(':',1)[1])
                 except ValueError:continue
                 if port in CONTROL_PORTS:raise Deferred('unowned_local_control_socket')
+        # Refuse an unowned table or missing inspection authority before a public flag is created.
+        self.table()
         old={}
         if self.record.exists():
             old=json.loads(self.record.read_text())

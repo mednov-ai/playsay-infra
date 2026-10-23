@@ -120,6 +120,7 @@ class Protocol(unittest.TestCase):
         self.closed=False;self.peer_closed=False;self.fail_open=False
         parent=self
         class Fence:
+            def table(self):return None
             def closed(self):return parent.closed
             def close(self,*args):parent.closed=True
             def hold(self,*args):pass

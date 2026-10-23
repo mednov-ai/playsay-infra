@@ -38,6 +38,7 @@ class Agent:
         return value
 
     def local_state(self):
+        self.fence.table()  # Read-only capability/ownership check also runs before enablement.
         cached=self.read('local')
         cached.update(fenced=self.fence.closed(),worker=self.read('worker'),package_busy=package_busy())
         return cached
