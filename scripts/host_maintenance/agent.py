@@ -123,7 +123,7 @@ class Agent:
             if not isinstance(data,dict) or set(data)-allowed:raise Deferred('source_schema_invalid')
             if type(data.get('healthy')) is not bool:raise Deferred('source_schema_invalid')
             if data['healthy'] is False and set(data)!={'healthy','read_started_at','observed_at','reason'}:raise Deferred('source_schema_invalid')
-            if 'reason' in data and data['reason'] not in ('direct_turn_unknown','clock_unknown','reader_failed','metric_missing','metric_stale_or_invalid','database_primary_unknown','lesson_window_unknown','source_clock_or_duration_unknown','source_inventory_invalid','workload_unready','guest_source_unavailable'):
+            if 'reason' in data and data['reason'] not in ('control_redirect_rejected','direct_turn_unknown','clock_unknown','reader_failed','metric_missing','metric_stale_or_invalid','database_primary_unknown','lesson_window_unknown','source_clock_or_duration_unknown','source_inventory_invalid','workload_unready','guest_source_unavailable'):
                 raise Deferred('source_schema_invalid')
             stamp=data.get('observed_at')
             if type(stamp) is not int or not 0<=now-stamp<=30:raise Deferred('source_stale')
