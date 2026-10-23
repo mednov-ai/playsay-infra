@@ -81,4 +81,5 @@ certificates:
   enabled: true
 
 hostMaintenance:
+  executorEnabled: true
   enabled: true
