@@ -32,6 +32,17 @@ with tempfile.TemporaryDirectory() as directory:
             {'eval_time': '75h', 'alertname': 'HoneyHostMaintenanceDebtWarning', 'exp_alerts': []},
         ]}]
     }
+    import shlex
+    expression = next(shlex.split(line)[2] for line in (repo/'scripts/collect-classroom-route-incident.sh').read_text().splitlines()
+                      if line.startswith('query_value rf_nic_error_drop_increase '))
+    for counter, expected in [('0+0x180', True), ('10+0x89 0+0x90', True), ('_x170 0+0x9', False)]:
+        fixture['tests'].append({'interval': '5s', 'input_series': [
+            {'series': 'playsay_rf_host_nic_error_drop_total{semantics_version="2"}', 'values': counter},
+            {'series': 'playsay_rf_host_nic_error_drop_total', 'values': '100000+10000x180'},
+            {'series': 'playsay_rf_host_nic_collection_healthy{semantics_version="2"}', 'values': '1+0x180'},
+            {'series': 'playsay_rf_host_nic_checked_at{semantics_version="2"}', 'values': '0+5x180'},
+        ], 'promql_expr_test': [{'eval_time': '15m', 'expr': expression,
+                                'exp_samples': [{'labels': '{semantics_version="2"}', 'value': 0}] if expected else []}]})
     (root/'tests.yaml').write_text(yaml.safe_dump(fixture))
     subprocess.run([args.promtool, 'check', 'rules', 'rules.yaml'], cwd=root, check=True)
     subprocess.run([args.promtool, 'test', 'rules', 'tests.yaml'], cwd=root, check=True)

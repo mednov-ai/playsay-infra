@@ -131,3 +131,4 @@
     enabled: true
     state: started
   loop: [apt-daily-upgrade.timer, honey-school-maintenance-observer.timer]
+  when: not ansible_check_mode
