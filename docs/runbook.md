@@ -3198,3 +3198,22 @@ restore unrestricted unattended upgrades. A failed unit validation leaves instal
 deferred; repair candidates before manager reload. Revert counter consumers only to
 unavailable evidence, never to the packet-derived series. Actual two-host acceptance,
 idempotence, fresh metrics/PIDs and remote develop integration remain required.
+
+### .21 protected fallback acceptance (2026-10-23)
+
+The host policy and NIC v2 are installed on AX41/Selectel; production root and
+monitoring overlay select .21, with application children/runtime remaining .19.
+Both scoped policy previews and the counter preview return changed=0. Critical
+service PIDs were preserved; all product containers remained running. Installed
+window/clock/activity guard fixtures and offline original package-hook replay pass.
+The actual DEV TURN unit is `honey-school-dev-turn`. Selectel lacks needrestart:
+its installation/reboot observations are present but restart inspection is unknown.
+Do not install prerequisites during lessons to turn a missing signal green.
+
+There is no executing automatic maintenance stage. Per-owned-service debt,
+least-privilege authoritative producers/read routes, complete realtime/TURN coverage,
+source freshness and admission exclusion remain pending. Do not equate host aggregate
+security debt or a successful timer with completed security maintenance. Pending
+reboot/install/restart work must be addressed through a separately verified safe
+window; no forced escalation bypass is permitted. External notification delivery
+remains unconfigured. See [production evidence](../migrations/ax41/evidence/20261023-lesson-safe-host-maintenance-production.md).
