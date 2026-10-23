@@ -2,6 +2,7 @@
 import contextlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import time
@@ -116,7 +117,7 @@ server { listen 8081; root /fixtures/origin;
 
 
 class RouteBoundary(unittest.TestCase):
-    def test_https_routes_unchanged_in_both_contours(self):
+    def test_https_routes_unchanged_except_optional_maintenance_includes(self):
         variables=yaml.safe_load((ROOT/'ansible/group_vars/rf_edges.yaml').read_text())
         old=subprocess.check_output(['git','show','HEAD:ansible/roles/rf-edge-proxy/templates/playsay-honey-rf-edge.conf.j2'],cwd=ROOT,text=True)
         env=jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES),undefined=jinja2.StrictUndefined);env.filters['bool']=bool
@@ -125,7 +126,22 @@ class RouteBoundary(unittest.TestCase):
             before=env.from_string(old).render(context);after=env.get_template('playsay-honey-rf-edge.conf.j2').render(context)
             before_tls=[x.strip() for x in before.split('server {') if 'listen 443 ssl;' in x]
             after_tls=[x.strip() for x in after.split('server {') if 'listen 443 ssl;' in x]
-            self.assertEqual(before_tls,after_tls)
+            allowed={'include /etc/nginx/snippets/honey-school-maintenance-admission*.conf;',
+                     'include /etc/nginx/snippets/honey-school-maintenance-control*.conf;'}
+            def unchanged(blocks):
+                return ['\n'.join(line for line in block.splitlines() if line.strip() and line.strip() not in allowed) for block in blocks]
+            self.assertEqual(unchanged(before_tls),unchanged(after_tls))
+
+    def test_maintenance_includes_cover_only_cabinets_and_production_control(self):
+        variables=yaml.safe_load((ROOT/'ansible/group_vars/rf_edges.yaml').read_text())
+        env=jinja2.Environment(loader=jinja2.FileSystemLoader(TEMPLATES),undefined=jinja2.StrictUndefined);env.filters['bool']=bool
+        for key,globals_enabled in [('rf_edge_production_routes',True),('rf_edge_development_routes',False)]:
+            text=env.get_template('playsay-honey-rf-edge.conf.j2').render({**variables,'rf_edge_routes':variables[key],'rf_edge_render_globals':globals_enabled,'ansible_host':'94.102.89.213'})
+            for block in text.split('server {')[1:]:
+                hostname=re.search(r'server_name\s+([^;]+);',block)[1].split()[0]
+                expected=hostname in ('online.honeyschool.ru','dev.online.honeyschool.ru')
+                self.assertEqual('honey-school-maintenance-admission*.conf' in block,expected)
+                self.assertEqual('honey-school-maintenance-control*.conf' in block,hostname=='ops.honey.school' and 'listen 443 ssl;' in block)
 
     def test_ansible_shared_template_include_resolves_for_dev(self):
         with tempfile.TemporaryDirectory() as directory:

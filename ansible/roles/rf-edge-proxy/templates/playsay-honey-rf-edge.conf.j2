@@ -186,6 +186,9 @@ server {
     listen 80;
     listen [::]:80;
     server_name {{ route_server_names | join(' ') }};
+{% if route.hostname in ['online.honeyschool.ru', 'dev.online.honeyschool.ru'] %}
+    include /etc/nginx/snippets/honey-school-maintenance-admission*.conf;
+{% endif %}
 
 {% include 'certificate-acme-location.conf.j2' %}
 
@@ -212,7 +215,13 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     server_name {{ route_server_names | join(' ') }};
+{% if route.hostname in ['online.honeyschool.ru', 'dev.online.honeyschool.ru'] %}
+    include /etc/nginx/snippets/honey-school-maintenance-admission*.conf;
+{% endif %}
 
+{% if route.hostname == 'ops.honey.school' %}
+    include /etc/nginx/snippets/honey-school-maintenance-control*.conf;
+{% endif %}
     ssl_certificate {{ route_certificate_directory }}/fullchain.pem;
     ssl_certificate_key {{ route_certificate_directory }}/privkey.pem;
     ssl_protocols {{ rf_edge_tls_protocols }};

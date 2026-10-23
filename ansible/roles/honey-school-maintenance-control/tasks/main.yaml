@@ -1,0 +1,262 @@
+---
+- name: Restrict this owner to the exact active topology and protected key source
+  ansible.builtin.assert:
+    that:
+      - maintenance_control_role in ['ax41', 'selectel', 'prod', 'dev']
+      - ansible_host == {'ax41':'65.109.55.110', 'selectel':'94.102.89.213', 'prod':'10.60.0.20', 'dev':'10.60.0.30'}[maintenance_control_role]
+      - maintenance_keys_dir is defined
+      - maintenance_keys_dir is match('^/')
+
+- name: Require existing stdlib runtime and owned service prerequisites without installing packages
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ ['/usr/bin/python3','/usr/bin/sudo'] + (['/usr/local/bin/k3s'] if maintenance_control_guest else ['/usr/sbin/nginx','/usr/sbin/nft']) }}"
+  register: control_prerequisites
+
+- name: Refuse missing prerequisites
+  ansible.builtin.assert:
+    that: item.stat.exists
+  loop: "{{ control_prerequisites.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Refuse changing a running, abandoned or partitioned maintenance owner
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - >-
+        import pathlib,json;
+        root=pathlib.Path('/var/lib/honeyschool/maintenance');
+        paths=[(root/'worker.json',('idle','deferred')),(root/'coordinator.json',('idle',))];
+        states=[(json.loads(p.read_text()),allowed) for p,allowed in paths if p.exists()];
+        assert all(v.get('phase','idle') in allowed for v,allowed in states), 'maintenance_owner_requires_recovery'
+  changed_when: false
+  check_mode: false
+  when: not maintenance_control_guest
+
+- name: Require the already installed non-disruptive fallback before adding execution
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - >-
+        import subprocess;
+        apt=subprocess.check_output(['/usr/bin/apt-config','dump'],text=True);
+        unit=subprocess.check_output(['/usr/bin/systemctl','show','apt-daily-upgrade.service','-p','ExecStart'],text=True);
+        assert 'APT::Periodic::Unattended-Upgrade "0";' in apt;
+        assert 'Unattended-Upgrade::Automatic-Reboot "false";' in apt;
+        assert 'Unattended-Upgrade::InstallOnShutdown "false";' in apt;
+        assert '/usr/local/sbin/honey-school-host-maintenance' in unit and 'apt.systemd.daily' not in unit
+  changed_when: false
+  check_mode: false
+  when: not maintenance_control_guest
+
+- name: Retain a protected owning-host backup before any control-plane changes
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../../scripts/backup-maintenance-control.py --owner {{ maintenance_control_role }}"
+    executable: /usr/bin/python3
+  changed_when: false
+  when: not ansible_check_mode
+  register: control_backup
+
+- name: Create root-owned code and configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /usr/local/lib/honey-school-maintenance
+    - /usr/local/lib/honey-school-maintenance/host_maintenance
+    - /etc/honey-school-maintenance
+
+- name: Create persistent private state and a separate traversable admission flag directory
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: /var/lib/honeyschool/maintenance, mode: '0700'}
+    - {path: /var/lib/honey-school-maintenance-admission, mode: '0755'}
+  when: not maintenance_control_guest
+
+- name: Install only the reviewed stdlib module sources
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/lib/honey-school-maintenance/host_maintenance/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_fileglob: "{{ playbook_dir }}/../../scripts/host_maintenance/*.py"
+  register: control_module_delivery
+
+- name: Render the finite role configuration
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: /etc/honey-school-maintenance/config.json
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/bin/python3 -m json.tool %s
+  register: control_configuration
+
+- name: Install distinct directional role credentials without logging contents
+  ansible.builtin.copy:
+    src: "{{ maintenance_keys_dir }}/{{ maintenance_control_role }}.json"
+    dest: /etc/honey-school-maintenance/keys.json
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  register: control_credentials
+
+- name: Install no-argument entrypoints only
+  ansible.builtin.template:
+    src: entrypoint.j2
+    dest: "/usr/local/sbin/honey-school-maintenance-{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ ['guest-read','producer'] if maintenance_control_guest else ['agent','execute','restore','observe','plan','package-preflight'] }}"
+
+- name: Create the fixed producer group
+  ansible.builtin.group:
+    name: honey-maintenance
+    system: true
+  when: maintenance_control_guest
+
+- name: Create the unprivileged aggregate producer account
+  ansible.builtin.user:
+    name: honey-maintenance
+    group: honey-maintenance
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+  when: maintenance_control_guest and not ansible_check_mode
+
+- name: Permit only the fixed no-argument root-local aggregate reader
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/honey-school-maintenance-read
+    content: |
+      honey-maintenance ALL=(root) NOPASSWD: /usr/local/sbin/honey-school-maintenance-guest-read ""
+    owner: root
+    group: root
+    mode: '0440'
+    validate: /usr/sbin/visudo -cf %s
+  when: maintenance_control_guest
+
+- name: Inspect restart-policy ownership without following a replacement symlink
+  ansible.builtin.stat:
+    path: /etc/policy-rc.d
+    follow: false
+  register: control_policy_stat
+  when: not maintenance_control_guest
+
+- name: Inspect existing operator restart policy
+  ansible.builtin.slurp:
+    src: /etc/policy-rc.d
+  register: control_existing_policy
+  failed_when: false
+  when: not maintenance_control_guest
+  no_log: true
+
+- name: Preserve operator policy and refuse replacing an unowned one
+  ansible.builtin.assert:
+    that:
+      - not control_policy_stat.stat.exists or (not control_policy_stat.stat.islnk and control_existing_policy.content is defined and (control_existing_policy.content | b64decode | trim) == (lookup('template', 'policy-rc.d.j2') | trim))
+  when: not maintenance_control_guest
+
+- name: Install suppression before enabling any executing scheduler
+  ansible.builtin.template:
+    src: policy-rc.d.j2
+    dest: /etc/policy-rc.d
+    validate: /bin/sh -n %s
+    owner: root
+    group: root
+    mode: '0755'
+  when: not maintenance_control_guest
+
+- name: Install the reviewed host-specific package/trigger allowlist
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../config/host-maintenance/{{ maintenance_control_role }}-packages.json"
+    dest: /etc/honey-school-maintenance/package-policy.json
+    owner: root
+    group: root
+    mode: '0644'
+  when: not maintenance_control_guest
+
+- name: Validate the complete private nginx candidate and apply a graceful reload only when changed
+  ansible.builtin.script:
+    cmd: "{{ playbook_dir }}/../../scripts/install-maintenance-ingress.py --owner {{ maintenance_control_role }}{{ '' if ansible_check_mode else ' --apply' }}"
+    executable: /usr/bin/python3
+  check_mode: false
+  changed_when: (control_ingress.stdout | from_json).changed
+  register: control_ingress
+  when: not maintenance_control_guest
+
+- name: Install only task-owned systemd units
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ [{'src':'producer.service.j2','dest':'honey-school-maintenance-producer.service'}] if maintenance_control_guest else [{'src':'agent.service.j2','dest':'honey-school-maintenance-agent.service'}, {'src':'restore.service.j2','dest':'honey-school-maintenance-restore.service'}, {'src':'execute.service.j2','dest':'honey-school-maintenance-execute.service'}, {'src':'execute.timer.j2','dest':'honey-school-maintenance-execute.timer'}, {'src':'observe.service.j2','dest':'honey-school-maintenance-runtime-observer.service'}, {'src':'observe.timer.j2','dest':'honey-school-maintenance-runtime-observer.timer'}] }}"
+  register: control_units
+
+- name: Create startup barrier dependency directories without touching running services
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ ['nginx'] + (['coturn','honey-school-dev-turn'] if maintenance_control_role == 'selectel' else ['libvirtd','playsay-livekit-nat']) }}"
+  when: not maintenance_control_guest
+
+- name: Require barrier restoration on the next ordinary service start
+  ansible.builtin.template:
+    src: restore-dependency.conf.j2
+    dest: "/etc/systemd/system/{{ item }}.service.d/95-honey-maintenance-admission.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ ['nginx'] + (['coturn','honey-school-dev-turn'] if maintenance_control_role == 'selectel' else ['libvirtd','playsay-livekit-nat']) }}"
+  when: not maintenance_control_guest
+  register: control_dependencies
+
+- name: Validate task-owned units before reloading the manager
+  ansible.builtin.command:
+    argv: "{{ ['/usr/bin/systemd-analyze','verify'] + (['/etc/systemd/system/honey-school-maintenance-producer.service'] if maintenance_control_guest else ['/etc/systemd/system/honey-school-maintenance-agent.service','/etc/systemd/system/honey-school-maintenance-execute.service','/etc/systemd/system/honey-school-maintenance-execute.timer','/etc/systemd/system/honey-school-maintenance-restore.service','/etc/systemd/system/honey-school-maintenance-runtime-observer.service','/etc/systemd/system/honey-school-maintenance-runtime-observer.timer']) }}"
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Reload only the manager after validation
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: not ansible_check_mode and (control_units.changed or control_dependencies.changed | default(false))
+
+- name: Start or refresh only the new non-disruptive agent/producer
+  ansible.builtin.systemd:
+    name: "{{ 'honey-school-maintenance-producer.service' if maintenance_control_guest else 'honey-school-maintenance-agent.service' }}"
+    enabled: true
+    state: "{{ 'restarted' if control_module_delivery.changed or control_configuration.changed or control_credentials.changed else 'started' }}"
+  when: not ansible_check_mode
+
+- name: Start the non-disruptive debt observer timer
+  ansible.builtin.systemd:
+    name: honey-school-maintenance-runtime-observer.timer
+    enabled: true
+    state: started
+  when: not maintenance_control_guest and not ansible_check_mode
+
+- name: Activate the guarded scheduler only after explicit execution enablement
+  ansible.builtin.systemd:
+    name: honey-school-maintenance-execute.timer
+    enabled: "{{ maintenance_execution_enabled | bool }}"
+    state: "{{ 'started' if maintenance_execution_enabled | bool else 'stopped' }}"
+  when: not maintenance_control_guest and not ansible_check_mode

@@ -171,3 +171,4 @@ certificates:
 
 hostMaintenance:
   enabled: false
+  executorEnabled: false

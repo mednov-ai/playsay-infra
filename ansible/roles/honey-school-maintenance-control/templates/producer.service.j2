@@ -1,0 +1,17 @@
+[Unit]
+Description=Honey School aggregate-only maintenance activity producer
+After=network-online.target k3s.service
+Wants=network-online.target
+[Service]
+User=honey-maintenance
+Group=honey-maintenance
+ExecStart=/usr/local/sbin/honey-school-maintenance-producer
+LoadCredential=keys:/etc/honey-school-maintenance/keys.json
+UMask=0077
+Restart=on-failure
+RestartSec=3
+PrivateTmp=true
+ProtectSystem=strict
+# The single no-argument sudo reader needs its existing root-local kube access.
+[Install]
+WantedBy=multi-user.target

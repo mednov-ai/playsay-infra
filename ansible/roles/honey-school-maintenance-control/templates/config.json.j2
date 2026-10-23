@@ -1,0 +1,18 @@
+{
+  "role": {{ maintenance_control_role | to_json }},
+  "enabled": {{ (maintenance_execution_enabled | bool and not maintenance_control_guest) | to_json }},
+  "state_dir": "/var/lib/honeyschool/maintenance",
+  "package_policy": "/etc/honey-school-maintenance/package-policy.json",
+  "coordinator_url": "https://ops.honey.school/__host_maintenance__",
+  "coordinator_address": "65.109.55.110"
+{% if not maintenance_control_guest %}
+  ,"peer_url": "https://ops.honey.school/__host_maintenance__",
+  "peer_address": "94.102.89.213",
+  "services": {{ maintenance_control_services[maintenance_control_role] | to_json }},
+  "restart_units": {"ax41": {{ maintenance_control_services.ax41.keys() | list | to_json }}, "selectel": {{ maintenance_control_services.selectel.keys() | list | to_json }}},
+  "turn": {
+    "prod": {"unit":"coturn","config":"/etc/turnserver.conf","port":3478,"tls_port":5349,"min_port":49152,"max_port":49251},
+    "dev": {"unit":"honey-school-dev-turn","config":"/etc/honeyschool/dev-turn/turnserver.conf","port":3479,"tls_port":5350,"min_port":49300,"max_port":49399}
+  }
+{% endif %}
+}

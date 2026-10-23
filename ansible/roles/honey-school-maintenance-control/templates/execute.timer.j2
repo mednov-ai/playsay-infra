@@ -1,0 +1,11 @@
+[Unit]
+Description=Honey School nightly retry, execution guard remains authoritative
+[Timer]
+OnCalendar=*-*-* 03:00/10:00 Europe/Moscow
+OnCalendar=*-*-* 04:00/10:00 Europe/Moscow
+RandomizedDelaySec=0
+AccuracySec=1s
+Persistent=true
+Unit=honey-school-maintenance-execute.service
+[Install]
+WantedBy=timers.target

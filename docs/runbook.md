@@ -3067,7 +3067,7 @@ Validate the installed binary and query the persisted expected-inventory series,
 addition to PromQL syntax fixtures. See the official
 [vmalert remote-write documentation](https://docs.victoriametrics.com/victoriametrics/vmalert/).
 
-## Lesson-safe host maintenance (candidate; live acceptance pending)
+## Lesson-safe host maintenance (.21 fallback; superseded by executing owner below)
 
 The dedicated owner is `ansible/playbooks/host-maintenance.yaml`, limited to
 `ax41_hosts` or `rf_edges`. It must never run the common/bootstrap/proxy/media roles.
@@ -3082,7 +3082,7 @@ upgrade service becomes a non-disruptive observer; its explicit Moscow timer is
 eligibility is [03:00,05:00) Europe/Moscow with a synchronized clock; catch-up
 cannot grant daytime maintenance. A five-minute observer keeps debt visible.
 
-**Current safe fallback:** the observer contains no package installation or
+**Historical .21 fallback:** the observer contains no package installation or
 service restart operation. Even two fresh zero snapshots cannot authorize work:
 admission exclusion is unavailable. This is deferred security work, not patched
 runtime or completed autonomous maintenance. Do not enable installation by changing
@@ -3210,10 +3210,45 @@ The actual DEV TURN unit is `honey-school-dev-turn`. Selectel lacks needrestart:
 its installation/reboot observations are present but restart inspection is unknown.
 Do not install prerequisites during lessons to turn a missing signal green.
 
-There is no executing automatic maintenance stage. Per-owned-service debt,
+In the historical .21 fallback there was no executing automatic maintenance stage. Per-owned-service debt,
 least-privilege authoritative producers/read routes, complete realtime/TURN coverage,
 source freshness and admission exclusion remain pending. Do not equate host aggregate
 security debt or a successful timer with completed security maintenance. Pending
 reboot/install/restart work must be addressed through a separately verified safe
 window; no forced escalation bypass is permitted. External notification delivery
 remains unconfigured. See [production evidence](../migrations/ax41/evidence/20261023-lesson-safe-host-maintenance-production.md).
+
+### Executing completion stage (.22 installed; first-night acceptance pending)
+
+The contract is [host-maintenance-control.md](host-maintenance-control.md). The separate `ansible/playbooks/host-maintenance-control.yaml` owns only the infrastructure control plane and aggregate producers. `.22` is installed on AX41, Selectel and both aggregate-only guests; nightly execution is enabled on both hosts. The original .21 suppression remains underneath. Do not treat the new source or a successful simulated package transaction as live acceptance.
+
+Use `scripts/apply-host-maintenance-release.sh --component control --owner ax41|selectel|prod|dev`. It still requires a clean published numeric release and the approved-release environment variable. `PLAYSAY_MAINTENANCE_KEYS_DIR` points to a protected local directory containing four role JSON files; never put their contents in arguments, logs, evidence or Git. The AX41 local/server credential differs from AX41-to-Selectel; Selectel local, Selectel-to-AX41 and both guest producer credentials are distinct. Reuse the same protected set on idempotence/recovery; partial key sets must be recovered as a set rather than regenerated independently.
+
+Bootstrap without `--enable-execution` in this order: AX41, Selectel, PROD producer, DEV producer. Only the trusted control workstation has SSH authority. The guest account has no login shell and can sudo only `/usr/local/sbin/honey-school-maintenance-guest-read` with no arguments; verify an extra argument is denied. That helper uses the guest's existing root-local access for fixed read-only SQL, workload identities and direct per-process private metrics, plus native TURN socket inspection. Cached VictoriaMetrics queries never authorize a zero; each complete read interval must finish before the next begins its ten-second separation. It never emits Kubernetes/DB/SSH credentials or identifiers. Do not replace this boundary with a remote shell or general kubectl/psql sudo grant.
+
+The scoped nginx owner previews a complete temporary configuration tree before changing owned files, keeps protected originals, and uses a graceful reload only when changed. Both cabinet routes must acknowledge 503/Retry-After during the actual nightly fence; do not activate a public fence during lessons merely to test it. Private loopback status is `127.0.0.1:9277/status`. The role-authenticated control prefix is `/__host_maintenance__/` on the existing ops TLS host, fixed to the declared peer IP with normal SNI/certificate verification. It grants no metrics query/import authority. A callback from Selectel verifies the coordinator's matching lease/phase before closing, holding or reopening a barrier.
+
+Before enablement, prove complete independently advancing healthy PROD/DEV/edge/native-TURN observations, exact optional/required service inventory, directional authentication/replay boundaries, local unknown/busy/stale/daytime decisions, unchanged critical PIDs and product imageIDs, and scoped check-mode/idempotence. Apply execution enablement only from the same reviewed release using `--enable-execution`; omit it to keep/restore disabled scheduling. A persistent timer catch-up outside the window must return `outside_window` without a lease or admission marker. Unit calendars retry every ten minutes in hours 03/04 Moscow, with zero randomness; the budget guard deliberately declines late-window attempts. Leave metadata/download and the original installation/reboot suppression enabled.
+
+`coordinator.json`, `worker.json`, `observations.json`, `local.json`, `debt.json`, `auth.json`, `fence.json` and their locks are private durable state under `/var/lib/honeyschool/maintenance`. The separate traversable `/var/lib/honey-school-maintenance-admission/closed` flag contains no secret. Do not delete journals/locks or reset debt to retry. An uncommitted barrier expires after 60 seconds; both hosts persist a non-expiring committed hold before a disruptive step. A crash, corrupt journal or partition after commitment requires safe reconciliation, never lease takeover. Restoration precedes nginx, native TURN and AX41 virtualization/NAT startup. No automatic VM/kernel reboot exists.
+
+APT uses a private verified cache, exact reviewed versions, native frontend/dpkg locks and `--no-download --no-remove --only-upgrade`. The fixed Pre-Invoke owner checks the sealed source/key/config authority, payload/scripts/triggers, dependency closure, package-database cleanliness and fresh coordinator step before the first dpkg invocation. The reviewed needrestart apt-pinvoke is suspended only in that transaction environment; its sealed source fingerprint must remain unchanged. Separate inspection stays list-only. A denied preflight is safe to reopen only when no transaction permit was entered, the database is clean and all installed versions remain the captured old versions. Once entered, finish that same transaction even beyond 05:00; do not kill dpkg, start another batch or initiate a later critical restart. Unknown packages/dependencies/hooks remain explicit debt; this is not an unrestricted full OS upgrade. Extending `config/host-maintenance/*-packages.json` requires reviewing exact source authority, script/trigger hashes and complete dependency closure again.
+
+Per-service mapping inspection does not require installing needrestart on Selectel. Preserve first debt age from existing aggregate evidence where available. A reload or disappearance of one child mapping cannot clear debt while the main process generation is unchanged. Owned inactive optional services remain inactive. An AX41 nginx/libvirt/network restart also requires the existing LiveKit firewall validator to recover; process health alone does not pass that stage. Read-only healthy release may reopen after a completed overrun while carrying later restart/reboot debt. Preserve normal crash recovery and unrelated services; never mask them to make a maintenance test pass.
+
+New central rules are gated by `hostMaintenance.executorEnabled`, enabled in PROD after complete source delivery. The legacy needrestart discovery alert yields to the enabled per-service executor inspector; legacy diagnostic series remain truthful. Check required source freshness, per-service inspection, 24h/72h restart age, observer freshness, stale heartbeat, long-lived fence and recovery-required state. Existing installation/reboot/NIC alerts remain. External notification delivery is still unconfigured and is not implied by firing/resolving local rules.
+
+Focused completion-stage validation:
+
+```sh
+python3 -m unittest discover -s scripts/tests -p 'test_host_maintenance*.py' -v
+python3 scripts/tests/check_maintenance_ingress_fence.py
+/path/to/ansible/python scripts/tests/check_host_maintenance_alerts.py --executor --promtool /path/to/promtool
+scripts/apply-host-maintenance-release.sh --syntax --component control --owner ax41
+```
+
+The Linux acceptance fixture additionally uses an explicitly disposable Ubuntu container, private network namespace, NET_ADMIN, stdlib Python, nftables and a disposable signed APT repository. `check_maintenance_linux.py` verifies native lock contention, an APT Pre-Invoke window closure before dpkg, a real audited installation and unchanged old library mappings. `check_maintenance_turn_fence.py` verifies existing/new controls are denied and relay traffic survives, including AX41 pre-DNAT. Never run either fixture in a production/root host namespace. No fixture image or dependency enters the deployed application runtime.
+
+For rollback, first disable new scheduling through the reviewed owner while preserving the original `.21` suppression/observer. Never remove an in-flight committed barrier or transaction state. Restore only the scoped control/config/ingress files after package ownership and all serving surfaces are verified; a partial/unknown transaction needs a forward recovery reviewed in the same owner. Keep final release-head develop integration, immutable product parity and actual eligible-window acceptance as separate evidence gates. Do not mark the change complete while that acceptance is pending.
+
+Installed checkpoint 2026-10-23: both execution timers are active, zero jitter, next trigger 2026-10-24 03:00 MSK. Explicit daytime invocations deferred `outside_window` without a lease, barrier or transaction permit. Both privileged readers passed real least-privilege checks, all five activity sources are healthy, nineteen Applications are Synced/Healthy, and seventeen product/data/auth/media containers retain their prior image/process/restart identities. The metadata-only audited plan admits one package on AX41 and two on Selectel, with unknown packages retained as debt. No critical process restarted. Fresh four-database backups and seven schema-status checks passed; see [executor delivery evidence](../migrations/ax41/evidence/20261023-lesson-safe-maintenance-executor-production.md). Actual barrier/installation/runtime-recovery acceptance remains pending until a naturally quiet eligible window. A current-thread follow-up checks at 03:20 and 04:20 MSK; it cannot force or bypass the installed guard.

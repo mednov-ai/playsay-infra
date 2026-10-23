@@ -1,0 +1,8 @@
+#!/bin/sh
+# honey-school-maintenance-owned: package hooks never choose protected restarts.
+for service in "$@"; do
+  case "$service" in
+    nginx|nginx.service|libvirtd|libvirtd.service|virtqemud|virtqemud.service|virtnetworkd|virtnetworkd.service|honey-production-logs|honey-production-logs.service|coturn|coturn.service|honey-school-dev-turn|honey-school-dev-turn.service|docker|docker.service|containerd|containerd.service|networking|networking.service|systemd-networkd|systemd-networkd.service) exit 101 ;;
+  esac
+done
+exit 0

@@ -450,7 +450,7 @@ data:
             annotations:
               summary: "Host maintenance observation missing or stale"
           - alert: HoneyHostMaintenanceDiscoveryFailed
-            expr: honey_host_maintenance_discovery_healthy == 0
+            expr: (honey_host_maintenance_discovery_healthy == 0) unless on(owner) (honey_host_executor_enabled == 1)
             for: 10m
             labels:
               severity: warning
@@ -475,6 +475,38 @@ data:
               severity: critical
             annotations:
               summary: "Security work deferred for more than 72 hours"
+{{- if .Values.hostMaintenance.executorEnabled }}
+          - record: honey_host_executor_source_expected
+            expr: label_replace(label_replace(vector(1), "owner", "ax41", "", ""), "source", "ingress", "", "") or label_replace(label_replace(vector(1), "owner", "ax41", "", ""), "source", "prod", "", "") or label_replace(label_replace(vector(1), "owner", "ax41", "", ""), "source", "dev", "", "") or label_replace(label_replace(vector(1), "owner", "selectel", "", ""), "source", "ingress", "", "") or label_replace(label_replace(vector(1), "owner", "selectel", "", ""), "source", "turn", "", "")
+          - alert: HoneyHostExecutorObserverStale
+            expr: honey_host_maintenance_expected unless on(owner) (time() - honey_host_executor_checked_at < 120)
+            for: 2m
+            labels: {severity: critical}
+            annotations: {summary: "Executing maintenance observer missing or stale"}
+          - alert: HoneyHostExecutorSourceUnavailable
+            expr: (honey_host_executor_source_expected unless on(owner,source) (time() - honey_host_executor_source_checked_at < 30)) or (honey_host_executor_source_healthy == 0)
+            for: 2m
+            labels: {severity: critical}
+            annotations: {summary: "Required maintenance activity source unavailable"}
+          - alert: HoneyHostExecutorServiceUnknown
+            expr: honey_host_executor_service_discovery_healthy == 0
+            for: 2m
+            labels: {severity: warning}
+            annotations: {summary: "Owned service runtime cannot be inspected"}
+          - alert: HoneyHostExecutorRuntimeDebtWarning
+            expr: (honey_host_executor_service_first_pending_at > 0) and (time() - honey_host_executor_service_first_pending_at > 86400)
+            labels: {severity: warning}
+            annotations: {summary: "Service runtime restart deferred for more than 24 hours"}
+          - alert: HoneyHostExecutorRuntimeDebtCritical
+            expr: (honey_host_executor_service_first_pending_at > 0) and (time() - honey_host_executor_service_first_pending_at > 259200)
+            labels: {severity: critical}
+            annotations: {summary: "Service runtime restart deferred for more than 72 hours"}
+          - alert: HoneyHostExecutorLeaseStalled
+            expr: ((honey_host_executor_lease_heartbeat_at > 0) and (time() - honey_host_executor_lease_heartbeat_at > 30)) or ((honey_host_executor_fence_closed_at > 0) and (time() - honey_host_executor_fence_closed_at > 1200)) or (honey_host_executor_recovery_required == 1)
+            for: 1m
+            labels: {severity: critical}
+            annotations: {summary: "Maintenance ownership or barrier requires safe recovery"}
+{{- end }}
           - alert: HoneyRfNicCounterUnavailable
             expr: (playsay_rf_host_nic_collection_healthy{semantics_version="2"} == 0) or absent(playsay_rf_host_nic_checked_at{semantics_version="2"}) or (time() - playsay_rf_host_nic_checked_at{semantics_version="2"} > 45)
             for: 1m

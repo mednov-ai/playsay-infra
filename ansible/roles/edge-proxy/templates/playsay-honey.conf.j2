@@ -79,6 +79,9 @@ server {
     listen 80;
     listen [::]:80;
     server_name {{ route.hostname }};
+{% if route.kind == 'online' %}
+    include /etc/nginx/snippets/honey-school-maintenance-admission*.conf;
+{% endif %}
 
     location ^~ /.well-known/acme-challenge/ {
         root /var/www/playsay-acme;
@@ -114,7 +117,13 @@ server {
     listen 443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
     listen [::]:443 ssl{% if edge_http2_enabled | default(false) %} http2{% endif %};
     server_name {{ route.hostname }};
+{% if route.kind == 'online' %}
+    include /etc/nginx/snippets/honey-school-maintenance-admission*.conf;
+{% endif %}
 
+{% if route.hostname == 'ops.honey.school' %}
+    include /etc/nginx/snippets/honey-school-maintenance-control*.conf;
+{% endif %}
     ssl_certificate /etc/letsencrypt/live/{{ edge_certificate_name }}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ edge_certificate_name }}/privkey.pem;
     ssl_protocols {{ edge_tls_protocols }};
