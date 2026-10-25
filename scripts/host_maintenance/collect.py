@@ -171,9 +171,19 @@ def service_runtime(unit, optional=False):
         pids={int(x) for path in group.rglob('cgroup.procs') for x in path.read_text().split()}
         if pid<=1 or pid not in pids:
             raise Deferred('service_process_unknown')
-        inspected=[mapped_runtime_pending(item) for item in sorted(pids)]
-        pending=any(inspected)
-        return {'pending':pending,'active':True,'process_started':process_generation(pid)}
+        inspected={item:mapped_runtime_pending(item) for item in sorted(pids)}
+        managed=set()
+        if unit=='libvirtd':
+            # libvirtd intentionally leaves guest/DNS descendants alive. Retain
+            # their full debt, but a daemon restart cannot update these mappings.
+            for item in pids-{pid}:
+                executable=str(Path('/proc',str(item),'exe').readlink()).removesuffix(' (deleted)')
+                if executable in ('/usr/bin/qemu-system-x86_64','/usr/sbin/dnsmasq'):
+                    managed.add(item)
+        return {'pending':any(inspected.values()),'active':True,
+                'restartable_pending':any(value for item,value in inspected.items() if item not in managed),
+                'managed_descendant_pending':any(inspected[item] for item in managed),
+                'process_started':process_generation(pid)}
     except (Deferred,OSError,ValueError,KeyError):
         return None
 

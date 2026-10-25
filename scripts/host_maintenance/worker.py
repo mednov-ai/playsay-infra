@@ -16,6 +16,13 @@ from .wire import Client
 UNSAFE_PHASES=('installing','restarting','overrun','failed_unsafe')
 
 
+def restart_needed(runtime,old):
+    if not runtime.get('active'):return False
+    actionable=runtime.get('restartable_pending',runtime['pending'])
+    if runtime.get('managed_descendant_pending') and not actionable:return False
+    return actionable or bool(old.get('pending') and old.get('process_started')==runtime.get('process_started'))
+
+
 class Worker:
     def __init__(self,config,keys):
         self.config=config;self.role=config['role'];self.root=Path(config['state_dir'])
@@ -134,8 +141,7 @@ class Worker:
         if before is None:raise Deferred('service_health_unknown')
         debt_path=self.root/'debt.json'
         old=json.loads(debt_path.read_text()).get('services',{}).get(unit,{}) if debt_path.exists() else {}
-        aged=old.get('pending') and old.get('process_started')==before.get('process_started')
-        if not before.get('active') or (not before['pending'] and not aged):return
+        if not restart_needed(before,old):return
         token=self.proof('restart',unit)
         self.state('preparing_restart',step_id=token,service=unit)
         # Service names come only from the root-owned deployment inventory.
@@ -151,7 +157,7 @@ class Worker:
         deadline=time.monotonic()+120
         while job.returncode==0 and time.monotonic()<deadline:
             after=service_runtime(unit,options.get('optional',False))
-            if after and after.get('active') and not after['pending'] and after.get('process_started')!=before.get('process_started'):
+            if after and after.get('active') and not after.get('restartable_pending',after['pending']) and after.get('process_started')!=before.get('process_started'):
                 if self.role=='ax41' and unit in ('libvirtd','systemd-networkd','nginx'):
                     from .collect import run
                     try:run(['/usr/local/sbin/playsay-validate-livekit-firewall'],timeout=15)
@@ -191,7 +197,7 @@ class Worker:
             if any(v is None for v in observations.values()):raise Deferred('service_health_unknown')
             debt_path=self.root/'debt.json'
             debt=json.loads(debt_path.read_text()).get('services',{}) if debt_path.exists() else {}
-            if not plan['allowed'] and not any(v['pending'] or (v.get('active') and debt.get(u,{}).get('pending') and debt[u].get('process_started')==v.get('process_started')) for u,v in observations.items()):
+            if not plan['allowed'] and not any(restart_needed(v,debt.get(u,{})) for u,v in observations.items()):
                 self.state('idle',last_completed_at=int(time.time()),reason='no_eligible_debt');return
             self.lease=secrets.token_hex(16)
             self.request('/lease/claim')
