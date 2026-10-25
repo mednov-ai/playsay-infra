@@ -1,0 +1,29 @@
+---
+- name: Quarantine the Selectel executing scheduler without opening its owned barrier
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - ansible.builtin.assert:
+        that: ansible_host == '94.102.89.213'
+    - name: Verify or quarantine only the native idle executor
+      ansible.builtin.script:
+        cmd: "{{ playbook_dir }}/../../scripts/recover-host-maintenance.py {{ '--check' if ansible_check_mode else '--recover' }}"
+        executable: /usr/bin/python3
+      check_mode: false
+      changed_when: not ansible_check_mode
+- name: Reconcile the exact failed AX41 libvirt step and reopen through its existing lease
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - ansible.builtin.assert:
+        that: ansible_host == '65.109.55.110'
+    - name: Prove native idle, serving health and exact operation before same-owner recovery
+      ansible.builtin.script:
+        cmd: "{{ playbook_dir }}/../../scripts/recover-host-maintenance.py {{ '--check' if ansible_check_mode else '--recover' }}"
+        executable: /usr/bin/python3
+      check_mode: false
+      changed_when: not ansible_check_mode
