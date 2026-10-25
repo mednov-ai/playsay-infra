@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 usage() {
-  echo "Usage: $0 --syntax|--check|--apply --inventory PATH --owner ax41|selectel|prod|dev [--component policy|counters|control] [--enable-execution]" >&2
+  echo "Usage: $0 --syntax|--check|--apply --inventory PATH --owner ax41|selectel|prod|dev [--component policy|counters|control|recovery] [--enable-execution]" >&2
   exit 2
 }
 mode= inventory= owner= component=policy execution=false
@@ -24,6 +24,7 @@ playbook="$repo_root/ansible/playbooks/host-maintenance.yaml"
 case "$component" in
   policy) case "$owner" in ax41|selectel) ;; *) usage ;; esac ;;
   counters) [ "$owner" = selectel ] || usage; playbook="$repo_root/ansible/playbooks/rf-nic-observability.yaml" ;;
+  recovery) [ "$owner" = ax41 ] || usage; host_group="ax41_hosts:rf_edges"; playbook="$repo_root/ansible/playbooks/host-maintenance-recovery.yaml" ;;
   control) playbook="$repo_root/ansible/playbooks/host-maintenance-control.yaml" ;;
   *) usage ;;
 esac
