@@ -51,6 +51,33 @@ class Gates(unittest.TestCase):
             bad=copy.deepcopy(second);mutation(bad)
             with self.assertRaises(Deferred):two_zero_observations(first,bad,1000,900)
 
+    def test_pre_fence_positive_samples_wait_for_a_new_epoch_without_becoming_zero(self):
+        from host_maintenance.model import validate_snapshot
+        sample=self.snapshot(995);sample['fenced_at']=998
+        sample['hosts']['selectel']['counts']['ingress_writing']=1
+        preserved=copy.deepcopy(sample)
+        with self.assertRaisesRegex(Deferred,'observations_precede_fence'):
+            validate_snapshot(sample,1000,900)
+        self.assertEqual(sample,preserved)
+        # Before admission closes, the identical busy sample must deny claiming.
+        with self.assertRaisesRegex(Deferred,'activity_busy'):
+            validate_snapshot(sample,1000,900,require_fence=False)
+        fresh=self.snapshot(1000);fresh['fenced_at']=998
+        fresh['hosts']['selectel']['counts']['ingress_writing']=1
+        with self.assertRaisesRegex(Deferred,'activity_busy'):
+            validate_snapshot(fresh,1000,900)
+        fresh['hosts']['selectel']['counts']['ingress_writing']=0
+        later=self.snapshot(1011);later['fenced_at']=998
+        two_zero_observations(fresh,later,1011,900)
+
+    def test_unknown_prefence_data_is_never_an_epoch_retry_or_a_zero(self):
+        from host_maintenance.model import validate_snapshot
+        for mutation,reason in [(lambda x:x['guests']['prod'].update(healthy=False),'source_unhealthy'),
+                                (lambda x:x['turn']['counts'].pop('control_connections'),'source_malformed'),
+                                (lambda x:x['hosts']['ax41'].update(read_started_at=900),'source_stale')]:
+            sample=self.snapshot(995);sample['fenced_at']=998;mutation(sample)
+            with self.assertRaisesRegex(Deferred,reason):validate_snapshot(sample,1000,900)
+
     def test_window_checks_budget_clock_and_five_am(self):
         stamp=lambda x:datetime.fromisoformat('2026-10-24T'+x).replace(tzinfo=timezone.utc).timestamp()
         self.assertTrue(within_window(stamp('00:00:00'),True,1020))
@@ -161,6 +188,17 @@ class Protocol(unittest.TestCase):
             self.agent.dispatch('ax41','/lease/step',{'lease_id':'a'*32,'operation':'restart','service':'nginx'})
         with self.assertRaisesRegex(Deferred,'step_still_running'):
             self.agent.release('ax41','a'*32)
+
+    def test_prefence_busy_sample_never_becomes_a_zero_baseline(self):
+        self.own();epoch=int(self.now)+1;self.sample['fenced_at']=epoch
+        self.sample['hosts']['selectel']['counts']['ingress_writing']=1
+        with self.assertRaisesRegex(Deferred,'observations_precede_fence'):
+            self.agent.observe_zero('ax41','a'*32,120)
+        self.assertNotIn('zero_baseline',self.agent.read('coordinator'))
+        self.now+=4;self.sample=Gates().snapshot(int(self.now));self.sample['fenced_at']=epoch
+        self.assertFalse(self.agent.observe_zero('ax41','a'*32,120)['eligible'])
+        self.now+=11;self.sample=Gates().snapshot(int(self.now));self.sample['fenced_at']=epoch
+        self.assertTrue(self.agent.observe_zero('ax41','a'*32,120)['eligible'])
 
     def test_cached_token_or_new_activity_invalidates_native_preflight(self):
         self.own('step_running',step_id='c'*32,operation='install',step_granted_at=int(self.now),proof_generation=['stable']*5)

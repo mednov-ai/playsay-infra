@@ -65,7 +65,7 @@ def validate_snapshot(snapshot, now, budget, require_fence=True):
     stamps = []
     for guest in GUESTS:
         sample = snapshot['guests'][guest]
-        stamps.append(validate_observation(sample, GUEST_FIELDS, now))
+        stamps.append(validate_observation(sample, GUEST_FIELDS, now, require_zero=False))
         opening = sample.get('next_opening_at')
         # No next lesson is an explicit SQL result; unknown is never infinity.
         if sample.get('next_opening_known') is not True:
@@ -75,10 +75,11 @@ def validate_snapshot(snapshot, now, budget, require_fence=True):
         generations.append(sample['generation'])
     for host in HOSTS:
         host_sample = snapshot.get('hosts', {}).get(host)
-        stamps.append(validate_observation(host_sample, HOST_FIELDS, now))
+        stamps.append(validate_observation(host_sample, HOST_FIELDS, now, require_zero=False))
         generations.append(host_sample['generation'])
-    stamps.append(validate_observation(snapshot.get('turn'), TURN_FIELDS, now))
+    stamps.append(validate_observation(snapshot.get('turn'), TURN_FIELDS, now, require_zero=False))
     generations.append(snapshot['turn']['generation'])
+    samples=[*snapshot['guests'].values(),*snapshot['hosts'].values(),snapshot['turn']]
     if require_fence:
         fences = snapshot.get('fences', {})
         if set(fences) != set(HOSTS) or not all(value is True for value in fences.values()):
@@ -86,9 +87,12 @@ def validate_snapshot(snapshot, now, budget, require_fence=True):
         if snapshot.get('lease_phase') not in ('fenced', 'committing', 'step_running', 'verifying'):
             raise Deferred('lease_not_fenced')
         epoch=snapshot.get('fenced_at')
-        samples=[*snapshot['guests'].values(),*snapshot['hosts'].values(),snapshot['turn']]
         if not integer(epoch) or any(item['read_started_at']<epoch for item in samples):
             raise Deferred('observations_precede_fence')
+    # First prove that every complete read belongs to the closed-admission
+    # epoch. Old positive values are neither a post-fence busy decision nor a
+    # zero baseline. Claiming (without a fence) still rejects any activity.
+    if any(any(item['counts'].values()) for item in samples):raise Deferred('activity_busy')
     return dict(zip(('prod', 'dev', 'ax41', 'selectel', 'turn'), stamps)), tuple(generations)
 
 
