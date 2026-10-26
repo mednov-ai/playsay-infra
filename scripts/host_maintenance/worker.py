@@ -65,21 +65,29 @@ class Worker:
     def proof(self,operation,service=None):
         deadline=time.monotonic()+45
         while True:
+            if time.monotonic()>=deadline:raise Deferred('observation_timeout')
             if self.failure:raise Deferred(self.failure)
             budget=1020 if operation=='install' else 240
             if not within_window(time.time(),synchronized(),budget):raise Deferred('outside_window')
+            delay=3
             try:
                 result=self.request('/lease/step',operation=operation,service=service)
                 if result.get('eligible') is True:
                     # The step token cannot be queued for a later timer or resumed after a process crash.
                     if not 0<=time.time()-result['granted_at']<=5:
+                        self.state('verifying',step_id=result['step_id'],reason='step_grant_stale')
                         self.acknowledge('/lease/complete-step',step_id=result['step_id'],success=True)
                         raise Deferred('step_grant_stale')
                     return result['step_id']
+                if result.get('reason')=='observation_spacing':delay=13
             except Deferred as error:
                 if error.code not in ('observation_spacing','observations_precede_fence','source_generation_changed'):raise
-            if time.monotonic()>=deadline:raise Deferred('observation_timeout')
-            time.sleep(3)
+                if error.code in ('observation_spacing','source_generation_changed'):delay=13
+            # Ten-second independent read separation plus collector cadence. Do
+            # not create redundant drain RPCs before another proof is possible.
+            remaining=deadline-time.monotonic()
+            if remaining<=0:raise Deferred('observation_timeout')
+            time.sleep(min(delay,remaining))
 
     def install(self,plan,policy):
         if not plan['allowed']:return
