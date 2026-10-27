@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-hotfix-drawing-palette-dropdown-404"
-  digest: sha256:262f1c8e31f936aa33b30b9d483679ba5eb3cb1acb66906dc4d60b49d3e7d1e1
+  tag: "web-dev-406"
+  digest: sha256:62cc836bdbfc3556f2ea93b6362f9d5dcf43d1f626c43732c52722c3554c1ada
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-hotfix-drawing-palette-dropdown-404
-  number: "404"
-  branch: hotfix/drawing-palette-dropdown
-  branchLabel: web-hotfix-drawing-palette-dropdown
-  commit: ab8581e21aba6343b56b925e896acb10160763cd
-  commitShort: "ab8581e21aba"
+  name: web-dev-406
+  number: "406"
+  branch: develop
+  branchLabel: web-dev
+  commit: 8982e00324136303d8119c9e8037cb3a11afbcd0
+  commitShort: "8982e0032413"
 service:
   type: NodePort
   nodePort: 32083
