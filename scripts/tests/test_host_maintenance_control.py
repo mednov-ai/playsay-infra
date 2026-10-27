@@ -189,6 +189,19 @@ class Protocol(unittest.TestCase):
         with self.assertRaisesRegex(Deferred,'step_still_running'):
             self.agent.release('ax41','a'*32)
 
+    def test_busy_during_ungranted_commit_retains_completed_step_for_verified_release(self):
+        self.own('verifying',destructive_started=True,step_id='c'*32,last_completed_step_id='c'*32,last_completed_success=True)
+        self.agent.observe_zero=lambda *args:{'eligible':True,'snapshot':self.sample}
+        def hold(*args):self.sample['hosts']['selectel']['counts']['ingress_writing']=1
+        self.agent.fence.hold=hold
+        with self.assertRaisesRegex(Deferred,'activity_busy'):
+            self.agent.dispatch('ax41','/lease/step',{'lease_id':'a'*32,'operation':'restart','service':'nginx'})
+        state=self.agent.read('coordinator')
+        self.assertEqual(state['phase'],'verifying')
+        self.assertEqual(state['step_id'],'c'*32)
+        self.assertEqual(state['last_completed_step_id'],'c'*32)
+        self.assertNotIn('step_granted_at',state)
+
     def test_prefence_busy_sample_never_becomes_a_zero_baseline(self):
         self.own();epoch=int(self.now)+1;self.sample['fenced_at']=epoch
         self.sample['hosts']['selectel']['counts']['ingress_writing']=1

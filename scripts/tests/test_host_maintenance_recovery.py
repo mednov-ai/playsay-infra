@@ -17,6 +17,15 @@ class Recovery(unittest.TestCase):
             with self.subTest(key=key):
                 changed={**state,key:value}
                 with self.assertRaises(r.Deferred):r.expected_failure(changed,worker)
+    def test_only_completed_selectel_coturn_commit_is_recoverable(self):
+        state={'owner':'selectel','phase':'committing','operation':'restart','service':'coturn','lease_id':'a'*32,'step_id':'b'*32,'last_completed_step_id':'b'*32,'last_completed_success':True}
+        worker={'phase':'recovery_required','reason':'runtime_not_verified','service':'coturn','lease_id':'a'*32,'step_id':'b'*32}
+        r.expected_completed_commit(state,worker)
+        for key,value in [('owner','ax41'),('phase','step_running'),('operation','install'),('service','nginx'),('last_completed_success',False),('last_completed_step_id','c'*32),('step_id','c'*32),('lease_id','c'*32)]:
+            with self.subTest(key=key),self.assertRaises(r.Deferred):r.expected_completed_commit({**state,key:value},worker)
+        for key,value in [('phase','restarting'),('reason','unknown'),('service','nginx'),('step_id','c'*32),('lease_id','c'*32)]:
+            with self.subTest(key=key),self.assertRaises(r.Deferred):r.expected_completed_commit(state,{**worker,key:value})
+
     def test_never_cancel_or_steal_native_work(self):
         with patch.object(r,'run',return_value='123 libvirtd restart running'),patch.object(r,'package_database_clean') as db:
             with self.assertRaisesRegex(r.Deferred,'systemd_jobs_pending'):r.native_idle()

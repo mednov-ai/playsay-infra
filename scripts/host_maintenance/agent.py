@@ -233,13 +233,23 @@ class Agent:
                 assert_owner(state,actor,data['lease_id'])
                 if state['phase'] not in ('fenced','verifying'):raise Deferred('lease_phase_invalid')
                 state['phase']='committing'
-            self.fence.hold(data['lease_id'])
-            self.peer.request('/fence/hold',{'lease_id':data['lease_id']})
-            now=int(self.clock())
-            if not within_window(now,synchronized(),budget+120):raise Deferred('outside_window')
-            stamps,generation=validate_snapshot(self.snapshot(),now,budget)
-            previous_stamps,previous_generation=validate_snapshot(proof['snapshot'],now,budget)
-            if generation!=previous_generation or any(stamps[k]<previous_stamps[k] for k in stamps):raise Deferred('source_generation_changed')
+            try:
+                self.fence.hold(data['lease_id'])
+                self.peer.request('/fence/hold',{'lease_id':data['lease_id']})
+                now=int(self.clock())
+                if not within_window(now,synchronized(),budget+120):raise Deferred('outside_window')
+                stamps,generation=validate_snapshot(self.snapshot(),now,budget)
+                previous_stamps,previous_generation=validate_snapshot(proof['snapshot'],now,budget)
+                if generation!=previous_generation or any(stamps[k]<previous_stamps[k] for k in stamps):raise Deferred('source_generation_changed')
+            except Deferred:
+                # No new grant/native command exists until step_running is persisted.
+                # Retain committed barriers and the completed prior step, but permit
+                # same-owner health verification instead of stranding committing.
+                with self.journal.locked('coordinator') as state:
+                    assert_owner(state,actor,data['lease_id'])
+                    if state.get('phase')=='committing':
+                        state['phase']='verifying' if state.get('destructive_started') else 'fenced'
+                raise
             with self.journal.locked('coordinator') as state:
                 assert_owner(state,actor,data['lease_id'])
                 if state['phase']!='committing':raise Deferred('lease_phase_invalid')
