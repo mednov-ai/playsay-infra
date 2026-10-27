@@ -36,10 +36,6 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
           env:
-            - name: PLAYSAY_GAMES_MAINTENANCE
-              value: {{ .Values.games.maintenance | quote }}
-            - name: PLAYSAY_GAMES_WRITES_ENABLED
-              value: {{ .Values.games.writesEnabled | quote }}
             {{- if .Values.runtime.javaToolOptions }}
             - name: JAVA_TOOL_OPTIONS
               value: {{ .Values.runtime.javaToolOptions | quote }}
@@ -48,8 +44,6 @@ spec:
               value: {{ .Values.auth.issuerUri | quote }}
             - name: PLAYSAY_AUTH_JWK_SET_URI
               value: {{ .Values.auth.jwkSetUri | quote }}
-            - name: PLAYSAY_WHITEBOARD_ENABLED
-              value: {{ .Values.whiteboard.enabled | quote }}
             - name: PLAYSAY_LESSON_ACCESS_ENABLED
               value: {{ .Values.lessonAccess.enabled | quote }}
             - name: PLAYSAY_LESSON_ACCESS_HMAC_KEY_VERSION
