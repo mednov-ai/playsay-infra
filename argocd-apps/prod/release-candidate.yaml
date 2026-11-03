@@ -1,16 +1,20 @@
 schemaVersion: 1
-status: ready
-releaseBranch: "release/01.007.23"
-baseRelease: "release/01.007.19"
-basePlatformCommit: "87a9389c41afba98757ca3375399c7dd1963aced"
-acceptedDevCommit: "ab8581e21aba6343b56b925e896acb10160763cd"
-baseInfraCommit: "0aaf71faa8886b9430f2028f1b46a3be523888ad"
-platformCommit: "ab8581e21aba6343b56b925e896acb10160763cd"
+status: building
+releaseBranch: "release/01.007.24"
+baseRelease: "release/01.007.23"
+basePlatformCommit: "ab8581e21aba6343b56b925e896acb10160763cd"
+acceptedDevCommit: "e37bb8aa3107c71dd31edfaea8c3735b2025532d"
+baseInfraCommit: "380d1fe19e9a187b6b77d098a34b0dfe97dc7be8"
+platformCommit: "9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0"
 affectedTargets:
+  - "api-gateway"
+  - "worksheet-import-service"
   - "web-app"
+  - "keycloak"
 validationSuites:
+  - "ci-contracts"
   - "smoke-syntax"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "112"
-updatedAt: "2026-10-27T06:28:24Z"
+  build: "113"
+updatedAt: "2026-11-03T13:09:11Z"
