@@ -6,9 +6,11 @@ gates if its head moves. The production rollout is outside this DEV step.
 
 The current platform candidate is `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`.
 Non-deploy Jenkins web build 416 passed lint, tests and build for that exact
-commit; its image and deployment stages did not execute. Full JVM security
-previously passed for `d23cd788731da7d60a3c55c67d9351449aa81934`; rerun it
-for the current commit. Keycloak native CI and DEV delivery remain pending.
+commit; Keycloak build 27 passed provider tests and its security gate. Full
+JVM security build 13 passed with recorded scoped accepted risks and 49
+archived artifacts: backend and build-logic each reported zero blocking
+findings. No image or deployment stages ran in those validation builds.
+DEV delivery and multi-student acceptance remain pending.
 
 Before any PostgreSQL restart, the DEV guest retained a protected fresh
 four-database backup at
