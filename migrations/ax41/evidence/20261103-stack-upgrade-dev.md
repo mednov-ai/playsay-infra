@@ -10,17 +10,21 @@ evidence](security/20261103-stack-upgrade/README.md). DEV lesson admission
 was restored through infra PR #62, and the gateway is Synced/Healthy with the
 maintenance flag off. No database, Keycloak or LiveKit upgrade was deployed.
 
-The current platform candidate is `e830a539a33e9b787232ff1ad8e79e8b0c127b1a`.
+The current platform candidate is `ce42081191dd6efbe5070f4143b92932063dfd0a`.
 Non-deploy Jenkins web build 417, keyboard build 114, game-adapter build 45
-and collaboration build 63 passed their test/build stages for that exact
-commit. Their image publication, environment update and rollout stages were
-not executed. Its previous commit was
+and collaboration build 63 passed their test/build stages for its previous
+commit `e830a539a33e9b787232ff1ad8e79e8b0c127b1a`. The current commit changes
+only the classroom smoke script, which passed its focused DEV baseline run
+and CI target-routing tests locally. Those Jenkins image publication,
+environment update and rollout stages were not executed. The earlier
+application/security commit was
 `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`: Keycloak build 27 passed
 provider tests and its security gate, and full JVM security build 13 passed
 with scoped accepted risks and 49 archived artifacts. Backend and build-logic
-each reported zero blocking findings for that previous commit. The subsequent
-commit changes four runtime Dockerfiles, a configuration comment and local
-security evidence; backend, scanner scripts and JVM Jenkinsfiles are unchanged.
+each reported zero blocking findings for that earlier commit. Subsequent
+commits change four runtime Dockerfiles, the classroom smoke script, a
+configuration comment and local security evidence; backend, scanner scripts
+and JVM Jenkinsfiles are unchanged.
 Fresh exact-candidate full gates and scans of the CI-built images remain
 required before delivery. DEV delivery and acceptance of the upgraded
 candidate remain pending.
@@ -114,7 +118,12 @@ Earlier attempts first timed out because the test recorder acted before the
 microphone was ready and because the teacher task returned to its hidden view
 after participant selection settled. The harness was corrected. A later
 focused run saw a text-annotation compact-width assertion return 72 px
-instead of the expected greater-than-72 value; the successful core run
-explicitly skipped that separate text/mind-map geometry assertion. It is not
-counted as passing. Repeat the multi-student acceptance against the exact
-candidate after an authorized, security-cleared DEV delivery.
+instead of the expected greater-than-72 value immediately after typing. The
+core run explicitly skipped that assertion. A separate three-participant run
+waited for the scheduled size calculation and passed the compact text,
+mind-map and teacher/student anchored-scroll checks. Its lesson was deleted,
+material archived and sessions logged out. The corrected checked-in smoke
+script subsequently passed the focused three-participant DEV baseline run;
+its task-owned lesson and archived material were independently verified.
+Repeat the multi-student acceptance against the exact candidate after an
+authorized, security-cleared DEV delivery.

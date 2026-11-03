@@ -52,6 +52,14 @@ worker MIME/404 handling. It did not prove actual DEV routes or deployed
 artifacts. Package upgrades are resolved at build time: scan and retain the
 exact final CI images and their digests before any delivery.
 
+The current `scripts/ci/run-kaniko-image-build.sh` publishes directly; the
+deployable Jenkins stages subsequently update GitOps references and contain
+no final-image scan gate. It therefore cannot establish the required
+pre-publication container evidence for this candidate as written. The four
+successful exact-source Jenkins checks used a non-deploying branch and did
+not execute image build/push or environment update stages. A reviewed
+build/scan/publish sequence must fail closed before any deployable build.
+
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
 six High package/finding matches in npm's bundled `brace-expansion` and

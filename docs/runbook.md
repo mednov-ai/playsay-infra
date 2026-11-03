@@ -34,7 +34,12 @@ nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
 service runtimes omit unused npm. Alpine security updates are resolved during
 the image build. Before publication or deployment, scan and retain the exact
 CI-built image digests and full reports; the local scans are not a clearance
-for later builds. Preserve the game adapter's non-root identity, read-only
+for later builds. The current generic Kaniko helper pushes images before any
+final-image vulnerability scan and then updates environment references; it
+does not by itself satisfy this pre-publication gate. Prepare and verify a
+reviewed build/scan/publish sequence that keeps failing images unpublished
+before starting deployable jobs for this candidate. Preserve the game
+adapter's non-root identity, read-only
 root filesystem and `/tmp/playsay` writable mount, and exercise its token,
 image optimization and real Chromium validation on DEV. Verify web and
 keyboard API routing, WebSocket upgrades and module-worker MIME through the
