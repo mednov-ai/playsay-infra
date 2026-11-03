@@ -2,6 +2,30 @@
 
 Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. Dev-only GeoIP entry is enabled with a validated local IPinfo MMDB; production entry remains disabled. See [2026-09-06 acceptance](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md). Provision the IPinfo token only in `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41 (root, `0600`), never in Git or command arguments. Provider-issued 14-character tokens are valid; do not impose a 16-character minimum. Token provisioning alone must not activate redirects or reload nginx.
 
+### Prepared DEV stack upgrade (not yet deployed)
+
+The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
+application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
+platform Java/Spring, React/Vite and LiveKit client upgrades. Before
+delivery, refresh the live revisions and lesson activity, run the
+candidate-specific CI/security gates, and verify a protected fresh backup of
+the `playsay`, `keyboard`, `worksheet_import` and Keycloak databases,
+including checksum, archive catalog and an isolated restore. A previous
+backup or a healthy rollout is not a restore test. Use the current DEV
+lesson-admission and drain procedures before an interrupting change; monitor
+the direct and RF routes, collaboration and real media independently.
+
+The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload.
+The application CNPG image pin does not update it, and no compatible
+Bitnami 17.11 image was identified during this preparation. Preserve its
+existing image, PVC, credentials and sessions until a separately validated
+same-major migration path is available. Roll back LiveKit and application
+images through GitOps after draining users. Do not assume that merely
+reverting a PostgreSQL image is a tested database rollback: preserve later
+writes and use the verified backup only as part of a reviewed recovery.
+Production promotion requires the owner's later explicit command and its own
+current release, security, backup, schema and lesson-safe gates.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
