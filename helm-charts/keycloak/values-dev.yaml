@@ -21,7 +21,7 @@ global:
   security:
     allowInsecureImages: true
 keycloak:
-  replicaCount: 0
+  replicaCount: 1
   hostname: https://dev.ops.honey.school/keycloak
   httpRelativePath: /keycloak/
   service:
@@ -30,7 +30,7 @@ keycloak:
     name: keycloak-admin
     passwordKey: admin-password
   database:
-    host: keycloak-postgresql
+    host: keycloak-postgres-upgrade-rw
     port: 5432
     name: bitnami_keycloak
     username: bn_keycloak
