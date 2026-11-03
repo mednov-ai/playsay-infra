@@ -2,6 +2,59 @@
 
 Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. Dev-only GeoIP entry is enabled with a validated local IPinfo MMDB; production entry remains disabled. See [2026-09-06 acceptance](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md). Provision the IPinfo token only in `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41 (root, `0600`), never in Git or command arguments. Provider-issued 14-character tokens are valid; do not impose a 16-character minimum. Token provisioning alone must not activate redirects or reload nginx.
 
+### Prepared DEV stack upgrade (not yet deployed)
+
+The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
+application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
+platform Java/Spring, React/Vite and LiveKit client upgrades. Before
+delivery, refresh the live revisions and lesson activity, run the
+candidate-specific CI/security gates, and verify a protected fresh backup of
+the `playsay`, `keyboard`, `worksheet_import` and Keycloak databases,
+including checksum, archive catalog and an isolated restore. A previous
+backup or a healthy rollout is not a restore test. Use the current DEV
+lesson-admission and drain procedures before an interrupting change; monitor
+the direct and RF routes, collaboration and real media independently.
+
+The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
+the application CNPG image pin does not update it. The prepared DEV-only
+`keycloak-postgres-upgrade` ArgoCD application imports that database into a
+new CNPG PostgreSQL 17.11 cluster. The legacy image has no maintained 17.11
+tag. A disposable operator 1.29.1/Keycloak 26.8.1 fixture verified the
+same-major import, matching 101 tables and aggregate identity/session counts,
+`en_US.UTF-8`, the owner, `pgaudit`, the existing database password, session
+refresh and a new login at the declared DEV memory/CPU limits. That fixture
+does not prove the real DEV cutover or the custom provider.
+
+Before creating the import application, close DEV lesson admission, drain
+issued credentials and connections, scale DEV Keycloak to zero through a
+separate GitOps change, confirm no other source database writers, and refresh
+the protected four-database backup and isolated restore. The import reads the
+old `keycloak-postgresql` service and its existing superuser secret; a
+DEV-scoped SealedSecret supplies a copy of the unchanged application password
+to CNPG. Confirm the resulting secret matches the existing password without
+printing either value. Wait for the new cluster to be healthy and compare
+source/target schema and aggregate identity/session counts while Keycloak
+remains stopped. Only then switch the Keycloak JDBC host to
+`keycloak-postgres-upgrade-rw`, retaining its existing password secret, and
+restore its replica through GitOps. Verify native DEV login, existing-session
+refresh, lesson access, provider behavior, data and both routes before
+reopening lesson admission. Keep the old PostgreSQL workload, PVC and secret;
+do not prune the new cluster or its credential.
+
+Before the JDBC switch, reverting the staged import and restoring the old
+replica is a rollback because the old source remains authoritative. Once the
+new database receives writes, the old database is a stale safety copy:
+switching back to it loses later identity/session changes. Recovery then
+requires a reviewed, write-preserving migration or restore and a fresh
+backup. Future Keycloak backups must target the active JDBC host, not assume
+that the retained Bitnami pod is authoritative. Roll back LiveKit and
+application images through GitOps after draining users. Do not assume that
+merely reverting a PostgreSQL image is a tested database rollback.
+Production promotion requires the owner's later explicit command and its own
+current release, security, backup, schema and lesson-safe gates.
+The initial protected backup/restore evidence and outstanding acceptance are
+recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
