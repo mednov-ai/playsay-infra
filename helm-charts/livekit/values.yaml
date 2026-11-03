@@ -1,5 +1,6 @@
 image:
   repository: livekit/livekit-server
+  digest: ""
   tag: "v1.11.0"
   pullPolicy: IfNotPresent
 

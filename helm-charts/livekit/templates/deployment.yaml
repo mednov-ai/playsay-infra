@@ -25,7 +25,14 @@ spec:
       {{- end }}
       containers:
         - name: livekit
+          {{- if .Values.image.digest }}
+          {{- if not (regexMatch "^sha256:[a-f0-9]{64}$" .Values.image.digest) }}
+          {{- fail "livekit image.digest must be a lowercase sha256 digest" }}
+          {{- end }}
+          image: {{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /bin/sh

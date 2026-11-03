@@ -91,6 +91,10 @@ the packaged binary matched that hash. This is candidate-specific
 outside-runtime evidence, not a blanket exception. The rebuilt image passed
 isolated startup and required metrics checks; it has not passed actual DEV
 classroom acceptance or the project's image publication pipeline.
+The prepared LiveKit Helm chart can now render a validated immutable image
+digest. Default DEV and production renders remained byte-for-byte unchanged;
+a valid digest rendered the expected image reference and a malformed digest
+failed rendering. No rebuilt image was published or selected in DEV.
 
 DEV admission was temporarily guarded during preparation, then restored by
 infra PR #62 at `966c20a4719f5e6890a79bed0a12a0590562a501`. ArgoCD and the

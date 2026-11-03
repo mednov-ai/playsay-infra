@@ -12,6 +12,11 @@ remediation is investigated. Retained raw scans, exact image digests,
 runtime-boundary evidence and the local LiveKit rebuild are in
 [container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
 Functional tests and the JVM dependency gate do not waive this hold.
+The LiveKit chart accepts an optional `image.digest`; when present it renders
+`repository@sha256:...` and rejects malformed digests. The existing DEV and
+production tag renders are unchanged while that value is empty. Set a digest
+only to the exact CI-built, fully scanned image after its source and delivery
+gates pass; the local unpublished rebuild is not a registry artifact.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
@@ -23,6 +28,18 @@ including checksum, archive catalog and an isolated restore. A previous
 backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
+
+The prepared platform candidate also moves the web and keyboard images to
+nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
+service runtimes omit unused npm. Alpine security updates are resolved during
+the image build. Before publication or deployment, scan and retain the exact
+CI-built image digests and full reports; the local scans are not a clearance
+for later builds. Preserve the game adapter's non-root identity, read-only
+root filesystem and `/tmp/playsay` writable mount, and exercise its token,
+image optimization and real Chromium validation on DEV. Verify web and
+keyboard API routing, WebSocket upgrades and module-worker MIME through the
+deployed images. Roll these stateless workloads back through reviewed GitOps
+image references after draining users, without reverting database state.
 
 The reviewed `scripts/backup-dev-databases.sh` runs only on `playsay-dev` and
 refuses an unconverged Keycloak workload or an unrecognised JDBC endpoint. It
