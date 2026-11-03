@@ -22,6 +22,13 @@ The same four backups were then restored into the intended CNPG PostgreSQL
 temporary pods were deleted. This verifies those four archive restores, not a
 coordinated application/object-store disaster recovery.
 
+A second protected backup at
+`/var/backups/playsay/stack-upgrade-dev-20261103T184845Z` used the guarded
+active-JDBC selection: the identity source was still Bitnami. All four
+checksums and catalogs passed, and a fresh isolated 17.11 restore again found
+93, 11, 5 and 101 public tables. The backup must be refreshed immediately
+before the actual rollout and after stopping Keycloak for its import.
+
 An earlier task-created attempt at
 `/var/backups/playsay/stack-upgrade-dev-20261103T173353Z` was not validated
 because a temporary path was read-only. It remains protected and is marked

@@ -15,6 +15,14 @@ backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
 
+The reviewed `scripts/backup-dev-databases.sh` runs only on `playsay-dev` and
+refuses an unconverged Keycloak workload or an unrecognised JDBC endpoint. It
+backs up the three application databases and whichever reviewed Keycloak
+database is actually active, validates the archive catalogs and checksums,
+and marks unfinished output `INCOMPLETE.txt`. Run it as root from a reviewed
+copy on the DEV guest. A successful archive check still requires the separate
+isolated restore; it does not include object storage.
+
 The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
 the application CNPG image pin does not update it. The prepared DEV-only
 `keycloak-postgres-upgrade` ArgoCD application imports that database into a
