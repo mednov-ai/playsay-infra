@@ -1,0 +1,10 @@
+cluster:
+  name: keycloak-postgres-upgrade
+  image: ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie
+  storageSize: 4Gi
+  sourceHost: keycloak-postgresql
+  sourceSecret: keycloak-postgresql
+  applicationSecret: keycloak-postgres-upgrade-app
+  database: bitnami_keycloak
+  owner: bn_keycloak
+  locale: en_US.UTF-8

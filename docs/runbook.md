@@ -15,14 +15,41 @@ backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
 
-The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload.
-The application CNPG image pin does not update it, and no compatible
-Bitnami 17.11 image was identified during this preparation. Preserve its
-existing image, PVC, credentials and sessions until a separately validated
-same-major migration path is available. Roll back LiveKit and application
-images through GitOps after draining users. Do not assume that merely
-reverting a PostgreSQL image is a tested database rollback: preserve later
-writes and use the verified backup only as part of a reviewed recovery.
+The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
+the application CNPG image pin does not update it. The prepared DEV-only
+`keycloak-postgres-upgrade` ArgoCD application imports that database into a
+new CNPG PostgreSQL 17.11 cluster. The legacy image has no maintained 17.11
+tag. A disposable operator 1.29.1/Keycloak 26.8.1 fixture verified the
+same-major import, matching 101 tables and aggregate identity/session counts,
+`en_US.UTF-8`, the owner, `pgaudit`, the existing database password, session
+refresh and a new login at the declared DEV memory/CPU limits. That fixture
+does not prove the real DEV cutover or the custom provider.
+
+Before creating the import application, close DEV lesson admission, drain
+issued credentials and connections, scale DEV Keycloak to zero through a
+separate GitOps change, confirm no other source database writers, and refresh
+the protected four-database backup and isolated restore. The import reads the
+old `keycloak-postgresql` service and its existing superuser secret; a
+DEV-scoped SealedSecret supplies a copy of the unchanged application password
+to CNPG. Confirm the resulting secret matches the existing password without
+printing either value. Wait for the new cluster to be healthy and compare
+source/target schema and aggregate identity/session counts while Keycloak
+remains stopped. Only then switch the Keycloak JDBC host to
+`keycloak-postgres-upgrade-rw`, retaining its existing password secret, and
+restore its replica through GitOps. Verify native DEV login, existing-session
+refresh, lesson access, provider behavior, data and both routes before
+reopening lesson admission. Keep the old PostgreSQL workload, PVC and secret;
+do not prune the new cluster or its credential.
+
+Before the JDBC switch, reverting the staged import and restoring the old
+replica is a rollback because the old source remains authoritative. Once the
+new database receives writes, the old database is a stale safety copy:
+switching back to it loses later identity/session changes. Recovery then
+requires a reviewed, write-preserving migration or restore and a fresh
+backup. Future Keycloak backups must target the active JDBC host, not assume
+that the retained Bitnami pod is authoritative. Roll back LiveKit and
+application images through GitOps after draining users. Do not assume that
+merely reverting a PostgreSQL image is a tested database rollback.
 Production promotion requires the owner's later explicit command and its own
 current release, security, backup, schema and lesson-safe gates.
 The initial protected backup/restore evidence and outstanding acceptance are
