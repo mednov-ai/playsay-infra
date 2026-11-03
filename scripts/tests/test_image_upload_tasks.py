@@ -19,9 +19,10 @@ END = "    # END HONEY SCHOOL IMAGE UPLOAD ROUTES\n"
 
 class ScopedImageRoutesTest(unittest.TestCase):
     def run_case(self, kind):
-        hostname = ("dev.online.honey.school" if kind == "AX41 DEV" else
+        hostname = ("dev.online.honeyschool.ru" if kind == "RF DEV" else
+                    "dev.online.honey.school" if kind == "AX41 DEV" else
                     "online.honey.school" if kind == "AX41" else "online.honeyschool.ru")
-        other_hostname = "online.honey.school" if kind == "AX41 DEV" else "dev." + hostname
+        other_hostname = hostname.removeprefix("dev.") if kind.endswith("DEV") else "dev." + hostname
         upstream = "10.60.0.30:32083" if kind == "AX41 DEV" else "10.60.0.20:32083"
         task_path = ROOT / ("ansible/roles/edge-proxy/tasks/image-upload-routes.yaml" if kind.startswith("AX41")
                             else "ansible/roles/rf-edge-proxy/tasks/image-upload-routes.yaml")
@@ -36,6 +37,13 @@ class ScopedImageRoutesTest(unittest.TestCase):
             "    location = /api/materials/ai-draft { client_max_body_size 3m; }\n"
             "    location / { return 200; }\n}\n"
         )
+        existing_location = "location / { proxy_pass http://upstream; }"
+        if kind.startswith("RF"):
+            origin_hostname = "dev.online.honey.school" if kind == "RF DEV" else "online.honey.school"
+            rf_location = ("location / { proxy_pass https://127.0.0.1; proxy_ssl_name "
+                           + origin_hostname + "; }")
+            fixture = fixture.replace(existing_location, rf_location)
+            existing_location = rf_location
         with tempfile.TemporaryDirectory(prefix="image-upload-ansible-") as directory:
             tmp = Path(directory)
             config = tmp / "nginx.conf"
@@ -53,7 +61,12 @@ class ScopedImageRoutesTest(unittest.TestCase):
                 "    ax41_image_target_hostname: " + hostname + "\n"
                 "    ax41_image_target_upstream: '" + upstream + "'\n"
                 "    ax41_image_target_enabled: '{{ image_upload_routes_" +
-                ("dev" if kind == "AX41 DEV" else "prod") + "_enabled | default(true) }}'\n"
+                ("dev" if kind.endswith("DEV") else "prod") + "_enabled | default(true) }}'\n"
+                "    rf_image_target_path: '" + str(config) + "'\n"
+                "    rf_image_target_hostname: " + hostname + "\n"
+                "    rf_image_origin_hostname: " + ("dev.online.honey.school" if kind == "RF DEV" else "online.honey.school") + "\n"
+                "    rf_image_target_enabled: '{{ image_upload_routes_" +
+                ("dev" if kind.endswith("DEV") else "prod") + "_enabled | default(true) }}'\n"
                 "    rf_edge_origin_address: 127.0.0.1\n"
                 "  tasks:\n"
                 "    - ansible.builtin.import_tasks: " + str(tasks) + "\n"
@@ -92,7 +105,7 @@ class ScopedImageRoutesTest(unittest.TestCase):
                 self.assertIn("client_max_body_size " + limit + ";", target.split(header)[1].split("}")[0])
             self.assertEqual(re.sub(re.escape(BEGIN) + r".*?" + re.escape(END), "", updated, flags=re.S), fixture)
             self.assertIn("changed=0", run(), "a repeat must be idempotent")
-            flag = "image_upload_routes_dev_enabled" if kind == "AX41 DEV" else "image_upload_routes_prod_enabled"
+            flag = "image_upload_routes_dev_enabled" if kind.endswith("DEV") else "image_upload_routes_prod_enabled"
             run("-e", json.dumps({flag: False}))
             self.assertEqual(config.read_text(), fixture, "scoped rollback must restore the original file")
 
@@ -138,12 +151,18 @@ class ScopedImageRoutesTest(unittest.TestCase):
 
             # A differently scoped existing location is a conflict, not permission
             # to silently replace or widen it.
-            conflict = fixture.replace("location / { proxy_pass http://upstream; }",
+            conflict = fixture.replace(existing_location,
                                        "location ~ ^/api/schedule/lessons/[^/]+/image-page$ { return 418; }\n"
-                                       "    location / { proxy_pass http://upstream; }")
+                                       "    " + existing_location)
             config.write_text(conflict)
             run(expected=1)
             self.assertEqual(config.read_text(), conflict)
+            if kind.startswith("RF"):
+                wrong_origin = fixture.replace("proxy_ssl_name " + origin_hostname,
+                                               "proxy_ssl_name unexpected.example")
+                config.write_text(wrong_origin)
+                run(expected=1)
+                self.assertEqual(config.read_text(), wrong_origin)
 
     def test_ax41(self):
         self.run_case("AX41")
@@ -153,6 +172,9 @@ class ScopedImageRoutesTest(unittest.TestCase):
 
     def test_rf(self):
         self.run_case("RF")
+
+    def test_rf_dev(self):
+        self.run_case("RF DEV")
 
     def test_wrapper_rejects_unsafe_modes(self):
         wrapper = ROOT / "scripts/apply-rf-edge-release.sh"
