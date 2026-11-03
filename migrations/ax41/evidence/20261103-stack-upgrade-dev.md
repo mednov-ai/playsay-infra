@@ -11,16 +11,19 @@ was restored through infra PR #62, and the gateway is Synced/Healthy with the
 maintenance flag off. No database, Keycloak or LiveKit upgrade was deployed.
 
 The current platform candidate is `e830a539a33e9b787232ff1ad8e79e8b0c127b1a`.
-Its previous commit was `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`;
-non-deploy Jenkins web build 416 passed lint, tests and build for that previous
-commit, and Keycloak build 27 passed provider tests and its security gate. Full
-JVM security build 13 passed with recorded scoped accepted risks and 49
-archived artifacts: backend and build-logic each reported zero blocking
-findings for that previous commit. The subsequent commit changes only the
-four runtime Dockerfiles, a configuration comment and local security evidence;
-repeat the necessary exact-candidate CI and scans before delivery. No image or
-deployment stages ran in those validation builds. DEV delivery and acceptance
-of the upgraded candidate remain pending.
+Non-deploy Jenkins web build 417, keyboard build 114, game-adapter build 45
+and collaboration build 63 passed their test/build stages for that exact
+commit. Their image publication, environment update and rollout stages were
+not executed. Its previous commit was
+`1434bc7fc81f0427d9bb0f94d1f463f2c291864f`: Keycloak build 27 passed
+provider tests and its security gate, and full JVM security build 13 passed
+with scoped accepted risks and 49 archived artifacts. Backend and build-logic
+each reported zero blocking findings for that previous commit. The subsequent
+commit changes four runtime Dockerfiles, a configuration comment and local
+security evidence; backend, scanner scripts and JVM Jenkinsfiles are unchanged.
+Fresh exact-candidate full gates and scans of the CI-built images remain
+required before delivery. DEV delivery and acceptance of the upgraded
+candidate remain pending.
 
 Before any PostgreSQL restart, the DEV guest retained a protected fresh
 four-database backup at
