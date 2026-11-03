@@ -10,13 +10,17 @@ evidence](security/20261103-stack-upgrade/README.md). DEV lesson admission
 was restored through infra PR #62, and the gateway is Synced/Healthy with the
 maintenance flag off. No database, Keycloak or LiveKit upgrade was deployed.
 
-The current platform candidate is `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`.
-Non-deploy Jenkins web build 416 passed lint, tests and build for that exact
-commit; Keycloak build 27 passed provider tests and its security gate. Full
+The current platform candidate is `e830a539a33e9b787232ff1ad8e79e8b0c127b1a`.
+Its previous commit was `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`;
+non-deploy Jenkins web build 416 passed lint, tests and build for that previous
+commit, and Keycloak build 27 passed provider tests and its security gate. Full
 JVM security build 13 passed with recorded scoped accepted risks and 49
 archived artifacts: backend and build-logic each reported zero blocking
-findings. No image or deployment stages ran in those validation builds.
-DEV delivery and multi-student acceptance remain pending.
+findings for that previous commit. The subsequent commit changes only the
+four runtime Dockerfiles, a configuration comment and local security evidence;
+repeat the necessary exact-candidate CI and scans before delivery. No image or
+deployment stages ran in those validation builds. DEV delivery and acceptance
+of the upgraded candidate remain pending.
 
 Before any PostgreSQL restart, the DEV guest retained a protected fresh
 four-database backup at
@@ -76,3 +80,38 @@ Full exact-candidate CI, a GitOps rollout and authenticated multi-student
 classroom/media acceptance on DEV are still pending. The platform's previous
 local tests and preliminary security findings are recorded in its
 `docs/security/2026-11-03-stack-upgrade-local.md`.
+
+## Existing DEV baseline classroom, 2026-11-03
+
+The currently deployed, **not upgraded**, direct DEV environment was exercised
+with one demo teacher and two demo students in independent Chromium profiles.
+Synthetic camera and microphone produced increasing inbound and outbound RTP
+for all three participants; both students saw a synthetic teacher screen
+share. Shared-presence cursors, student annotation synchronization after
+scroll/resize, collaborative exercise answers, student reconnect and
+restoration of media/annotations/answers, and student submission passed.
+The task-owned lesson was deleted, its material archived, and the three
+task-created sessions logged out. A separate API check confirmed fixture
+cleanup. Physical devices and the upgraded candidate were not validated by
+this run.
+
+A separate two-person test used the DEV RF origin and DEV-only relay, after
+fresh zero-activity observations in DEV and production and a healthy, idle RF
+TURN snapshot. Actual synthetic audio/video RTP increased in both directions;
+both browser connections selected the DEV regional TURN, the student saw the
+screen share, shared exercises synchronized, and rejoining restored RF media
+and shared work. The task-owned lesson was deleted, material archived, and
+both sessions logged out; a separate API check confirmed cleanup. During the
+test the shared edge had 1,347 MiB available memory, 25.6% sampled CPU and
+upper-bound aggregate RX/TX rates of 1.98/6.35 Mbps; nginx and both TURN
+services were active. This short synthetic-media developer-network check does
+not validate a physical device, real RF last mile or the new candidate.
+
+Earlier attempts first timed out because the test recorder acted before the
+microphone was ready and because the teacher task returned to its hidden view
+after participant selection settled. The harness was corrected. A later
+focused run saw a text-annotation compact-width assertion return 72 px
+instead of the expected greater-than-72 value; the successful core run
+explicitly skipped that separate text/mind-map geometry assertion. It is not
+counted as passing. Repeat the multi-student acceptance against the exact
+candidate after an authorized, security-cleared DEV delivery.

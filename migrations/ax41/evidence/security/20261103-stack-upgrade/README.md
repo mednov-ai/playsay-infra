@@ -33,6 +33,48 @@ the server runtime. The candidate has not been proven compatible with the
 operator, existing data, extensions or locale, and is not a drop-in remedy.
 The raw report is retained; no finding was waived by the comparison.
 
+Additional base-image checks found that `nginx:1.27-alpine`, used by both
+frontend Dockerfiles, is based on end-of-support Alpine 3.21 and reported 59
+High and three Critical package/finding matches. Trivy also warned of missing
+details for two vulnerability IDs and insufficient coverage for the EOL OS;
+these counts are preliminary and not a security clearance. The upstream
+`nginx:1.30.6-alpine` manifest
+`sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949`
+initially reported four High and one Critical matches. A local image using
+that pinned base and a fresh `apk upgrade` updated the affected Alpine
+packages; the complete local web and keyboard images then had zero
+High/Critical/Unknown matches. Their local image IDs were respectively
+`sha256:786016d13736dcc8bf3c0519aaa3d3bf6ce9a2c752039c21c57a7ca899540067`
+and `sha256:e1208d18ef1aa5b5c57fc7b682e8658c08f977a6de820c5a0bdbce2d67fa3b6c`.
+An isolated upstream fixture verified nginx startup, both health endpoints,
+SPA fallbacks, API routing, WebSocket forwarding headers and web `.mjs`
+worker MIME/404 handling. It did not prove actual DEV routes or deployed
+artifacts. Package upgrades are resolved at build time: scan and retain the
+exact final CI images and their digests before any delivery.
+
+The `eclipse-temurin:25.0.5_8-jre` base scan contained no
+High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
+six High package/finding matches in npm's bundled `brace-expansion` and
+`undici`. Removing the unused npm installation from the local collaboration
+runtime left zero High/Critical/Unknown matches; the non-root service started
+and its health endpoint passed. The running Node binary identifies its own
+built-in Undici as 8.12.2. This is local evidence, not a classification of
+uninspected images or a substitute for exact CI-image and dependency scans.
+
+The separately scanned Node 26 bookworm-slim base intended for the game
+adapter had 38 High and one Critical matches. A local exploratory game
+adapter build on the pinned Node 26 Alpine base, with updated Alpine packages
+and no runtime npm, scanned with zero High/Critical/Unknown matches. Its
+non-root process, health, service-token enforcement and authenticated
+optimization endpoint passed under the chart's 1 CPU/1 GiB limit. A
+synthetic PNG/JPEG/WebP optimization was deterministic under the same limits;
+an offline synthetic game passed the real Chromium/Playwright validator. All
+37 game-adapter tests, including four Chromium-dependent tests, passed in a
+separate offline test stage using the same runtime family. The
+local image ID was
+`sha256:6b9d2b274c23b7ec3ef5d35216d56eb3a46134ea11c6182c20e0dac3ebce8f5a`.
+These checks do not prove real DEV integrations or the future CI-built image.
+
 The upstream LiveKit binary contains `golang.org/x/net` v0.59.0 affected by
 [CVE-2026-78669](https://pkg.go.dev/vuln/GO-2026-6611), fixed in v0.60.0.
 A **local, unpublished** experiment rebuilt upstream tag v1.13.11 at commit
