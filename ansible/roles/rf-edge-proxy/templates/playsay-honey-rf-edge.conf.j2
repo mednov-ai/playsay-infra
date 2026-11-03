@@ -135,6 +135,19 @@ log_format rf_dev_livekit_signal 'msec=$msec request_id=$request_id status=$stat
     }
 {% endmacro %}
 
+{% macro image_upload_locations(route, forwarded_proto) %}
+{% for upload_route in [
+  {'location': '~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$', 'limit': '21m'},
+  {'location': '= /api/worksheet-imports', 'limit': '129m'},
+  {'location': '= /api/materials/ai-draft', 'limit': '3m'}
+] %}
+    location {{ upload_route.location }} {
+        client_max_body_size {{ upload_route.limit }};
+{{ proxy_to_origin(route, forwarded_proto) }}
+    }
+{% endfor %}
+{% endmacro %}
+
 {% macro keycloak_locations(route, forwarded_proto) %}
 {% if route.logs_ingest_proxy | default(false) | bool %}
     location ^~ /victoria-logs/insert/ {
@@ -204,6 +217,9 @@ server {
 {{ landing_location(route) }}
 {% else %}
 {{ html_game_upload_locations(route, 'http') }}
+{% if (route.hostname == 'online.honeyschool.ru' and image_upload_routes_prod_enabled | default(true) | bool) or (route.hostname == 'dev.online.honeyschool.ru' and image_upload_routes_dev_enabled | default(true) | bool) %}
+{{ image_upload_locations(route, 'http') }}
+{% endif %}
     location / {
 {{ proxy_to_origin(route, 'http') }}
     }
@@ -240,6 +256,9 @@ server {
 {{ collaboration_location(route, 'https') }}
 {% endif %}
 {{ html_game_upload_locations(route, 'https') }}
+{% if (route.hostname == 'online.honeyschool.ru' and image_upload_routes_prod_enabled | default(true) | bool) or (route.hostname == 'dev.online.honeyschool.ru' and image_upload_routes_dev_enabled | default(true) | bool) %}
+{{ image_upload_locations(route, 'https') }}
+{% endif %}
     location / {
 {{ proxy_to_origin(route, 'https') }}
     }

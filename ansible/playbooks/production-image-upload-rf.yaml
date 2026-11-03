@@ -1,0 +1,35 @@
+---
+- name: Reconcile only RF production image upload routes
+  hosts: rf_edges
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - ../group_vars/rf_edges.yaml
+  vars:
+    rf_image_target_path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+    rf_image_target_hostname: online.honeyschool.ru
+    rf_image_origin_hostname: online.honey.school
+    rf_image_target_enabled: "{{ image_upload_routes_prod_enabled | default(true) }}"
+  pre_tasks:
+    - name: Prove this play targets only the active RF edge
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-selectel-rf-edge'
+          - group_names | difference(['rf_edges']) | length == 0
+          - ansible_host == rf_edge_media_relay_public_ipv4
+          - ansible_host not in rf_edge_media_relay_forbidden_addresses
+          - rf_edge_origin_address == '65.109.55.110'
+          - rf_image_target_path == '/etc/nginx/conf.d/playsay-honey-rf-edge.conf'
+          - rf_image_target_hostname == 'online.honeyschool.ru'
+          - rf_image_origin_hostname == 'online.honey.school'
+        fail_msg: The image upload play refuses AX41, guests and alternate RF hosts.
+  tasks:
+    - name: Reconcile the isolated RF route
+      ansible.builtin.import_tasks: ../roles/rf-edge-proxy/tasks/image-upload-routes.yaml
+  handlers:
+    - name: reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

@@ -21,6 +21,30 @@ limit_req_zone $binary_remote_addr zone=playsay_hooks:10m rate=5r/s;
     }
 {% endmacro %}
 
+{% macro image_upload_locations(route, forwarded_proto) %}
+{% for upload_route in [
+  {'location': '~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$', 'limit': '21m'},
+  {'location': '= /api/worksheet-imports', 'limit': '129m'},
+  {'location': '= /api/materials/ai-draft', 'limit': '3m'}
+] %}
+    location {{ upload_route.location }} {
+        client_max_body_size {{ upload_route.limit }};
+        proxy_pass http://{{ route.upstream }};
+        proxy_http_version 1.1;
+        proxy_request_buffering off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto {{ forwarded_proto }};
+        proxy_set_header X-Forwarded-For $honey_school_client_ip;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $playsay_connection_upgrade;
+        proxy_read_timeout 660s;
+        proxy_send_timeout 660s;
+        proxy_buffering off;
+    }
+{% endfor %}
+{% endmacro %}
+
 {% set root_certificate = edge_root_certificate_after | default(edge_root_certificate) %}
 server {
     listen 80;
@@ -95,6 +119,9 @@ server {
 {% elif route.kind in ['online', 'keyboard'] %}
 {% if route.kind == 'online' %}
 {{ html_game_upload_locations(route, 'http') }}
+{% if (route.hostname == 'online.honey.school' and image_upload_routes_prod_enabled | default(true) | bool) or (route.hostname == 'dev.online.honey.school' and image_upload_routes_dev_enabled | default(true) | bool) %}
+{{ image_upload_locations(route, 'http') }}
+{% endif %}
 {% endif %}
     location / {
         include /etc/nginx/snippets/honey-school-browser-entry.conf;
@@ -132,6 +159,9 @@ server {
 
 {% if route.kind == 'online' %}
 {{ html_game_upload_locations(route, 'https') }}
+{% if (route.hostname == 'online.honey.school' and image_upload_routes_prod_enabled | default(true) | bool) or (route.hostname == 'dev.online.honey.school' and image_upload_routes_dev_enabled | default(true) | bool) %}
+{{ image_upload_locations(route, 'https') }}
+{% endif %}
 {% if route.livekit_upstream is defined %}
     location = /livekit {
         include /etc/nginx/snippets/playsay-livekit-signaling.conf;
