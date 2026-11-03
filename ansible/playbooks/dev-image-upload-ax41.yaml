@@ -1,0 +1,29 @@
+---
+- name: Reconcile only AX41 development image upload routes
+  hosts: ax41_hosts
+  become: true
+  gather_facts: false
+  vars_files:
+    - ../group_vars/ax41_hosts.yaml
+  vars:
+    ax41_image_target_hostname: dev.online.honey.school
+    ax41_image_target_upstream: '10.60.0.30:32083'
+    ax41_image_target_enabled: "{{ image_upload_routes_dev_enabled | default(true) }}"
+  pre_tasks:
+    - name: Prove this play targets only the active AX41 host and DEV route
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'playsay-ax41'
+          - group_names | difference(['ax41_hosts']) | length == 0
+          - ansible_host == '65.109.55.110'
+          - ax41_image_target_hostname == 'dev.online.honey.school'
+          - ax41_image_target_upstream == '10.60.0.30:32083'
+        fail_msg: The DEV image upload play refuses production, guests and other hosts.
+  tasks:
+    - name: Reconcile the isolated AX41 DEV route
+      ansible.builtin.import_tasks: ../roles/edge-proxy/tasks/image-upload-routes.yaml
+  handlers:
+    - name: reload nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded

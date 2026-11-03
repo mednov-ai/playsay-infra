@@ -30,7 +30,7 @@ analysis:
   concurrency: "2"
   retries: "3"
   confidenceThreshold: "0.75"
-limits: { maxPages: "100", maxPacketBytes: "134217728", maxImageBytes: "12582912", pdfMaxBytes: "67108864", pdfMaxPages: "50", pdfMaxPagePixels: "40000000", pdfTimeout: PT45S }
+limits: { maxPages: "100", maxPacketBytes: "134217728", maxImageBytes: "20971520", pdfMaxBytes: "67108864", pdfMaxPages: "50", pdfMaxPagePixels: "40000000", pdfTimeout: PT45S }
 retention: { duration: PT72H, cleanupDelay: PT1H }
 runtime: { javaToolOptions: "" }
 resources: { requests: { cpu: 50m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }

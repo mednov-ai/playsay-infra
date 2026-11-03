@@ -1,0 +1,113 @@
+---
+- name: Safely reconcile the selected AX41 image upload routes
+  vars:
+    image_upload_location_header: 'location ~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$ {'
+    worksheet_upload_location_header: 'location = /api/worksheet-imports {'
+    draft_image_location_header: 'location = /api/materials/ai-draft {'
+  block:
+    - name: Read the active AX41 route file
+      ansible.builtin.slurp:
+        path: /etc/nginx/conf.d/playsay-honey.conf
+      register: ax41_image_active_routes
+
+    - name: Confirm the last matching target server is HTTPS
+      ansible.builtin.assert:
+        that:
+          - "(ax41_image_active_routes.content | b64decode).split('server_name ' ~ ax41_image_target_hostname ~ ';') | length == 3"
+          - "'listen 443 ssl' in (ax41_image_active_routes.content | b64decode).split('server_name ' ~ ax41_image_target_hostname ~ ';')[1].rsplit('server {', 1)[-1]"
+          - "(edge_routes | selectattr('hostname', 'equalto', ax41_image_target_hostname) | first).upstream == ax41_image_target_upstream"
+        fail_msg: The target AX41 route layout or upstream changed; review before reconciling.
+
+    - name: Isolate the target HTTPS server
+      ansible.builtin.set_fact:
+        ax41_image_target_server: "{{ (ax41_image_active_routes.content | b64decode).split('server_name ' ~ ax41_image_target_hostname ~ ';')[2].split('server {')[0] }}"
+
+    - name: Refuse a conflicting pre-existing image route
+      ansible.builtin.assert:
+        that:
+          - "'location / {' in ax41_image_target_server"
+          - "'schedule/lessons/[^/]+/image-page' not in ax41_image_target_server or image_upload_location_header in ax41_image_target_server"
+          - "(image_upload_location_header in ax41_image_target_server) == (worksheet_upload_location_header in ax41_image_target_server)"
+          - "(image_upload_location_header in ax41_image_target_server) == (draft_image_location_header in ax41_image_target_server)"
+          - "'/api/worksheet-imports' not in ax41_image_target_server or worksheet_upload_location_header in ax41_image_target_server"
+          - "'/api/materials/ai-draft' not in ax41_image_target_server or draft_image_location_header in ax41_image_target_server"
+          - "image_upload_location_header not in ax41_image_target_server or 'client_max_body_size 21m;' in ax41_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
+          - "worksheet_upload_location_header not in ax41_image_target_server or 'client_max_body_size 129m;' in ax41_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
+          - "draft_image_location_header not in ax41_image_target_server or 'client_max_body_size 3m;' in ax41_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
+          - "(ax41_image_target_enabled | bool) or image_upload_location_header not in ax41_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in ax41_image_target_server"
+        fail_msg: A different image route is already present; review it before proceeding.
+
+    - name: Install only the bounded AX41 image upload location
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/conf.d/playsay-honey.conf
+        insertafter: "{{ '^    server_name ' ~ (ax41_image_target_hostname | regex_escape) ~ ';$' }}"
+        marker: '    # {mark} HONEY SCHOOL IMAGE UPLOAD ROUTES'
+        backup: true
+        state: "{{ 'present' if ax41_image_target_enabled | bool else 'absent' }}"
+        block: |
+          {% for upload_route in [
+            {'location': '~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$', 'limit': '21m'},
+            {'location': '= /api/worksheet-imports', 'limit': '129m'},
+            {'location': '= /api/materials/ai-draft', 'limit': '3m'}
+          ] %}
+          location {{ upload_route.location }} {
+              client_max_body_size {{ upload_route.limit }};
+              proxy_pass http://{{ ax41_image_target_upstream }};
+              proxy_http_version 1.1;
+              proxy_request_buffering off;
+              proxy_set_header Host $host;
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Proto https;
+              proxy_set_header X-Forwarded-For $honey_school_client_ip;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection $playsay_connection_upgrade;
+              proxy_read_timeout 660s;
+              proxy_send_timeout 660s;
+              proxy_buffering off;
+          }
+          {% endfor %}
+      when: image_upload_location_header not in ax41_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in ax41_image_target_server
+      register: ax41_image_route_edit
+      notify: reload nginx
+
+    - name: Validate the changed AX41 nginx configuration
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Activate the validated AX41 route
+      ansible.builtin.meta: flush_handlers
+      when: not ansible_check_mode
+  rescue:
+    - name: Restore the AX41 route file after a failed change
+      ansible.builtin.copy:
+        src: "{{ ax41_image_route_edit.backup_file }}"
+        dest: /etc/nginx/conf.d/playsay-honey.conf
+        owner: root
+        group: root
+        mode: "0644"
+        remote_src: true
+      when:
+        - not ansible_check_mode
+        - ax41_image_route_edit.changed | default(false)
+        - ax41_image_route_edit.backup_file is defined
+
+    - name: Validate the restored AX41 configuration
+      ansible.builtin.command:
+        cmd: nginx -t
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Reload the restored AX41 configuration
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+      when:
+        - not ansible_check_mode
+        - ax41_image_route_edit.changed | default(false)
+        - ax41_image_route_edit.backup_file is defined
+
+    - name: Stop after the failed AX41 reconciliation
+      ansible.builtin.fail:
+        msg: Image upload route reconciliation failed; any modified AX41 route file was restored.
