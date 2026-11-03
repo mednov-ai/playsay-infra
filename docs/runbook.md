@@ -25,6 +25,8 @@ reverting a PostgreSQL image is a tested database rollback: preserve later
 writes and use the verified backup only as part of a reviewed recovery.
 Production promotion requires the owner's later explicit command and its own
 current release, security, backup, schema and lesson-safe gates.
+The initial protected backup/restore evidence and outstanding acceptance are
+recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
 
 ## Sprint 0 Status
 
