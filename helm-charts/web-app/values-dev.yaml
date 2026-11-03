@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-web-app
-  tag: "web-codex-hotfix-image-upload-413-develop-411"
-  digest: sha256:a2a2f2a0edf0d3485d8f86db06de800399406a5ef1a09f16789c28b43203feb0
+  tag: "web-dev-412"
+  digest: sha256:f33d9e559beed471d48c2fb85eb04a3223f38df63ebc3cc9cbe69acf2942b69e
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: web-codex-hotfix-image-upload-413-develop-411
-  number: "411"
-  branch: codex/hotfix-image-upload-413-develop
-  branchLabel: web-codex-hotfix-image-upload-413-develop
-  commit: 3d5e68011d614ad5a45cc56b2d1fc68ff1760e52
-  commitShort: "3d5e68011d61"
+  name: web-dev-412
+  number: "412"
+  branch: develop
+  branchLabel: web-dev
+  commit: e37bb8aa3107c71dd31edfaea8c3735b2025532d
+  commitShort: "e37bb8aa3107"
 service:
   type: NodePort
   nodePort: 32083
