@@ -4,6 +4,13 @@
     image_upload_location_header: 'location ~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$ {'
     worksheet_upload_location_header: 'location = /api/worksheet-imports {'
     draft_image_location_header: 'location = /api/materials/ai-draft {'
+    ax41_image_marker_suffix: "{{ ' PROD' if ax41_image_target_hostname == 'online.honey.school' else '' }}"
+    ax41_image_marker: "    # {mark} HONEY SCHOOL IMAGE UPLOAD ROUTES{{ ax41_image_marker_suffix }}"
+    ax41_image_marker_begin: "    # BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES{{ ax41_image_marker_suffix }}"
+    ax41_image_marker_end: "    # END HONEY SCHOOL IMAGE UPLOAD ROUTES{{ ax41_image_marker_suffix }}"
+    ax41_image_foreign_marker_suffix: "{{ '' if ax41_image_target_hostname == 'online.honey.school' else ' PROD' }}"
+    ax41_image_foreign_marker_begin: "    # BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES{{ ax41_image_foreign_marker_suffix }}"
+    ax41_image_foreign_marker_end: "    # END HONEY SCHOOL IMAGE UPLOAD ROUTES{{ ax41_image_foreign_marker_suffix }}"
   block:
     - name: Read the active AX41 route file
       ansible.builtin.slurp:
@@ -25,6 +32,13 @@
     - name: Refuse a conflicting pre-existing image route
       ansible.builtin.assert:
         that:
+          - "ax41_image_target_hostname in ['dev.online.honey.school', 'online.honey.school']"
+          - "((ax41_image_active_routes.content | b64decode).splitlines() | select('equalto', ax41_image_marker_begin) | list | length) == (ax41_image_target_server.splitlines() | select('equalto', ax41_image_marker_begin) | list | length)"
+          - "((ax41_image_active_routes.content | b64decode).splitlines() | select('equalto', ax41_image_marker_end) | list | length) == (ax41_image_target_server.splitlines() | select('equalto', ax41_image_marker_end) | list | length)"
+          - "(ax41_image_target_server.splitlines() | select('equalto', ax41_image_marker_begin) | list | length) <= 1"
+          - "(ax41_image_target_server.splitlines() | select('equalto', ax41_image_marker_begin) | list | length) == (ax41_image_target_server.splitlines() | select('equalto', ax41_image_marker_end) | list | length)"
+          - "ax41_image_foreign_marker_begin not in ax41_image_target_server.splitlines()"
+          - "ax41_image_foreign_marker_end not in ax41_image_target_server.splitlines()"
           - "'location / {' in ax41_image_target_server"
           - "'schedule/lessons/[^/]+/image-page' not in ax41_image_target_server or image_upload_location_header in ax41_image_target_server"
           - "(image_upload_location_header in ax41_image_target_server) == (worksheet_upload_location_header in ax41_image_target_server)"
@@ -34,14 +48,17 @@
           - "image_upload_location_header not in ax41_image_target_server or 'client_max_body_size 21m;' in ax41_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
           - "worksheet_upload_location_header not in ax41_image_target_server or 'client_max_body_size 129m;' in ax41_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
           - "draft_image_location_header not in ax41_image_target_server or 'client_max_body_size 3m;' in ax41_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
-          - "(ax41_image_target_enabled | bool) or image_upload_location_header not in ax41_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in ax41_image_target_server"
+          - "image_upload_location_header not in ax41_image_target_server or ('proxy_pass http://' ~ ax41_image_target_upstream ~ ';') in ax41_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
+          - "worksheet_upload_location_header not in ax41_image_target_server or ('proxy_pass http://' ~ ax41_image_target_upstream ~ ';') in ax41_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
+          - "draft_image_location_header not in ax41_image_target_server or ('proxy_pass http://' ~ ax41_image_target_upstream ~ ';') in ax41_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
+          - "(ax41_image_target_enabled | bool) or image_upload_location_header not in ax41_image_target_server or ax41_image_marker_begin in ax41_image_target_server.splitlines()"
         fail_msg: A different image route is already present; review it before proceeding.
 
     - name: Install only the bounded AX41 image upload location
       ansible.builtin.blockinfile:
         path: /etc/nginx/conf.d/playsay-honey.conf
         insertafter: "{{ '^    server_name ' ~ (ax41_image_target_hostname | regex_escape) ~ ';$' }}"
-        marker: '    # {mark} HONEY SCHOOL IMAGE UPLOAD ROUTES'
+        marker: "{{ ax41_image_marker }}"
         backup: true
         state: "{{ 'present' if ax41_image_target_enabled | bool else 'absent' }}"
         block: |
@@ -66,7 +83,7 @@
               proxy_buffering off;
           }
           {% endfor %}
-      when: image_upload_location_header not in ax41_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in ax41_image_target_server
+      when: image_upload_location_header not in ax41_image_target_server or ax41_image_marker_begin in ax41_image_target_server.splitlines()
       register: ax41_image_route_edit
       notify: reload nginx
 
