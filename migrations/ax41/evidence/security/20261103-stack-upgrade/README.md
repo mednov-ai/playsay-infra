@@ -12,6 +12,7 @@ below are package/finding matches, not distinct vulnerabilities.
 | CNPG PostgreSQL 17.11 system/trixie | `sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd` | 85 | 1 | Blocked |
 | CNPG PostgreSQL 17.11 system/bookworm | `sha256:b548f1bdfaff8c6a5b44646355502435be2beb28ae1bbb3520b8d6c44e6fbc5f` | 57 | 3 | Blocked |
 | CNPG PostgreSQL 17.11 minimal/trixie | `sha256:7c680fc840a9ea6bd04399f1aeea06bb3180df3f0969f18833925b6df3d7dc87` | 62 | 1 | Blocked |
+| Percona PostgreSQL 17.11 UBI 9 | `sha256:32a2c3ce3147ff269a5b0d56e1ae28823131b7a98a95a67d67723d4e78017a94` | 177 | 1 | Blocked; compatibility not established |
 | Upstream LiveKit 1.13.11 | `sha256:25cd902de7cacbd5f1f779f6a6ac1eae20ba8f56b0935934ce6b0ab80d1e3d20` | 1 | 0 | Blocked |
 
 The selected trixie PostgreSQL image contains `libxml2` affected by
@@ -23,6 +24,14 @@ priority than the scanner's Critical severity; that difference is not proof
 that the affected code is absent. Additional High findings require their own
 exact package/runtime assessment. The existing Kotlin/build-tool exception
 does not cover these findings.
+
+An exploratory scan of Percona's PostgreSQL 17.11 UBI 9 image found 153
+distinct High/Critical CVEs (177 High and one Critical package/finding
+matches), including Critical CVE-2026-114406 in `ca-certificates`. These are
+raw scanner findings, not claims that every reported package is reachable in
+the server runtime. The candidate has not been proven compatible with the
+operator, existing data, extensions or locale, and is not a drop-in remedy.
+The raw report is retained; no finding was waived by the comparison.
 
 The upstream LiveKit binary contains `golang.org/x/net` v0.59.0 affected by
 [CVE-2026-78669](https://pkg.go.dev/vuln/GO-2026-6611), fixed in v0.60.0.
