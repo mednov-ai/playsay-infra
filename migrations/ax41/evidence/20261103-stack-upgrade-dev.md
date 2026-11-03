@@ -11,8 +11,10 @@ keyboard, worksheet-import and Keycloak custom archives passed checksums and
 PostgreSQL 17 catalog validation. A temporary isolated PostgreSQL 17 instance
 restored all four with `--exit-on-error` and `--no-owner --no-privileges`;
 the restored public schema contained 93, 11, 5 and 101 tables respectively.
-The temporary pod was deleted and absence checked. This verifies those four
-archive restores, not a coordinated application/object-store disaster recovery.
+The same four backups were then restored into the intended CNPG PostgreSQL
+`17.11 (Debian 17.11-1.pgdg13+2)` image, with the same table counts. The
+temporary pods were deleted. This verifies those four archive restores, not a
+coordinated application/object-store disaster recovery.
 
 An earlier task-created attempt at
 `/var/backups/playsay/stack-upgrade-dev-20261103T173353Z` was not validated
