@@ -4,6 +4,8 @@
     image_upload_location_header: 'location ~ ^/api/(?:materials/[^/]+/(?:image-page|assets/images)|schedule/lessons/[^/]+/image-page)$ {'
     worksheet_upload_location_header: 'location = /api/worksheet-imports {'
     draft_image_location_header: 'location = /api/materials/ai-draft {'
+    rf_image_marker_begin: '    # BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES'
+    rf_image_marker_end: '    # END HONEY SCHOOL IMAGE UPLOAD ROUTES'
   block:
     - name: Read the active RF route file
       ansible.builtin.slurp:
@@ -24,6 +26,10 @@
     - name: Refuse a conflicting pre-existing image route
       ansible.builtin.assert:
         that:
+          - "((rf_image_active_routes.content | b64decode).splitlines() | select('equalto', rf_image_marker_begin) | list | length) == (rf_image_target_server.splitlines() | select('equalto', rf_image_marker_begin) | list | length)"
+          - "((rf_image_active_routes.content | b64decode).splitlines() | select('equalto', rf_image_marker_end) | list | length) == (rf_image_target_server.splitlines() | select('equalto', rf_image_marker_end) | list | length)"
+          - "(rf_image_target_server.splitlines() | select('equalto', rf_image_marker_begin) | list | length) <= 1"
+          - "(rf_image_target_server.splitlines() | select('equalto', rf_image_marker_begin) | list | length) == (rf_image_target_server.splitlines() | select('equalto', rf_image_marker_end) | list | length)"
           - "'location / {' in rf_image_target_server"
           - "('proxy_pass https://' ~ rf_edge_origin_address ~ ';') in rf_image_target_server"
           - "('proxy_ssl_name ' ~ rf_image_origin_hostname ~ ';') in rf_image_target_server"
@@ -35,7 +41,13 @@
           - "image_upload_location_header not in rf_image_target_server or 'client_max_body_size 21m;' in rf_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
           - "worksheet_upload_location_header not in rf_image_target_server or 'client_max_body_size 129m;' in rf_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
           - "draft_image_location_header not in rf_image_target_server or 'client_max_body_size 3m;' in rf_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
-          - "(rf_image_target_enabled | bool) or image_upload_location_header not in rf_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in rf_image_target_server"
+          - "image_upload_location_header not in rf_image_target_server or ('proxy_pass https://' ~ rf_edge_origin_address ~ ';') in rf_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
+          - "worksheet_upload_location_header not in rf_image_target_server or ('proxy_pass https://' ~ rf_edge_origin_address ~ ';') in rf_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
+          - "draft_image_location_header not in rf_image_target_server or ('proxy_pass https://' ~ rf_edge_origin_address ~ ';') in rf_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
+          - "image_upload_location_header not in rf_image_target_server or ('proxy_ssl_name ' ~ rf_image_origin_hostname ~ ';') in rf_image_target_server.split(image_upload_location_header)[1].split('}')[0]"
+          - "worksheet_upload_location_header not in rf_image_target_server or ('proxy_ssl_name ' ~ rf_image_origin_hostname ~ ';') in rf_image_target_server.split(worksheet_upload_location_header)[1].split('}')[0]"
+          - "draft_image_location_header not in rf_image_target_server or ('proxy_ssl_name ' ~ rf_image_origin_hostname ~ ';') in rf_image_target_server.split(draft_image_location_header)[1].split('}')[0]"
+          - "(rf_image_target_enabled | bool) or image_upload_location_header not in rf_image_target_server or rf_image_marker_begin in rf_image_target_server.splitlines()"
         fail_msg: A different image route is already present; review it before proceeding.
 
     - name: Install only the bounded RF image upload location
@@ -80,7 +92,7 @@
               sub_filter 'wss://{{ rf_image_origin_hostname }}' 'wss://{{ rf_image_target_hostname }}';
           }
           {% endfor %}
-      when: image_upload_location_header not in rf_image_target_server or '# BEGIN HONEY SCHOOL IMAGE UPLOAD ROUTES' in rf_image_target_server
+      when: image_upload_location_header not in rf_image_target_server or rf_image_marker_begin in rf_image_target_server.splitlines()
       register: rf_image_route_edit
       notify: reload nginx
 
