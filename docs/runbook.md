@@ -4,6 +4,15 @@ Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selec
 
 ### Prepared DEV stack upgrade (not yet deployed)
 
+**Security hold, 2026-11-03:** do not deploy the prepared PostgreSQL 17.11 or
+upstream LiveKit 1.13.11 images. Fresh container scans identified unaccepted
+runtime findings, including vulnerable `libxml2` linked by PostgreSQL and a
+fixable LiveKit HTTP/2 dependency. DEV lesson admission was restored while
+remediation is investigated. Retained raw scans, exact image digests,
+runtime-boundary evidence and the local LiveKit rebuild are in
+[container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
+Functional tests and the JVM dependency gate do not waive this hold.
+
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
 platform Java/Spring, React/Vite and LiveKit client upgrades. Before

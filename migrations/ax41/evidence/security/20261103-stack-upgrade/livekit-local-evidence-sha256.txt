@@ -1,0 +1,3 @@
+80e59aeb06a5d8956080d11acf1a5d35bede0a81f160c0b651a045e173b86970  livekit-server-1.13.11-net062
+0cf205ffc4f6a8c64255f7b884c2786fcbf6699f26210455f5cfd23705b24cdf  livekit-patched-package-graph.txt
+786e315d35a769b1d85a0c9ad49b1b79bb53c1b1589ec6cb5a5abdbddf2c69be  livekit-patched-symbols.txt

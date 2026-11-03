@@ -4,6 +4,12 @@ Status: prepared, **not yet delivered**. Platform hotfix source at this
 checkpoint is `ca1e6d401048a42f7a21f3557d2388ba0f89f2bb`; rerun candidate
 gates if its head moves. The production rollout is outside this DEV step.
 
+The proposed PostgreSQL and LiveKit images are now **security-blocked** by
+fresh container findings; see the retained [raw reports and runtime
+evidence](security/20261103-stack-upgrade/README.md). DEV lesson admission
+was restored through infra PR #62, and the gateway is Synced/Healthy with the
+maintenance flag off. No database, Keycloak or LiveKit upgrade was deployed.
+
 The current platform candidate is `1434bc7fc81f0427d9bb0f94d1f463f2c291864f`.
 Non-deploy Jenkins web build 416 passed lint, tests and build for that exact
 commit; Keycloak build 27 passed provider tests and its security gate. Full
