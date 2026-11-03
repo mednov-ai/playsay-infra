@@ -131,10 +131,10 @@ resources:
   limits:
     cpu: "1"
     memory: 1536Mi
-# DEV backfill reconciled; normal library writes and lesson admission are enabled.
+# Temporary DEV stack-upgrade drain; restore admission after rollout.
 games:
   writesEnabled: true
-  maintenance: false
+  maintenance: true
   migration:
     enabled: false
     dryRun: false
