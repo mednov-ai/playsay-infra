@@ -28,6 +28,16 @@ host capacity, backup currency and live revisions immediately before a
 rollout. The application database was healthy on PostgreSQL 17.6; its
 separate Keycloak database remained on Bitnami legacy PostgreSQL 17.4.
 
+An isolated, non-host-networked DEV pod started the native LiveKit
+`1.13.11` image with a synthetic key, TURN secret and webhook URL, using the
+same relevant RTC, TURN, metrics and service-link settings as the chart.
+The room, participant and process-start gauges required by the host activity
+collector were present. The first disposable fixture omitted
+`enableServiceLinks: false` and failed because Kubernetes injected
+`LIVEKIT_PORT`; the corrected fixture matched the actual chart and passed.
+This proves startup/configuration and those metrics only, not signaling,
+TURN or user media on either origin.
+
 Full exact-candidate CI, a GitOps rollout and authenticated multi-student
 classroom/media acceptance on DEV are still pending. The platform's previous
 local tests and preliminary security findings are recorded in its
