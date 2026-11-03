@@ -6,6 +6,9 @@ rf_edge_certificate_directory: /etc/letsencrypt/live/honeyschool.ru
 rf_edge_acme_webroot: /var/www/playsay-rf-edge-acme
 rf_edge_tls_protocols: TLSv1.2
 rf_edge_tls_enabled: true
+# Bounded image-upload route; disabling is an explicitly reviewed rollback.
+image_upload_routes_prod_enabled: true
+image_upload_routes_dev_enabled: true
 rf_edge_production_routes:
   - hostname: honeyschool.ru
     aliases:
