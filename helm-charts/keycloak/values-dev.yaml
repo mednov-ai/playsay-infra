@@ -21,7 +21,7 @@ global:
   security:
     allowInsecureImages: true
 keycloak:
-  replicaCount: 0
+  replicaCount: 1
   hostname: https://dev.ops.honey.school/keycloak
   httpRelativePath: /keycloak/
   service:
