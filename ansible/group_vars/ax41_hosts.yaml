@@ -3,6 +3,10 @@ timezone: UTC
 admin_user: playsay
 ssh_port: 22
 
+# Bounded image-upload route; disabling is an explicitly reviewed rollback.
+image_upload_routes_prod_enabled: true
+image_upload_routes_dev_enabled: true
+
 manage_ssh_hardening: false
 manage_ufw: false
 install_docker: false

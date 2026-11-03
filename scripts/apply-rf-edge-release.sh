@@ -3,7 +3,7 @@ set -eu
 
 usage() {
   cat >&2 <<'EOF'
-Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--html-game-upload-only|--monitoring-only|--route-observability-only|--acme-only] [--inventory PATH]
+Usage: scripts/apply-rf-edge-release.sh --syntax|--check|--apply [--image-upload-only|--html-game-upload-only|--monitoring-only|--route-observability-only|--acme-only] [--inventory PATH]
 
 Runs the shared nginx/coturn Selectel RF edge playbook only from a clean,
 pushed numeric release branch. --syntax is read-only and may run from a topic
@@ -14,6 +14,8 @@ check/apply to the collector and validator and cannot notify service handlers;
 
 --html-game-upload-only reconciles only the bounded production game-upload
 locations, validates nginx and performs the normal graceful reload handler.
+--image-upload-only reconciles only the bounded production image-upload
+location, validates nginx and performs the normal graceful reload handler.
 --route-observability-only installs only the classroom route probes, counters,
 privacy-safe nginx logging and their graceful nginx reload/timer activation.
 EOF
@@ -23,6 +25,7 @@ EOF
 mode=""
 monitoring_only="false"
 html_game_upload_only="false"
+image_upload_only="false"
 route_observability_only="false"
 acme_only="false"
 inventory_path="${PLAYSAY_RF_EDGE_INVENTORY:-}"
@@ -51,6 +54,10 @@ while [ "$#" -gt 0 ]; do
       html_game_upload_only="true"
       shift
       ;;
+    --image-upload-only)
+      image_upload_only="true"
+      shift
+      ;;
     --route-observability-only)
       route_observability_only="true"
       shift
@@ -64,12 +71,14 @@ done
 [ -n "$mode" ] || usage
 [ "$mode" != "--syntax" ] || [ "$monitoring_only" = "false" ] || usage
 [ "$mode" != "--syntax" ] || [ "$html_game_upload_only" = "false" ] || usage
+[ "$mode" != "--syntax" ] || [ "$image_upload_only" = "false" ] || usage
 [ "$mode" != "--syntax" ] || [ "$route_observability_only" = "false" ] || usage
 [ "$monitoring_only" = "false" ] || [ "$html_game_upload_only" = "false" ] || usage
 [ "$monitoring_only" = "false" ] || [ "$route_observability_only" = "false" ] || usage
 [ "$html_game_upload_only" = "false" ] || [ "$route_observability_only" = "false" ] || usage
+[ "$image_upload_only" = "false" ] || { [ "$html_game_upload_only" = "false" ] && [ "$monitoring_only" = "false" ] && [ "$route_observability_only" = "false" ]; } || usage
 
-[ "$acme_only" = "false" ] || { [ "$mode" != "--syntax" ] && [ "$monitoring_only" = "false" ] && [ "$html_game_upload_only" = "false" ] && [ "$route_observability_only" = "false" ]; } || usage
+[ "$acme_only" = "false" ] || { [ "$mode" != "--syntax" ] && [ "$monitoring_only" = "false" ] && [ "$html_game_upload_only" = "false" ] && [ "$image_upload_only" = "false" ] && [ "$route_observability_only" = "false" ]; } || usage
 
 repo_root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
@@ -154,6 +163,11 @@ if [ "$mode" = "--apply" ]; then
       "$repo_root/ansible/playbooks/rf-edge.yaml" \
       --tags html-game-upload-routes
   fi
+  if [ "$image_upload_only" = "true" ]; then
+    exec ansible-playbook \
+      -i "$inventory_path" \
+      "$repo_root/ansible/playbooks/production-image-upload-rf.yaml"
+  fi
   if [ "$route_observability_only" = "true" ]; then
     exec ansible-playbook \
       -i "$inventory_path" \
@@ -177,6 +191,14 @@ if [ "$html_game_upload_only" = "true" ]; then
     -i "$inventory_path" \
     "$repo_root/ansible/playbooks/rf-edge.yaml" \
     --tags html-game-upload-routes \
+    --check \
+    --diff
+fi
+
+if [ "$image_upload_only" = "true" ]; then
+  exec ansible-playbook \
+    -i "$inventory_path" \
+    "$repo_root/ansible/playbooks/production-image-upload-rf.yaml" \
     --check \
     --diff
 fi
