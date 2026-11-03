@@ -160,7 +160,19 @@ def main():
     rf_scoped = render_scoped_block(
         "ansible/roles/rf-edge-proxy/tasks/image-upload-routes.yaml",
         rf_edge_origin_address=f"127.0.0.1:{ax_scoped_port}",
+        rf_image_origin_hostname="online.honey.school",
+        rf_image_target_hostname="online.honeyschool.ru",
     )
+    rf_dev_scoped = render_scoped_block(
+        "ansible/roles/rf-edge-proxy/tasks/image-upload-routes.yaml",
+        rf_edge_origin_address=f"127.0.0.1:{ax_scoped_port}",
+        rf_image_origin_hostname="dev.online.honey.school",
+        rf_image_target_hostname="dev.online.honeyschool.ru",
+    )
+    assert route_limits(rf_dev_scoped) == route_limits(rf_scoped)
+    assert "proxy_ssl_name dev.online.honey.school;" in rf_dev_scoped
+    assert "proxy_set_header Host dev.online.honey.school;" in rf_dev_scoped
+    assert "https://dev.online.honeyschool.ru" in rf_dev_scoped
     for name, template, scoped in (("AX41", ax, ax_scoped), ("RF", rf, rf_scoped)):
         expected = route_limits(scoped)
         assert len(expected) == 3, (name, "scoped route count", expected)
