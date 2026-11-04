@@ -18,7 +18,12 @@ gates. This prevents merging the preparation from starting the import while
 Keycloak can still write to its source database. The staged PostgreSQL values
 pin the previously scanned image digest; the earlier disposable import used
 the corresponding tag, so the digest-pinned operator path still needs
-verification before actual cutover.
+verification before actual cutover. An offline Docker invocation using the
+exact `17.11-system-trixie@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd`
+reference resolved the locally cached image and printed PostgreSQL
+`17.11 (Debian 17.11-1.pgdg13+2)`. This only verifies the container runtime's
+tag-and-digest reference and executable; it is not a CloudNativePG import or
+a DEV cutover test.
 
 The current platform candidate is `ce42081191dd6efbe5070f4143b92932063dfd0a`.
 Non-deploy Jenkins web build 417, keyboard build 114, game-adapter build 45

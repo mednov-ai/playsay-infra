@@ -60,6 +60,13 @@ addressed in 1.30.0. The read-only inventory found no Kubernetes NetworkPolicy
 objects in the `playsay-data` namespace in either environment. It does not
 establish effective host/network restrictions, access from another pod, or
 exposure from the internet; those boundaries still require review.
+Each environment's read-only cluster inventory had one CNPG cluster, no
+configured in-tree Barman object-store backup or backup plugin, and no
+`ScheduledBackup` objects. This is not a claim that no other backups exist:
+the DEV four-database custom archives and restore checks are documented
+separately. The [1.30 release notes](https://cloudnative-pg.io/docs/1.30/release_notes/v1.30/)
+retain in-tree Barman for 1.30 and introduce a primary-election Lease; both
+the actual backup workflow and new election behavior require isolated tests.
 
 A DEV-only 1.30.1 operator overlay is staged outside all reconciled ArgoCD
 trees. Its upstream source is pinned to `2a35abb4628f209d149825ef3c38011e0701ff2f`
@@ -218,6 +225,18 @@ matches. Its reports, checksums, database metadata and image archive hash are
 retained as `playsay-email-service-develop-54-*`. Publication, migration and
 DEV stages did not run.
 
+Payment service #39 passed its dependency-security gate, tests, package build
+and final-image scan at the same platform commit, with zero blocking image
+matches. Its reports, checksums, database metadata and image archive hash are
+retained as `playsay-payment-service-develop-39-*`. Publication, migration and
+DEV stages did not run.
+
+Collaboration service #67 passed its tests, build and final-image scan at the
+same platform commit, with zero blocking image matches. Its reports, checksums,
+database metadata and image archive hash are retained as
+`playsay-collaboration-service-develop-67-*`; publication and DEV stages did
+not run.
+
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
 at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero
 blocking image matches. Its raw and blocking reports, scanner and Java DB
@@ -307,6 +326,11 @@ An isolated Linux call to the exact upstream library returned SQLite 3.34.1
 with `ENABLE_FTS5=1`; [the library hash and test result](keycloak-sqlite-compile-options-20261104.txt)
 are retained. This confirms the affected feature is compiled in, but does not
 prove Keycloak loads it or exposes the vulnerable SQL path.
+The matching [Red Hat source RPM and checksum](keycloak-sqlite-source-20261104.txt)
+were identified; its build enables FTS5 and includes earlier vendor security
+patches. A custom rebuild with that feature disabled could eliminate this
+specific vulnerable code, but remains unbuilt and must preserve the vendor
+patches, ABI, NSS and Keycloak behavior before it could be considered.
 
 Jenkins Keycloak #30 inspected its unpublished image before the full scan;
 the scan blocked on the same three findings. The scan-only source commit was
