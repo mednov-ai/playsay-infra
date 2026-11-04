@@ -78,12 +78,13 @@ class IsolatedAcceptanceBoundaryTest(unittest.TestCase):
         self.assertEqual(api["PLAYSAY_STORAGE_PROVIDER"], "memory")
         self.assertEqual(api["PLAYSAY_PUBLIC_APP_URL"], "https://dev.online.honey.school")
         for value in api.values():
-            if value and value.startswith(("http://", "https://", "ws://", "wss://")):
-                host = urlparse(value).hostname
-                self.assertIn(host, {
-                    "127.0.0.1", "dev.online.honey.school", "dev.online.honeyschool.ru",
-                    "dev.ops.honey.school", "keycloak.keycloak.svc.cluster.local",
-                })
+            for address in (value or "").split(","):
+                if address.startswith(("http://", "https://", "ws://", "wss://")):
+                    host = urlparse(address).hostname
+                    self.assertIn(host, {
+                        "127.0.0.1", "dev.online.honey.school", "dev.online.honeyschool.ru",
+                        "dev.ops.honey.school", "keycloak.keycloak.svc.cluster.local",
+                    })
         self.assertNotIn("volumes", spec)
         self.assertNotIn("persistentVolumeClaim", json.dumps(spec))
 

@@ -1,4 +1,12 @@
 // Browser routing for the synthetic fixture. Never fall back to the shared DEV API.
+import { createRequire } from "node:module";
+import { homedir } from "node:os";
+import path from "node:path";
+
+const playwrightDir = process.env.PLAYWRIGHT_PACKAGE_DIR ?? path.join(homedir(), ".codex/tools/playwright");
+const requireFromTools = createRequire(path.join(playwrightDir, "package.json"));
+const playwrightCore = path.dirname(requireFromTools.resolve("playwright-core/package.json"));
+const WebSocketClient = requireFromTools(path.join(playwrightCore, "lib/utilsBundle.js")).ws;
 const webHosts = new Set(["dev.online.honey.school", "dev.online.honeyschool.ru"]);
 const identityHost = "dev.ops.honey.school";
 
@@ -54,15 +62,16 @@ export async function installIsolatedRoutes(context, inputPorts) {
     try {
       const decision = classify(socket.url(), ports, true);
       if (decision.kind === "livekit") { socket.connectToServer(); return; }
-      const upstream = new WebSocket(decision.target, socket.protocols());
+      const origin = `https://${new URL(socket.url()).hostname}`;
+      const upstream = new WebSocketClient(decision.target, socket.protocols(), { origin });
       upstream.binaryType = "arraybuffer";
       const pending = [];
       let pendingBytes = 0;
       socket.onMessage(message => {
         const size = typeof message === "string" ? Buffer.byteLength(message) : message.byteLength;
         if (size > 1024 * 1024) { socket.close({ code: 1009 }).catch(() => {}); return; }
-        if (upstream.readyState === WebSocket.OPEN) upstream.send(message);
-        else if (upstream.readyState === WebSocket.CONNECTING && pending.length < 64 && pendingBytes + size <= 4 * 1024 * 1024) {
+        if (upstream.readyState === WebSocketClient.OPEN) upstream.send(message);
+        else if (upstream.readyState === WebSocketClient.CONNECTING && pending.length < 64 && pendingBytes + size <= 4 * 1024 * 1024) {
           pending.push(message);
           pendingBytes += size;
         }

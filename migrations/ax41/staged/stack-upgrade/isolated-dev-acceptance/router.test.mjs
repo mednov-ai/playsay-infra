@@ -51,6 +51,7 @@ test("collaboration WebSocket messages are bridged to loopback", async () => {
   const server = http.createServer();
   let peer;
   server.on("upgrade", (req, connection) => {
+    assert.equal(req.headers.origin, "https://dev.online.honey.school");
     peer = connection;
     const accept = createHash("sha1").update(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64");
     connection.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);

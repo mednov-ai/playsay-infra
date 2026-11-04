@@ -118,6 +118,7 @@ spec:
             - { name: PLAYSAY_AUTH_JWK_SET_URI, value: "http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs" }
             - { name: PLAYSAY_PUBLIC_APP_URL, value: "https://dev.online.honey.school" }
             - { name: PLAYSAY_PUBLIC_APP_RF_URL, value: "https://dev.online.honeyschool.ru" }
+            - { name: PLAYSAY_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS, value: "https://dev.online.honey.school,https://dev.online.honeyschool.ru" }
             - { name: PLAYSAY_LIVEKIT_URL, value: "wss://dev.online.honey.school/livekit" }
             - name: PLAYSAY_LIVEKIT_API_KEY
               valueFrom: { secretKeyRef: { name: livekit-keys, key: api-key } }
