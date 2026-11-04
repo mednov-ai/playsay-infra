@@ -1,0 +1,53 @@
+--- a/Jenkinsfile.dispatcher-at-4848a1f1920ab41d45b061c1bd78f567b05db580
++++ b/Jenkinsfile.dispatcher-one-time-verified-native-resume
+@@ -251,6 +251,50 @@
+       }
+     }
+ 
++    // One-time audited operator resume; original module jobs and full finalizer remain authoritative.
++    stage('Verify completed exact-source native builds') {
++      steps {
++        script {
++          if (env.CI_BRANCH != 'release/01.007.25' || env.GIT_COMMIT != '4848a1f1920ab41d45b061c1bd78f567b05db580') {
++            error 'This resume is restricted to the exact authorized production candidate.'
++          }
++          def expectedNative = [
++            'api-gateway': [job: 'playsay-api-gateway-develop', number: 231],
++            'ai-tutor-service': [job: 'playsay-ai-tutor-service-develop', number: 74],
++            'worksheet-import-service': [job: 'playsay-worksheet-import-service-develop', number: 44],
++            'vocabulary-service': [job: 'playsay-vocabulary-service-develop', number: 84],
++            'web-app': [job: 'playsay-web-app-develop', number: 427],
++            'game-adapter-service': [job: 'playsay-game-adapter-service-develop', number: 52],
++            'collaboration-service': [job: 'playsay-collaboration-service-develop', number: 73],
++            'media-service': [job: 'playsay-media-service-develop', number: 56],
++            'payment-service': [job: 'playsay-payment-service-develop', number: 43],
++            'registration-service': [job: 'playsay-registration-service-develop', number: 83],
++            'email-service': [job: 'playsay-email-service-develop', number: 58],
++            'keycloak': [job: 'playsay-keycloak-develop', number: 41],
++            'keyboard-service': [job: 'playsay-keyboard-backend-develop', number: 59],
++            'keyboard-app': [job: 'playsay-keyboard-frontend-develop', number: 121]
++          ]
++          if (env.AFFECTED_TARGETS.split(',').collect { it.trim() }.toSet() != expectedNative.keySet()) {
++            error 'The complete fourteen-target candidate is required.'
++          }
++          expectedNative.each { target, expected ->
++            def nativeRun = waitForBuild runId: "${expected.job}#${expected.number}", propagate: true
++            if (nativeRun.result != 'SUCCESS' || nativeRun.number != expected.number) {
++              error "Native build is not successful: ${target}"
++            }
++            def nativeVars = nativeRun.getBuildVariables()
++            if (nativeVars['CI_BRANCH'] != env.CI_BRANCH || nativeVars['GIT_COMMIT'] != env.GIT_COMMIT) {
++              error "Native source provenance does not match: ${target}"
++            }
++            echo "Verified native SUCCESS ${expected.job} #${expected.number} at the exact candidate source."
++          }
++          // Images already passed their native test, full security, archive and publication stages.
++          // Keep all AFFECTED_TARGETS so the unchanged finalizer checks every immutable image/build reference.
++          env.AFFECTED_JOBS = ''
++        }
++      }
++    }
++
+     stage('Dispatch downstream jobs') {
+       steps {
+         script {

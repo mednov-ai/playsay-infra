@@ -1,0 +1,68 @@
+{
+  "job": "playsay-email-service-develop",
+  "build": 59,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "70484ff66636c91f8671596568eb0781751d6a8218d3675ace87303f4708f394",
+      "advisoryUpdatedAt": "2026-11-04T20:56:27+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/backend/coverage.json",
+      "bytes": 1039985,
+      "sha256": "bf5459899fb59a532594cee5fc476b069c4ea8d30cac5de4b1cd1bde0d4e2a64"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/backend/gate.json",
+      "bytes": 13270,
+      "sha256": "9ab171129e4c460fd76aed70cd4eeafd93deb5228100fba7433ea9675ecdfcd2",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 23,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "ab4f832c04581dff60d6f7c8f03953173ae910869d79520d36ce9ec92c2a8a30"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "b3d55501cfbf06657fafbdb1b8ea02f7662adc0c72bcb49a01ad14b52e497464",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.NHFbpOjS/status.txt",
+      "bytes": 236,
+      "sha256": "d97902ea030a64cc9db66f17766f7c10603a85852e9c123f85f8d6d74305b18f",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-email-service/email-release-01.007.25-59/full.json",
+      "bytes": 809877,
+      "sha256": "11b4f48ad25ec5859580e160e2bceb43a0d3fac5df6ea5b2056577d5de9debec",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-email-service/email-release-01.007.25-59/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "34d15bb0a2a76288088e46fab7fef275482cc0101a332476e801208f74628085"
+    },
+    {
+      "path": "image-security/playsay-email-service/email-release-01.007.25-59/published-digest.txt",
+      "bytes": 72,
+      "sha256": "06d2f7b4a4d5ddfe5642478c5f3ff2da5c2e8a00b77c3ab084258fb8233856fe",
+      "publishedDigest": "sha256:6b81b8f68cc290bd41f3947de569f859f11fa8819dc0127a8b9701ab6eff55ca"
+    }
+  ]
+}

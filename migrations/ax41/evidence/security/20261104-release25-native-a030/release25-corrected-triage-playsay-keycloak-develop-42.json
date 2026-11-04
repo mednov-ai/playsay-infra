@@ -1,0 +1,47 @@
+{
+  "job": "playsay-keycloak-develop",
+  "build": 42,
+  "findingsWithRecordedFixes": [
+    {
+      "class": "lang-pkgs",
+      "id": "CVE-2026-118259",
+      "package": "io.opentelemetry:opentelemetry-api",
+      "installed": "1.62.0",
+      "fixed": "1.67.0",
+      "severity": "MEDIUM"
+    },
+    {
+      "class": "lang-pkgs",
+      "id": "CVE-2026-119210",
+      "package": "org.mariadb.jdbc:mariadb-java-client",
+      "installed": "3.5.10",
+      "fixed": "3.3.7, 3.4.5, 3.5.11",
+      "severity": "MEDIUM"
+    },
+    {
+      "class": "lang-pkgs",
+      "id": "CVE-2026-119276",
+      "package": "org.mariadb.jdbc:mariadb-java-client",
+      "installed": "3.5.10",
+      "fixed": "3.3.7, 3.4.5, 3.5.11",
+      "severity": "MEDIUM"
+    },
+    {
+      "class": "lang-pkgs",
+      "id": "CVE-2026-119281",
+      "package": "org.mariadb.jdbc:mariadb-java-client",
+      "installed": "3.5.10",
+      "fixed": "3.3.7, 3.4.5, 3.5.11",
+      "severity": "MEDIUM"
+    },
+    {
+      "class": "lang-pkgs",
+      "id": "CVE-2026-119280",
+      "package": "org.mariadb.jdbc:mariadb-java-client",
+      "installed": "3.5.10",
+      "fixed": "3.3.7, 3.4.5, 3.5.11",
+      "severity": "LOW"
+    }
+  ],
+  "pcre2Cves": []
+}

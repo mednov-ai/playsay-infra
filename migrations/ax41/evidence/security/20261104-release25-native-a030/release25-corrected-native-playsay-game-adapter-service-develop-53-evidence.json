@@ -1,0 +1,25 @@
+{
+  "job": "playsay-game-adapter-service-develop",
+  "build": 53,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "image-security/playsay-game-adapter-service/game-adapter-release-01.007.25-53/full.json",
+      "bytes": 315233,
+      "sha256": "a16bff1f6b856b8721121f6c0daefc0b5c81402a5f75743cd8739aba06c33ac6",
+      "fullSeverityCounts": {}
+    },
+    {
+      "path": "image-security/playsay-game-adapter-service/game-adapter-release-01.007.25-53/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "ad8b1ddd0ff40eff61aa73fea9cdf1f158ba797fe3485f930eedd032bce8c023"
+    },
+    {
+      "path": "image-security/playsay-game-adapter-service/game-adapter-release-01.007.25-53/published-digest.txt",
+      "bytes": 72,
+      "sha256": "511ae9e7d718873d0a09a6d38071bb64263ab7f795ce606e093281956226cce2",
+      "publishedDigest": "sha256:e20f377f5a1ef1a1b270abfee182eefb58934dc1c72e0bfa027cdc158870e172"
+    }
+  ]
+}

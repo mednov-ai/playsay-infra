@@ -1,0 +1,68 @@
+{
+  "job": "playsay-payment-service-develop",
+  "build": 44,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "0d38ca60dfc674bd0553db54f18b5d608ff0ffe18ce369b19609efbfb76b8ef1",
+      "advisoryUpdatedAt": "2026-11-04T21:09:51+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/backend/coverage.json",
+      "bytes": 984974,
+      "sha256": "d5dcead3dfc6c80275f97d4e50cd8af0c891aab301cdee4444ccad4974f9da7b"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/backend/gate.json",
+      "bytes": 13310,
+      "sha256": "04e407e5bc33e98bce215b82f948759322868f444d622b5e6cae473ac67aca3b",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 23,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "f771683065ea5251afd317d0a93ebe502c363a630461ce0393ec72fa96dbfd84"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "b73fd2bd0bc86f270e77543321916012906f75a49fd1876a87b55ecf66642860",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.ZFccQGp8/status.txt",
+      "bytes": 236,
+      "sha256": "49788ec6ee6d6e83d3259f5a8041be52bfc8e21fa173861cae1311a939e3da5f",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-payment-service/payment-release-01.007.25-44/full.json",
+      "bytes": 801739,
+      "sha256": "ee6e3b4e66ec4c1870009c09a0f9281bdca54f1a740cafd1b632b8b3eefe456b",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-payment-service/payment-release-01.007.25-44/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "07afd8dc316486b6bcd9ba0f6637684e1917e9ca2aa3fcebaa5b9152c771a57d"
+    },
+    {
+      "path": "image-security/playsay-payment-service/payment-release-01.007.25-44/published-digest.txt",
+      "bytes": 72,
+      "sha256": "181cf7708c695d31093d1f0684afa823f35323955f907590989330c4fe6d68e2",
+      "publishedDigest": "sha256:91ffdf05a2f6c13f9a88502e75edb7a0345c825926d3bbe37b8efb357fbe1c25"
+    }
+  ]
+}

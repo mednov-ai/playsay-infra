@@ -1,0 +1,68 @@
+{
+  "job": "playsay-vocabulary-service-develop",
+  "build": 86,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "55b0e6fc38d93cd9c365bc84a986d01a006e8e157a8086f6a83624c94514c7e6",
+      "advisoryUpdatedAt": "2026-11-04T20:08:50+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/backend/coverage.json",
+      "bytes": 1672705,
+      "sha256": "194a921855e5aedd8287f4b4e9aa4eaec59f3bc5c5b150ca04f1b8a87cd27d84"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/backend/gate.json",
+      "bytes": 17066,
+      "sha256": "59f8044662f3a086b0d52575b19f94ac9ce9900071e8aac66e195a8f831c1e1c",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 33,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "7edd1789511cf7b04ae52eb3b2de79cd66481693ca100b3877c068a0dd8dece3"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "4052a84dea842def03f22223e9aa0a4f5d3e60d442a2e9606f832c044da45eed",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.zTkWCdsR/status.txt",
+      "bytes": 236,
+      "sha256": "7521e49ade958a7e1b92cf590bb1a7982db021e42e046679d7e5ad040f42332a",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-vocabulary-service/vocabulary-release-01.007.25-86/full.json",
+      "bytes": 846822,
+      "sha256": "c0fff142ebda5a054278e19d11aeba833e09af6f7a28680dbbcd1d76a69a6730",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-vocabulary-service/vocabulary-release-01.007.25-86/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "625522fa52054fdd6c8f7e6e7918ed4e039ac3dea241479ebd92dd1ce9602575"
+    },
+    {
+      "path": "image-security/playsay-vocabulary-service/vocabulary-release-01.007.25-86/published-digest.txt",
+      "bytes": 72,
+      "sha256": "71c82c6eba80d38f85fde5a5ba3496c713ccca8b9ed3f6f39324bee28f1803f6",
+      "publishedDigest": "sha256:39ce2a1e9403e084e7eeefb8ccc5dac822e717d19b7aed49d078445f806454a7"
+    }
+  ]
+}

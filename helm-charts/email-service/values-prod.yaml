@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-email-service
-  tag: "email-release-01.007.19-52"
-  digest: "sha256:652fdc76eae6a9bf17193d90c1fb5ffe798b9ab17121b1ce41cf3a00cf321ce0"
+  tag: email-release-01.007.25-59
+  digest: sha256:6b81b8f68cc290bd41f3947de569f859f11fa8819dc0127a8b9701ab6eff55ca
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: email-release-01.007.19-52
-  number: "52"
-  branch: release/01.007.19
-  branchLabel: email-release-01.007.19
-  commit: 87a9389c41afba98757ca3375399c7dd1963aced
-  commitShort: "87a9389c41af"
+  name: email-release-01.007.25-59
+  number: '59'
+  branch: release/01.007.25
+  branchLabel: email-release-01.007.25
+  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
+  commitShort: a030e7d54644
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -20,8 +20,8 @@ service:
   type: ClusterIP
 database:
   existingSecret: playsay-app-db
-  liquibaseEnabled: "false"
-  hikariMaxPoolSize: "3"
+  liquibaseEnabled: 'false'
+  hikariMaxPoolSize: '3'
 emailService:
   existingSecret: playsay-email
   deliveryProvider: mailjet-api
@@ -30,17 +30,17 @@ emailService:
   providerTrackingTtl: PT72H
   providerReconcileWindow: PT5M
   providerReconcileOverlap: PT1M
-  providerReconcilePollMs: "30000"
-  webhookCheckMs: "3600000"
+  providerReconcilePollMs: '30000'
+  webhookCheckMs: '3600000'
   unisender:
     apiBaseUrl: https://goapi.unisender.ru/ru/transactional/api/v1
-    userId: "8236338"
+    userId: '8236338'
     webhookUrl: https://online.honey.school/api/webhooks/unisender
   mailjet:
     environment: prod
     webhookUrl: https://online.honey.school/api/webhooks/mailjet
 runtime:
-  javaToolOptions: "-Xms96m -Xmx192m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: -Xms96m -Xmx192m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m -XX:ActiveProcessorCount=1 -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 resources:
   requests:
     cpu: 25m

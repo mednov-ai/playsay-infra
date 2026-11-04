@@ -14,7 +14,7 @@ New findings, scan errors and candidate-specific delivery gates remain
 blocking for subsequent releases. DEV was updated and admission reopened;
 backups, restore and lesson acceptance are recorded in
 [DEV rollout evidence](../migrations/ax41/evidence/20261104-stack-upgrade-dev-rollout.md).
-Production has not been promoted. The original
+Production release01.007.25 is now accepted; see the current production record below. The original
 upstream LiveKit image's HTTP/2 dependency is not covered by that acceptance;
 use the pinned, scanned LiveKit security rebuild.
 The LiveKit chart accepts an optional `image.digest`; when present it renders
@@ -137,12 +137,13 @@ source on the production guest; do not copy database contents or credentials
 to CI or the workstation. A successful archive check does not prove a restore:
 perform the separately isolated restore and verify the result before a
 database-backed production rollout. The backups do not cover object storage.
-`scripts/verify-prod-backup-restore.sh` accepts only a protected production
-stack-upgrade backup while the reviewed Bitnami identity source is active. It
-restores all four dumps in a bounded, task-owned temporary pod using the
-currently running PostgreSQL 17.6 image; PostgreSQL listens only on a local
+`scripts/verify-prod-backup-restore.sh` accepts only a complete protected production
+stack-upgrade backup. It selects the active reviewed Bitnami identity source or
+the authoritative `keycloak-postgres-prod-import` CNPG primary from Keycloak's JDBC
+endpoint, rejecting unknown endpoints. It restores all four dumps in a bounded,
+task-owned temporary pod using the pinned PostgreSQL 17.11 image; PostgreSQL listens only on a local
 Unix socket. It verifies copy checksums and compares restored table counts to
-the source, discards row-bearing restore error details, then deletes only its
+the active source, discards row-bearing restore error details, then deletes only its
 labelled temporary pod. It does not verify
 the separate PostgreSQL 17.11 identity import or write-aware rollback.
 
@@ -198,13 +199,108 @@ this chart until candidate security, admission/drain, zero-writer, protected
 backup/restore and write-aware rollback gates pass. Any source write after the
 offline import starts is absent from the imported snapshot.
 
+
+### Release25 current-process activity after guarded restarts
+
+The initial admission still requires the complete ten-minute zero/fresh history.
+After a guarded LiveKit/collaboration replacement, retired metric label sets
+must not masquerade as a current unhealthy process. This candidate's retained
+activity script allows source continuity only for its exact reviewed image,
+a Synced/Healthy .25 Application and exactly one ready running pod with zero
+container restarts. It retains zero across all observed ten-minute history,
+at least eighteen aggregate samples, fresh current-source age and the
+independent installed reader's healthy/fresh all-zero actual counters and
+known schedule. Every sync still takes two fresh observations. Other images,
+unhealthy/duplicate/restarted pods or missing/stale actual data fail closed.
+Raw retired-series ages are retained alongside the current-source proof;
+no metric, counter, installed reader or schedule is changed.
+
+The corrected sourcea030 collaboration image from native build74 is also an
+exact reviewed candidate source (`sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a`).
+The retained process predicate names both original and corrected digests; no
+other image qualifies. Its retained test exercises three reviewed sources and
+eight denials, including unknown image, wrong release, duplicate pod, restart,
+unready state, stale deployment generation and DEV. All other history, current
+freshness, installed-reader and lesson-window checks remain identical.
+
+### One-time release25 native build resume
+
+For this exact source4848 candidate, the recorded Jenkins Replay verifies all
+fourteen explicitly named completed native module builds through waitForBuild,
+including SUCCESS and their recorded branch/source, before omitting duplicate
+launches. It retains all fourteen targets and the original full finalizer.
+The reviewed patch, script hash, failed/superseded runs and actual image matrix
+belong to the release25 production evidence. This does not change normal
+retry behavior or waive a test, security, archive, image or promotion gate.
+
+### Full image finding triage before release readiness
+
+The automatic image severity threshold is not the complete release decision.
+Review every retained full report for findings with a recorded compatible fix,
+including Medium/Low entries, before treating the source as promotion-ready.
+Apply the exact outside-server-runtime policy and unexpired owner scope; otherwise
+remediate the compatible finding and scan the new exact image. A High/Critical
+pass must never be described as a clean full report. Retain superseded image
+provenance and label it ineligible when a known compatible fix remains.
+
+### Authorized production stack release 01.007.25 — accepted; procedure retained
+
+The owner authorized this candidate's production delivery, accepted the exact
+retained PostgreSQL/Keycloak image findings and granted a one-time exception
+for stage acceptance, with acceptance immediately after rollout. See the
+[scoped approval](../migrations/ax41/evidence/20261104-stack-upgrade-production-risk-acceptance.md).
+The accepted numeric platform source is `a030e7d54644eb4ce532961f101a5790ecf75c8d`, with native dispatcher125 and ready infra `061e8e6d2e9761482bb706e633c008c022dc1bc1`. It includes the scoped CI exception, compatible libpcre2 patch and managed Jackson3 Kotlin support; earlier source4848 is superseded.
+The release's accepted-dev ancestry anchor is the previously accepted
+`e37bb8aa3107c71dd31edfaea8c3735b2025532d`; this is not a claim that the newer
+DEV stack tree or its game-library migration is included in this production
+candidate. Exact-candidate stage acceptance is covered only by the owner's
+one-time exception. Native numeric CI and all other release gates still apply.
+
+Prepare the pinned application PostgreSQL 17.11 and LiveKit production override
+on the numeric release. The production identity import uses the separate
+`keycloak-postgres-prod-import` cluster, `bn_keycloak` owner and a production-only
+sealed copy of the existing password. Keep it inert until Keycloak is stopped
+through GitOps, source writers are zero and the current backup/restore and
+candidate gates pass. Compare source/target schema and identity/session
+aggregates before switching the JDBC host to
+`keycloak-postgres-prod-import-rw`, retaining the existing application password
+Secret. Run the reviewed `scripts/compare-prod-keycloak-import.py` as Python
+on `playsay-prod` before that switch. It refuses an active Keycloak writer,
+unknown source/target versions or a mismatched credential. It compares every
+public table's rows in memory, schema, full index/constraint definitions,
+relation owners, locale, audit configuration and additional role/grant scope.
+Only aggregate results and booleans leave the guest. A failed comparison blocks
+the JDBC switch. The old Bitnami workload, PVC and Secret must remain available.
+Once new writes start, the source is a stale safety copy; do not switch back and
+lose those writes. Recover through a reviewed write-preserving path.
+
+`backup-prod-databases.sh` recognizes both reviewed CNPG identity names and
+selects the primary from the active JDBC host. It must refuse unknown hosts.
+Before reopening normal service, verify the active database, native login,
+pre-existing session refresh, provider behavior, both product origins, group
+collaboration and media. This section describes the authorized procedure;
+the completed result is recorded in [release25 acceptance](../migrations/ax41/evidence/20261104-release-01.007.25-stack-production.md). CloudNativePG
+operator 1.30.1 remains staged pending its separate upgrade/recovery validation.
+
+After the PostgreSQL 17.11 restart or the identity cutover, do not repoint the
+whole production root to .24: that branch requests the older database image
+and old identity host. A stateless recovery restores only the required
+`image` and `build` keys from the recorded .24 values in a reviewed GitOps
+commit on the active release, with fresh drain and health checks. Retain the
+17.11 database specifications, PVCs, Secrets and the currently authoritative
+Keycloak JDBC host; retain a stopped old identity source as a safety copy.
+Record the actual recovered image/source matrix and the failed promotion
+instead of claiming the original candidate remains accepted. A database
+recovery needs a separate write-preserving plan and a current protected backup;
+the isolated 17.11 restore does not validate an in-place image downgrade.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
 
 ## Active AX41 Dev/Prod Topology
 
-Newest accepted production runtime is `release/01.007.24`, infra `5cdae47d9a0ad6462310d2072e828c54eb49d2ff`, platform source `9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0`. The image-upload hotfix updates api-gateway, worksheet import, Keycloak and web; scoped AX41 and Selectel routes accept the required multipart envelopes. Seven schema checks required no migration, four protected backups passed validation, all 19 applications were Synced/Healthy, and authenticated image and lesson-entry canaries passed on both production origins. Existing browser pages may require a reload. See [source, security, acceptance, cleanup and rollback evidence](../migrations/ax41/evidence/20261103-release-01.007.24-image-upload.md). The previous accepted palette release is documented in [its evidence](../migrations/ax41/evidence/20261027-release-01.007.23-drawing-palette.md); earlier runtime paragraphs below are historical.
+Newest accepted production runtime is `release/01.007.25`, platform `a030e7d54644eb4ce532961f101a5790ecf75c8d`, ready infra `061e8e6d2e9761482bb706e633c008c022dc1bc1`. All20 Argo applications are Synced/Healthy;13 active native digests,8 Java25/Boot4.1.2 runtimes, both PostgreSQL17.11 clusters and both-origin classroom/RF TURN acceptance were verified. Four protected backup/restores and seven zero-pending schema checks passed. Key anonymous local completion passed, but server persistence remains unverified against the pre-existing empty catalog. Operator1.30.1 remains staged. The old identity database is STALE: never roll JDBC back after new writes. See [release25 acceptance and recovery boundaries](../migrations/ax41/evidence/20261104-release-01.007.25-stack-production.md). Release24 evidence below is historical.
 
 RF dev DNS, HTTPS/auth ingress, independent TURN and authenticated central log collection are active. Two-browser synthetic-media verification through RF dev passes camera/audio, collaboration, screen share and reconnect after the scoped dev SNAT and LiveKit uplink fixes. Real RF last-mile without VPN and long-duration acceptance remain open. See [RF dev preparation](rf-dev-preparation.md) for exact refs, evidence, isolation and provider-token requirements. Dev GeoIP and its daily updater are active; production GeoIP was independently enabled after release 01.007.00.
 
@@ -1912,7 +2008,7 @@ kubectl -n playsay-dev get pods --show-labels
 kubectl -n playsay-dev get pod -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.annotations}'
 ```
 
-Backend service image builds are intentionally runtime-only. Each backend module job runs only its own `:service:test` and `:service:bootJar`, then Kaniko builds the matching runtime Dockerfile by copying the already-built jar from that module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp` and copies `/ffmpeg` from the pinned `mwader/static-ffmpeg:7.1.1` image into `/usr/local/bin/ffmpeg`; do not reintroduce `apt-get update`, Python installation, or a Gradle build stage unless the pipeline is redesigned.
+Backend service image builds are intentionally runtime-only. Each backend module job runs only its own `:service:test` and `:service:bootJar`, then Kaniko builds the matching runtime Dockerfile by copying the already-built jar from that module's `build/libs`. Because these Kaniko builds use `backend/` as the Docker context, `backend/.dockerignore` must re-include every backend image's `build/libs/*.jar` path; otherwise an image can build and push without `/app/app.jar`. Only `playsay-media-service` adds the standalone `yt-dlp_linux` release asset to `/usr/local/bin/yt-dlp` and copies `/ffmpeg` from the pinned `mwader/static-ffmpeg:7.1.1` image into `/usr/local/bin/ffmpeg`; do not reintroduce general package provisioning, Python installation or an in-image Gradle build. For the reviewed stack-upgrade security remediation only, the nine application JVM Dockerfiles update the already-installed `libpcre2-8-0` from signed Ubuntu repositories, require version `10.46-1ubuntu0.1` or newer, and remove package indexes before copying the externally built jar. This is the scoped exception to the earlier blanket `apt-get update` restriction; it does not permit extra application toolchains or host package operations. The base is pinned to the reviewed Temurin25.0.5+8 multiarch index, and every resulting exact image must pass the full fresh scan before publication.
 
 Frontend image builds are intentionally runtime-only too. `playsay-web-app-develop` runs `npm --workspace web-app run generate/lint/test/build`, then Kaniko builds `frontend/web-app/Dockerfile` by copying the already-built `web-app/dist` into nginx. `playsay-keyboard-frontend-develop` does the same for `keyboard-app`. Do not add `npm install`, `npm ci`, or `npm run build` back into frontend Dockerfiles unless the pipeline is redesigned.
 

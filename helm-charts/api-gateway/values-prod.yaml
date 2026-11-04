@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-release-01.007.24-216"
-  digest: "sha256:215661b337adf2f8c2b1bcd85ed43e366ff750046dbd4711cf3764a6cab61e11"
+  tag: api-release-01.007.25-233
+  digest: sha256:43e7f3005fe069d56cc28d2d6a1d4bef76274521df767b5eae56a2ff5c60e4dd
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-release-01.007.24-216
-  number: "216"
-  branch: release/01.007.24
-  branchLabel: api-release-01.007.24
-  commit: 9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0
-  commitShort: "9bee01c9f0ff"
+  name: api-release-01.007.25-233
+  number: '233'
+  branch: release/01.007.25
+  branchLabel: api-release-01.007.25
+  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
+  commitShort: a030e7d54644
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -43,16 +43,16 @@ ai:
       htmlGameMetadata: low
 database:
   existingSecret: playsay-app-db
-  liquibaseEnabled: "false"
-  hikariMaxPoolSize: "10"
+  liquibaseEnabled: 'false'
+  hikariMaxPoolSize: '10'
 livekit:
   enabled: true
   serverUrl: wss://online.honey.school/livekit
   existingSecret: livekit-keys
-  tokenTtlSeconds: "3600"
+  tokenTtlSeconds: '3600'
   regionalRelay:
     environment: prod
-    mode: off
+    mode: false
     signalingMode: rf-two-hop
     mediaMode: rf-turn-relay
     signalingUrl: wss://online.honeyschool.ru/livekit
@@ -71,7 +71,7 @@ collaboration:
     websocketUrl: wss://online.honeyschool.ru/collab/ws
   httpBaseUrl: http://collaboration-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-collaboration
-  tokenTtlSeconds: "900"
+  tokenTtlSeconds: '900'
 storage:
   provider: s3
   s3:
@@ -79,22 +79,22 @@ storage:
     region: us-east-1
     bucket: playsay-material-assets
     existingSecret: playsay-object-storage
-    pathStyleAccess: "true"
-    createBucket: "true"
+    pathStyleAccess: 'true'
+    createBucket: 'true'
 mediaService:
   baseUrl: http://media-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-media
   serviceTokenKey: service-token
-  cacheRequestTimeoutSeconds: "660"
+  cacheRequestTimeoutSeconds: '660'
 worksheetImport:
-  enabled: "true"
+  enabled: 'true'
   baseUrl: http://worksheet-import-service.playsay-prod.svc.cluster.local
 gameAdapterService:
   baseUrl: http://game-adapter-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-game-adapter
   serviceTokenKey: service-token
-  enabled: "true"
-  pollDelayMs: "3000"
+  enabled: 'true'
+  pollDelayMs: '3000'
 paymentService:
   baseUrl: http://payment-service.playsay-prod.svc.cluster.local
   existingSecret: playsay-payment
@@ -108,27 +108,27 @@ emailService:
   existingSecret: playsay-email
   serviceTokenKey: service-token
 chatPush:
-  enabled: "true"
-  publicKey: "BEPpkhG18MgbroGqVygTbug-nAeBWvvdAwicb5gQmSN2jW13oSe4eVEo7WTc00kpKhzrcosQSGMmvNuT5rlgosM"
+  enabled: 'true'
+  publicKey: BEPpkhG18MgbroGqVygTbug-nAeBWvvdAwicb5gQmSN2jW13oSe4eVEo7WTc00kpKhzrcosQSGMmvNuT5rlgosM
 publicAppUrl: https://online.honey.school
 publicAppRfUrl: https://online.honeyschool.ru
 video:
   youtube:
     rfRelay:
-      enabled: "false"
+      enabled: 'false'
       geoCountryHeader: X-PlaySay-Geo-Country
-      requireGeoCountry: "true"
+      requireGeoCountry: 'true'
     cache:
-      enabled: "true"
-      pollDelayMs: "5000"
-      leaseSeconds: "900"
-      retentionDays: "30"
+      enabled: 'true'
+      pollDelayMs: '5000'
+      leaseSeconds: '900'
+      retentionDays: '30'
 runtime:
-  javaToolOptions: "-Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: -Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 resources:
   requests:
     cpu: 500m
     memory: 768Mi
   limits:
-    cpu: "2"
+    cpu: '2'
     memory: 1536Mi

@@ -1,0 +1,69 @@
+{
+  "runtimeJarsVerified": 8,
+  "services": [
+    {
+      "service": "api-gateway",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-api-gateway@sha256:43e7f3005fe069d56cc28d2d6a1d4bef76274521df767b5eae56a2ff5c60e4dd"
+    },
+    {
+      "service": "ai-tutor-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-ai-tutor-service@sha256:c5b34247b7795ea35dffb317c4321470a0642623ef6903b991fecbd1d49afbd5"
+    },
+    {
+      "service": "worksheet-import-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-worksheet-import-service@sha256:a35ed60c3c5d18ba412ae66080614f5cfc2301e9cb285b1c259fbe91e720ce22"
+    },
+    {
+      "service": "vocabulary-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-vocabulary-service@sha256:39ce2a1e9403e084e7eeefb8ccc5dac822e717d19b7aed49d078445f806454a7"
+    },
+    {
+      "service": "media-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-media-service@sha256:0df1c8873785ac0db4cccedeecb8b3cdd33aa0ce23ae9906f099870dc1e74a51"
+    },
+    {
+      "service": "registration-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-registration-service@sha256:fc9c6489d360c017993adacf677e754aece5e0e39f23dd458a71874b82b09e55"
+    },
+    {
+      "service": "email-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-email-service@sha256:6b81b8f68cc290bd41f3947de569f859f11fa8819dc0127a8b9701ab6eff55ca"
+    },
+    {
+      "service": "keyboard-service",
+      "java": "25.0.5",
+      "springBoot": "4.1.2",
+      "jackson3KotlinModule": "jackson-module-kotlin-3.1.7.jar",
+      "libpcre2": "10.46-1ubuntu0.1",
+      "image": "ghcr.io/mednov-ai/playsay-keyboard-service@sha256:1265a69dd47981d45ed869d85e2d5d5b9eddf19b7e111d1cfc3ad95deb78d88f"
+    }
+  ]
+}

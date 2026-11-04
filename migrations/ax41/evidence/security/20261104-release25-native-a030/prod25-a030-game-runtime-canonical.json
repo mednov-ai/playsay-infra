@@ -1,0 +1,1 @@
+{"image": "ghcr.io/mednov-ai/playsay-game-adapter-service@sha256:e20f377f5a1ef1a1b270abfee182eefb58934dc1c72e0bfa027cdc158870e172", "node": "v26.13.0", "nonRoot": true, "unauthorizedRejected": true, "authenticatedOptimization": true, "syntheticImageReplaced": 1, "chromiumSemanticAction": true, "mechanicsEquivalent": true, "externalAiCalls": 0}

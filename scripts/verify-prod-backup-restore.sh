@@ -8,14 +8,20 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 }
 backup="$1"
 test -d "$backup"
+test ! -e "$backup/INCOMPLETE.txt"
 ( cd "$backup"; sha256sum --check --status SHA256SUMS )
 identity_jdbc="$(kubectl -n keycloak get statefulset keycloak -o json | jq -er '.spec.template.spec.containers[] | select(.name == "keycloak") | .env[] | select(.name == "KC_DB_URL") | .value')"
-[[ "$identity_jdbc" == 'jdbc:postgresql://keycloak-postgresql:5432/bitnami_keycloak' ]] || {
-  echo "restore comparison requires the reviewed Bitnami identity source" >&2; exit 1;
-}
+case "$identity_jdbc" in
+  jdbc:postgresql://keycloak-postgresql:5432/bitnami_keycloak) identity_kind=bitnami ;;
+  jdbc:postgresql://keycloak-postgres-prod-import-rw:5432/bitnami_keycloak)
+    identity_kind=cnpg
+    identity_primary="$(kubectl -n keycloak get cluster keycloak-postgres-prod-import -o json | jq -er '.status.currentPrimary')"
+    ;;
+  *) echo "restore comparison requires a reviewed active PROD identity source" >&2; exit 1 ;;
+esac
 
 pod="stack-restore-$(date -u +%m%d%H%M%S)-$$"
-image="ghcr.io/cloudnative-pg/postgresql@sha256:6ae4a22c14bdc66e5feaafd38d12c3956fabf9ce9582189e6aa4ee767d981d1b"
+image="ghcr.io/cloudnative-pg/postgresql@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd"
 created=false
 cleanup() {
   if [[ "$created" == true ]]; then
@@ -93,8 +99,12 @@ PY
   count="$(kubectl -n playsay-data exec "$pod" -- psql -X -h /tmp -U postgres -d "$database" -Atq -c "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p')")"
   [[ "$count" =~ ^[0-9]+$ && "$count" -gt 0 ]] || { echo "restored schema is empty" >&2; exit 1; }
   if [[ "$database" == keycloak ]]; then
-    source_count="$(kubectl -n keycloak exec keycloak-postgresql-0 -c postgresql -- sh -lc \
-      'PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")" /opt/bitnami/postgresql/bin/psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -Atq -c "$1"' -- "$table_query")"
+    if [[ "$identity_kind" == cnpg ]]; then
+      source_count="$(kubectl -n keycloak exec "$identity_primary" -c postgres -- psql -X -U postgres -d bitnami_keycloak -Atq -c "$table_query")"
+    else
+      source_count="$(kubectl -n keycloak exec keycloak-postgresql-0 -c postgresql -- sh -lc \
+        'PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")" /opt/bitnami/postgresql/bin/psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -Atq -c "$1"' -- "$table_query")"
+    fi
   else
     source_count="$(kubectl -n playsay-data exec "$primary" -c postgres -- psql -X -U postgres -d "$database" -Atq -c "$table_query")"
   fi

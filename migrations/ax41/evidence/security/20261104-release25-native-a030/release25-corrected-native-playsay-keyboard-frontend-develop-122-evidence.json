@@ -1,0 +1,25 @@
+{
+  "job": "playsay-keyboard-frontend-develop",
+  "build": 122,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "image-security/playsay-keyboard-app/key-frontend-release-01.007.25-122/full.json",
+      "bytes": 161944,
+      "sha256": "484c3074f90d1e3147e488fa0a2507870b59aadb5f29c80b4af2bef8f683c42b",
+      "fullSeverityCounts": {}
+    },
+    {
+      "path": "image-security/playsay-keyboard-app/key-frontend-release-01.007.25-122/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "b74ae643a513eaf5f077e8ef2cfb19b542166d0ef8a6b26b7544124b1779bd4d"
+    },
+    {
+      "path": "image-security/playsay-keyboard-app/key-frontend-release-01.007.25-122/published-digest.txt",
+      "bytes": 72,
+      "sha256": "95a254d8ceead1035e8ae90ba56b381465e65b0dcfd7668675cf66627139b34a",
+      "publishedDigest": "sha256:a239f2a5af6b85741dfb8c717d8a6620646f5bc88cbff94fdd93fd6d14b5b324"
+    }
+  ]
+}

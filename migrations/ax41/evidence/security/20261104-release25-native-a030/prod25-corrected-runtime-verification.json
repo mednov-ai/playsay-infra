@@ -1,0 +1,89 @@
+{
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "applicationsSyncedHealthy": 20,
+  "activeNativeDigestsVerified": 13,
+  "images": [
+    {
+      "component": "api-gateway",
+      "digest": "sha256:43e7f3005fe069d56cc28d2d6a1d4bef76274521df767b5eae56a2ff5c60e4dd",
+      "build": 233,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "ai-tutor-service",
+      "digest": "sha256:c5b34247b7795ea35dffb317c4321470a0642623ef6903b991fecbd1d49afbd5",
+      "build": 76,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "worksheet-import-service",
+      "digest": "sha256:a35ed60c3c5d18ba412ae66080614f5cfc2301e9cb285b1c259fbe91e720ce22",
+      "build": 46,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "vocabulary-service",
+      "digest": "sha256:39ce2a1e9403e084e7eeefb8ccc5dac822e717d19b7aed49d078445f806454a7",
+      "build": 86,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "web-app",
+      "digest": "sha256:9cb121a7479f053793a12135e0cac5dbe12e03ea4c1f9bd79f86fd789c279b74",
+      "build": 428,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "game-adapter-service",
+      "digest": "sha256:e20f377f5a1ef1a1b270abfee182eefb58934dc1c72e0bfa027cdc158870e172",
+      "build": 53,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "collaboration-service",
+      "digest": "sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a",
+      "build": 74,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "media-service",
+      "digest": "sha256:0df1c8873785ac0db4cccedeecb8b3cdd33aa0ce23ae9906f099870dc1e74a51",
+      "build": 57,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "registration-service",
+      "digest": "sha256:fc9c6489d360c017993adacf677e754aece5e0e39f23dd458a71874b82b09e55",
+      "build": 84,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "email-service",
+      "digest": "sha256:6b81b8f68cc290bd41f3947de569f859f11fa8819dc0127a8b9701ab6eff55ca",
+      "build": 59,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "keycloak",
+      "digest": "sha256:b3bd3d4830ce0b63bab13ba0ef3e9d4bf100ef619a349cf7b3f106e9166bf564",
+      "build": 42,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "keyboard-service",
+      "digest": "sha256:1265a69dd47981d45ed869d85e2d5d5b9eddf19b7e111d1cfc3ad95deb78d88f",
+      "build": 60,
+      "runtimeImageIdMatches": true
+    },
+    {
+      "component": "keyboard-app",
+      "digest": "sha256:a239f2a5af6b85741dfb8c717d8a6620646f5bc88cbff94fdd93fd6d14b5b324",
+      "build": 122,
+      "runtimeImageIdMatches": true
+    }
+  ],
+  "postgres1711ClustersHealthy": 2,
+  "authoritativeIdentityJdbcRetained": true,
+  "operatorImagePreserved": true,
+  "unexpectedRestarts": []
+}

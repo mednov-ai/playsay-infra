@@ -1,18 +1,21 @@
-feature: {enabled: true}
+feature:
+  enabled: true
 imagePullSecrets:
   - name: ghcr-pull-secret
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: https://ops.honey.school/keycloak/realms/playsay/protocol/openid-connect/certs
-storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
-analysis: {provider: stub}
+storage:
+  endpoint: http://minio.storage.svc.cluster.local:9000
+analysis:
+  provider: stub
 image:
-  tag: worksheet-import-release-01.007.24-36
-  digest: sha256:5f0cb7c72d3055ab4c7704ea150691ece83b5b285bc756109668e059c22773bb
+  tag: worksheet-import-release-01.007.25-46
+  digest: sha256:a35ed60c3c5d18ba412ae66080614f5cfc2301e9cb285b1c259fbe91e720ce22
 build:
-  name: worksheet-import-release-01.007.24-36
-  number: "36"
-  branch: release/01.007.24
-  branchLabel: worksheet-import-release-01.007.24
-  commit: 9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0
-  commitShort: 9bee01c9f0ff
+  name: worksheet-import-release-01.007.25-46
+  number: '46'
+  branch: release/01.007.25
+  branchLabel: worksheet-import-release-01.007.25
+  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
+  commitShort: a030e7d54644

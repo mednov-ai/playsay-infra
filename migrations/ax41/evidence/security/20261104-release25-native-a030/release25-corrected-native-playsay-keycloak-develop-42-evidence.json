@@ -1,0 +1,74 @@
+{
+  "job": "playsay-keycloak-develop",
+  "build": 42,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "17dd2adf7262b1c2a02a43af2fb2212bc563e3c1385ed0f534777d301811f6f8",
+      "advisoryUpdatedAt": "2026-11-04T20:56:23+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/backend/coverage.json",
+      "bytes": 2373301,
+      "sha256": "67bcfad4c260b7f5c901206eb2caadea79aeace1a63917d1b6bd5006ec5aec5d"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/backend/gate.json",
+      "bytes": 3810,
+      "sha256": "350108f5b3dcc1b87cb26f2a78dd789cb15b5400f8b127c38ce0941186945076",
+      "state": "passed",
+      "blocking": 0,
+      "accepted": 0,
+      "outsideRuntime": 5
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "99f7128f403843a6803b1c7a5934c278d2ca0fc4522a117bbccab769eb151c98"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "89f54a87781c1a88044d60c1de849bef2f515f8c0de6b3faa960ed2e3bb9012e",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.sMCl94de/status.txt",
+      "bytes": 236,
+      "sha256": "b6b327f88d6cc9956a43061987dbf5ae5c3858022493c9425e8bfdc5b78b5d19",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-keycloak/keycloak-release-01.007.25-42/accepted-stack-hotfix.txt",
+      "bytes": 174,
+      "sha256": "a95e2dcfdd9d3219a19dad5386a755ca7970f84dc19a75158e27a40a485682f7"
+    },
+    {
+      "path": "image-security/playsay-keycloak/keycloak-release-01.007.25-42/full.json",
+      "bytes": 1618581,
+      "sha256": "9e05af8604d2a5673ea98c5b894a21813b9dafc4d316fd09942b080f063452c7",
+      "fullSeverityCounts": {
+        "MEDIUM": 38,
+        "LOW": 28,
+        "HIGH": 3
+      }
+    },
+    {
+      "path": "image-security/playsay-keycloak/keycloak-release-01.007.25-42/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "ac5d3a00963a482e2d5bbcc8a544b6ba0665b74d858fb660c5fabc20bde18ca3"
+    },
+    {
+      "path": "image-security/playsay-keycloak/keycloak-release-01.007.25-42/published-digest.txt",
+      "bytes": 72,
+      "sha256": "948d3a4a50213c7f7ab1735e7b4e9ee264a9b9be67db080f231ffe49468ddcb3",
+      "publishedDigest": "sha256:b3bd3d4830ce0b63bab13ba0ef3e9d4bf100ef619a349cf7b3f106e9166bf564"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "job": "playsay-web-app-develop",
+  "build": 428,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "image-security/playsay-web-app/web-release-01.007.25-428/full.json",
+      "bytes": 161876,
+      "sha256": "0228bef1754d8d4dfcc06aa07de642aebbad423d41f318820043c8862ea832b2",
+      "fullSeverityCounts": {}
+    },
+    {
+      "path": "image-security/playsay-web-app/web-release-01.007.25-428/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "dd1d900ba457073cfbcb8a506097d8475c791378d26dcd9050b171c02b28992e"
+    },
+    {
+      "path": "image-security/playsay-web-app/web-release-01.007.25-428/published-digest.txt",
+      "bytes": 72,
+      "sha256": "b82f99adbf41dc1e6c86205b6b8031eccb33f140b23c011b2b5f9a092c0f2e07",
+      "publishedDigest": "sha256:9cb121a7479f053793a12135e0cac5dbe12e03ea4c1f9bd79f86fd789c279b74"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "actualPostgres1711Verified": 2,
+  "sourceCollationsCoherent": true,
+  "clusters": [
+    {
+      "cluster": "playsay-postgres",
+      "postgres": "17.11 (Debian 17.11-1.pgdg13+2)",
+      "databases": [
+        {
+          "database": "playsay",
+          "storedCollationVersion": null,
+          "actualCollationVersion": null,
+          "collationMatches": true
+        },
+        {
+          "database": "keyboard",
+          "storedCollationVersion": null,
+          "actualCollationVersion": null,
+          "collationMatches": true
+        },
+        {
+          "database": "worksheet_import",
+          "storedCollationVersion": null,
+          "actualCollationVersion": null,
+          "collationMatches": true
+        }
+      ]
+    },
+    {
+      "cluster": "keycloak-postgres-prod-import",
+      "postgres": "17.11 (Debian 17.11-1.pgdg13+2)",
+      "databases": [
+        {
+          "database": "bitnami_keycloak",
+          "storedCollationVersion": "2.41",
+          "actualCollationVersion": "2.41",
+          "collationMatches": true
+        }
+      ]
+    }
+  ]
+}

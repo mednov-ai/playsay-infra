@@ -5,18 +5,18 @@ theme:
     - https://online.honey.school
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
-  tag: "keycloak-release-01.007.24-25"
-  digest: sha256:4906970a91906e3b9747f739e94f1495363c410c7bbc59e6090062e6b7c5cc05
+  tag: "keycloak-release-01.007.25-42"
+  digest: sha256:b3bd3d4830ce0b63bab13ba0ef3e9d4bf100ef619a349cf7b3f106e9166bf564
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: keycloak-release-01.007.24-25
-  number: "25"
-  branch: release/01.007.24
-  branchLabel: keycloak-release-01.007.24
-  commit: 9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0
-  commitShort: 9bee01c9f0ff
+  name: keycloak-release-01.007.25-42
+  number: "42"
+  branch: release/01.007.25
+  branchLabel: keycloak-release-01.007.25
+  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
+  commitShort: a030e7d54644
 global:
   security:
     allowInsecureImages: true
@@ -30,7 +30,7 @@ keycloak:
     name: keycloak-admin
     passwordKey: admin-password
   database:
-    host: keycloak-postgresql
+    host: keycloak-postgres-prod-import-rw
     port: 5432
     name: bitnami_keycloak
     username: bn_keycloak

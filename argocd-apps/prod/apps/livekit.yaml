@@ -7,12 +7,13 @@ spec:
   project: default
   source:
     repoURL: https://github.com/mednov-ai/playsay-infra.git
-    targetRevision: release/01.007.24
+    targetRevision: release/01.007.25
     path: helm-charts/livekit
     helm:
       releaseName: livekit
       valueFiles:
         - values-prod.yaml
+        - ../../migrations/ax41/staged/stack-upgrade/livekit-prod-values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: livekit
