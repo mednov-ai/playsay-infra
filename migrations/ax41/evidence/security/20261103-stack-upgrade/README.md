@@ -89,6 +89,17 @@ had zero vulnerability matches in a [separate scan](cnpg-distroless-base-trivy.j
 with the same scanner database. It is a potential build input, not a scan of
 a rebuilt operator or evidence that the Go findings are fixed.
 
+An exploratory `security-check/` build then rebuilt both 1.30.1 manager
+binaries from the pinned upstream source using Go 1.27.3, `x/net` 0.62.0 and
+that newer base. Jenkins image-only build #2 passed the full-image scan with
+zero High/Critical/Unknown matches in both binaries and the base. The raw and
+blocking reports, scanner metadata, exact source revisions and image archive
+hash are retained as `playsay-cnpg-fixture-2-*`. Its build ran `go get` during
+the build and has not retained a reviewed dependency patch or proven
+reproducibility; no image was published. Treat it as remediation evidence,
+not an operator candidate. Lock its full dependency graph, scan the final
+CI-built archive, and test upgrades, backup/restore and failover before use.
+
 On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
 again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
 The [complete report](postgres-1711-system-trixie-20261104.json.gz),
