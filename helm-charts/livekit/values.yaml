@@ -6,6 +6,10 @@ image:
 
 imagePullSecrets: []
 
+prodRegistrySecret:
+  enabled: false
+  encryptedDockerConfig: ""
+
 replicaCount: 1
 
 secret:

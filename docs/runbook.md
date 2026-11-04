@@ -41,6 +41,10 @@ it was derived from the existing production registry credential and validated
 with the production controller. It is inert until explicitly incorporated into
 the reviewed production GitOps release. After reconciliation, compare the
 resulting secret to the production source in memory without printing values.
+The staged `livekit-prod-values.yaml` combines this ciphertext with the pinned
+LiveKit image; it is not part of the active production value files. The chart
+rejects simultaneous DEV and production registry credentials, while its
+existing DEV and PROD renders remain unchanged until the override is selected.
 
 The separate `playsay-keycloak-image` job is limited to image-only publication
 for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
