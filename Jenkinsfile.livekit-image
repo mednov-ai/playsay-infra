@@ -6,7 +6,7 @@ apiVersion: v1
 kind: Pod
 spec:
   serviceAccountName: jenkins
-  activeDeadlineSeconds: 2400
+  activeDeadlineSeconds: 6000
   nodeSelector:
     kubernetes.io/arch: amd64
   securityContext:
@@ -50,7 +50,7 @@ spec:
     disableConcurrentBuilds()
     skipDefaultCheckout(true)
     timestamps()
-    timeout(time: 35, unit: 'MINUTES')
+    timeout(time: 90, unit: 'MINUTES')
   }
 
   parameters {
