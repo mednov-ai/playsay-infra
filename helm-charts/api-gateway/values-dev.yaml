@@ -133,7 +133,8 @@ resources:
     memory: 1536Mi
 games:
   writesEnabled: true
-  maintenance: false
+  # Temporary admission drain for isolated stack acceptance.
+  maintenance: true
   migration:
     enabled: false
     dryRun: false
