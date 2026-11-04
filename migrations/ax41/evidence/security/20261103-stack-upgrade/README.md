@@ -25,6 +25,25 @@ that the affected code is absent. Additional High findings require their own
 exact package/runtime assessment. The existing Kotlin/build-tool exception
 does not cover these findings.
 
+On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
+again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
+The [complete report](postgres-1711-system-trixie-20261104.json.gz),
+[database metadata](scanner-database-20261104.json), and the checksum of the
+uncompressed report are retained. It reports 85 High, one Critical and 11
+Unknown package/finding matches; these counts do not establish 97 reachable
+attack paths. The linked `libxml2` finding remains present.
+
+One High match is a likely scanner false positive: the image's installed
+`postgresql-17-pgvector` package is `0.8.7-1.pgdg13+1` and its
+`vector.control` declares `0.8.7`, while the [pgvector 0.8.7 changelog](https://github.com/pgvector/pgvector/blob/master/CHANGELOG.md)
+and [CVE-2026-103484 record](https://nvd.nist.gov/vuln/detail/CVE-2026-103484)
+state that this IVFFlat defect affects versions before 0.8.7. Keep the raw
+match and verify package provenance before a final disposition; this does not
+resolve the other findings. A read-only DEV inventory on 2026-11-04 found only
+`plpgsql` installed in each of `playsay`, `keyboard`, and `worksheet_import`;
+this did not inspect the separate identity database and does not prove which
+extensions may be installed later.
+
 An exploratory scan of Percona's PostgreSQL 17.11 UBI 9 image found 153
 distinct High/Critical CVEs (177 High and one Critical package/finding
 matches), including Critical CVE-2026-114406 in `ca-certificates`. These are
@@ -59,6 +78,25 @@ pre-publication container evidence for this candidate as written. The four
 successful exact-source Jenkins checks used a non-deploying branch and did
 not execute image build/push or environment update stages. A reviewed
 build/scan/publish sequence must fail closed before any deployable build.
+
+On 2026-11-04 a revised sequence was prepared in the local platform hotfix
+worktree. Kaniko emits an unpublished archive; Trivy retains a full report
+and blocks High/Critical/Unknown findings, end-of-life OS and scan errors;
+the publisher verifies the archive and the registry digest before deployment
+tags or GitOps updates. DEV migrations run after the scan and a branch-head
+check. A `security-check/` branch is scan-only and cannot publish or deploy.
+Local tests covered scan errors, findings, archive tampering, digest mismatch,
+release/dev tag separation, valid pod YAML and Groovy compilation. Real Trivy
+blocked a known vulnerable fixture, and a clean fixture was published only to
+an isolated local registry with the scanned and published digests equal. This
+is local evidence. Jenkins `playsay-collaboration-service-develop` #64 then
+built platform commit `a13451caee016ed4d7bb8ddbd8cf29136060924b` on the
+`security-check/stack-upgrade-20261104` branch and passed its full Trivy scan
+with no High/Critical/Unknown findings. Its full scan, database metadata and
+archive SHA-256 are retained as `collaboration-ci-64-*`. Jenkins recorded
+the publish, source-tag, GitOps update and rollout stages as not executed.
+This validates the scan-only path for that unpublished CI archive, not the
+real-registry publication path, other images or DEV acceptance.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found

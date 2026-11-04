@@ -38,7 +38,14 @@ for later builds. The current generic Kaniko helper pushes images before any
 final-image vulnerability scan and then updates environment references; it
 does not by itself satisfy this pre-publication gate. Prepare and verify a
 reviewed build/scan/publish sequence that keeps failing images unpublished
-before starting deployable jobs for this candidate. Preserve the game
+before starting deployable jobs for this candidate. A replacement has been
+prepared and tested locally: module jobs on `security-check/` branches build
+and scan only, without publication, migration or GitOps updates; deployable
+jobs scan the unpublished archive and verify the published digest before
+continuing. Jenkins has validated the unpublished scan-only path for the
+collaboration image, but the real-registry publication path and remaining
+candidate images still need validation; the existing hold still applies.
+Preserve the game
 adapter's non-root identity, read-only
 root filesystem and `/tmp/playsay` writable mount, and exercise its token,
 image optimization and real Chromium validation on DEV. Verify web and
