@@ -15,6 +15,8 @@ class ProdRestoreGuardTest(unittest.TestCase):
         script = SCRIPT.read_text()
         self.assertIn("--encoding=UTF8", script)
         self.assertIn("show server_encoding", script)
+        self.assertIn("Never persist or print", script)
+        self.assertNotIn(".restore.log", script)
 
     def test_wrong_guest_or_backup_path_never_calls_kubectl(self):
         for host, backup, expected in (

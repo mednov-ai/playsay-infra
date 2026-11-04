@@ -134,7 +134,8 @@ stack-upgrade backup while the reviewed Bitnami identity source is active. It
 restores all four dumps in a bounded, task-owned temporary pod using the
 currently running PostgreSQL 17.6 image; PostgreSQL listens only on a local
 Unix socket. It verifies copy checksums and compares restored table counts to
-the source, then deletes only its labelled temporary pod. It does not verify
+the source, discards row-bearing restore error details, then deletes only its
+labelled temporary pod. It does not verify
 the separate PostgreSQL 17.11 identity import or write-aware rollback.
 
 The former DEV Keycloak database is a separate Bitnami PostgreSQL 17.4

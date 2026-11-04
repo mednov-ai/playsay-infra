@@ -69,8 +69,25 @@ for database in playsay keyboard worksheet_import keycloak; do
   actual="$(kubectl -n playsay-data exec "$pod" -- sha256sum "/tmp/$file" | cut -d' ' -f1)"
   [[ "$actual" == "$expected" ]] || { echo "isolated restore copy checksum mismatch" >&2; exit 1; }
   kubectl -n playsay-data exec "$pod" -- createdb -h /tmp -U postgres "$database"
-  if ! timeout 300s kubectl -n playsay-data exec "$pod" -- pg_restore --exit-on-error --no-owner --no-privileges -h /tmp -U postgres -d "$database" "/tmp/$file" > "$backup/$database.$pod.restore.log" 2>&1; then
-    echo "isolated restore failed for $database; protected log retained" >&2
+  if ! python3 - "$pod" "$database" "$file" <<'PY'
+import subprocess, sys
+pod, database, archive = sys.argv[1:]
+command = ['kubectl', '-n', 'playsay-data', 'exec', pod, '--', 'pg_restore',
+           '--exit-on-error', '--no-owner', '--no-privileges', '-h', '/tmp',
+           '-U', 'postgres', '-d', database, '/tmp/' + archive]
+try:
+    result = subprocess.run(command, capture_output=True, text=True, errors='replace', timeout=300)
+except subprocess.TimeoutExpired:
+    print('isolated restore timed out', file=sys.stderr)
+    raise SystemExit(1)
+if result.returncode:
+    # COPY error details can contain user rows. Never persist or print them.
+    reason = 'varchar length mismatch' if 'value too long for type character varying' in result.stderr else 'restore error'
+    print('isolated restore failed: ' + reason, file=sys.stderr)
+    raise SystemExit(1)
+PY
+  then
+    echo "isolated restore failed for $database; no row details retained" >&2
     exit 1
   fi
   count="$(kubectl -n playsay-data exec "$pod" -- psql -X -h /tmp -U postgres -d "$database" -Atq -c "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p')")"
