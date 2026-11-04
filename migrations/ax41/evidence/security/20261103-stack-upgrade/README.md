@@ -125,6 +125,35 @@ but not an exact-current-commit run. A later web #419 run passed the same
 scan-only checks at commit `874f7527bf1ec552b7bb4f35016b8317a35a5ef7`; its
 report and archive hash are retained as `playsay-web-app-develop-419*`.
 
+After restoring the previous Vite 6 browser compilation targets, web #420
+passed its generate/lint/test/build stages and final-image scan on platform
+commit `8a6e6deaaa6aeda59472b85470f9c793b65efaeb`, with zero blocking
+matches. Raw and blocking reports, scanner metadata and the image archive
+hash are retained as `playsay-web-app-develop-420*`. Publication, GitOps and
+DEV/UI smoke stages were not executed; the mounted local nginx/browser
+fixture is documented separately in the platform security notes.
+
+Keyboard frontend #117 passed its lint, tests, build and final-image scan for
+the same platform commit, also with zero blocking matches. Its raw and
+blocking reports, scanner metadata and image archive hash are retained as
+`playsay-keyboard-frontend-develop-117*`. Publication, GitOps and DEV browser
+smoke did not execute.
+
+AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
+at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero
+blocking image matches. Its raw and blocking reports, scanner and Java DB
+metadata and archive hash are retained as `playsay-ai-tutor-service-develop-63*`.
+The subsequent platform changes affect the frontend Vite targets and security
+notes, not that service. Publication, migration and DEV stages did not run.
+
+Vocabulary #77 and game adapter #47 passed their tests/builds and full image
+scans at `8a6e6deaaa6aeda59472b85470f9c793b65efaeb`, each with zero blocking
+image matches. Vocabulary also passed its JVM dependency gate. The raw and
+blocking reports, relevant database metadata and image archive hashes are
+retained as `playsay-vocabulary-service-develop-77*` and
+`playsay-game-adapter-service-develop-47*`. These scan-only jobs did not
+publish, migrate or update DEV.
+
 Game adapter #46 passed build and the unpublished full-image scan at platform
 commit `874f7527bf1ec552b7bb4f35016b8317a35a5ef7`, with no
 High/Critical/Unknown matches. Its report and archive hash are retained as
@@ -143,7 +172,13 @@ unused async client and its web-push transitive dependency are removed, and
 jsoup is updated to 1.24.1. A local packaged JAR and Gradle runtime graph
 contain no async-http-client. A real local HTTP receiver accepted an encrypted
 VAPID push, and the expired-subscription response was handled; HTML metadata
-tests passed. A fresh scan of the exact CI-built replacement remains required.
+tests passed. Jenkins API #218 then passed the dependency gate, full API tests,
+OpenAPI contract check and the final-image scan for that commit, with zero
+High/Critical/Unknown matches. The full and blocking reports, scanner and
+Java-database metadata, and archive hash are retained as
+`playsay-api-gateway-develop-218-*`. Publication, migration and DEV stages
+did not run. The later platform commit changes only the Keycloak build and
+its security documentation; repeat final candidate gates before delivery.
 
 The unpublished Keycloak image from Jenkins #28, platform commit
 `f393a19b878249dcd4c4787395cbf2bb17111296`, passed its dependency and
@@ -154,8 +189,40 @@ publication and DEV stages did not run. Platform commit
 `f1f5a414767e33b707ba48528162f60decaddd8c` pins a newer official 26.8.1
 rebuild and updates Guava to 33.7.2-jre in both the packaged server and the
 security inventory. Local provider tests and runtime verifiers passed.
-Fresh full scans of that exact rebuilt image remain required; the update has
-not yet been proven to resolve the OS/JDK findings.
+Jenkins Keycloak #29 then passed the dependency gate, provider tests and image
+build, but the final image scan still blocked on CVE-2026-91403 in OpenJDK
+and CVE-2026-119373/CVE-2026-119586 in `sqlite-libs`. The previous CA bundle,
+OpenJDK font-rendering and Guava matches no longer appeared. The new raw
+reports and database metadata are retained as `playsay-keycloak-develop-29*`.
+Publication and DEV stages were not executed; the three remaining matches
+require candidate-specific disposition and a fresh complete gate.
+
+Exploratory inspection of the new official Linux/amd64 base's RPM database
+found `ca-certificates-2026.2.92_v9.0.319-90.3.el9_8` and
+`java-21-openjdk-headless-21.0.13.0.9-1.2.el9`, the fixed package versions
+listed in the previous scan. It still contains `sqlite-libs-3.34.1-11.el9_8`.
+The extracted Java truststore did not list the two affected roots named in
+the [Red Hat bulletin](https://access.redhat.com/security/vulnerabilities/RHSB-2026-012).
+[Exact base digest, package versions, database and truststore hashes](keycloak-upstream-26.8.1-metadata-20261104.txt)
+are retained. This does not establish the final image's full scan result or
+its effective DEV truststore configuration.
+
+The new base's Java `cacerts` path is a symlink to the extracted system Java
+truststore. A local Java trust-manager check accepted the affected emSign G3
+root with the previous base's store and rejected it with the new store;
+[test source](CheckTrustStore.java) and [recorded hashes](keycloak-ca-trust-check-20261104.txt)
+are retained. Red Hat states that updating the system CA package addresses this
+OpenJDK issue for its RPM builds. That is promising evidence, but other
+Keycloak truststores and the effective deployed configuration have not been
+proven, so the scanner match remains blocked rather than silently ignored.
+
+An exploratory static inventory of that upstream base's 149 ELF binaries
+found no `sqlite3` shell executable, but `libsoftokn3.so` directly requires
+`libsqlite3.so.0`. The locally packaged server/provider JARs include SQLite
+dialect classes but do not establish whether the native library is loaded by
+Keycloak. The [inventory](keycloak-upstream-native-inspection-20261104.txt)
+is not a dynamic runtime trace or an inspection of the final image; it must
+not be used to classify the SQLite library as absent from server runtime.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
