@@ -51,7 +51,7 @@ kind: Job
 metadata:
   name: stack-candidate-acceptance-network-probe
 spec:
-  activeDeadlineSeconds: 1800
+  activeDeadlineSeconds: 7200
   backoffLimit: 0
   template:
     metadata:
@@ -64,7 +64,7 @@ spec:
         - name: probe
           image: ghcr.io/cloudnative-pg/postgresql@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd
           securityContext: { runAsUser: 26, runAsGroup: 26, runAsNonRoot: true, allowPrivilegeEscalation: false }
-          command: ["sleep", "1800"]
+          command: ["sleep", "7200"]
           resources:
             requests: { cpu: 25m, memory: 64Mi }
             limits: { cpu: 100m, memory: 128Mi }

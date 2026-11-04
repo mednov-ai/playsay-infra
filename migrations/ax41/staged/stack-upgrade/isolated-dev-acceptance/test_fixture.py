@@ -1,5 +1,6 @@
 """Check the synthetic acceptance chart's deployment boundary without a cluster."""
 
+import ast
 import json
 from pathlib import Path
 import subprocess
@@ -40,7 +41,9 @@ class IsolatedAcceptanceBoundaryTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         objects = [obj for obj in yaml.safe_load_all(result.stdout) if obj]
         self.assertEqual({obj["kind"] for obj in objects}, {"Job", "NetworkPolicy"})
-        spec = next(obj for obj in objects if obj["kind"] == "Job")["spec"]["template"]["spec"]
+        job = next(obj for obj in objects if obj["kind"] == "Job")["spec"]
+        self.assertEqual(job["activeDeadlineSeconds"], 7200)
+        spec = job["template"]["spec"]
         self.assertFalse(spec["automountServiceAccountToken"])
         self.assertEqual([item["name"] for item in spec["containers"]], ["probe"])
         self.assertNotIn("secretKeyRef", json.dumps(spec))
@@ -106,6 +109,12 @@ async function session(nextBrowser) {
             self.assertNotEqual(subprocess.run(command, capture_output=True).returncode, 0)
             source.write_text("unrecognized source")
             self.assertNotEqual(subprocess.run(["python3", str(CHART / "prepare_smoke.py"), str(source), str(root / "other.mjs")], capture_output=True).returncode, 0)
+
+    def test_remote_verifier_and_probe_compile(self):
+        tree = ast.parse((CHART / "verify_dev_probe.py").read_text())
+        remote = next(ast.literal_eval(node.value) for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "remote" for target in node.targets))
+        compile(remote, "<remote verifier>", "exec")
+        compile((CHART / "probe_inside_fixture.py").read_text(), "<probe>", "exec")
 
 
 if __name__ == "__main__":

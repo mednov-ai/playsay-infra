@@ -35,7 +35,7 @@ these are point-in-time observations, not proof of enforced isolation or
 future capacity.
 
 An enabled chart defaults to `probeOnly: true`: it creates the policy and a
-30-minute, no-secret probe Job, not the application. After confirming the
+two-hour, no-secret probe Job, not the application. After confirming the
 policy is active and the real DEV database and collaboration services are
 healthy from outside the policy, execute `probe_inside_fixture.py` inside the
 verified probe pod. It must reach DEV identity JWKS while being unable to open
