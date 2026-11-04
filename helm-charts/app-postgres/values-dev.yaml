@@ -1,7 +1,7 @@
 cluster:
   name: playsay-postgres
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd
   stopDelay: 300
   smartShutdownTimeout: 60
   probes:
