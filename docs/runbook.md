@@ -21,8 +21,11 @@ The prepared `playsay-livekit-image` Jenkins job builds from exact infra and
 platform branch heads and scans before its optional image-only publication.
 It cannot update GitOps or deploy. The job is not a substitute for the
 cross-service security, backup, admission, route and acceptance gates. Until
-the dedicated job itself has passed a scan-only run, its configuration is
-prepared rather than validated for use.
+the real-registry publication path is verified, a successful scan-only run
+does not establish that an image was published or deployed. Its first scan-only
+run passed at infra `5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
+`f393a19b878249dcd4c4787395cbf2bb17111296`; new candidates require a fresh
+run with the then-current exact source heads and retained evidence.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the

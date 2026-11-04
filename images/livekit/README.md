@@ -31,8 +31,11 @@ both infra and platform, builds without pushing, scans and archives evidence,
 and defaults to scan-only. Publication, if explicitly selected for a reviewed
 candidate, is gated by the scan and renewed branch-head checks. The job has no
 DEV kubeconfig or GitOps update step and cannot deploy or prepare production.
-Registration and a complete scan-only run of this dedicated job are still
-required before relying on it; the earlier fixture used a different job.
+The job was registered and scan-only build #1 passed for infra
+`5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
+`f393a19b878249dcd4c4787395cbf2bb17111296`. It did not publish. Repeat the
+checks for the actual candidate heads; real-registry publication and DEV
+media acceptance remain unverified.
 
 Replace this temporary build with a verified compatible upstream stable image
 once it contains the HTTP/2 dependency fix and passes the same security and

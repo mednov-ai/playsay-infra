@@ -223,6 +223,16 @@ CI-built archive, not a real-registry publication or a deployed DEV image.
 The compressed `*-build-info.txt.gz` files retain the original Go build-info
 bytes; the adjacent text copies only normalize trailing whitespace.
 
+The registered `playsay-livekit-image` job's scan-only build #1 subsequently
+passed using infra `5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
+`f393a19b878249dcd4c4787395cbf2bb17111296`. It produced archive SHA-256
+`4922a59a5a76b81bb66732590c6dae548dcc4fb5b5274e9494a045cd52051b06`;
+its raw and classified reports and both source revisions are retained as
+`playsay-livekit-image-1-*`. The sole raw blocking match was the same
+outside-runtime OpenPGP finding. The publish stage did not execute, and the
+job cannot alter GitOps or deploy. Its tested source heads have since moved;
+repeat the candidate scan when the final heads are known.
+
 A separate local three-browser fixture used a native macOS/arm64 LiveKit
 binary with Go build metadata identifying upstream commit `385aa40f9292`,
 `golang.org/x/net` v0.62.0 and a modified source tree. Its SHA-256 was
