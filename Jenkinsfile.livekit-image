@@ -64,7 +64,7 @@ spec:
   environment {
     INFRA_REPO = 'https://github.com/mednov-ai/playsay-infra.git'
     PLATFORM_REPO = 'https://github.com/mednov-ai/playsay-platform.git'
-    IMAGE_REPOSITORY = 'ghcr.io/mednov-ai/playsay-cnpg-operator'
+    IMAGE_REPOSITORY = 'ghcr.io/mednov-ai/playsay-keycloak-sqlite-fixture'
     DEPLOY_TO_PROD = 'false'
   }
 
@@ -102,7 +102,7 @@ spec:
           env.GIT_COMMIT = infraSha
           env.PLATFORM_COMMIT = platformSha
           env.PLATFORM_CI_ROOT = "${env.WORKSPACE}/platform-source"
-          env.BUILD_LABEL = "cnpg-fixture-${env.BUILD_NUMBER}"
+          env.BUILD_LABEL = "sqlite-fixture-${env.BUILD_NUMBER}"
           env.DEPLOY_TO_DEV = params.PUBLISH_CANDIDATE.toString()
           env.SECURITY_SCAN_ONLY = (!params.PUBLISH_CANDIDATE).toString()
           currentBuild.description = "infra ${infraSha.take(12)}; platform ${platformSha.take(12)}; publish ${params.PUBLISH_CANDIDATE}"
@@ -125,12 +125,35 @@ spec:
               mkdir -p /kaniko/.docker
               auth="$(printf '%s:%s' "$GHCR_USER" "$GHCR_TOKEN" | base64 | tr -d '\\n')"
               printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$auth" > /kaniko/.docker/config.json
-              KANIKO_CONTEXT="$WORKSPACE/images/cnpg-operator" \
-                KANIKO_DOCKERFILE="$WORKSPACE/images/cnpg-operator/Dockerfile" \
+              KANIKO_CONTEXT="$WORKSPACE/images/keycloak-sqlite" \
+                KANIKO_DOCKERFILE="$WORKSPACE/images/keycloak-sqlite/Dockerfile" \
                 /busybox/sh "$PLATFORM_CI_ROOT/scripts/ci/run-kaniko-image-build.sh"
             '''
           }
         }
+      }
+    }
+
+    stage('Inspect rebuilt SQLite') {
+      steps {
+        container('image-security') {
+          sh '''
+            set -eu
+            build="$WORKSPACE/.image-build/playsay-keycloak-sqlite-fixture/$BUILD_LABEL"
+            report="$WORKSPACE/image-security/playsay-keycloak-sqlite-fixture/$BUILD_LABEL"
+            mkdir -p "$report"
+            sha256sum "$build/image.tar" | awk '{print $1}' > "$report/inspected-image-archive.sha256"
+            wget -q -T 90 -O "$build/crane.tgz" https://github.com/google/go-containerregistry/releases/download/v0.22.1/go-containerregistry_Linux_x86_64.tar.gz
+            printf '%s  %s\\n' 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0 "$build/crane.tgz" | sha256sum -c -
+            tar -xzf "$build/crane.tgz" -C "$build" crane
+            "$build/crane" export - "$build/rootfs.tar" < "$build/image.tar"
+            for item in sqlite-probe.json missing-original-exports.txt sha256.txt sqlite.spec; do
+              tar -xOf "$build/rootfs.tar" "usr/share/doc/sqlite-fixture/$item" > "$report/$item"
+            done
+            [ "$(sha256sum "$build/image.tar" | awk '{print $1}')" = "$(cat "$report/inspected-image-archive.sha256")" ]
+          '''
+        }
+        archiveArtifacts artifacts: 'image-security/**/*', allowEmptyArchive: false
       }
     }
 
