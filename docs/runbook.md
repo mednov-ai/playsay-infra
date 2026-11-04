@@ -230,9 +230,15 @@ through GitOps, source writers are zero and the current backup/restore and
 candidate gates pass. Compare source/target schema and identity/session
 aggregates before switching the JDBC host to
 `keycloak-postgres-prod-import-rw`, retaining the existing application password
-Secret. The old Bitnami workload, PVC and Secret must remain available. Once
-new writes start, the source is a stale safety copy; do not switch back and lose
-those writes. Recover through a reviewed write-preserving path.
+Secret. Run the reviewed `scripts/compare-prod-keycloak-import.py` as Python
+on `playsay-prod` before that switch. It refuses an active Keycloak writer,
+unknown source/target versions or a mismatched credential. It compares every
+public table's rows in memory, schema, full index/constraint definitions,
+relation owners, locale, audit configuration and additional role/grant scope.
+Only aggregate results and booleans leave the guest. A failed comparison blocks
+the JDBC switch. The old Bitnami workload, PVC and Secret must remain available.
+Once new writes start, the source is a stale safety copy; do not switch back and
+lose those writes. Recover through a reviewed write-preserving path.
 
 `backup-prod-databases.sh` recognizes both reviewed CNPG identity names and
 selects the primary from the active JDBC host. It must refuse unknown hosts.
