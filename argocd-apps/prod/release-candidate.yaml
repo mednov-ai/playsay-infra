@@ -4,8 +4,8 @@ releaseBranch: "release/01.007.25"
 baseRelease: "release/01.007.24"
 basePlatformCommit: "9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0"
 acceptedDevCommit: "e37bb8aa3107c71dd31edfaea8c3735b2025532d"
-baseInfraCommit: "3d15857e3a8151fa41b821bcc9a0d4812c6e57b0"
-platformCommit: "7a74c8e0861fff1417a1a3b8bd065c615da964d6"
+baseInfraCommit: "bbadde46879c44d9ce15de2e97e84a2a3519fd2d"
+platformCommit: "62c219e7467d6e51298ab041b66b7b7a0970d005"
 affectedTargets:
   - "api-gateway"
   - "ai-tutor-service"
@@ -24,5 +24,5 @@ affectedTargets:
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "117"
-updatedAt: "2026-11-04T15:59:24Z"
+  build: "119"
+updatedAt: "2026-11-04T16:15:02Z"
