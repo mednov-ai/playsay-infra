@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: ai-tutor-release-01.007.19-61
-  digest: sha256:0946009dfb0b35e1226cf419e4a51891445316ae63aa2a8f8bce164741a7fc48
+  tag: ai-tutor-release-01.007.25-76
+  digest: sha256:c5b34247b7795ea35dffb317c4321470a0642623ef6903b991fecbd1d49afbd5
 imagePullSecrets:
-- name: ghcr-pull-secret
+  - name: ghcr-pull-secret
 build:
-  name: ai-tutor-release-01.007.19-61
-  number: '61'
-  branch: release/01.007.19
-  branchLabel: ai-tutor-release-01.007.19
-  commit: 87a9389c41afba98757ca3375399c7dd1963aced
-  commitShort: 87a9389c41af
+  name: ai-tutor-release-01.007.25-76
+  number: '76'
+  branch: release/01.007.25
+  branchLabel: ai-tutor-release-01.007.25
+  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
+  commitShort: a030e7d54644
 service:
   type: ClusterIP
 auth:
