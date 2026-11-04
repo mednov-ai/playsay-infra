@@ -89,8 +89,10 @@ baseline did not satisfy this pre-publication gate. A replacement has been
 prepared and tested locally: module jobs on `security-check/` branches build
 and scan only, without publication, migration or GitOps updates; deployable
 jobs scan the unpublished archive and verify the published digest before
-continuing. On the exact stack-hotfix branch the application jobs scan and
-publish only: they skip database migration, GitOps updates and deployment.
+continuing. On the exact `codex/hotfix-stack-upgrade-20261103` and
+`codex/stack-upgrade-prod-candidate-20261104` branches the application jobs
+scan and publish only: they skip database migration, GitOps updates and
+deployment. These branches are not production release branches.
 Deploy reviewed exact image digests through DEV GitOps only after the full
 candidate and delivery gates pass. Preserve the game
 adapter's non-root identity, read-only
