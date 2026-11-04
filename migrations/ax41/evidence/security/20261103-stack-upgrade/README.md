@@ -451,13 +451,24 @@ has the library but no executable named `sqlite3`, `sqlite3_analyzer` or
 is empty. These checks strengthen the case for the CA package correction and
 for the shell-only finding being outside this image's server runtime, but do
 not establish the effective deployed configuration or resolve the FTS5 finding.
-The candidate remains blocked pending its exact final scan and disposition.
+At that checkpoint the candidate remained blocked pending its final scan and
+disposition.
 The [read-only DEV configuration inventory](keycloak-dev-trust-config-20261104.txt)
 found no truststore environment override, `envFrom` block or non-theme volume
 mount, and the project's provider/entrypoint source has no custom trust
 manager references. This is evidence about the currently deployed older image;
 it neither proves every third-party library uses the default manager nor
 replaces a check of the candidate's effective configuration after deployment.
+
+Jenkins `playsay-keycloak-image #1` subsequently built the candidate at
+platform `4d03f4091cda9d8ea357b31206f0fa8542027cc4`, passed the dependency
+and provider tests, retained its full image scan, and published digest
+`sha256:f79ab63440522b836f91ecf9ce420709a442d298246c4a5502666753fd9292cf`.
+The three exact OS findings above matched the owner's DEV acceptance and were
+recorded in `accepted-dev-hotfix.txt`; they remain unresolved. The image-only
+job skipped source tagging, GitOps updates and deployment. Raw reports,
+classification, archive hash, registry digest and scanner metadata are retained
+as `playsay-keycloak-image-1-*`.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
