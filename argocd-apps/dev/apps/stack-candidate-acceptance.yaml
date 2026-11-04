@@ -14,7 +14,11 @@ spec:
     helm:
       valuesObject:
         enabled: true
-        probeOnly: true
+        probeOnly: false
+        images:
+          apiDigest: sha256:38d0d140bea9ba71a80545ce0e062b7381ae290482f917d9cea3f78ec6c3b5ab
+          webDigest: sha256:572f88450fd45bb5386c2bde58ec2d08304deb15d8d454ee06216e0aa51573a9
+          collaborationDigest: sha256:d3084a14db0fb41e7e636683e97c82de73ffc6e1ccaafecd16c02c642c9af59d
   destination:
     server: https://kubernetes.default.svc
     namespace: playsay-dev
