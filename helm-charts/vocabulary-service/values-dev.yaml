@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: "vocabulary-dev-76"
-  digest: sha256:c03ff09b771216194b2774b0ed21ace9a845f8a5268514cb3b4116e1827b4fb1
+  tag: "vocabulary-codex-hotfix-stack-upgrade-20261103-78"
+  digest: sha256:97a639f3936b2be931402556d32fd7b83473abeb11802bccc81abadb06bb047d
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: vocabulary-dev-76, number: "76", branch: develop, branchLabel: vocabulary-dev, commit: 54866462e4051272c56315092b9a1b98ada9d561, commitShort: 54866462e405}
+build: {name: vocabulary-codex-hotfix-stack-upgrade-20261103-78, number: "78", branch: codex/hotfix-stack-upgrade-20261103, branchLabel: vocabulary-codex-hotfix-stack-upgrade-20261103, commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f, commitShort: b5d4da6d86f4}
 service: {type: ClusterIP}
 updateStrategy:
   type: RollingUpdate
