@@ -1,0 +1,188 @@
+{{- if .Values.enabled }}
+{{- if ne .Release.Namespace "playsay-dev" }}
+{{- fail "isolated acceptance fixture is restricted to playsay-dev" }}
+{{- end }}
+{{- if not .Values.probeOnly }}
+{{- range $name, $digest := .Values.images }}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" $digest) }}
+{{- fail (printf "images.%s must be an immutable sha256 digest" $name) }}
+{{- end }}
+{{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: stack-candidate-acceptance
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app: stack-candidate-acceptance
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    # The synthetic pod may reach DEV identity and cluster DNS only.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: keycloak
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+              app.kubernetes.io/component: keycloak
+      ports:
+        - { protocol: TCP, port: 80 }
+        - { protocol: TCP, port: 8080 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+---
+{{- if .Values.probeOnly }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stack-candidate-acceptance-network-probe
+spec:
+  activeDeadlineSeconds: 7200
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: stack-candidate-acceptance
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: probe
+          image: ghcr.io/cloudnative-pg/postgresql@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd
+          securityContext: { runAsUser: 26, runAsGroup: 26, runAsNonRoot: true, allowPrivilegeEscalation: false }
+          command: ["sleep", "7200"]
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { cpu: 100m, memory: 128Mi }
+{{- else }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stack-candidate-acceptance
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels:
+      app: stack-candidate-acceptance
+  template:
+    metadata:
+      labels:
+        app: stack-candidate-acceptance
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: postgres
+          image: ghcr.io/cloudnative-pg/postgresql@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd
+          securityContext: { runAsUser: 26, runAsGroup: 26, runAsNonRoot: true, allowPrivilegeEscalation: false }
+          command: ["sh", "-ec"]
+          args:
+            - |
+              if [ ! -f /tmp/fixture-db/PG_VERSION ]; then
+                initdb -D /tmp/fixture-db -U postgres --auth=trust --encoding=UTF8 --locale=C >/dev/null
+                printf 'CREATE DATABASE playsay;\n' | postgres --single -D /tmp/fixture-db postgres >/dev/null
+              fi
+              exec postgres -D /tmp/fixture-db -c listen_addresses=127.0.0.1 -c shared_buffers=32MB -c max_connections=20
+          readinessProbe:
+            exec: { command: ["pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "playsay"] }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+        - name: api
+          image: ghcr.io/mednov-ai/playsay-api-gateway@{{ .Values.images.apiDigest }}
+          env:
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xmx512m -XX:MaxMetaspaceSize=192m -XX:ActiveProcessorCount=1" }
+            - { name: PLAYSAY_DB_JDBC_URL, value: "jdbc:postgresql://127.0.0.1:5432/playsay" }
+            - { name: PLAYSAY_DB_USERNAME, value: postgres }
+            - { name: PLAYSAY_DB_PASSWORD, value: "" }
+            - { name: PLAYSAY_LIQUIBASE_ENABLED, value: "true" }
+            - { name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE, value: "4" }
+            - { name: PLAYSAY_AUTH_ISSUER_URI, value: "https://dev.ops.honey.school/keycloak/realms/playsay" }
+            - { name: PLAYSAY_AUTH_JWK_SET_URI, value: "http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs" }
+            - { name: PLAYSAY_PUBLIC_APP_URL, value: "https://dev.online.honey.school" }
+            - { name: PLAYSAY_PUBLIC_APP_RF_URL, value: "https://dev.online.honeyschool.ru" }
+            - { name: PLAYSAY_LIVEKIT_URL, value: "wss://dev.online.honey.school/livekit" }
+            - name: PLAYSAY_LIVEKIT_API_KEY
+              valueFrom: { secretKeyRef: { name: livekit-keys, key: api-key } }
+            - name: PLAYSAY_LIVEKIT_API_SECRET
+              valueFrom: { secretKeyRef: { name: livekit-keys, key: api-secret } }
+            - { name: PLAYSAY_REGIONAL_RELAY_ENVIRONMENT, value: dev }
+            - { name: PLAYSAY_REGIONAL_SIGNALING_MODE, value: rf-two-hop }
+            - { name: PLAYSAY_REGIONAL_MEDIA_MODE, value: rf-turn-relay }
+            - { name: PLAYSAY_REGIONAL_RELAY_SIGNALING_URL, value: "wss://dev.online.honeyschool.ru/livekit" }
+            - name: PLAYSAY_REGIONAL_RELAY_SHARED_SECRET
+              valueFrom: { secretKeyRef: { name: rf-media-relay-auth, key: shared-secret } }
+            - { name: PLAYSAY_COLLABORATION_WEBSOCKET_URL, value: "wss://dev.online.honey.school/collab/ws" }
+            - { name: PLAYSAY_COLLABORATION_REGIONAL_ROUTING_ENVIRONMENT, value: dev }
+            - { name: PLAYSAY_COLLABORATION_REGIONAL_ROUTING_MODE, value: rf-two-hop }
+            - { name: PLAYSAY_COLLABORATION_REGIONAL_WEBSOCKET_URL, value: "wss://dev.online.honeyschool.ru/collab/ws" }
+            - { name: PLAYSAY_COLLABORATION_HTTP_BASE_URL, value: "http://127.0.0.1:8081" }
+            - name: PLAYSAY_COLLABORATION_TOKEN_SECRET
+              valueFrom: { secretKeyRef: { name: playsay-collaboration, key: token-secret } }
+            - name: PLAYSAY_COLLABORATION_SERVICE_TOKEN
+              valueFrom: { secretKeyRef: { name: playsay-collaboration, key: service-token } }
+            - { name: PLAYSAY_STORAGE_PROVIDER, value: memory }
+            - { name: PLAYSAY_AI_PROVIDER, value: stub }
+            - { name: PLAYSAY_HTML_GAME_ENRICHMENT_ENABLED, value: "false" }
+            - { name: PLAYSAY_GAME_ADAPTER_ENABLED, value: "false" }
+            - { name: PLAYSAY_WORKSHEET_IMPORT_ENABLED, value: "false" }
+            - { name: PLAYSAY_CHAT_PUSH_ENABLED, value: "false" }
+            - { name: PLAYSAY_YOUTUBE_CACHE_ENABLED, value: "false" }
+            - { name: PLAYSAY_MEDIA_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_GAME_ADAPTER_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_WORKSHEET_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_PAYMENT_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_REGISTRATION_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_AI_TUTOR_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_VOCABULARY_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_KEYBOARD_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+            - { name: PLAYSAY_EMAIL_SERVICE_BASE_URL, value: "http://127.0.0.1:9" }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 1024Mi }
+        - name: collaboration
+          image: ghcr.io/mednov-ai/playsay-collaboration-service@{{ .Values.images.collaborationDigest }}
+          env:
+            - { name: PORT, value: "8081" }
+            - { name: KEYCLOAK_JWKS_URL, value: "http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs" }
+            - { name: PLAYSAY_API_BASE_URL, value: "http://127.0.0.1:8080" }
+            - name: COLLABORATION_TOKEN_SECRET
+              valueFrom: { secretKeyRef: { name: playsay-collaboration, key: token-secret } }
+            - name: COLLABORATION_SERVICE_TOKEN
+              valueFrom: { secretKeyRef: { name: playsay-collaboration, key: service-token } }
+            - { name: NODE_OPTIONS, value: "--max-old-space-size=128" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8081 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+        - name: web
+          image: ghcr.io/mednov-ai/playsay-web-app@{{ .Values.images.webDigest }}
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 128Mi }
+{{- end }}
+{{- end }}

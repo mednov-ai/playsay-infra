@@ -1,0 +1,5 @@
+apiVersion: v2
+name: isolated-stack-acceptance
+description: Disabled-by-default synthetic DEV-only stack candidate fixture
+type: application
+version: 0.1.0

@@ -1,0 +1,9 @@
+# This fixture is never installed by the existing ArgoCD applications.
+enabled: false
+# Activate only the network probe first; a later reviewed change is required
+# before any application container may start.
+probeOnly: true
+images:
+  apiDigest: ""
+  webDigest: ""
+  collaborationDigest: ""
