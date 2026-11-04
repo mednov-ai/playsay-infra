@@ -108,6 +108,16 @@ and marks unfinished output `INCOMPLETE.txt`. Run it as root from a reviewed
 copy on the DEV guest. A successful archive check still requires the separate
 isolated restore; it does not include object storage.
 
+The production counterpart, `scripts/backup-prod-databases.sh`, runs only on
+`playsay-prod` and applies the same source-selection checks for the reviewed
+Bitnami and CNPG identity endpoints. It writes four protected archives under
+`/var/backups/playsay`, verifies their checksums and archive catalogs, and
+retains an `INCOMPLETE.txt` marker on failure. Run it from the reviewed release
+source on the production guest; do not copy database contents or credentials
+to CI or the workstation. A successful archive check does not prove a restore:
+perform the separately isolated restore and verify the result before a
+database-backed production rollout. The backups do not cover object storage.
+
 The former DEV Keycloak database is a separate Bitnami PostgreSQL 17.4
 workload. The DEV `keycloak-postgres-upgrade` ArgoCD application imported it
 into a new CNPG PostgreSQL 17.11 cluster; DEV Keycloak now uses the new
