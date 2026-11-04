@@ -215,6 +215,14 @@ unhealthy/duplicate/restarted pods or missing/stale actual data fail closed.
 Raw retired-series ages are retained alongside the current-source proof;
 no metric, counter, installed reader or schedule is changed.
 
+The corrected sourcea030 collaboration image from native build74 is also an
+exact reviewed candidate source (`sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a`).
+The retained process predicate names both original and corrected digests; no
+other image qualifies. Its retained test exercises three reviewed sources and
+eight denials, including unknown image, wrong release, duplicate pod, restart,
+unready state, stale deployment generation and DEV. All other history, current
+freshness, installed-reader and lesson-window checks remain identical.
+
 ### One-time release25 native build resume
 
 For this exact source4848 candidate, the recorded Jenkins Replay verifies all

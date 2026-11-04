@@ -35,12 +35,15 @@ def query(expression):
 # A verified one-pod rollout retires telemetry labels. Keep all observed zero
 # history; require a fresh current source and the independent actual reader.
 planned_images = {
- 'livekit': ('livekit', 'ghcr.io/mednov-ai/playsay-livekit-server@sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe'),
- 'collaboration-service': ('playsay-prod', 'ghcr.io/mednov-ai/playsay-collaboration-service@sha256:52937581101f4d8e5ce6540256524620e7bd5ebb1dd9e292ee38779b74a067f5'),
+ 'livekit': ('livekit', ('ghcr.io/mednov-ai/playsay-livekit-server@sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe',)),
+ 'collaboration-service': ('playsay-prod', (
+  'ghcr.io/mednov-ai/playsay-collaboration-service@sha256:52937581101f4d8e5ce6540256524620e7bd5ebb1dd9e292ee38779b74a067f5',
+  'ghcr.io/mednov-ai/playsay-collaboration-service@sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a',
+ )),
 }
 def verified_restart(component):
     if environment != 'prod': return False
-    ns, image = planned_images[component]
+    ns, images = planned_images[component]
     def get(*args):
         return json.loads(subprocess.check_output(K + list(args) + ['-o','json'], timeout=30))
     app = get('-n','argocd','get','application',component)
@@ -50,7 +53,7 @@ def verified_restart(component):
     pods = [p for p in get('-n',ns,'get','pods')['items'] if p['metadata'].get('labels',{}).get('app.kubernetes.io/name') == component and p['status']['phase'] == 'Running']
     if len(pods) != 1 or pods[0]['metadata'].get('deletionTimestamp'): return False
     statuses = pods[0]['status'].get('containerStatuses',[])
-    return bool(statuses) and all(c.get('ready') and c.get('restartCount') == 0 for c in statuses) and any(c['name'] == component and c['image'] == image for c in pods[0]['spec']['containers'])
+    return bool(statuses) and all(c.get('ready') and c.get('restartCount') == 0 for c in statuses) and any(c['name'] == component and c['image'] in images for c in pods[0]['spec']['containers'])
 restarted = {c: verified_restart(c) for c in planned_images}
 
 safe = True
