@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-postgres-prod-import
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mednov-ai/playsay-infra.git
+    targetRevision: release/01.007.25
+    path: helm-charts/keycloak-postgres-prod-import
+    helm:
+      releaseName: keycloak-postgres-prod-import
+      valueFiles:
+        - ../../migrations/ax41/staged/stack-upgrade/keycloak-prod-import-values.json
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
