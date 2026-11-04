@@ -1,10 +1,10 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: "ai-tutor-codex-hotfix-stack-upgrade-20261103-64"
-  digest: sha256:5bec563c71858d442b20295917b5211fc74742b1a08ec3e0b65c5d01f4acbac0
+  tag: "ai-tutor-dev-77"
+  digest: sha256:d519d6f578ddec8fd7715c02f73c3dfb9bba85ee7e28f9c2e185895f2bc08b94
 imagePullSecrets:
   - name: ghcr-pull-secret
-build: {name: ai-tutor-codex-hotfix-stack-upgrade-20261103-64, number: "64", branch: codex/hotfix-stack-upgrade-20261103, branchLabel: ai-tutor-codex-hotfix-stack-upgrade-20261103, commit: "b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f", commitShort: "b5d4da6d86f4"}
+build: {name: ai-tutor-dev-77, number: "77", branch: develop, branchLabel: ai-tutor-dev, commit: "74b7de5593705154ccaa04325a9b296cbd164a6a", commitShort: "74b7de559370"}
 service: {type: ClusterIP}
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
