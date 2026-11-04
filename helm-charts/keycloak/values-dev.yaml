@@ -5,23 +5,23 @@ theme:
     - https://dev.online.honeyschool.ru
 image:
   repository: ghcr.io/mednov-ai/playsay-keycloak
-  tag: "keycloak-dev-26"
-  digest: sha256:921cf54e61850f81ba35d61f3ed43c109f150fc7e4b40d668cfed05d82afae34
+  tag: "keycloak-codex-hotfix-stack-upgrade-20261103-1"
+  digest: sha256:f79ab63440522b836f91ecf9ce420709a442d298246c4a5502666753fd9292cf
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: keycloak-dev-26
-  number: "26"
-  branch: develop
-  branchLabel: keycloak-dev
-  commit: e37bb8aa3107c71dd31edfaea8c3735b2025532d
-  commitShort: e37bb8aa3107
+  name: keycloak-codex-hotfix-stack-upgrade-20261103-1
+  number: "1"
+  branch: codex/hotfix-stack-upgrade-20261103
+  branchLabel: keycloak-codex-hotfix-stack-upgrade-20261103
+  commit: 4d03f4091cda9d8ea357b31206f0fa8542027cc4
+  commitShort: 4d03f4091cda
 global:
   security:
     allowInsecureImages: true
 keycloak:
-  replicaCount: 0
+  replicaCount: 1
   hostname: https://dev.ops.honey.school/keycloak
   httpRelativePath: /keycloak/
   service:
@@ -30,7 +30,7 @@ keycloak:
     name: keycloak-admin
     passwordKey: admin-password
   database:
-    host: keycloak-postgresql
+    host: keycloak-postgres-upgrade-rw
     port: 5432
     name: bitnami_keycloak
     username: bn_keycloak
