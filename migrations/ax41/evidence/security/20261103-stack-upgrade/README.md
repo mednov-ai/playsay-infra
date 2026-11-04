@@ -44,6 +44,17 @@ resolve the other findings. A read-only DEV inventory on 2026-11-04 found only
 this did not inspect the separate identity database and does not prove which
 extensions may be installed later.
 
+The same scan associates CVE-2026-16742 with `libsystemd0` and `libudev1`.
+The [upstream advisory](https://github.com/systemd/systemd/security/advisories/GHSA-jm29-p7hh-vjhv)
+identifies the affected code as `systemd-homed` and `systemd-homework`, not
+those shared libraries. In the exact 17.11 image the inspected executables
+and package are absent; the retained
+[`postgres-1711-linked-libraries-homed-inventory.txt`](postgres-1711-linked-libraries-homed-inventory.txt)
+also shows that PostgreSQL links `libsystemd0` and `libxml2`. This is a
+candidate-specific outside-server-runtime assessment of that one homed
+finding, not a statement about the host or the other library findings. The
+raw matches remain in the complete scan.
+
 An exploratory scan of Percona's PostgreSQL 17.11 UBI 9 image found 153
 distinct High/Critical CVEs (177 High and one Critical package/finding
 matches), including Critical CVE-2026-114406 in `ca-certificates`. These are
@@ -133,6 +144,18 @@ jsoup is updated to 1.24.1. A local packaged JAR and Gradle runtime graph
 contain no async-http-client. A real local HTTP receiver accepted an encrypted
 VAPID push, and the expired-subscription response was handled; HTML metadata
 tests passed. A fresh scan of the exact CI-built replacement remains required.
+
+The unpublished Keycloak image from Jenkins #28, platform commit
+`f393a19b878249dcd4c4787395cbf2bb17111296`, passed its dependency and
+provider tests but failed its final-image scan on six matches: the CA bundle,
+two OpenJDK findings, two SQLite findings and Guava. The full and blocking
+reports and database metadata are retained as `playsay-keycloak-develop-28*`;
+publication and DEV stages did not run. Platform commit
+`f1f5a414767e33b707ba48528162f60decaddd8c` pins a newer official 26.8.1
+rebuild and updates Guava to 33.7.2-jre in both the packaged server and the
+security inventory. Local provider tests and runtime verifiers passed.
+Fresh full scans of that exact rebuilt image remain required; the update has
+not yet been proven to resolve the OS/JDK findings.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
