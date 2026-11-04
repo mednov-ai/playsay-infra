@@ -70,17 +70,21 @@ class IsolatedAcceptanceBoundaryTest(unittest.TestCase):
         self.assertNotIn("hostNetwork", spec)
         containers = {container["name"]: container for container in spec["containers"]}
         self.assertEqual(set(containers), {"postgres", "api", "collaboration", "web"})
+        limits = [container["resources"]["limits"]["memory"] for container in containers.values()]
+        self.assertTrue(all(value.endswith("Mi") for value in limits))
+        self.assertLessEqual(sum(int(value[:-2]) for value in limits), 1400)
         api = {item["name"]: item.get("value") for item in containers["api"]["env"]}
         self.assertEqual(api["PLAYSAY_DB_JDBC_URL"], "jdbc:postgresql://127.0.0.1:5432/playsay")
         self.assertEqual(api["PLAYSAY_STORAGE_PROVIDER"], "memory")
         self.assertEqual(api["PLAYSAY_PUBLIC_APP_URL"], "https://dev.online.honey.school")
         for value in api.values():
-            if value and value.startswith(("http://", "https://", "ws://", "wss://")):
-                host = urlparse(value).hostname
-                self.assertIn(host, {
-                    "127.0.0.1", "dev.online.honey.school", "dev.online.honeyschool.ru",
-                    "dev.ops.honey.school", "keycloak.keycloak.svc.cluster.local",
-                })
+            for address in (value or "").split(","):
+                if address.startswith(("http://", "https://", "ws://", "wss://")):
+                    host = urlparse(address).hostname
+                    self.assertIn(host, {
+                        "127.0.0.1", "dev.online.honey.school", "dev.online.honeyschool.ru",
+                        "dev.ops.honey.school", "keycloak.keycloak.svc.cluster.local",
+                    })
         self.assertNotIn("volumes", spec)
         self.assertNotIn("persistentVolumeClaim", json.dumps(spec))
 
@@ -111,9 +115,10 @@ async function session(nextBrowser) {
             self.assertNotEqual(subprocess.run(["python3", str(CHART / "prepare_smoke.py"), str(source), str(root / "other.mjs")], capture_output=True).returncode, 0)
 
     def test_remote_verifier_and_probe_compile(self):
-        tree = ast.parse((CHART / "verify_dev_probe.py").read_text())
-        remote = next(ast.literal_eval(node.value) for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "remote" for target in node.targets))
-        compile(remote, "<remote verifier>", "exec")
+        for name in ("verify_dev_probe.py", "verify_dev_fixture.py"):
+            tree = ast.parse((CHART / name).read_text())
+            remote = next(ast.literal_eval(node.value) for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "remote" for target in node.targets))
+            compile(remote, "<remote verifier>", "exec")
         compile((CHART / "probe_inside_fixture.py").read_text(), "<probe>", "exec")
 
 
