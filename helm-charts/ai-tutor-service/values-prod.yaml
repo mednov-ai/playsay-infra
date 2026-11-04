@@ -1,18 +1,25 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-ai-tutor-service
-  tag: "ai-tutor-release-01.007.25-74"
-  digest: "sha256:20fc477731486c267eb963b3b92aee04da9752193241a5939099a9ba92409a5e"
+  tag: ai-tutor-release-01.007.19-61
+  digest: sha256:0946009dfb0b35e1226cf419e4a51891445316ae63aa2a8f8bce164741a7fc48
 imagePullSecrets:
-  - name: ghcr-pull-secret
-build: {name: ai-tutor-release-01.007.25-74, number: "74", branch: release/01.007.25, branchLabel: ai-tutor-release-01.007.25, commit: "4848a1f1920ab41d45b061c1bd78f567b05db580", commitShort: "4848a1f1920a"}
-service: {type: ClusterIP}
+- name: ghcr-pull-secret
+build:
+  name: ai-tutor-release-01.007.19-61
+  number: '61'
+  branch: release/01.007.19
+  branchLabel: ai-tutor-release-01.007.19
+  commit: 87a9389c41afba98757ca3375399c7dd1963aced
+  commitShort: 87a9389c41af
+service:
+  type: ClusterIP
 auth:
   issuerUri: https://ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
 database:
   existingSecret: playsay-app-db
-  liquibaseEnabled: "false"
-  hikariMaxPoolSize: "3"
+  liquibaseEnabled: 'false'
+  hikariMaxPoolSize: '3'
 openai:
   enabled: false
   existingSecret: playsay-openai
@@ -20,7 +27,11 @@ openai:
   baseUrl: https://api.openai.com/v1
   realtimeModel: gpt-realtime-2.1
 runtime:
-  javaToolOptions: "-Xms192m -Xmx384m -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: -Xms192m -Xmx384m -Djava.security.egd=file:/dev/urandom
 resources:
-  requests: {cpu: 50m, memory: 448Mi}
-  limits: {cpu: "1", memory: 768Mi}
+  requests:
+    cpu: 50m
+    memory: 448Mi
+  limits:
+    cpu: '1'
+    memory: 768Mi

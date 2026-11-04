@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "media-release-01.007.25-56"
-  digest: "sha256:123318017a3ed10567b4511276e6106632080083f145825fb864ac4404f0c79f"
+  tag: media-release-01.007.19-49
+  digest: sha256:4649053b3597b63d0f052fb801925b83c144300d761cacc3421a609233cc7179
 imagePullSecrets:
-  - name: ghcr-pull-secret
+- name: ghcr-pull-secret
 build:
-  name: media-release-01.007.25-56
-  number: "56"
-  branch: release/01.007.25
-  branchLabel: media-release-01.007.25
-  commit: 4848a1f1920ab41d45b061c1bd78f567b05db580
-  commitShort: "4848a1f1920a"
+  name: media-release-01.007.19-49
+  number: '49'
+  branch: release/01.007.19
+  branchLabel: media-release-01.007.19
+  commit: 87a9389c41afba98757ca3375399c7dd1963aced
+  commitShort: 87a9389c41af
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -20,23 +20,23 @@ service:
   type: ClusterIP
 mediaService:
   existingSecret: playsay-media
-  sessionTtlSeconds: "900"
-  maxUpstreamRangeBytes: "1048576"
-  maxThumbnailBytes: "5242880"
+  sessionTtlSeconds: '900'
+  maxUpstreamRangeBytes: '1048576'
+  maxThumbnailBytes: '5242880'
   ytdlpPath: /usr/local/bin/yt-dlp
   ytdlpPluginDirectory: /usr/local/lib
   ytdlpJsRuntime: deno:/usr/local/bin/deno
   ffmpegPath: /usr/local/bin/ffmpeg
-  youtubeCacheEnabled: "true"
-  cacheDownloadTimeoutSeconds: "600"
-  cacheMaxVideoBytes: "262144000"
+  youtubeCacheEnabled: 'true'
+  cacheDownloadTimeoutSeconds: '600'
+  cacheMaxVideoBytes: '262144000'
   cacheTempDirectory: /tmp/playsay-media-cache
 youtubePot:
   enabled: true
   providerBaseUrl: http://127.0.0.1:4416
-  allowedVideoIds: "WX8HmogNyCY,8ChQVaEAKsk,BwHMMZQGFoM,OsuWvoBWOnA,FkL8j0wIRf8"
+  allowedVideoIds: WX8HmogNyCY,8ChQVaEAKsk,BwHMMZQGFoM,OsuWvoBWOnA,FkL8j0wIRf8
   playerClients: mweb
-  sleepRequestsSeconds: "1"
+  sleepRequestsSeconds: '1'
   provider:
     image: brainicism/bgutil-ytdlp-pot-provider@sha256:1fd724c0a987a1eaa7e0875667a55770f954d8634fdbba96d858072f4a655afe
     pullPolicy: IfNotPresent
@@ -57,14 +57,14 @@ storage:
     region: us-east-1
     bucket: playsay-material-assets
     existingSecret: playsay-object-storage
-    pathStyleAccess: "true"
-    createBucket: "true"
+    pathStyleAccess: 'true'
+    createBucket: 'true'
 runtime:
-  javaToolOptions: "-Xms256m -Xmx512m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: -Xms256m -Xmx512m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 resources:
   requests:
     cpu: 50m
     memory: 768Mi
   limits:
-    cpu: "1"
+    cpu: '1'
     memory: 1536Mi

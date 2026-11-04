@@ -1,0 +1,42 @@
+[
+  {
+    "service": "api-gateway",
+    "digest": "sha256:215661b337adf2f8c2b1bcd85ed43e366ff750046dbd4711cf3764a6cab61e11",
+    "source": "9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0"
+  },
+  {
+    "service": "ai-tutor-service",
+    "digest": "sha256:0946009dfb0b35e1226cf419e4a51891445316ae63aa2a8f8bce164741a7fc48",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  },
+  {
+    "service": "worksheet-import-service",
+    "digest": "sha256:5f0cb7c72d3055ab4c7704ea150691ece83b5b285bc756109668e059c22773bb",
+    "source": "9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0"
+  },
+  {
+    "service": "vocabulary-service",
+    "digest": "sha256:ebfea3836c86833d6f1e96dba576b4fd29f03471bdffa4a35e2c6db67f90402c",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  },
+  {
+    "service": "media-service",
+    "digest": "sha256:4649053b3597b63d0f052fb801925b83c144300d761cacc3421a609233cc7179",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  },
+  {
+    "service": "registration-service",
+    "digest": "sha256:45def3e42ac024f28971484090529a796e68eab4258d18d4a370761ec1c5d11f",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  },
+  {
+    "service": "email-service",
+    "digest": "sha256:652fdc76eae6a9bf17193d90c1fb5ffe798b9ab17121b1ce41cf3a00cf321ce0",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  },
+  {
+    "service": "keyboard-service",
+    "digest": "sha256:9fcf9d40f623dc351a631b43571364f5f04b08d30d9f374e0faf5021874107c5",
+    "source": "87a9389c41afba98757ca3375399c7dd1963aced"
+  }
+]

@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-service
-  tag: "key-backend-release-01.007.25-59"
-  digest: "sha256:56780ed9aef005a19f6b0d55ad02a583cda51688c8b07984199255fd9530efcb"
+  tag: key-backend-release-01.007.19-53
+  digest: sha256:9fcf9d40f623dc351a631b43571364f5f04b08d30d9f374e0faf5021874107c5
 imagePullSecrets:
-  - name: ghcr-pull-secret
+- name: ghcr-pull-secret
 build:
-  name: key-backend-release-01.007.25-59
-  number: "59"
-  branch: release/01.007.25
-  branchLabel: key-backend-release-01.007.25
-  commit: 4848a1f1920ab41d45b061c1bd78f567b05db580
-  commitShort: 4848a1f1920a
+  name: key-backend-release-01.007.19-53
+  number: '53'
+  branch: release/01.007.19
+  branchLabel: key-backend-release-01.007.19
+  commit: 87a9389c41afba98757ca3375399c7dd1963aced
+  commitShort: 87a9389c41af
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -20,10 +20,10 @@ service:
   type: ClusterIP
 database:
   existingSecret: playsay-keyboard-db
-  liquibaseEnabled: "false"
-  hikariMaxPoolSize: "3"
+  liquibaseEnabled: 'false'
+  hikariMaxPoolSize: '3'
 runtime:
-  javaToolOptions: "-Xms256m -Xmx512m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom"
+  javaToolOptions: -Xms256m -Xmx512m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 vocabularyIntegration:
   baseUrl: http://vocabulary-service.playsay-prod.svc.cluster.local
 resources:
@@ -31,5 +31,5 @@ resources:
     cpu: 50m
     memory: 512Mi
   limits:
-    cpu: "1"
+    cpu: '1'
     memory: 1Gi
