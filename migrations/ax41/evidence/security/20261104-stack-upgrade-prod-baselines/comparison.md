@@ -10,6 +10,18 @@ Fresh immutable-image OS and library scans; raw reports and database metadata ar
 | postgres-candidate | 98 |
 | keycloak-postgres-prod | 142 |
 
+## Exact immutable images
+
+| Scan | Image |
+|---|---|
+| keycloak-prod | `ghcr.io/mednov-ai/playsay-keycloak@sha256:4906970a91906e3b9747f739e94f1495363c410c7bbc59e6090062e6b7c5cc05` |
+| keycloak-candidate | `ghcr.io/mednov-ai/playsay-keycloak@sha256:f79ab63440522b836f91ecf9ce420709a442d298246c4a5502666753fd9292cf` |
+| postgres-prod | `ghcr.io/cloudnative-pg/postgresql@sha256:6ae4a22c14bdc66e5feaafd38d12c3956fabf9ce9582189e6aa4ee767d981d1b` |
+| postgres-candidate | `ghcr.io/cloudnative-pg/postgresql@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd` |
+| keycloak-postgres-prod | `docker.io/bitnamilegacy/postgresql@sha256:9d75ed4556cedefaff8f3aa2ccd39093dcf3f7968d013a82f175bff25c2761e4` |
+
+The candidate PostgreSQL server executable directly links `libxml2.so.2`; the scanner reports CVE-2026-86139 for its libxml2 package, a pair absent from the current Bitnami identity image. The current identity database has no installed extension other than `plpgsql`, so pgvector is not currently installed there. These observations do not establish or exclude exploitability after import; the image contains additional packages and must not be classified as clear on that basis.
+
 ## keycloak-candidate versus keycloak-prod
 
 New pairs: 0. Shared: 3. Absent from candidate: 3.
