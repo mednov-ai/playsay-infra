@@ -34,7 +34,13 @@ The private LiveKit image requires `ghcr-pull-secret` in the `livekit`
 namespace, not only in `playsay-dev`. The DEV chart creates the namespace-scoped
 SealedSecret using the existing DEV registry credential; keep plaintext out of
 Git and verify the pull secret and image digest before accepting the rollout.
-The production chart does not render the DEV credential.
+The production chart does not render the DEV credential. A separate
+production-scoped SealedSecret is staged under
+`migrations/ax41/staged/stack-upgrade/livekit-prod-registry-sealedsecret.json`;
+it was derived from the existing production registry credential and validated
+with the production controller. It is inert until explicitly incorporated into
+the reviewed production GitOps release. After reconciliation, compare the
+resulting secret to the production source in memory without printing values.
 
 The separate `playsay-keycloak-image` job is limited to image-only publication
 for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
