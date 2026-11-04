@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-service
-  tag: "key-backend-dev-54"
-  digest: sha256:bb3ed9c4ab9a978a90bacd020d498cd361851b8bd044fe89f0871c0117ee873f
+  tag: "key-backend-codex-hotfix-stack-upgrade-20261103-56"
+  digest: sha256:6d9f0fdd4bdb57784a7db1d27e8b186619f4ce5b2eb72886bf66155d1bc53509
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-backend-dev-54
-  number: "54"
-  branch: develop
-  branchLabel: key-backend-dev
-  commit: eed588a90ba65f67944724e964e727c0262644ff
-  commitShort: eed588a90ba6
+  name: key-backend-codex-hotfix-stack-upgrade-20261103-56
+  number: "56"
+  branch: codex/hotfix-stack-upgrade-20261103
+  branchLabel: key-backend-codex-hotfix-stack-upgrade-20261103
+  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
+  commitShort: b5d4da6d86f4
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:

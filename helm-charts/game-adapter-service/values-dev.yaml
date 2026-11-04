@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-game-adapter-service
-  tag: "game-adapter-dev-43"
-  digest: "sha256:477e00ad5c9f8b1a2836af080e19782686ad79387e451a5b81d12ec22b6da7fe"
+  tag: "game-adapter-codex-hotfix-stack-upgrade-20261103-48"
+  digest: "sha256:18d821e24c5646edcd50d12b63003edb1b42b314906dcbd66eefdd8f57a6b0c0"
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: game-adapter-dev-43
-  number: "43"
-  branch: develop
-  branchLabel: game-adapter-dev
-  commit: e37bb8aa3107c71dd31edfaea8c3735b2025532d
-  commitShort: e37bb8aa3107
+  name: game-adapter-codex-hotfix-stack-upgrade-20261103-48
+  number: "48"
+  branch: codex/hotfix-stack-upgrade-20261103
+  branchLabel: game-adapter-codex-hotfix-stack-upgrade-20261103
+  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
+  commitShort: b5d4da6d86f4
 adapter:
   model: gpt-5.6-sol
   reasoningEffort: medium

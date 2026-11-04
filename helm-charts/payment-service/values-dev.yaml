@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-payment-service
-  tag: "payment-dev-38"
-  digest: sha256:5bd1d7268f66bed5f0d3770f5bec5eae000f9113a4ff11ea7babd37360c01f21
+  tag: "payment-codex-hotfix-stack-upgrade-20261103-40"
+  digest: sha256:9500d5b012467d7cbc9051aa56c6e10e33bde88742be41f41b6892ab16efc0a2
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: payment-dev-38
-  number: "38"
-  branch: develop
-  branchLabel: payment-dev
-  commit: eed588a90ba65f67944724e964e727c0262644ff
-  commitShort: "eed588a90ba6"
+  name: payment-codex-hotfix-stack-upgrade-20261103-40
+  number: "40"
+  branch: codex/hotfix-stack-upgrade-20261103
+  branchLabel: payment-codex-hotfix-stack-upgrade-20261103
+  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
+  commitShort: "b5d4da6d86f4"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:

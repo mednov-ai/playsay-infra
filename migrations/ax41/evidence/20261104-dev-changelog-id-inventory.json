@@ -1,0 +1,40 @@
+{
+  "scope": "IDs and authors only; does not check Liquibase checksums or schema drift",
+  "modules": {
+    "api-gateway": {
+      "expectedPostgresIds": 42,
+      "missingIds": 0
+    },
+    "ai-tutor-service": {
+      "expectedPostgresIds": 3,
+      "missingIds": 0
+    },
+    "email-service": {
+      "expectedPostgresIds": 9,
+      "missingIds": 0
+    },
+    "payment-service": {
+      "expectedPostgresIds": 3,
+      "missingIds": 0
+    },
+    "registration-service": {
+      "expectedPostgresIds": 5,
+      "missingIds": 0
+    },
+    "vocabulary-service": {
+      "expectedPostgresIds": 12,
+      "missingIds": 0
+    },
+    "keyboard-service": {
+      "expectedPostgresIds": 20,
+      "missingIds": 0
+    },
+    "worksheet-import-service": {
+      "expectedPostgresIds": 1,
+      "missingIds": 0
+    }
+  },
+  "observedAt": "2026-11-04T08:15:52.751740+00:00",
+  "candidateCommit": "b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f",
+  "databaseVersion": "PostgreSQL 17.6; pre-upgrade DEV"
+}
