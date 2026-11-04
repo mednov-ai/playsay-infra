@@ -1,0 +1,195 @@
+pipeline {
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  activeDeadlineSeconds: 6000
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  securityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+  containers:
+    - name: jnlp
+      image: jenkins/inbound-agent:3383.vc8881d4b_0e76-1-jdk25
+      resources:
+        requests: {cpu: 50m, memory: 128Mi}
+        limits: {cpu: 300m, memory: 384Mi}
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      command: ["/busybox/cat"]
+      tty: true
+      volumeMounts:
+        - name: registry-config
+          mountPath: /kaniko/.docker
+      resources:
+        requests: {cpu: 150m, memory: 256Mi}
+        limits: {cpu: "1", memory: 3Gi}
+    - name: image-security
+      image: aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+      command: ["cat"]
+      tty: true
+      volumeMounts:
+        - name: registry-config
+          mountPath: /kaniko/.docker
+      resources:
+        requests: {cpu: 100m, memory: 256Mi}
+        limits: {cpu: "1", memory: 1536Mi}
+  volumes:
+    - name: registry-config
+      emptyDir: {}
+"""
+    }
+  }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+    disableConcurrentBuilds()
+    skipDefaultCheckout(true)
+    timestamps()
+    timeout(time: 90, unit: 'MINUTES')
+  }
+
+  parameters {
+    string(name: 'BRANCH_NAME', defaultValue: 'develop', description: 'Infra source branch.', trim: true)
+    string(name: 'GITHUB_AFTER', defaultValue: '', description: 'Required exact infra branch HEAD.', trim: true)
+    string(name: 'PLATFORM_BRANCH', defaultValue: 'develop', description: 'Platform branch containing the security gate.', trim: true)
+    string(name: 'PLATFORM_AFTER', defaultValue: '', description: 'Required exact platform branch HEAD.', trim: true)
+    booleanParam(name: 'PUBLISH_CANDIDATE', defaultValue: false, description: 'Publish the scanned image only; never update GitOps or deploy.')
+  }
+
+  environment {
+    INFRA_REPO = 'https://github.com/mednov-ai/playsay-infra.git'
+    PLATFORM_REPO = 'https://github.com/mednov-ai/playsay-platform.git'
+    IMAGE_REPOSITORY = 'ghcr.io/mednov-ai/playsay-cnpg-operator'
+    DEPLOY_TO_PROD = 'false'
+  }
+
+  stages {
+    stage('Checkout exact sources') {
+      steps {
+        script {
+          def infraBranch = params.BRANCH_NAME?.trim()
+          def platformBranch = params.PLATFORM_BRANCH?.trim()
+          def infraSha = params.GITHUB_AFTER?.trim()
+          def platformSha = params.PLATFORM_AFTER?.trim()
+          def validBranch = { branch ->
+            branch && (branch == 'develop' || branch.startsWith('codex/') || branch.startsWith('security-check/')) &&
+              (branch ==~ /^[A-Za-z0-9][A-Za-z0-9._\/-]*$/) && !branch.contains('..') && !branch.endsWith('/')
+          }
+          if (!validBranch(infraBranch) || !validBranch(platformBranch) ||
+              !(infraSha ==~ /^[0-9a-f]{40}$/) || !(platformSha ==~ /^[0-9a-f]{40}$/)) {
+            error 'Both approved branches and their exact 40-character HEADs are required.'
+          }
+          if (params.PUBLISH_CANDIDATE &&
+              (infraBranch.startsWith('security-check/') || platformBranch.startsWith('security-check/'))) {
+            error 'Security-check branches cannot publish images.'
+          }
+          checkout([$class: 'GitSCM', branches: [[name: "*/${infraBranch}"]],
+            userRemoteConfigs: [[url: env.INFRA_REPO]]])
+          def actualInfra = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          if (actualInfra != infraSha) { error 'Infra branch HEAD changed before checkout.' }
+          dir('platform-source') {
+            checkout([$class: 'GitSCM', branches: [[name: "*/${platformBranch}"]],
+              userRemoteConfigs: [[url: env.PLATFORM_REPO]]])
+            def actualPlatform = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+            if (actualPlatform != platformSha) { error 'Platform branch HEAD changed before checkout.' }
+          }
+          env.CI_BRANCH = infraBranch
+          env.PLATFORM_CI_BRANCH = platformBranch
+          env.GIT_COMMIT = infraSha
+          env.PLATFORM_COMMIT = platformSha
+          env.PLATFORM_CI_ROOT = "${env.WORKSPACE}/platform-source"
+          env.BUILD_LABEL = "cnpg-candidate-${env.BUILD_NUMBER}"
+          env.DEPLOY_TO_DEV = params.PUBLISH_CANDIDATE.toString()
+          env.SECURITY_SCAN_ONLY = (!params.PUBLISH_CANDIDATE).toString()
+          currentBuild.description = "infra ${infraSha.take(12)}; platform ${platformSha.take(12)}; publish ${params.PUBLISH_CANDIDATE}"
+          sh '''
+            mkdir -p image-security/source
+            printf 'infra=%s\nplatform=%s\n' "$GIT_COMMIT" "$PLATFORM_COMMIT" > image-security/source/revisions.txt
+          '''
+        }
+      }
+    }
+
+    stage('Build unpublished image') {
+      steps {
+        container('kaniko') {
+          withCredentials([usernamePassword(credentialsId: 'github-ghcr', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
+            sh '''
+              set +x
+              set -eu
+              umask 077
+              mkdir -p /kaniko/.docker
+              auth="$(printf '%s:%s' "$GHCR_USER" "$GHCR_TOKEN" | base64 | tr -d '\\n')"
+              printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$auth" > /kaniko/.docker/config.json
+              KANIKO_CONTEXT="$WORKSPACE/images/cnpg-operator" \
+                KANIKO_DOCKERFILE="$WORKSPACE/images/cnpg-operator/Dockerfile" \
+                /busybox/sh "$PLATFORM_CI_ROOT/scripts/ci/run-kaniko-image-build.sh"
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Inspect rebuilt operator') {
+      steps {
+        container('image-security') {
+          sh '''
+            set -eu
+            build="$WORKSPACE/.image-build/playsay-cnpg-operator/$BUILD_LABEL"
+            report="$WORKSPACE/image-security/playsay-cnpg-operator/$BUILD_LABEL"
+            mkdir -p "$report"
+            sha256sum "$build/image.tar" | awk '{print $1}' > "$report/inspected-image-archive.sha256"
+            wget -q -T 90 -O "$build/crane.tgz" https://github.com/google/go-containerregistry/releases/download/v0.22.1/go-containerregistry_Linux_x86_64.tar.gz
+            printf '%s  %s\\n' 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0 "$build/crane.tgz" | sha256sum -c -
+            tar -xzf "$build/crane.tgz" -C "$build" crane
+            "$build/crane" export - "$build/rootfs.tar" < "$build/image.tar"
+            for item in go.mod go.sum modules.txt packages-amd64.txt packages-arm64.txt build-info-amd64.txt build-info-arm64.txt binary-amd64.sha256 binary-arm64.sha256; do
+              tar -xOf "$build/rootfs.tar" "usr/share/doc/cnpg-build/$item" > "$report/$item"
+            done
+            [ "$(sha256sum "$build/image.tar" | awk '{print $1}')" = "$(cat "$report/inspected-image-archive.sha256")" ]
+          '''
+        }
+        archiveArtifacts artifacts: 'image-security/**/*', allowEmptyArchive: false
+      }
+    }
+
+    stage('Scan exact image') {
+      steps {
+        container('image-security') {
+          sh '"$PLATFORM_CI_ROOT/scripts/ci/scan-image.sh"'
+        }
+        archiveArtifacts artifacts: 'image-security/**/*', allowEmptyArchive: false
+      }
+    }
+
+    stage('Publish candidate only') {
+      when { expression { params.PUBLISH_CANDIDATE } }
+      steps {
+        sh '''
+          set -eu
+          infra_head="$(git ls-remote --exit-code --heads "$INFRA_REPO" "refs/heads/$CI_BRANCH" | awk 'NR == 1 { print $1 }')"
+          platform_head="$(git ls-remote --exit-code --heads "$PLATFORM_REPO" "refs/heads/$PLATFORM_CI_BRANCH" | awk 'NR == 1 { print $1 }')"
+          [ "$infra_head" = "$GIT_COMMIT" ] && [ "$platform_head" = "$PLATFORM_COMMIT" ] || {
+            echo 'A source branch moved; refusing to publish a stale candidate.' >&2
+            exit 1
+          }
+        '''
+        container('image-security') {
+          sh '"$PLATFORM_CI_ROOT/scripts/ci/prepare-and-publish-image.sh"'
+        }
+        archiveArtifacts artifacts: 'image-security/**/*,image-digest.txt', allowEmptyArchive: false
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'image-security/**/*', allowEmptyArchive: true
+    }
+  }
+}

@@ -41,6 +41,12 @@ backup/restore and write-aware rollback. The current shared operator overlay
 is still at 1.29.1. Activate DEV only through a reviewed GitOps source change
 after the same lesson-admission and database safety gates; production remains
 on its existing release until the separate production command.
+The prepared `playsay-cnpg-image` job builds the pinned security rebuild from
+exact infra and platform branch heads, captures its module graph and binary
+hashes, and scans the archive before optional image-only publication. It has
+no GitOps or deployment stage; a successful image scan alone does not validate
+an operator upgrade. Its registration, final-source build, publication and
+recovery/lesson tests must be verified before activation.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the

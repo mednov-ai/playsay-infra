@@ -99,6 +99,13 @@ the build and has not retained a reviewed dependency patch or proven
 reproducibility; no image was published. Treat it as remediation evidence,
 not an operator candidate. Lock its full dependency graph, scan the final
 CI-built archive, and test upgrades, backup/restore and failover before use.
+Exploratory build #3 repeated the full scan without blocking matches and
+retained the exact package graphs, `go.mod`, `go.sum`, two manager hashes and
+an image archive hash matching the inspected archive, as
+`playsay-cnpg-fixture-3-*`. The resulting dependency patch is pinned in the
+prepared image recipe; its output must be rebuilt and scanned before any
+publication. The two exploratory archive hashes differ, and no binary hash
+was retained from #2, so these results do not establish binary reproducibility.
 
 On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
 again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
@@ -350,6 +357,12 @@ were identified; its build enables FTS5 and includes earlier vendor security
 patches. A custom rebuild with that feature disabled could eliminate this
 specific vulnerable code, but remains unbuilt and must preserve the vendor
 patches, ABI, NSS and Keycloak behavior before it could be considered.
+The first scan-only build of this idea, Jenkins Keycloak #31, passed the
+dependency and provider-test stages but stopped before image scanning because
+UBI's public build repositories did not provide `readline-devel`. No image was
+published. A second isolated fixture uses a pinned EL9 build environment while
+retaining the exact Red Hat source RPM and validating its checksum/signature;
+its build and compatibility checks must finish before any conclusion.
 
 Jenkins Keycloak #30 inspected its unpublished image before the full scan;
 the scan blocked on the same three findings. The scan-only source commit was
