@@ -88,19 +88,13 @@ backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
 
-The production-based platform candidate contains a proposed maintenance
-admission boundary: `PLAYSAY_GAMES_MAINTENANCE=true` is intended to reject both
-starting a lesson and issuing a LiveKit room token with `GAME_MAINTENANCE`.
-It defaults to false and still requires candidate CI and runtime acceptance.
-The current production API predates the guard and must not be assumed to
-enforce it before deployment. A flag or a healthy API alone does not prove
-that previously issued tokens, rooms or collaboration queues are empty.
-
 Do not replace the shared DEV API with this production-based candidate: DEV
 has canonical game-library references and the older reader is incompatible
 with that migration's recovery rule below. Closing admission does not remove
 that incompatibility. Test the candidate against an isolated compatible data
-set and route before considering production promotion.
+set and route before considering production promotion. The production-based
+candidate does not enforce DEV's game-maintenance admission flag; use the
+applicable production lesson-safe admission and drain procedure.
 
 The prepared platform candidate also moves the web and keyboard images to
 nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
