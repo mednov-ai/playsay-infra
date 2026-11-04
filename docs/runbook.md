@@ -199,6 +199,16 @@ backup/restore and write-aware rollback gates pass. Any source write after the
 offline import starts is absent from the imported snapshot.
 
 
+### Full image finding triage before release readiness
+
+The automatic image severity threshold is not the complete release decision.
+Review every retained full report for findings with a recorded compatible fix,
+including Medium/Low entries, before treating the source as promotion-ready.
+Apply the exact outside-server-runtime policy and unexpired owner scope; otherwise
+remediate the compatible finding and scan the new exact image. A High/Critical
+pass must never be described as a clean full report. Retain superseded image
+provenance and label it ineligible when a known compatible fix remains.
+
 ### Authorized production stack release 01.007.25 preparation
 
 The owner authorized this candidate's production delivery, accepted the exact
