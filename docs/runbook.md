@@ -199,6 +199,21 @@ backup/restore and write-aware rollback gates pass. Any source write after the
 offline import starts is absent from the imported snapshot.
 
 
+### Release25 current-process activity after guarded restarts
+
+The initial admission still requires the complete ten-minute zero/fresh history.
+After a guarded LiveKit/collaboration replacement, retired metric label sets
+must not masquerade as a current unhealthy process. This candidate's retained
+activity script allows source continuity only for its exact reviewed image,
+a Synced/Healthy .25 Application and exactly one ready running pod with zero
+container restarts. It retains zero across all observed ten-minute history,
+at least eighteen aggregate samples, fresh current-source age and the
+independent installed reader's healthy/fresh all-zero actual counters and
+known schedule. Every sync still takes two fresh observations. Other images,
+unhealthy/duplicate/restarted pods or missing/stale actual data fail closed.
+Raw retired-series ages are retained alongside the current-source proof;
+no metric, counter, installed reader or schedule is changed.
+
 ### One-time release25 native build resume
 
 For this exact source4848 candidate, the recorded Jenkins Replay verifies all
