@@ -70,6 +70,9 @@ class IsolatedAcceptanceBoundaryTest(unittest.TestCase):
         self.assertNotIn("hostNetwork", spec)
         containers = {container["name"]: container for container in spec["containers"]}
         self.assertEqual(set(containers), {"postgres", "api", "collaboration", "web"})
+        limits = [container["resources"]["limits"]["memory"] for container in containers.values()]
+        self.assertTrue(all(value.endswith("Mi") for value in limits))
+        self.assertLessEqual(sum(int(value[:-2]) for value in limits), 1400)
         api = {item["name"]: item.get("value") for item in containers["api"]["env"]}
         self.assertEqual(api["PLAYSAY_DB_JDBC_URL"], "jdbc:postgresql://127.0.0.1:5432/playsay")
         self.assertEqual(api["PLAYSAY_STORAGE_PROVIDER"], "memory")
