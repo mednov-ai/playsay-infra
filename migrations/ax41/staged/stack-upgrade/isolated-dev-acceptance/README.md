@@ -67,9 +67,13 @@ HTTP and collaboration WebSocket traffic to those ports, and blocks unknown
 origins. Only DEV identity and DEV LiveKit traffic may leave the browser
 directly. Each forward must be tied to the verified fixture pod UID and image
 digests; an arbitrary loopback listener is not evidence of isolation.
+The bridge uses the WebSocket client bundled with the external Playwright
+installation to preserve the DEV Origin and requested subprotocols. Its
+browser test exercises both collaboration and authenticated API WebSockets;
+run that test with the same installation before using the harness.
 
 Local checks: `helm lint .`, `python3 test_fixture.py -v`, and
-`node --test router.test.mjs`. PostgreSQL's synthetic bootstrap was separately
+`node --test router.test.mjs router.browser.test.mjs`. PostgreSQL's synthetic bootstrap was separately
 exercised with the exact pinned image in a network-isolated disposable local
 container. None of these checks proves the full fixture, actual NetworkPolicy,
 browser integration, DEV capacity or lesson flow.
