@@ -1,7 +1,9 @@
 image:
-  repository: livekit/livekit-server
-  tag: "v1.11.0"
-imagePullSecrets: []
+  repository: ghcr.io/mednov-ai/playsay-livekit-server
+  tag: "v1.13.11"
+  digest: sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe
+imagePullSecrets:
+  - name: ghcr-pull-secret
 secret:
   existingName: livekit-keys
 rtc:
