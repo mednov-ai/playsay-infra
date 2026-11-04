@@ -19,7 +19,8 @@ async function listen(server) {
 
 test("a browser uses only the fixture for app HTTP and collaboration WebSocket", async () => {
   const web = http.createServer((_req, res) => { res.writeHead(200, { "content-type": "text/html" }); res.end("<!doctype html><title>isolated fixture</title>"); });
-  const api = http.createServer((_req, res) => { res.writeHead(200, { "content-type": "application/json" }); res.end('{"fixture":true}'); });
+  let apiAuthorizationVerified = false;
+  const api = http.createServer((req, res) => { apiAuthorizationVerified = req.headers.authorization === "Bearer synthetic-test-token"; res.writeHead(200, { "content-type": "application/json" }); res.end('{"fixture":true}'); });
   const collab = http.createServer();
   let peer;
   let apiPeer;
@@ -63,7 +64,8 @@ test("a browser uses only the fixture for app HTTP and collaboration WebSocket",
     const page = await context.newPage();
     await page.goto("https://dev.online.honey.school/", { waitUntil: "domcontentloaded" });
     assert.equal(await page.title(), "isolated fixture");
-    assert.equal(await page.evaluate(async () => (await (await fetch("/api/fixture")).json()).fixture), true);
+    assert.equal(await page.evaluate(async () => (await (await fetch("/api/fixture", { headers: { Authorization: "Bearer synthetic-test-token" } })).json()).fixture), true);
+    assert.equal(apiAuthorizationVerified, true);
     assert.equal(await page.evaluate(async () => {
       try { await fetch("https://online.honey.school/api/fixture"); return false; } catch (_) { return true; }
     }), true);
