@@ -123,6 +123,15 @@ full reports and inspected/scanned archive hashes are retained as
 builds, not independent toolchain reproducibility or a tested database
 upgrade. The job cannot deploy or change GitOps and did not publish an image.
 
+Jenkins `playsay-cnpg-image #2` rebuilt and scanned the candidate from infra
+`534d19de6c6261980d1174ac8969f9cc68c7ba10` and platform
+`a8ca83154b9ffea9220a631112657438eed60c58`, with no blocking findings,
+and published it to the image registry with verified digest
+`sha256:9f69ce44b334543c1f0d31ac17216d914843cf615567f8bfabd84287e12faff3`.
+The scanned and inspected archive hashes agree; raw scan reports, checksums,
+revisions and binary hashes are retained as `playsay-cnpg-image-2-*`.
+This image-only job did not deploy the operator or change GitOps.
+
 On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
 again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
 The [complete report](postgres-1711-system-trixie-20261104.json.gz),
@@ -373,6 +382,16 @@ were identified; its build enables FTS5 and includes earlier vendor security
 patches. A custom rebuild with that feature disabled could eliminate this
 specific vulnerable code, but remains unbuilt and must preserve the vendor
 patches, ABI, NSS and Keycloak behavior before it could be considered.
+The same library probe also found FTS3 with parentheses and the session
+extension enabled. Upstream reports
+[CVE-2026-119372](https://github.com/CVEProject/cvelistV5/blob/main/cves/2026/119xxx/CVE-2026-119372.json)
+for an FTS3 path and
+[CVE-2026-119379](https://github.com/CVEProject/cvelistV5/blob/main/cves/2026/119xxx/CVE-2026-119379.json)
+for crafted session changesets in pre-3.54.0 SQLite. The vendor backport
+status, actual applicability to this 3.34.1 RPM and reachability from Keycloak
+have not been established. The #30 scanner did not report these IDs; that
+omission does not establish that they are absent. Disabling FTS5 alone would
+not resolve them if applicable.
 The first scan-only build of this idea, Jenkins Keycloak #31, passed the
 dependency and provider-test stages but stopped before image scanning because
 UBI's public build repositories did not provide `readline-devel`. No image was
@@ -391,6 +410,8 @@ compiling the patched vendor source, but its 2 GiB build-container memory
 cgroup was OOM-killed. The next fixture serializes compilation and raises that
 temporary container's limit to 3 GiB. Its test suite, compatibility checks
 and final image scan must finish before any conclusion.
+Build #38 also failed during the image build; the inspection and image scan
+were skipped. Its precise failure cause still requires investigation.
 
 Jenkins Keycloak #30 inspected its unpublished image before the full scan;
 the scan blocked on the same three findings. The scan-only source commit was
