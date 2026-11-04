@@ -1,5 +1,17 @@
 # DEV stack-upgrade preparation — 2026-11-03
 
+On 2026-11-04 a fresh protected DEV backup was created at
+`/var/backups/playsay/stack-upgrade-dev-20261104T072625Z` with the reviewed
+backup script (SHA-256
+`08337b1083187618bd026993a4621477d4c624c17cab3d3cef0aa97aff4e2459`).
+All four dumps, catalogs and checksums passed. An isolated PostgreSQL instance
+with no TCP listener, using
+`17.11-system-trixie@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd`
+restored the four dumps with `--exit-on-error`; the public table counts were
+93, 11, 5 and 101. This was not a cutover or a coordinated object-store
+recovery. Repeat the protected backup and isolated restore after stopping
+Keycloak and immediately before its database import.
+
 Status: prepared, **not yet delivered**. Platform hotfix source at this
 checkpoint is `ca1e6d401048a42f7a21f3557d2388ba0f89f2bb`; rerun candidate
 gates if its head moves. The production rollout is outside this DEV step.

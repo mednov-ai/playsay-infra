@@ -18,16 +18,15 @@ The LiveKit chart accepts an optional `image.digest`; when present it renders
 `repository@sha256:...` and rejects malformed digests. The existing DEV and
 production tag renders are unchanged while that value is empty. Set a digest
 only to the exact CI-built, fully scanned image after its source and delivery
-gates pass; the local unpublished rebuild is not a registry artifact.
+gates pass.
 The prepared `playsay-livekit-image` Jenkins job builds from exact infra and
 platform branch heads and scans before its optional image-only publication.
 It cannot update GitOps or deploy. The job is not a substitute for the
-cross-service security, backup, admission, route and acceptance gates. Until
-the real-registry publication path is verified, a successful scan-only run
-does not establish that an image was published or deployed. Its first scan-only
-run passed at infra `5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
-`f393a19b878249dcd4c4787395cbf2bb17111296`; new candidates require a fresh
-run with the then-current exact source heads and retained evidence.
+cross-service security, backup, admission, route and acceptance gates. Build
+#4 published the scanned digest
+`sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe`;
+its source revisions and scan evidence are recorded in the linked security
+evidence. Publication does not establish DEV deployment or media acceptance.
 
 The separate `playsay-keycloak-image` job is limited to image-only publication
 for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
@@ -52,10 +51,8 @@ The prepared `playsay-cnpg-image` job builds the pinned security rebuild from
 exact infra and platform branch heads, captures its module graph and binary
 hashes, and scans the archive before optional image-only publication. It has
 no GitOps or deployment stage; a successful image scan alone does not validate
-an operator upgrade. The job was registered in CI; its final-source build,
-publication and recovery/lesson tests must be verified before activation. Its
-first scan-only build passed at the revisions recorded in the security
-evidence; source changes require a new exact-source check.
+an operator upgrade. Its scanned candidate has been published; isolated
+upgrade, recovery and lesson tests remain necessary before activation.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the

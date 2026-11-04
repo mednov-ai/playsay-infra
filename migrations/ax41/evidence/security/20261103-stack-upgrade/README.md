@@ -535,6 +535,16 @@ outside-runtime OpenPGP finding. The publish stage did not execute, and the
 job cannot alter GitOps or deploy. Its tested source heads have since moved;
 repeat the candidate scan when the final heads are known.
 
+Image-only Jenkins build #4 rebuilt and scanned the LiveKit candidate at infra
+`94547f5c0c4e133951ea6f2edde13a4e849bafb0` and platform
+`4d03f4091cda9d8ea357b31206f0fa8542027cc4`, and published the verified
+digest `sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe`.
+Its single raw blocking match was the separately proven outside-server-runtime
+OpenPGP dependency; the classified blocking report was empty. Full reports,
+runtime boundary, checksums and source revisions are retained as
+`playsay-livekit-image-4-*`. The image-only job did not change GitOps or
+deploy LiveKit.
+
 A separate local three-browser fixture used a native macOS/arm64 LiveKit
 binary with Go build metadata identifying upstream commit `385aa40f9292`,
 `golang.org/x/net` v0.62.0 and a modified source tree. Its SHA-256 was
