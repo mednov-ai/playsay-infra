@@ -1,0 +1,10 @@
+Official Keycloak 26.8.1 candidate base metadata, retrieved 2026-11-04 UTC
+Image index sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332
+linux/amd64 manifest sha256:de6ed510b59cfcd25f129ba4118696fa10d4165eee921a8d846178b6d35d30f7
+rpmdb.sqlite sha256:7a05ebe7d7a63ea4e61c690c3ed8d27b6fc11ea178a7740a52b5f48f36355f32
+extracted Java truststore sha256:ae293832a4330eed9d6f234f76c38671c0c6908fbfcfa90b979f9182f413d5eb
+rpm: ca-certificates epoch=0 version=2026.2.92_v9.0.319 release=90.3.el9_8 arch=noarch
+rpm: java-21-openjdk-headless epoch=1 version=21.0.13.0.9 release=1.2.el9 arch=x86_64
+rpm: sqlite-libs epoch=0 version=3.34.1 release=11.el9_8 arch=x86_64
+Java truststore owner names matching the two Red Hat-identified affected roots: 0
+This is exploratory upstream-base evidence, not a scan or a proof of final Keycloak truststore configuration.

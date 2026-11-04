@@ -2,6 +2,143 @@
 
 Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. Dev-only GeoIP entry is enabled with a validated local IPinfo MMDB; production entry remains disabled. See [2026-09-06 acceptance](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md). Provision the IPinfo token only in `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41 (root, `0600`), never in Git or command arguments. Provider-issued 14-character tokens are valid; do not impose a 16-character minimum. Token provisioning alone must not activate redirects or reload nginx.
 
+### Prepared DEV stack upgrade (not yet deployed)
+
+**DEV stack upgrade, updated 2026-11-04:** the owner authorized this DEV
+rollout and accepted PostgreSQL and Keycloak findings also present in their
+current images, without custom product rebuilds. This is unresolved risk for
+this hotfix, not a general exception or production authorization. The exact
+baseline comparisons, candidate findings and raw scans are retained in
+[container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
+New findings, scan errors, backup/restore, lesson admission and the other
+candidate-specific delivery gates still require resolution. The original
+upstream LiveKit image's HTTP/2 dependency is not covered by that acceptance;
+use the pinned, scanned LiveKit security rebuild.
+The LiveKit chart accepts an optional `image.digest`; when present it renders
+`repository@sha256:...` and rejects malformed digests. The existing DEV and
+production tag renders are unchanged while that value is empty. Set a digest
+only to the exact CI-built, fully scanned image after its source and delivery
+gates pass.
+The prepared `playsay-livekit-image` Jenkins job builds from exact infra and
+platform branch heads and scans before its optional image-only publication.
+It cannot update GitOps or deploy. The job is not a substitute for the
+cross-service security, backup, admission, route and acceptance gates. Build
+#4 published the scanned digest
+`sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe`;
+its source revisions and scan evidence are recorded in the linked security
+evidence. Publication does not establish DEV deployment or media acceptance.
+
+The separate `playsay-keycloak-image` job is limited to image-only publication
+for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
+this job for deployment. It scans the exact unpublished archive, retains raw
+reports, allows only the owner's three exact matching Keycloak OS findings,
+checks the current source branch head, and verifies the registry digest.
+Its result alone does not switch Keycloak or authorize an identity database
+cutover.
+
+Both environments currently use CloudNativePG operator 1.29.1, which is
+covered by upstream security advisories. A 1.30.1 overlay is staged under
+`migrations/ax41/staged/stack-upgrade/cloudnative-pg-operator-1.30.1/`, but
+the upstream image itself has separate scan findings and must not be activated
+as-is. Before choosing a fixed operator image, retain a fresh full scan,
+resolve its runtime findings, test the operator and instance-manager upgrade
+with the exact CRDs and PostgreSQL 17 databases in isolation, and verify
+backup/restore and write-aware rollback. The current shared operator overlay
+is still at 1.29.1. Activate DEV only through a reviewed GitOps source change
+after the same lesson-admission and database safety gates; production remains
+on its existing release until the separate production command.
+The prepared `playsay-cnpg-image` job builds the pinned security rebuild from
+exact infra and platform branch heads, captures its module graph and binary
+hashes, and scans the archive before optional image-only publication. It has
+no GitOps or deployment stage; a successful image scan alone does not validate
+an operator upgrade. Its scanned candidate has been published; isolated
+upgrade, recovery and lesson tests remain necessary before activation.
+
+The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
+application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
+platform Java/Spring, React/Vite and LiveKit client upgrades. Before
+delivery, refresh the live revisions and lesson activity, run the
+candidate-specific CI/security gates, and verify a protected fresh backup of
+the `playsay`, `keyboard`, `worksheet_import` and Keycloak databases,
+including checksum, archive catalog and an isolated restore. A previous
+backup or a healthy rollout is not a restore test. Use the current DEV
+lesson-admission and drain procedures before an interrupting change; monitor
+the direct and RF routes, collaboration and real media independently.
+
+The prepared platform candidate also moves the web and keyboard images to
+nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
+service runtimes omit unused npm. Alpine security updates are resolved during
+the image build. Before publication or deployment, scan and retain the exact
+CI-built image digests and full reports; the local scans are not a clearance
+for later builds. The original generic Kaniko helper pushed images before any
+final-image vulnerability scan and then updated environment references; that
+baseline did not satisfy this pre-publication gate. A replacement has been
+prepared and tested locally: module jobs on `security-check/` branches build
+and scan only, without publication, migration or GitOps updates; deployable
+jobs scan the unpublished archive and verify the published digest before
+continuing. Jenkins has validated the unpublished scan-only path for the
+collaboration image, but the real-registry publication path and remaining
+candidate images still need validation; the existing hold still applies.
+Preserve the game
+adapter's non-root identity, read-only
+root filesystem and `/tmp/playsay` writable mount, and exercise its token,
+image optimization and real Chromium validation on DEV. Verify web and
+keyboard API routing, WebSocket upgrades and module-worker MIME through the
+deployed images. Roll these stateless workloads back through reviewed GitOps
+image references after draining users, without reverting database state.
+
+The reviewed `scripts/backup-dev-databases.sh` runs only on `playsay-dev` and
+refuses an unconverged Keycloak workload or an unrecognised JDBC endpoint. It
+backs up the three application databases and whichever reviewed Keycloak
+database is actually active, validates the archive catalogs and checksums,
+and marks unfinished output `INCOMPLETE.txt`. Run it as root from a reviewed
+copy on the DEV guest. A successful archive check still requires the separate
+isolated restore; it does not include object storage.
+
+The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
+the application CNPG image pin does not update it. The prepared DEV-only
+`keycloak-postgres-upgrade` ArgoCD application imports that database into a
+new CNPG PostgreSQL 17.11 cluster. Its manifest and the application-database
+image override are staged under `migrations/ax41/staged/stack-upgrade/`,
+outside the automatically reconciled ArgoCD tree. Merging this preparation
+alone must not start either database change. The legacy image has no maintained 17.11
+tag. A disposable operator 1.29.1/Keycloak 26.8.1 fixture verified the
+same-major import, matching 101 tables and aggregate identity/session counts,
+`en_US.UTF-8`, the owner, `pgaudit`, the existing database password, session
+refresh and a new login at the declared DEV memory/CPU limits. That fixture
+does not prove the real DEV cutover or the custom provider.
+
+Before a separately reviewed GitOps commit activates the staged application,
+complete the candidate security and backup/restore gates, close DEV lesson admission, drain
+issued credentials and connections, scale DEV Keycloak to zero through a
+separate GitOps change, confirm no other source database writers, and refresh
+the protected four-database backup and isolated restore. The import reads the
+old `keycloak-postgresql` service and its existing superuser secret; a
+DEV-scoped SealedSecret supplies a copy of the unchanged application password
+to CNPG. Confirm the resulting secret matches the existing password without
+printing either value. Wait for the new cluster to be healthy and compare
+source/target schema and aggregate identity/session counts while Keycloak
+remains stopped. Only then switch the Keycloak JDBC host to
+`keycloak-postgres-upgrade-rw`, retaining its existing password secret, and
+restore its replica through GitOps. Verify native DEV login, existing-session
+refresh, lesson access, provider behavior, data and both routes before
+reopening lesson admission. Keep the old PostgreSQL workload, PVC and secret;
+do not prune the new cluster or its credential.
+
+Before the JDBC switch, reverting the staged import and restoring the old
+replica is a rollback because the old source remains authoritative. Once the
+new database receives writes, the old database is a stale safety copy:
+switching back to it loses later identity/session changes. Recovery then
+requires a reviewed, write-preserving migration or restore and a fresh
+backup. Future Keycloak backups must target the active JDBC host, not assume
+that the retained Bitnami pod is authoritative. Roll back LiveKit and
+application images through GitOps after draining users. Do not assume that
+merely reverting a PostgreSQL image is a tested database rollback.
+Production promotion requires the owner's later explicit command and its own
+current release, security, backup, schema and lesson-safe gates.
+The initial protected backup/restore evidence and outstanding acceptance are
+recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.

@@ -1,0 +1,8 @@
+usr/lib64/libsqlite3.so.0
+usr/lib64/libsqlite3.so.0.8.6
+var/lib/dnf/history.sqlite
+var/lib/dnf/history.sqlite-shm
+var/lib/dnf/history.sqlite-wal
+var/lib/rpm/rpmdb.sqlite
+var/lib/rpm/rpmdb.sqlite-shm
+var/lib/rpm/rpmdb.sqlite-wal

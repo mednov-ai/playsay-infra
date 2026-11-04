@@ -1,0 +1,10 @@
+Tested public truststores extracted from official 26.8.1 base images.
+Old base index: sha256:79c623a22abacf3fe6c00a5fb30f5b7843d717b234033b80995891c06116d244
+New base index: sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332
+New /etc/java/java-21-openjdk/java-21-openjdk-21.0.13.0.9-1.2.el9.x86_64/lib/security/cacerts -> /etc/pki/java/cacerts
+New Java cacerts symlink: /etc/pki/java/cacerts -> /etc/pki/ca-trust/extracted/java/cacerts
+Old system Java truststore accepts the affected emSign G3 root; the updated system Java truststore rejects it.
+The local trust-manager test does not establish Keycloak effective DEV configuration or cover additional truststores.
+Source: https://access.redhat.com/security/vulnerabilities/RHSB-2026-012
+Old truststore sha256: 0dfff446928ce06545559ae754941c0d912bb40f58716f3523596422de428eaa
+New truststore sha256: ae293832a4330eed9d6f234f76c38671c0c6908fbfcfa90b979f9182f413d5eb

@@ -1,0 +1,14 @@
+2026-11-04T07:34:30Z	INFO	[vulndb] Need to update DB
+2026-11-04T07:34:30Z	INFO	[vulndb] Downloading vulnerability DB...
+2026-11-04T07:34:30Z	INFO	[vulndb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2026-11-04T07:34:36Z	INFO	[vulndb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2026-11-04T07:34:36Z	INFO	[vuln] Vulnerability scanning is enabled
+2026-11-04T07:34:38Z	INFO	[javadb] Downloading Java DB...
+2026-11-04T07:34:38Z	INFO	[javadb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-java-db:1"
+2026-11-04T07:35:05Z	INFO	[javadb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-java-db:1"
+2026-11-04T07:35:05Z	INFO	[javadb] Java DB is cached for 3 days. If you want to update the database more frequently, "trivy clean --java-db" command clears the DB cache.
+2026-11-04T07:35:09Z	INFO	Detected OS	family="redhat" version="9.8"
+2026-11-04T07:35:09Z	INFO	[redhat] Detecting RHEL/CentOS vulnerabilities...	os_version="9" pkg_num=44
+2026-11-04T07:35:09Z	INFO	Number of language-specific files	num=1
+2026-11-04T07:35:09Z	INFO	[jar] Detecting vulnerabilities...
+2026-11-04T07:35:09Z	WARN	Using severities from other vendors for some vulnerabilities. Read https://trivy.dev/docs/v0.76/guide/scanner/vulnerability#severity-selection for details.

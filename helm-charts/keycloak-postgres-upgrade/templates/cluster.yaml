@@ -1,0 +1,48 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.cluster.name }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    helm.sh/resource-policy: keep
+spec:
+  instances: 1
+  imageName: {{ .Values.cluster.image | quote }}
+  stopDelay: 300
+  smartShutdownTimeout: 60
+  bootstrap:
+    initdb:
+      database: {{ .Values.cluster.database | quote }}
+      owner: {{ .Values.cluster.owner | quote }}
+      secret:
+        name: {{ .Values.cluster.applicationSecret }}
+      localeCollate: {{ .Values.cluster.locale | quote }}
+      localeCType: {{ .Values.cluster.locale | quote }}
+      import:
+        type: microservice
+        databases:
+          - {{ .Values.cluster.database | quote }}
+        source:
+          externalCluster: keycloak-bitnami-source
+  externalClusters:
+    - name: keycloak-bitnami-source
+      connectionParameters:
+        host: {{ .Values.cluster.sourceHost | quote }}
+        dbname: postgres
+        user: postgres
+      password:
+        name: {{ .Values.cluster.sourceSecret }}
+        key: postgres-password
+  postgresql:
+    shared_preload_libraries:
+      - pgaudit
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+  storage:
+    size: {{ .Values.cluster.storageSize | quote }}

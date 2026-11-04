@@ -1,0 +1,16 @@
+Source: official Keycloak 26.8.1 base index sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332, linux/amd64.
+Extracted /usr/lib64/libsqlite3.so.0.8.6 sha256: 007322505ff5177c820251b31612a9e4c2e6e4c78a5ad62df81d92ba329d65ff
+Loaded that exact library in an isolated Linux/amd64 Python process with no network; sqlite3_libversion() reported 3.34.1 and sqlite3_compileoption_used("ENABLE_FTS5") returned 1.
+This confirms the FTS5 component is compiled in; it does not demonstrate that Keycloak loads it or exposes the vulnerable SQL path. Final-image and runtime behavior must still be verified.
+
+Additional isolated Linux/amd64 ctypes probe of the same extracted library
+(Docker --network none, read-only bind mount):
+  sqlite3_libversion(): 3.34.1
+  sqlite3_compileoption_used("ENABLE_FTS3"): 1
+  sqlite3_compileoption_used("ENABLE_FTS3_PARENTHESIS"): 1
+  sqlite3_compileoption_used("ENABLE_FTS5"): 1
+  sqlite3_compileoption_used("ENABLE_SESSION"): 1
+  sqlite3_compileoption_used("ENABLE_PREUPDATE_HOOK"): 1
+These compile options establish code configuration only; they do not establish
+that a particular CVE affects this vendor-patched library, or that Keycloak can
+reach the corresponding code.

@@ -1,0 +1,37 @@
+base ELF binaries inspected: 149
+base paths containing sqlite:
+  usr/lib64/libsqlite3.so.0 -> libsqlite3.so.0.8.6
+  usr/lib64/libsqlite3.so.0.8.6
+  var/lib/dnf/history.sqlite
+  var/lib/dnf/history.sqlite-shm
+  var/lib/dnf/history.sqlite-wal
+  var/lib/rpm/rpmdb.sqlite
+  var/lib/rpm/rpmdb.sqlite-shm
+  var/lib/rpm/rpmdb.sqlite-wal
+base ELF files directly requiring SQLite:
+  ('usr/lib64/libsoftokn3.so', ['libsqlite3.so.0'])
+  ('usr/lib64/nss/unsupported-tools/bltest', ['libsqlite3.so.0'])
+  ('usr/lib64/nss/unsupported-tools/dbtool', ['libsqlite3.so.0'])
+  ('usr/lib64/nss/unsupported-tools/ecperf', ['libsqlite3.so.0'])
+  ('usr/lib64/nss/unsupported-tools/fipstest', ['libsqlite3.so.0'])
+locally packaged server/provider jars inspected: 355
+embedded ELF files inspected: 20
+packaged SQLite-named entries or direct native dependencies:
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddDefaultValueGeneratorSQLite$1.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/InsertOrUpdateGeneratorSQLite.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/ReindexGeneratorSQLite.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddColumnGeneratorSQLite$1.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddAutoIncrementGeneratorSQLite.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddColumnGeneratorSQLite.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddAutoIncrementGeneratorSQLite$1.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/sqlgenerator/core/AddDefaultValueGeneratorSQLite.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/change/core/AddNotNullConstraintChange$SQLiteAlterTableVisitor.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/database/core/SQLiteDatabase.class')
+  ('org.liquibase.liquibase-core-4.33.0.jar', 'liquibase/database/core/SQLiteDatabase$AlterTableVisitor.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/SQLiteDialect$1.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/SQLiteDialect$2.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/SQLiteDialect$SQLiteUniqueDelegate.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/SQLiteDialect.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/SQLiteSqlAstTranslator.class')
+  ('org.hibernate.orm.hibernate-community-dialects-7.4.9.Final.jar', 'org/hibernate/community/dialect/identity/SQLiteIdentityColumnSupport.class')
+Limits: static dependency and name inventory, not proof of dynamic library loads or final-image behavior.

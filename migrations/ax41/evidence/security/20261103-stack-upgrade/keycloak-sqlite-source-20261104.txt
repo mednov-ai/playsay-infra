@@ -1,0 +1,5 @@
+Official Red Hat UBI 9 source package for sqlite-libs 3.34.1-11.el9_8:
+https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/s/sqlite-3.34.1-11.el9_8.src.rpm
+SHA-256: 4efcc956008f0468362b41bdba79111c41027b682bcdea3ecca3744cf50ebfd7
+
+The source RPM contains sqlite.spec, the 3.34.1 source and the distribution patches, including CVE-2022-35737, CVE-2023-7104, CVE-2025-6965, CVE-2026-11822 and CVE-2026-11824. The spec enables FTS5 in configure. Rebuilding from this source with FTS5 disabled is an untested remediation idea; no rebuilt library or package has been produced, scanned, deployed or accepted. It must preserve all vendor patches and other compile options, ABI, NSS compatibility, truststore behavior, package provenance and authentication, and pass appropriate tests before use.

@@ -1,0 +1,9 @@
+0564e8b4a023f54b907635f6e0cedd75d43f76e3df3fa8f18837340d17ae853d  modules.txt  byte-identical-to-fixture-3
+c71c3ca6ffae3d2f373256aac7bc093923c70afede1a378a0efc79900c73d2bc  build-info-amd64.txt  byte-identical-to-fixture-3
+7d1f243acbd0dd2192456b1212f10934a5a38cf9e36e61313fe3ea40ba3bdf8a  build-info-arm64.txt  byte-identical-to-fixture-3
+8cc0f0ee714ade97c81eba50a422492edcda54ec7e57c23a64a76b1d51fb9340  go.mod  byte-identical-to-fixture-3
+f360d4e46b2d4f30a0809dd1a05f92a374e19ff80d4fb025b27b37368b6872bc  go.sum  byte-identical-to-fixture-3
+985dff1b1db6bf10b6f616178137436241cf4e857dc5905c5dbb7989725c6e6e  packages-amd64.txt  byte-identical-to-fixture-3
+2dde43439366b3e857a6ef2cae1e7328e604eb20d5f8aea9a9c53ab135a47b4f  packages-arm64.txt  byte-identical-to-fixture-3
+712d48786a0362264837d4c1a2783341191ab7c2e36b3f007f77b78a7d9fc0f6  manager-amd64  byte-identical-to-fixture-3
+980c31bb83f00acba9cbb1de02b8329cd2307e0a0e01c91fb265eddbd9cfc57e  manager-arm64  byte-identical-to-fixture-3

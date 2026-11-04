@@ -16,12 +16,15 @@ DEFAULT_JOB_NAMES=(
   playsay-vocabulary-service-develop
   playsay-web-app-develop
   playsay-collaboration-service-develop
+  playsay-livekit-image
+  playsay-cnpg-image
   playsay-media-service-develop
   playsay-game-adapter-service-develop
   playsay-payment-service-develop
   playsay-registration-service-develop
   playsay-email-service-develop
   playsay-keycloak-develop
+  playsay-keycloak-image
   playsay-keyboard-backend-develop
   playsay-keyboard-frontend-develop
 )
@@ -36,12 +39,15 @@ DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-vocabulary-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-web-app-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-collaboration-service-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-livekit-image.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-cnpg-image.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-media-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-game-adapter-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-payment-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-registration-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-email-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keycloak-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-keycloak-image.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-backend-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-frontend-develop.xml"
 )

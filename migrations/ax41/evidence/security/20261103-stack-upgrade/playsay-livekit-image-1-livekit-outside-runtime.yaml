@@ -1,0 +1,7 @@
+vulnerabilities:
+  - id: GO-2026-5932
+    paths:
+      - livekit-server
+    purls:
+      - pkg:golang/golang.org/x/crypto@v0.58.0
+    statement: Exact reviewed binary excludes the affected OpenPGP packages and symbols.
