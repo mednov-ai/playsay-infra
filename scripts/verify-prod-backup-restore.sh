@@ -32,7 +32,7 @@ trap cleanup EXIT
 overrides="$(python3 - "$pod" "$image" <<'PY'
 import json,sys
 name,image=sys.argv[1:]
-command="umask 077; initdb -D /tmp/pgdata --auth=trust -U postgres >/tmp/initdb.log; exec postgres -D /tmp/pgdata -c listen_addresses= -c unix_socket_directories=/tmp -c shared_buffers=32MB -c max_connections=10"
+command="umask 077; initdb -D /tmp/pgdata --auth=trust --encoding=UTF8 --locale=C -U postgres >/tmp/initdb.log; exec postgres -D /tmp/pgdata -c listen_addresses= -c unix_socket_directories=/tmp -c shared_buffers=32MB -c max_connections=10"
 print(json.dumps({"metadata":{"labels":{"playsay-task":name}},"spec":{
   "automountServiceAccountToken":False,
   "securityContext":{"runAsNonRoot":True,"runAsUser":26,"runAsGroup":26,"fsGroup":26},
@@ -58,6 +58,8 @@ primary="$(kubectl -n playsay-data get cluster playsay-postgres -o jsonpath='{.s
 [[ -n "$primary" ]] || { echo "application database primary unavailable" >&2; exit 1; }
 table_query="select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p')"
 version="$(kubectl -n playsay-data exec "$pod" -- psql -X -h /tmp -U postgres -d postgres -Atq -c 'show server_version')"
+encoding="$(kubectl -n playsay-data exec "$pod" -- psql -X -h /tmp -U postgres -d postgres -Atq -c 'show server_encoding')"
+[[ "$encoding" == UTF8 ]] || { echo "isolated restore has unexpected encoding" >&2; exit 1; }
 printf 'isolated_postgresql_version=%s\n' "$version"
 
 for database in playsay keyboard worksheet_import keycloak; do
@@ -67,7 +69,7 @@ for database in playsay keyboard worksheet_import keycloak; do
   actual="$(kubectl -n playsay-data exec "$pod" -- sha256sum "/tmp/$file" | cut -d' ' -f1)"
   [[ "$actual" == "$expected" ]] || { echo "isolated restore copy checksum mismatch" >&2; exit 1; }
   kubectl -n playsay-data exec "$pod" -- createdb -h /tmp -U postgres "$database"
-  if ! timeout 300s kubectl -n playsay-data exec "$pod" -- pg_restore --exit-on-error --no-owner --no-privileges -h /tmp -U postgres -d "$database" "/tmp/$file" > "$backup/$database.restore.log" 2>&1; then
+  if ! timeout 300s kubectl -n playsay-data exec "$pod" -- pg_restore --exit-on-error --no-owner --no-privileges -h /tmp -U postgres -d "$database" "/tmp/$file" > "$backup/$database.$pod.restore.log" 2>&1; then
     echo "isolated restore failed for $database; protected log retained" >&2
     exit 1
   fi

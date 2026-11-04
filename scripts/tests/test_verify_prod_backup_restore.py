@@ -11,6 +11,11 @@ SCRIPT = ROOT / "scripts/verify-prod-backup-restore.sh"
 
 
 class ProdRestoreGuardTest(unittest.TestCase):
+    def test_restore_cluster_uses_utf8(self):
+        script = SCRIPT.read_text()
+        self.assertIn("--encoding=UTF8", script)
+        self.assertIn("show server_encoding", script)
+
     def test_wrong_guest_or_backup_path_never_calls_kubectl(self):
         for host, backup, expected in (
             ("playsay-dev", "/var/backups/playsay/stack-upgrade-prod-20261104T111125Z", "unexpected guest"),
