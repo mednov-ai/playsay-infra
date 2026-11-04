@@ -15,6 +15,16 @@ other finding. Validate the image through the reviewed CI build/scan/publish
 workflow and real DEV signaling, TURN and group media before delivery. The
 Dockerfile alone does not authorize publication or deployment.
 
+`scan-livekit-image.sh` first runs the normal full image scanner. If its raw
+report contains blocking findings, it can classify only `GO-2026-5932` for
+`livekit-server` and `golang.org/x/crypto@v0.58.0`, and only after verifying
+the exact previously inspected binary SHA-256 and the unchanged Go advisory.
+It checks the package graph and binary again, retains the raw and classified
+reports, and fails on any other blocking finding or scan error. This is the
+existing outside-server-runtime rule, not a CVE risk acceptance. The script
+expects the platform's `scripts/ci/scan-image.sh` in the CI workspace; a
+reviewed CI job must assemble both sources before calling it.
+
 Replace this temporary build with a verified compatible upstream stable image
 once it contains the HTTP/2 dependency fix and passes the same security and
 media checks. See the stack-upgrade security evidence in

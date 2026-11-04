@@ -71,10 +71,10 @@ worker MIME/404 handling. It did not prove actual DEV routes or deployed
 artifacts. Package upgrades are resolved at build time: scan and retain the
 exact final CI images and their digests before any delivery.
 
-The current `scripts/ci/run-kaniko-image-build.sh` publishes directly; the
-deployable Jenkins stages subsequently update GitOps references and contain
-no final-image scan gate. It therefore cannot establish the required
-pre-publication container evidence for this candidate as written. The four
+The baseline `scripts/ci/run-kaniko-image-build.sh` published directly; the
+baseline deployable Jenkins stages subsequently updated GitOps references
+without a final-image scan gate. That baseline could not establish the required
+pre-publication container evidence. The four
 successful exact-source Jenkins checks used a non-deploying branch and did
 not execute image build/push or environment update stages. A reviewed
 build/scan/publish sequence must fail closed before any deployable build.
@@ -120,6 +120,19 @@ High/Critical/Unknown matches. Its report and archive hash are retained as
 `playsay-game-adapter-service-develop-46*`; publication and DEV stages did
 not run. Real deployed Chromium, application integration and DEV lesson
 acceptance remain outstanding.
+
+The unpublished API gateway image from Jenkins #217, platform commit
+`a13451caee016ed4d7bb8ddbd8cf29136060924b`, failed its final-image scan
+after its JVM dependency gate had passed. It contained five blocking matches
+in `async-http-client:2.15.0` and one in `jsoup:1.18.3`; the retained full
+and blocking reports are `playsay-api-gateway-develop-217*.json.gz` with
+their database metadata. Publication, migrations and GitOps updates did not
+run. In platform commit `f393a19b878249dcd4c4787395cbf2bb17111296` the
+unused async client and its web-push transitive dependency are removed, and
+jsoup is updated to 1.24.1. A local packaged JAR and Gradle runtime graph
+contain no async-http-client. A real local HTTP receiver accepted an encrypted
+VAPID push, and the expired-subscription response was handled; HTML metadata
+tests passed. A fresh scan of the exact CI-built replacement remains required.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
@@ -173,8 +186,28 @@ symbols, the only affected packages in the [Go advisory](https://pkg.go.dev/vuln
 This is outside-runtime evidence for this binary only, not a blanket waiver.
 The local image started and served its health endpoint; this did not test
 media, a CI-built image or a deployment. The candidate reproducible recipe
-is in `images/livekit/` and still needs a complete CI build and final-image
-security disposition.
+is in `images/livekit/`. Jenkins scan-only build #65 recreated the identical
+binary SHA-256 and retained its package graph and build metadata. Its normal
+unfiltered image gate correctly failed on the single Unknown OpenPGP match;
+the raw report and metadata are retained as `playsay-livekit-ci-65-*`.
+Jenkins scan-only build #66 then passed with the narrowly scoped classifier:
+the complete raw report retained the single OpenPGP match, and the
+classified report had no remaining blocking matches. The retained advisory,
+binary hash, package graph, raw and classified reports, and image-archive
+SHA-256 are `playsay-livekit-ci-66-*`. Publish, source-tag, GitOps update and
+rollout stages did not execute. This validates the classifier against that
+CI-built archive, not a real-registry publication or a deployed DEV image.
+The compressed `*-build-info.txt.gz` files retain the original Go build-info
+bytes; the adjacent text copies only normalize trailing whitespace.
+
+A separate local three-browser fixture used a native macOS/arm64 LiveKit
+binary with Go build metadata identifying upstream commit `385aa40f9292`,
+`golang.org/x/net` v0.62.0 and a modified source tree. Its SHA-256 was
+`8a3bbbea283abee0b5e4ab4a824407631236d87a16ea127fbd94f8c9fedd0731`.
+Three independent browser contexts exchanged synthetic camera and microphone
+RTP in both directions and observed two remote participants each. This is
+not the Linux container, the deployed application, a physical-device test or
+an RF/TURN acceptance; no real lesson data was used.
 The prepared LiveKit Helm chart can now render a validated immutable image
 digest. Default DEV and production renders remained byte-for-byte unchanged;
 a valid digest rendered the expected image reference and a malformed digest
