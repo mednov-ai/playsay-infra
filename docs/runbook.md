@@ -248,6 +248,18 @@ collaboration and media. This section describes the authorized procedure;
 it is not evidence of successful promotion or acceptance. CloudNativePG
 operator 1.30.1 remains staged pending its separate upgrade/recovery validation.
 
+After the PostgreSQL 17.11 restart or the identity cutover, do not repoint the
+whole production root to .24: that branch requests the older database image
+and old identity host. A stateless recovery restores only the required
+`image` and `build` keys from the recorded .24 values in a reviewed GitOps
+commit on the active release, with fresh drain and health checks. Retain the
+17.11 database specifications, PVCs, Secrets and the currently authoritative
+Keycloak JDBC host; retain a stopped old identity source as a safety copy.
+Record the actual recovered image/source matrix and the failed promotion
+instead of claiming the original candidate remains accepted. A database
+recovery needs a separate write-preserving plan and a current protected backup;
+the isolated 17.11 restore does not validate an in-place image downgrade.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
