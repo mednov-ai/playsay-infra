@@ -1,0 +1,14 @@
+2026-11-04T08:08:59Z	INFO	[vulndb] Need to update DB
+2026-11-04T08:08:59Z	INFO	[vulndb] Downloading vulnerability DB...
+2026-11-04T08:08:59Z	INFO	[vulndb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2026-11-04T08:09:06Z	INFO	[vulndb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2026-11-04T08:09:06Z	INFO	[vuln] Vulnerability scanning is enabled
+2026-11-04T08:09:10Z	INFO	[javadb] Downloading Java DB...
+2026-11-04T08:09:10Z	INFO	[javadb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-java-db:1"
+2026-11-04T08:09:36Z	INFO	[javadb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-java-db:1"
+2026-11-04T08:09:36Z	INFO	[javadb] Java DB is cached for 3 days. If you want to update the database more frequently, "trivy clean --java-db" command clears the DB cache.
+2026-11-04T08:09:39Z	INFO	Detected OS	family="ubuntu" version="26.04"
+2026-11-04T08:09:39Z	INFO	[ubuntu] Detecting vulnerabilities...	os_version="26.04" pkg_num=106
+2026-11-04T08:09:39Z	INFO	Number of language-specific files	num=2
+2026-11-04T08:09:39Z	INFO	[gobinary] Detecting vulnerabilities...
+2026-11-04T08:09:39Z	INFO	[jar] Detecting vulnerabilities...
