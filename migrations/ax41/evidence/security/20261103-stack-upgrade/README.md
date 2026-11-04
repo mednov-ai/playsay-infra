@@ -24,6 +24,18 @@ priority than the scanner's Critical severity; that difference is not proof
 that the affected code is absent. Additional High findings require their own
 exact package/runtime assessment. The existing Kotlin/build-tool exception
 does not cover these findings.
+Debian's testing/unstable source tracks the later fixed libxml2 release, but
+its newer library package is `libxml2-16` while the scanned PostgreSQL binary
+links `libxml2.so.2`. The [upstream distribution migration notes](https://fedoraproject.org/wiki/Changes/Libxml215)
+describe an ABI/SONAME change requiring dependent rebuilds. Installing that
+newer package alongside the old one would therefore not by itself prove the
+PostgreSQL process uses the fixed library; replacing or relinking it without
+rebuilding and testing dependents is not a validated remedy.
+This does not rule out backports to the old ABI: for example, Ubuntu reports
+a [fix for CVE-2026-86138 in its 2.9.14 package](https://ubuntu.com/security/CVE-2026-86138).
+Its package has not been established as compatible with this Debian image or
+as resolving every match. A reviewed backport built and tested for the target
+image remains a possible route, not an available candidate.
 
 After the owner was told that this same `CVE-2026-6653` affects both the
 selected 17.11 image and the checked 18.6 image, the owner directed us to
@@ -199,6 +211,12 @@ build and final-image scan for the same `a8ca8315` platform commit, with zero
 blocking image matches. Reports, checksums, database metadata and the image
 archive hash are retained as `playsay-registration-service-develop-80-*`.
 Publication and DEV stages did not run.
+
+Email service #54 passed its dependency-security gate, tests, package build
+and final-image scan at the same platform commit, with zero blocking image
+matches. Its reports, checksums, database metadata and image archive hash are
+retained as `playsay-email-service-develop-54-*`. Publication, migration and
+DEV stages did not run.
 
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
 at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero
