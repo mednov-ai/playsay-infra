@@ -358,6 +358,12 @@ is empty. These checks strengthen the case for the CA package correction and
 for the shell-only finding being outside this image's server runtime, but do
 not establish the effective deployed configuration or resolve the FTS5 finding.
 The candidate remains blocked pending its exact final scan and disposition.
+The [read-only DEV configuration inventory](keycloak-dev-trust-config-20261104.txt)
+found no truststore environment override, `envFrom` block or non-theme volume
+mount, and the project's provider/entrypoint source has no custom trust
+manager references. This is evidence about the currently deployed older image;
+it neither proves every third-party library uses the default manager nor
+replaces a check of the candidate's effective configuration after deployment.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found

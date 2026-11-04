@@ -1,0 +1,8 @@
+Read-only DEV Keycloak StatefulSet inspection, 2026-11-04 UTC:
+- Running image reference: ghcr.io/mednov-ai/playsay-keycloak@sha256:921cf54e61850f81ba35d61f3ed43c109f150fc7e4b40d668cfed05d82afae34
+- Container args: start; no envFrom blocks.
+- No environment variable name containing TRUST or CERTIFICATE.
+- JAVA_OPTS_KC_HEAP was present with heap-only -Xms/-Xmx options; no JAVA_OPTS or JAVA_OPTS_APPEND entry.
+- Only explicit volume mount: /opt/keycloak/themes/playsay.
+- Candidate provider and entrypoint source search found no truststore/TrustManager/SSLContext references.
+No secret values were read or recorded. This is the currently deployed older image/configuration, not the new candidate; repeat against effective configuration after any change. It does not prove that all third-party libraries use the default trust manager.
