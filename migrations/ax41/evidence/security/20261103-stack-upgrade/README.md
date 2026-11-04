@@ -98,6 +98,29 @@ the publish, source-tag, GitOps update and rollout stages as not executed.
 This validates the scan-only path for that unpublished CI archive, not the
 real-registry publication path, other images or DEV acceptance.
 
+Jenkins web #418 passed the same scan-only path at platform commit
+`a13451caee016ed4d7bb8ddbd8cf29136060924b`. Keyboard frontend #115 was
+aborted when its 1 GiB Node container exceeded its cgroup memory limit during
+`npm install`; the CI kernel identified the memory cgroup OOM. Platform commit
+`874f7527bf1ec552b7bb4f35016b8317a35a5ef7` reserves 3 GiB with a 5 GiB limit
+and a 3 GiB Node heap. Keyboard frontend #116 then passed its build and full
+scan, with no High/Critical/Unknown findings. The web and keyboard raw CI
+reports, database metadata and archive hashes are retained as
+`playsay-web-app-develop-418*` and `playsay-keyboard-frontend-develop-116*`.
+Both jobs skipped publication and environment updates. The web result is for
+the previous platform commit; the only later changes are the keyboard CI
+resource settings and their contract test, so it is useful comparison evidence
+but not an exact-current-commit run. A later web #419 run passed the same
+scan-only checks at commit `874f7527bf1ec552b7bb4f35016b8317a35a5ef7`; its
+report and archive hash are retained as `playsay-web-app-develop-419*`.
+
+Game adapter #46 passed build and the unpublished full-image scan at platform
+commit `874f7527bf1ec552b7bb4f35016b8317a35a5ef7`, with no
+High/Critical/Unknown matches. Its report and archive hash are retained as
+`playsay-game-adapter-service-develop-46*`; publication and DEV stages did
+not run. Real deployed Chromium, application integration and DEV lesson
+acceptance remain outstanding.
+
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
 six High package/finding matches in npm's bundled `brace-expansion` and
@@ -137,6 +160,21 @@ the packaged binary matched that hash. This is candidate-specific
 outside-runtime evidence, not a blanket exception. The rebuilt image passed
 isolated startup and required metrics checks; it has not passed actual DEV
 classroom acceptance or the project's image publication pipeline.
+
+On 2026-11-04 the pinned upstream archive and checked-in patch were used to
+rebuild a Linux/amd64 binary with Go 1.27.3 and reproducible build flags.
+The binary SHA-256 is
+`a247e0ecbdd4cbe9491a220a58610767372e7353d89b81c0bfc464ed9496fbf0`,
+identical inside the local test image. It identifies `golang.org/x/net`
+v0.62.0. Trivy found zero High/Critical matches and one Unknown
+`GO-2026-5932` match for `golang.org/x/crypto`; the exact binary's retained
+Linux package graph and symbol inventory contain no `openpgp` packages or
+symbols, the only affected packages in the [Go advisory](https://pkg.go.dev/vuln/GO-2026-5932).
+This is outside-runtime evidence for this binary only, not a blanket waiver.
+The local image started and served its health endpoint; this did not test
+media, a CI-built image or a deployment. The candidate reproducible recipe
+is in `images/livekit/` and still needs a complete CI build and final-image
+security disposition.
 The prepared LiveKit Helm chart can now render a validated immutable image
 digest. Default DEV and production renders remained byte-for-byte unchanged;
 a valid digest rendered the expected image reference and a malformed digest
