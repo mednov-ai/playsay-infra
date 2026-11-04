@@ -88,6 +88,17 @@ backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
 
+The production-based platform candidate includes the same maintenance
+admission boundary used by DEV: `PLAYSAY_GAMES_MAINTENANCE=true` rejects both
+starting a lesson and issuing a LiveKit room token with `GAME_MAINTENANCE`.
+It defaults to false. Before replacing the DEV API, verify that the active
+old and new images both enforce this boundary, close admission through DEV
+GitOps, wait for previously issued tokens and connections to drain, and verify
+that it remains closed after the swap. A flag or a healthy API alone does not
+prove that previously issued tokens, rooms or collaboration queues are empty.
+The current production API predates this candidate and must not be assumed to
+enforce the flag before its own deployment.
+
 The prepared platform candidate also moves the web and keyboard images to
 nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
 service runtimes omit unused npm. Alpine security updates are resolved during
