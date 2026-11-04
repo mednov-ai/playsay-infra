@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-media-service
-  tag: "media-dev-50"
-  digest: sha256:8107971bc107b0e51eb339f8f5ec83e347e77ba17bace7889c10b8b19c7a796c
+  tag: "media-codex-hotfix-stack-upgrade-20261103-52"
+  digest: sha256:a245d9dff80dcd7770cd86fc54d4e91d32062e800146a13aa2f28becd18e56b4
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: media-dev-50
-  number: "50"
-  branch: develop
-  branchLabel: media-dev
-  commit: eed588a90ba65f67944724e964e727c0262644ff
-  commitShort: "eed588a90ba6"
+  name: media-codex-hotfix-stack-upgrade-20261103-52
+  number: "52"
+  branch: codex/hotfix-stack-upgrade-20261103
+  branchLabel: media-codex-hotfix-stack-upgrade-20261103
+  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
+  commitShort: "b5d4da6d86f4"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
