@@ -4,17 +4,16 @@ Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selec
 
 ### Prepared DEV stack upgrade (not yet deployed)
 
-**Security hold, updated 2026-11-04:** do not deploy the prepared PostgreSQL
-17.11 or upstream LiveKit 1.13.11 images while their other unassessed findings
-and the fixable upstream LiveKit HTTP/2 dependency remain. After discussing
-the linked `libxml2` CVE-2026-6653 in both PostgreSQL 17.11 and 18.6, the owner
-directed us to continue the current DEV rollout despite that observation;
-this does not cover other findings or authorize production promotion. DEV
-lesson admission was restored while remediation is investigated. Retained
-raw scans, exact image digests,
-runtime-boundary evidence and the local LiveKit rebuild are in
+**DEV stack upgrade, updated 2026-11-04:** the owner authorized this DEV
+rollout and accepted PostgreSQL and Keycloak findings also present in their
+current images, without custom product rebuilds. This is unresolved risk for
+this hotfix, not a general exception or production authorization. The exact
+baseline comparisons, candidate findings and raw scans are retained in
 [container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
-Functional tests and the JVM dependency gate do not waive this hold.
+New findings, scan errors, backup/restore, lesson admission and the other
+candidate-specific delivery gates still require resolution. The original
+upstream LiveKit image's HTTP/2 dependency is not covered by that acceptance;
+use the pinned, scanned LiveKit security rebuild.
 The LiveKit chart accepts an optional `image.digest`; when present it renders
 `repository@sha256:...` and rejects malformed digests. The existing DEV and
 production tag renders are unchanged while that value is empty. Set a digest
@@ -29,6 +28,14 @@ does not establish that an image was published or deployed. Its first scan-only
 run passed at infra `5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
 `f393a19b878249dcd4c4787395cbf2bb17111296`; new candidates require a fresh
 run with the then-current exact source heads and retained evidence.
+
+The separate `playsay-keycloak-image` job is limited to image-only publication
+for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
+this job for deployment. It scans the exact unpublished archive, retains raw
+reports, allows only the owner's three exact matching Keycloak OS findings,
+checks the current source branch head, and verifies the registry digest.
+Its result alone does not switch Keycloak or authorize an identity database
+cutover.
 
 Both environments currently use CloudNativePG operator 1.29.1, which is
 covered by upstream security advisories. A 1.30.1 overlay is staged under

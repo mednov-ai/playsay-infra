@@ -24,6 +24,7 @@ DEFAULT_JOB_NAMES=(
   playsay-registration-service-develop
   playsay-email-service-develop
   playsay-keycloak-develop
+  playsay-keycloak-image
   playsay-keyboard-backend-develop
   playsay-keyboard-frontend-develop
 )
@@ -46,6 +47,7 @@ DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-registration-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-email-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keycloak-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-keycloak-image.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-backend-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-keyboard-frontend-develop.xml"
 )
