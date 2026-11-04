@@ -137,12 +137,13 @@ source on the production guest; do not copy database contents or credentials
 to CI or the workstation. A successful archive check does not prove a restore:
 perform the separately isolated restore and verify the result before a
 database-backed production rollout. The backups do not cover object storage.
-`scripts/verify-prod-backup-restore.sh` accepts only a protected production
-stack-upgrade backup while the reviewed Bitnami identity source is active. It
-restores all four dumps in a bounded, task-owned temporary pod using the
-currently running PostgreSQL 17.6 image; PostgreSQL listens only on a local
+`scripts/verify-prod-backup-restore.sh` accepts only a complete protected production
+stack-upgrade backup. It selects the active reviewed Bitnami identity source or
+the authoritative `keycloak-postgres-prod-import` CNPG primary from Keycloak's JDBC
+endpoint, rejecting unknown endpoints. It restores all four dumps in a bounded,
+task-owned temporary pod using the pinned PostgreSQL 17.11 image; PostgreSQL listens only on a local
 Unix socket. It verifies copy checksums and compares restored table counts to
-the source, discards row-bearing restore error details, then deletes only its
+the active source, discards row-bearing restore error details, then deletes only its
 labelled temporary pod. It does not verify
 the separate PostgreSQL 17.11 identity import or write-aware rollback.
 
