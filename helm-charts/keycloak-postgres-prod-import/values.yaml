@@ -1,0 +1,7 @@
+# Rendering is disabled until the production-specific encrypted credential and
+# the other release, backup, import and lesson-safety gates have been reviewed.
+enabled: false
+storageSize: 20Gi
+encryptedData:
+  username: ""
+  password: ""

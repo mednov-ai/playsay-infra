@@ -1,0 +1,73 @@
+{{- if .Values.enabled }}
+{{- if ne .Release.Namespace "keycloak" }}{{ fail "Production identity import requires the keycloak namespace" }}{{ end }}
+{{- $username := required "Production-scoped sealed username is required" .Values.encryptedData.username }}
+{{- $password := required "Production-scoped sealed password is required" .Values.encryptedData.password }}
+{{- if or (not (regexMatch "^Ag[A-Za-z0-9+/]{100,}={0,2}$" $username)) (not (regexMatch "^Ag[A-Za-z0-9+/]{100,}={0,2}$" $password)) }}{{ fail "Identity credentials must be sealed ciphertext" }}{{ end }}
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: keycloak-postgres-prod-import-app
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=false
+    helm.sh/resource-policy: keep
+spec:
+  template:
+    metadata:
+      name: keycloak-postgres-prod-import-app
+      namespace: keycloak
+    type: kubernetes.io/basic-auth
+  encryptedData:
+    username: {{ $username | quote }}
+    password: {{ $password | quote }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-postgres-prod-import
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    helm.sh/resource-policy: keep
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie@sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd
+  stopDelay: 300
+  smartShutdownTimeout: 60
+  bootstrap:
+    initdb:
+      database: bitnami_keycloak
+      owner: bn_keycloak
+      secret:
+        name: keycloak-postgres-prod-import-app
+      localeCollate: en_US.UTF-8
+      localeCType: en_US.UTF-8
+      import:
+        type: microservice
+        databases:
+          - bitnami_keycloak
+        source:
+          externalCluster: keycloak-bitnami-source
+  externalClusters:
+    - name: keycloak-bitnami-source
+      connectionParameters:
+        host: keycloak-postgresql
+        dbname: postgres
+        user: bn_keycloak
+      password:
+        name: keycloak-postgresql
+        key: password
+  postgresql:
+    shared_preload_libraries:
+      - pgaudit
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 384Mi
+  storage:
+    size: {{ .Values.storageSize | quote }}
+{{- end }}

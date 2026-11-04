@@ -1,0 +1,5 @@
+apiVersion: v2
+name: keycloak-postgres-prod-import
+description: Staged production identity database import
+type: application
+version: 0.1.0

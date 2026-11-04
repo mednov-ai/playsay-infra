@@ -156,6 +156,19 @@ Production promotion requires the owner's later explicit command and its own
 current release, security, backup, schema and lesson-safe gates.
 The initial preparation is recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
 
+The staged `keycloak-postgres-prod-import` chart does not create any resources
+by default and is not an ArgoCD application. Its source uses the production
+`bn_keycloak` database owner and the existing `keycloak-postgresql` password
+key; the production Secret does not contain the DEV import's
+`postgres-password` key. Before use, verify all source ownership and dump
+permissions, test a representative offline import and restore, generate the
+target basic-auth SealedSecret with the production controller, and verify its
+decrypted values against the production source without printing credentials.
+The 20Gi target also needs fresh capacity confirmation. Do not enable or sync
+this chart until candidate security, admission/drain, zero-writer, protected
+backup/restore and write-aware rollback gates pass. Any source write after the
+offline import starts is absent from the imported snapshot.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.
