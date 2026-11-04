@@ -211,8 +211,9 @@ The new base's Java `cacerts` path is a symlink to the extracted system Java
 truststore. A local Java trust-manager check accepted the affected emSign G3
 root with the previous base's store and rejected it with the new store;
 [test source](CheckTrustStore.java) and [recorded hashes](keycloak-ca-trust-check-20261104.txt)
-are retained. Red Hat states that updating the system CA package addresses this
-OpenJDK issue for its RPM builds. That is promising evidence, but other
+are retained. [Red Hat states](https://access.redhat.com/security/cve/cve-2026-91403)
+that updating the system CA package addresses this OpenJDK issue for its RHEL
+RPM builds. That is promising evidence, but other
 Keycloak truststores and the effective deployed configuration have not been
 proven, so the scanner match remains blocked rather than silently ignored.
 
@@ -223,6 +224,10 @@ dialect classes but do not establish whether the native library is loaded by
 Keycloak. The [inventory](keycloak-upstream-native-inspection-20261104.txt)
 is not a dynamic runtime trace or an inspection of the final image; it must
 not be used to classify the SQLite library as absent from server runtime.
+An isolated Linux call to the exact upstream library returned SQLite 3.34.1
+with `ENABLE_FTS5=1`; [the library hash and test result](keycloak-sqlite-compile-options-20261104.txt)
+are retained. This confirms the affected feature is compiled in, but does not
+prove Keycloak loads it or exposes the vulnerable SQL path.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
