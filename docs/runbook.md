@@ -34,7 +34,17 @@ The private LiveKit image requires `ghcr-pull-secret` in the `livekit`
 namespace, not only in `playsay-dev`. The DEV chart creates the namespace-scoped
 SealedSecret using the existing DEV registry credential; keep plaintext out of
 Git and verify the pull secret and image digest before accepting the rollout.
-The production chart does not render the DEV credential.
+The production chart does not render the DEV credential. A separate
+production-scoped SealedSecret is staged under
+`migrations/ax41/staged/stack-upgrade/livekit-prod-registry-sealedsecret.json`;
+it was derived from the existing production registry credential and validated
+with the production controller. It is inert until explicitly incorporated into
+the reviewed production GitOps release. After reconciliation, compare the
+resulting secret to the production source in memory without printing values.
+The staged `livekit-prod-values.yaml` combines this ciphertext with the pinned
+LiveKit image; it is not part of the active production value files. The chart
+rejects simultaneous DEV and production registry credentials, while its
+existing DEV and PROD renders remain unchanged until the override is selected.
 
 The separate `playsay-keycloak-image` job is limited to image-only publication
 for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
@@ -54,7 +64,7 @@ with the exact CRDs and PostgreSQL 17 databases in isolation, and verify
 backup/restore and write-aware rollback. The current shared operator overlay
 is still at 1.29.1. Activate DEV only through a reviewed GitOps source change
 after the same lesson-admission and database safety gates; production remains
-on its existing release until the separate production command.
+on its existing release until its current release gates pass.
 The prepared `playsay-cnpg-image` job builds the pinned security rebuild from
 exact infra and platform branch heads, captures its module graph and binary
 hashes, and scans the archive before optional image-only publication. It has
@@ -78,6 +88,14 @@ backup or a healthy rollout is not a restore test. Use the current DEV
 lesson-admission and drain procedures before an interrupting change; monitor
 the direct and RF routes, collaboration and real media independently.
 
+Do not replace the shared DEV API with this production-based candidate: DEV
+has canonical game-library references and the older reader is incompatible
+with that migration's recovery rule below. Closing admission does not remove
+that incompatibility. Test the candidate against an isolated compatible data
+set and route before considering production promotion. The production-based
+candidate does not enforce DEV's game-maintenance admission flag; use the
+applicable production lesson-safe admission and drain procedure.
+
 The prepared platform candidate also moves the web and keyboard images to
 nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
 service runtimes omit unused npm. Alpine security updates are resolved during
@@ -89,8 +107,10 @@ baseline did not satisfy this pre-publication gate. A replacement has been
 prepared and tested locally: module jobs on `security-check/` branches build
 and scan only, without publication, migration or GitOps updates; deployable
 jobs scan the unpublished archive and verify the published digest before
-continuing. On the exact stack-hotfix branch the application jobs scan and
-publish only: they skip database migration, GitOps updates and deployment.
+continuing. On the exact `codex/hotfix-stack-upgrade-20261103` and
+`codex/stack-upgrade-prod-candidate-20261104` branches the application jobs
+scan and publish only: they skip database migration, GitOps updates and
+deployment. These branches are not production release branches.
 Deploy reviewed exact image digests through DEV GitOps only after the full
 candidate and delivery gates pass. Preserve the game
 adapter's non-root identity, read-only
@@ -107,6 +127,24 @@ database is actually active, validates the archive catalogs and checksums,
 and marks unfinished output `INCOMPLETE.txt`. Run it as root from a reviewed
 copy on the DEV guest. A successful archive check still requires the separate
 isolated restore; it does not include object storage.
+
+The production counterpart, `scripts/backup-prod-databases.sh`, runs only on
+`playsay-prod` and applies the same source-selection checks for the reviewed
+Bitnami and CNPG identity endpoints. It writes four protected archives under
+`/var/backups/playsay`, verifies their checksums and archive catalogs, and
+retains an `INCOMPLETE.txt` marker on failure. Run it from the reviewed release
+source on the production guest; do not copy database contents or credentials
+to CI or the workstation. A successful archive check does not prove a restore:
+perform the separately isolated restore and verify the result before a
+database-backed production rollout. The backups do not cover object storage.
+`scripts/verify-prod-backup-restore.sh` accepts only a protected production
+stack-upgrade backup while the reviewed Bitnami identity source is active. It
+restores all four dumps in a bounded, task-owned temporary pod using the
+currently running PostgreSQL 17.6 image; PostgreSQL listens only on a local
+Unix socket. It verifies copy checksums and compares restored table counts to
+the source, discards row-bearing restore error details, then deletes only its
+labelled temporary pod. It does not verify
+the separate PostgreSQL 17.11 identity import or write-aware rollback.
 
 The former DEV Keycloak database is a separate Bitnami PostgreSQL 17.4
 workload. The DEV `keycloak-postgres-upgrade` ArgoCD application imported it
@@ -142,9 +180,23 @@ backup. Future Keycloak backups must target the active JDBC host, not assume
 that the retained Bitnami pod is authoritative. Roll back LiveKit and
 application images through GitOps after draining users. Do not assume that
 merely reverting a PostgreSQL image is a tested database rollback.
-Production promotion requires the owner's later explicit command and its own
-current release, security, backup, schema and lesson-safe gates.
+Production promotion requires the owner's explicit command and its own
+current release, security, backup, schema and lesson-safe gates. The command
+was received on 2026-11-04; the remaining gates are not yet complete.
 The initial preparation is recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
+
+The staged `keycloak-postgres-prod-import` chart does not create any resources
+by default and is not an ArgoCD application. Its source uses the production
+`bn_keycloak` database owner and the existing `keycloak-postgresql` password
+key; the production Secret does not contain the DEV import's
+`postgres-password` key. Before use, verify all source ownership and dump
+permissions, test a representative offline import and restore, generate the
+target basic-auth SealedSecret with the production controller, and verify its
+decrypted values against the production source without printing credentials.
+The 20Gi target also needs fresh capacity confirmation. Do not enable or sync
+this chart until candidate security, admission/drain, zero-writer, protected
+backup/restore and write-aware rollback gates pass. Any source write after the
+offline import starts is absent from the imported snapshot.
 
 ## Sprint 0 Status
 
