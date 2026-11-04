@@ -13,6 +13,7 @@ spec:
       releaseName: livekit
       valueFiles:
         - values-prod.yaml
+        - ../../migrations/ax41/staged/stack-upgrade/livekit-prod-values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: livekit

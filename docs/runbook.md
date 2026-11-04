@@ -198,6 +198,40 @@ this chart until candidate security, admission/drain, zero-writer, protected
 backup/restore and write-aware rollback gates pass. Any source write after the
 offline import starts is absent from the imported snapshot.
 
+
+### Authorized production stack release 01.007.25 preparation
+
+The owner authorized this candidate's production delivery, accepted the exact
+retained PostgreSQL/Keycloak image findings and granted a one-time exception
+for stage acceptance, with acceptance immediately after rollout. See the
+[scoped approval](../migrations/ax41/evidence/20261104-stack-upgrade-production-risk-acceptance.md).
+The numeric platform source is `ac483353beb2abab8c1d076a887044b536d24c1f`.
+The release's accepted-dev ancestry anchor is the previously accepted
+`e37bb8aa3107c71dd31edfaea8c3735b2025532d`; this is not a claim that the newer
+DEV stack tree or its game-library migration is included in this production
+candidate. Exact-candidate stage acceptance is covered only by the owner's
+one-time exception. Native numeric CI and all other release gates still apply.
+
+Prepare the pinned application PostgreSQL 17.11 and LiveKit production override
+on the numeric release. The production identity import uses the separate
+`keycloak-postgres-prod-import` cluster, `bn_keycloak` owner and a production-only
+sealed copy of the existing password. Keep it inert until Keycloak is stopped
+through GitOps, source writers are zero and the current backup/restore and
+candidate gates pass. Compare source/target schema and identity/session
+aggregates before switching the JDBC host to
+`keycloak-postgres-prod-import-rw`, retaining the existing application password
+Secret. The old Bitnami workload, PVC and Secret must remain available. Once
+new writes start, the source is a stale safety copy; do not switch back and lose
+those writes. Recover through a reviewed write-preserving path.
+
+`backup-prod-databases.sh` recognizes both reviewed CNPG identity names and
+selects the primary from the active JDBC host. It must refuse unknown hosts.
+Before reopening normal service, verify the active database, native login,
+pre-existing session refresh, provider behavior, both product origins, group
+collaboration and media. This section describes the authorized procedure;
+it is not evidence of successful promotion or acceptance. CloudNativePG
+operator 1.30.1 remains staged pending its separate upgrade/recovery validation.
+
 ## Sprint 0 Status
 
 Sprint 0 is complete. This runbook now describes the working dev baseline for Sprint 2.

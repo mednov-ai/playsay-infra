@@ -28,10 +28,12 @@ case "$identity_jdbc" in
     identity_kind=bitnami
     keycloak_db="$(kubectl -n keycloak get pods -o json | jq -er '[.items[] | select(.status.phase == "Running") | select(any(.spec.containers[]; .name == "postgresql")) | .metadata.name] | if length == 1 then .[0] else error("identity database pod is not unique") end')"
     ;;
-  jdbc:postgresql://keycloak-postgres-upgrade-rw:5432/bitnami_keycloak)
+  jdbc:postgresql://keycloak-postgres-upgrade-rw:5432/bitnami_keycloak|jdbc:postgresql://keycloak-postgres-prod-import-rw:5432/bitnami_keycloak)
     [[ "$identity_replicas" == 1 ]] || { echo "new identity database backup requires a running verified Keycloak" >&2; exit 1; }
     identity_kind=cnpg
-    keycloak_db="$(kubectl -n keycloak get cluster keycloak-postgres-upgrade -o json | jq -er '.status.currentPrimary')"
+    identity_cluster=keycloak-postgres-upgrade
+    [[ "$identity_jdbc" != jdbc:postgresql://keycloak-postgres-prod-import-rw:5432/bitnami_keycloak ]] || identity_cluster=keycloak-postgres-prod-import
+    keycloak_db="$(kubectl -n keycloak get cluster "$identity_cluster" -o json | jq -er '.status.currentPrimary')"
     ;;
   *) echo "active identity database does not match a reviewed PROD endpoint" >&2; exit 1 ;;
 esac
