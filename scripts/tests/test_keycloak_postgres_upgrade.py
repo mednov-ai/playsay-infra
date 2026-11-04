@@ -69,6 +69,20 @@ class KeycloakPostgresUpgradeChartTest(unittest.TestCase):
         self.assertEqual(staged, self.resources["Cluster"]["spec"]["imageName"])
         self.assertNotEqual(active["cluster"]["imageName"], staged)
 
+    def test_operator_candidate_cannot_be_reconciled_by_active_applications(self):
+        staged = ROOT / "migrations/ax41/staged/stack-upgrade/cloudnative-pg-operator-1.30.1/kustomization.yaml"
+        candidate = yaml.safe_load(staged.read_text())
+        self.assertEqual(candidate["images"][0]["newTag"], "1.30.1")
+        digest = candidate["images"][0]["digest"]
+        self.assertEqual(digest, "sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07")
+        self.assertIn("2a35abb4628f209d149825ef3c38011e0701ff2f", candidate["resources"][0])
+        self.assertIn(digest, candidate["patches"][0]["patch"])
+        for environment in ("dev", "prod"):
+            app = yaml.safe_load((ROOT / f"argocd-apps/{environment}/apps/cloudnative-pg.yaml").read_text())
+            self.assertEqual(app["spec"]["source"]["path"], "kustomize/cloudnative-pg-operator")
+        active = yaml.safe_load((ROOT / "kustomize/cloudnative-pg-operator/kustomization.yaml").read_text())
+        self.assertEqual(active["images"][0]["newTag"], "1.29.1")
+
 
 if __name__ == "__main__":
     unittest.main()

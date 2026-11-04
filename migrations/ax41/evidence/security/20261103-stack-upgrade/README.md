@@ -25,6 +25,46 @@ that the affected code is absent. Additional High findings require their own
 exact package/runtime assessment. The existing Kotlin/build-tool exception
 does not cover these findings.
 
+After the owner was told that this same `CVE-2026-6653` affects both the
+selected 17.11 image and the checked 18.6 image, the owner directed us to
+continue the rollout without treating that observation as a blocker. The
+immediate authorized target is DEV for this hotfix; production still requires
+the separate command already requested. This direction does not establish
+that other scanner matches are absent from runtime or cover subsequently
+discovered Keycloak findings, and all other delivery checks still apply.
+
+The separately deployed CloudNativePG operator is 1.29.1 in both
+[DEV](cnpg-operator-20261104-dev-inventory.json) and
+[production](cnpg-operator-20261104-prod-inventory.json), using Kubernetes
+1.35.5+k3s1. Upstream identifies 1.29.1 as affected by the operator
+[untrusted search-path privilege escalation](https://github.com/cloudnative-pg/cloudnative-pg/security/advisories/GHSA-x8c2-3p4r-v9r6)
+and [password exposure](https://github.com/cloudnative-pg/cloudnative-pg/security/advisories/GHSA-w3gf-xc94-wvmj);
+neither advisory proves an attack path through this application. The observed
+application clusters explicitly disable superuser access and specify no shared
+preloaded libraries; the full configuration, role access and effective runtime
+settings must still be checked before assessing exploitability. Upstream also
+documents a distinct [operator control-port hardening issue](https://github.com/cloudnative-pg/cloudnative-pg/security/advisories/GHSA-7qwx-x8ff-3px9)
+addressed in 1.30.0; effective network isolation has not yet been established.
+
+A DEV-only 1.30.1 operator overlay is staged outside all reconciled ArgoCD
+trees. Its upstream source is pinned to `2a35abb4628f209d149825ef3c38011e0701ff2f`
+and its image index to `sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07`.
+Kustomize rendered its 26 objects, preserving the project resource limits,
+reconciliation count and probes; this is not an upgrade test. The exact
+upstream Linux/amd64 image's [full scan](cnpg-operator-1301-trivy.json.gz)
+reports ten High and five Unknown package/finding matches. These include
+unpatched Go/toolchain and `x/net` matches in both shipped manager binaries,
+and a CA-package advisory. Matching both binaries is not evidence of fifteen
+independent attack paths. The scan database metadata and uncompressed report
+checksum are retained. The staged operator must not be selected until its
+actual runtime findings, image scan, isolated upgrade and recovery checks pass;
+the shared active DEV/production operator overlay is unchanged.
+The newer `static-debian13:nonroot` base index
+`sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`
+had zero vulnerability matches in a [separate scan](cnpg-distroless-base-trivy.json.gz)
+with the same scanner database. It is a potential build input, not a scan of
+a rebuilt operator or evidence that the Go findings are fixed.
+
 On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
 again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
 The [complete report](postgres-1711-system-trixie-20261104.json.gz),
@@ -144,6 +184,12 @@ and final-image scan for the same platform commit, with zero blocking image
 matches. Full and blocking reports, their uncompressed checksums, database
 metadata and the image archive hash are retained as
 `playsay-keyboard-backend-develop-55-*`. Publication and DEV stages did not run.
+
+Media service #51 passed its dependency-security gate, tests, package build
+and final-image scan for platform commit `a8ca83154b9ffea9220a631112657438eed60c58`,
+with zero blocking image matches. Reports, checksums, database metadata and
+the image archive hash are retained as `playsay-media-service-develop-51-*`.
+Publication and DEV stages did not run.
 
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
 at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero

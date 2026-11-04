@@ -4,11 +4,14 @@ Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selec
 
 ### Prepared DEV stack upgrade (not yet deployed)
 
-**Security hold, 2026-11-03:** do not deploy the prepared PostgreSQL 17.11 or
-upstream LiveKit 1.13.11 images. Fresh container scans identified unaccepted
-runtime findings, including vulnerable `libxml2` linked by PostgreSQL and a
-fixable LiveKit HTTP/2 dependency. DEV lesson admission was restored while
-remediation is investigated. Retained raw scans, exact image digests,
+**Security hold, updated 2026-11-04:** do not deploy the prepared PostgreSQL
+17.11 or upstream LiveKit 1.13.11 images while their other unassessed findings
+and the fixable upstream LiveKit HTTP/2 dependency remain. After discussing
+the linked `libxml2` CVE-2026-6653 in both PostgreSQL 17.11 and 18.6, the owner
+directed us to continue the current DEV rollout despite that observation;
+this does not cover other findings or authorize production promotion. DEV
+lesson admission was restored while remediation is investigated. Retained
+raw scans, exact image digests,
 runtime-boundary evidence and the local LiveKit rebuild are in
 [container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
 Functional tests and the JVM dependency gate do not waive this hold.
@@ -26,6 +29,18 @@ does not establish that an image was published or deployed. Its first scan-only
 run passed at infra `5c76122a2884c1137125a7b17f58ceef2c3f2321` and platform
 `f393a19b878249dcd4c4787395cbf2bb17111296`; new candidates require a fresh
 run with the then-current exact source heads and retained evidence.
+
+Both environments currently use CloudNativePG operator 1.29.1, which is
+covered by upstream security advisories. A 1.30.1 overlay is staged under
+`migrations/ax41/staged/stack-upgrade/cloudnative-pg-operator-1.30.1/`, but
+the upstream image itself has separate scan findings and must not be activated
+as-is. Before choosing a fixed operator image, retain a fresh full scan,
+resolve its runtime findings, test the operator and instance-manager upgrade
+with the exact CRDs and PostgreSQL 17 databases in isolation, and verify
+backup/restore and write-aware rollback. The current shared operator overlay
+is still at 1.29.1. Activate DEV only through a reviewed GitOps source change
+after the same lesson-admission and database safety gates; production remains
+on its existing release until the separate production command.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
