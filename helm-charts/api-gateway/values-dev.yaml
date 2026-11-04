@@ -133,7 +133,8 @@ resources:
     memory: 1536Mi
 games:
   writesEnabled: true
-  maintenance: false
+  # Temporary DEV admission drain for the production-based stack candidate.
+  maintenance: true
   migration:
     enabled: false
     dryRun: false
