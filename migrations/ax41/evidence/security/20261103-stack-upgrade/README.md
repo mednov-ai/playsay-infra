@@ -139,6 +139,12 @@ blocking reports, scanner metadata and image archive hash are retained as
 `playsay-keyboard-frontend-develop-117*`. Publication, GitOps and DEV browser
 smoke did not execute.
 
+Keyboard backend #55 passed its dependency-security gate, tests, package build
+and final-image scan for the same platform commit, with zero blocking image
+matches. Full and blocking reports, their uncompressed checksums, database
+metadata and the image archive hash are retained as
+`playsay-keyboard-backend-develop-55-*`. Publication and DEV stages did not run.
+
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
 at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero
 blocking image matches. Its raw and blocking reports, scanner and Java DB
@@ -228,6 +234,25 @@ An isolated Linux call to the exact upstream library returned SQLite 3.34.1
 with `ENABLE_FTS5=1`; [the library hash and test result](keycloak-sqlite-compile-options-20261104.txt)
 are retained. This confirms the affected feature is compiled in, but does not
 prove Keycloak loads it or exposes the vulnerable SQL path.
+
+Jenkins Keycloak #30 inspected its unpublished image before the full scan;
+the scan blocked on the same three findings. The scan-only source commit was
+`c3f170a740a8ff3d29fb4bdb8651a3bdb541c802`; compared with candidate platform
+commit `a8ca83154b9ffea9220a631112657438eed60c58`, only the inspection stage
+in the Jenkinsfile and a security document differ. The inspected archive hash,
+complete raw and blocking reports, database metadata and file inventories are
+retained as `playsay-keycloak-develop-30-*`; publication and DEV stages were
+skipped. The [system Java truststore](playsay-keycloak-develop-30-java-system-cacerts)
+has the same SHA-256 as the tested updated base truststore, and the retained
+[symlink inventory](playsay-keycloak-develop-30-java-truststore-links.txt)
+confirms the image's default Java path reaches that store. No extra file under
+`/opt/keycloak/conf/truststores/` was found. The [SQLite inventory](playsay-keycloak-develop-30-sqlite-paths.txt)
+has the library but no executable named `sqlite3`, `sqlite3_analyzer` or
+`sqldiff`; the separate [shell-name inventory](playsay-keycloak-develop-30-sqlite-shell-paths.txt)
+is empty. These checks strengthen the case for the CA package correction and
+for the shell-only finding being outside this image's server runtime, but do
+not establish the effective deployed configuration or resolve the FTS5 finding.
+The candidate remains blocked pending its exact final scan and disposition.
 
 The `eclipse-temurin:25.0.5_8-jre` base scan contained no
 High/Critical/Unknown findings. The `node:26.13.0-alpine` base scan found
