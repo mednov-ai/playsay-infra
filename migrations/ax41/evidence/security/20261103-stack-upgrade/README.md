@@ -7,6 +7,27 @@ compressed in this directory; `RAW-SHA256SUMS.txt` covers the uncompressed
 bytes and `scanner-metadata.json` records the database timestamps. Counts
 below are package/finding matches, not distinct vulnerabilities.
 
+On 2026-11-04 the owner instructed us to proceed with this hotfix without
+rebuilding Keycloak or PostgreSQL to fix findings that are also present in
+the current version. This is an acceptance of the unresolved matching risks,
+not evidence they are fixed. The current authorized deployment remains DEV;
+production needs the separately requested command.
+
+An OS-package comparison using Trivy 0.76.1 found all 97 High/Critical/Unknown
+candidate PostgreSQL 17.11 CVE/package pairs in the current DEV PostgreSQL 17.6
+scan (309 pairs). Both PostgreSQL images were scanned with the same vulnerability
+database; the running DEV container image ID was
+`sha256:6ae4a22c14bdc66e5feaafd38d12c3956fabf9ce9582189e6aa4ee767d981d1b`,
+matching the scanned 17.6 image. The current Keycloak image scan contains
+all three OS-package CVE/package pairs in candidate build #30: CVE-2026-91403
+in OpenJDK and CVE-2026-119373 / CVE-2026-119586 in sqlite-libs. The SQLite
+package version is identical in both; the OpenJDK version differs. The
+Keycloak comparison concerns OS packages, not all application dependencies.
+[Raw scans](baseline-comparison-20261104.sha256) and the PostgreSQL comparison
+database metadata are retained. These results do not prove exploitability,
+runtime reachability, or equivalence of severity. New findings, changed scopes,
+scan errors and other delivery gates remain subject to review.
+
 | Image | Immutable image digest | High | Critical | Result |
 | --- | --- | ---: | ---: | --- |
 | CNPG PostgreSQL 17.11 system/trixie | `sha256:03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd` | 85 | 1 | Blocked |
