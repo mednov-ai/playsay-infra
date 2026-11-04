@@ -27,6 +27,11 @@ cross-service security, backup, admission, route and acceptance gates. Build
 `sha256:5bd1c9b8248dd70583d63fa1462104efd41f5d077d9cc7f16135cbb83932e6fe`;
 its source revisions and scan evidence are recorded in the linked security
 evidence. Publication does not establish DEV deployment or media acceptance.
+The private LiveKit image requires `ghcr-pull-secret` in the `livekit`
+namespace, not only in `playsay-dev`. The DEV chart creates the namespace-scoped
+SealedSecret using the existing DEV registry credential; keep plaintext out of
+Git and verify the pull secret and image digest before accepting the rollout.
+The production chart does not render the DEV credential.
 
 The separate `playsay-keycloak-image` job is limited to image-only publication
 for the authorized DEV hotfix branch. Its pipeline rejects any attempt to use
