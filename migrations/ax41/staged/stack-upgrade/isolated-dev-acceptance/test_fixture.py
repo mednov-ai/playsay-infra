@@ -40,7 +40,9 @@ class IsolatedAcceptanceBoundaryTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         objects = [obj for obj in yaml.safe_load_all(result.stdout) if obj]
         self.assertEqual({obj["kind"] for obj in objects}, {"Job", "NetworkPolicy"})
-        spec = next(obj for obj in objects if obj["kind"] == "Job")["spec"]["template"]["spec"]
+        job = next(obj for obj in objects if obj["kind"] == "Job")["spec"]
+        self.assertEqual(job["activeDeadlineSeconds"], 7200)
+        spec = job["template"]["spec"]
         self.assertFalse(spec["automountServiceAccountToken"])
         self.assertEqual([item["name"] for item in spec["containers"]], ["probe"])
         self.assertNotIn("secretKeyRef", json.dumps(spec))
