@@ -44,7 +44,10 @@ acl_sql="""SELECT json_build_object(
 acl_scope=json.loads(old_psql(acl_sql))
 if any(value!=0 for value in acl_scope.values()):raise RuntimeError('source has additional DB roles or grants that require explicit migration')
 metadata="SELECT json_build_object('version',current_setting('server_version'),'collation',d.datcollate,'ctype',d.datctype,'audit',current_setting('shared_preload_libraries'),'owner',pg_get_userbyid(d.datdba)) FROM pg_database d WHERE d.datname=current_database();"
-old_metadata=json.loads(old_psql(metadata));new_metadata=json.loads(new_psql(metadata))
+# The retained source application owner cannot read superuser-only settings.
+# Audit is a target gate; source version/locale/owner stay fully compared.
+source_metadata=metadata.replace(",'audit',current_setting('shared_preload_libraries')", "")
+old_metadata=json.loads(old_psql(source_metadata));new_metadata=json.loads(new_psql(metadata))
 if not old_metadata['version'].startswith('17.4') or not new_metadata['version'].startswith('17.11'):
  raise RuntimeError('identity PostgreSQL versions differ from the reviewed migration')
 if any(old_metadata[k]!=new_metadata[k] for k in ('collation','ctype','owner')) or 'pgaudit' not in new_metadata['audit']:

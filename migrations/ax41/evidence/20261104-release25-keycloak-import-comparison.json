@@ -1,0 +1,25 @@
+{
+  "sourceVersion": "17.4",
+  "targetVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "localeOwnerAuditMatch": true,
+  "extraSourceRolesAndGrants": {
+    "extraLoginRoles": 0,
+    "nonownerRelationGrants": 0,
+    "nonownerFunctionGrants": 0,
+    "nonownerSchemaGrants": 0,
+    "defaultAclOverrides": 0
+  },
+  "tableCount": 101,
+  "sourceRows": 1878,
+  "differentTables": [],
+  "schemaMatches": true,
+  "definitionsMatch": {
+    "indexes": true,
+    "constraints": true,
+    "owners": true
+  },
+  "indexCountMatches": true,
+  "constraintCountMatches": true,
+  "applicationPasswordMatches": true,
+  "sourceClientConnectionsBeforeAndAfter": 0
+}
