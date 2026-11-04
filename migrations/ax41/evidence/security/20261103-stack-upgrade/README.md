@@ -72,7 +72,9 @@ A DEV-only 1.30.1 operator overlay is staged outside all reconciled ArgoCD
 trees. Its upstream source is pinned to `2a35abb4628f209d149825ef3c38011e0701ff2f`
 and its image index to `sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07`.
 Kustomize rendered its 26 objects, preserving the project resource limits,
-reconciliation count and probes; this is not an upgrade test. The exact
+reconciliation count and probes. Comparing resource identities with the 1.29.1
+render showed the new `DatabaseRole` CRD and no removed objects; it did not
+verify changes within existing CRD schemas or perform an upgrade. The exact
 upstream Linux/amd64 image's [full scan](cnpg-operator-1301-trivy.json.gz)
 reports ten High and five Unknown package/finding matches. These include
 unpatched Go/toolchain and `x/net` matches in both shipped manager binaries,
@@ -236,6 +238,12 @@ same platform commit, with zero blocking image matches. Its reports, checksums,
 database metadata and image archive hash are retained as
 `playsay-collaboration-service-develop-67-*`; publication and DEV stages did
 not run.
+
+Worksheet import #37 passed its dependency-security gate, tests, package build
+and final-image scan at the same platform commit, with zero blocking image
+matches. Its reports, checksums, database metadata and image archive hash are
+retained as `playsay-worksheet-import-service-develop-37-*`. Publication,
+migration and DEV stages did not run.
 
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
 at platform commit `f1f5a414767e33b707ba48528162f60decaddd8c`, with zero
