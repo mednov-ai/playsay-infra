@@ -215,7 +215,7 @@ The owner authorized this candidate's production delivery, accepted the exact
 retained PostgreSQL/Keycloak image findings and granted a one-time exception
 for stage acceptance, with acceptance immediately after rollout. See the
 [scoped approval](../migrations/ax41/evidence/20261104-stack-upgrade-production-risk-acceptance.md).
-The numeric platform source is `62c219e7467d6e51298ab041b66b7b7a0970d005`; its scoped CI-only production exception leaves application trees unchanged from `ac483353beb2abab8c1d076a887044b536d24c1f`.
+The numeric platform source is `4848a1f1920ab41d45b061c1bd78f567b05db580`. It includes the scoped production CI exception and the compatible libpcre2 runtime OS patch. Application JAR sources, frontend sources, dependency lockfiles and changelogs remain unchanged from `ac483353beb2abab8c1d076a887044b536d24c1f`; the nine JVM runtime Dockerfiles differ.
 The release's accepted-dev ancestry anchor is the previously accepted
 `e37bb8aa3107c71dd31edfaea8c3735b2025532d`; this is not a claim that the newer
 DEV stack tree or its game-library migration is included in this production
