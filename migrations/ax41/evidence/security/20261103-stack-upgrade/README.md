@@ -31,6 +31,12 @@ describe an ABI/SONAME change requiring dependent rebuilds. Installing that
 newer package alongside the old one would therefore not by itself prove the
 PostgreSQL process uses the fixed library; replacing or relinking it without
 rebuilding and testing dependents is not a validated remedy.
+On 2026-11-04 a disposable container from the exact scanned 17.11 image
+refreshed the configured Debian trixie, trixie-updates, trixie-security and
+PGDG package indexes. `apt list --upgradable` listed no packages and the
+installed/candidate `libxml2` version remained
+`2.12.7+dfsg+really2.9.14-2.1+deb13u3`. This is a point-in-time package-index
+check, not proof of a fix or a change to either environment.
 This does not rule out backports to the old ABI: for example, Ubuntu reports
 a [fix for CVE-2026-86138 in its 2.9.14 package](https://ubuntu.com/security/CVE-2026-86138).
 Its package has not been established as compatible with this Debian image or
@@ -106,6 +112,16 @@ an image archive hash matching the inspected archive, as
 prepared image recipe; its output must be rebuilt and scanned before any
 publication. The two exploratory archive hashes differ, and no binary hash
 was retained from #2, so these results do not establish binary reproducibility.
+The dedicated `playsay-cnpg-image` image-only job was registered in CI and
+its first scan-only run passed at infra commit
+`b571328393a6667d0854315dd8028422e1f8c61c` and platform commit
+`a8ca83154b9ffea9220a631112657438eed60c58`, with zero blocking image
+matches. Both manager binaries, build information, dependency graphs and
+package lists were byte-identical to exploratory build #3; the comparison,
+full reports and inspected/scanned archive hashes are retained as
+`playsay-cnpg-image-1-*`. This establishes repeatability for these two CI
+builds, not independent toolchain reproducibility or a tested database
+upgrade. The job cannot deploy or change GitOps and did not publish an image.
 
 On 2026-11-04 the same immutable Linux/amd64 PostgreSQL image was scanned
 again with Trivy 0.76.1 and a database downloaded at 2026-11-03 23:55 UTC.
@@ -362,7 +378,19 @@ dependency and provider-test stages but stopped before image scanning because
 UBI's public build repositories did not provide `readline-devel`. No image was
 published. A second isolated fixture uses a pinned EL9 build environment while
 retaining the exact Red Hat source RPM and validating its checksum/signature;
-its build and compatibility checks must finish before any conclusion.
+build #32 verified the Red Hat signature but stopped on an overbroad spec
+precheck that also matched the changelog. Build #33 applied only the intended
+build-option/release edits, then stopped because its C compiler could not
+create a configure test executable. No exploratory build produced a scanned
+image. Build #34 narrowed this to the compiler not being able to execute its
+`cc1` component in the CI build container. Build #36 confirmed `cc1` is
+installed and that invoking GCC by absolute path reaches it, but the linker
+was not found on the build's executable search path. The next fixture sets an
+explicit system `PATH`; build #37 passed the compiler smoke check and began
+compiling the patched vendor source, but its 2 GiB build-container memory
+cgroup was OOM-killed. The next fixture serializes compilation and raises that
+temporary container's limit to 3 GiB. Its test suite, compatibility checks
+and final image scan must finish before any conclusion.
 
 Jenkins Keycloak #30 inspected its unpublished image before the full scan;
 the scan blocked on the same three findings. The scan-only source commit was
