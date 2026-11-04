@@ -64,7 +64,7 @@ with the exact CRDs and PostgreSQL 17 databases in isolation, and verify
 backup/restore and write-aware rollback. The current shared operator overlay
 is still at 1.29.1. Activate DEV only through a reviewed GitOps source change
 after the same lesson-admission and database safety gates; production remains
-on its existing release until the separate production command.
+on its existing release until its current release gates pass.
 The prepared `playsay-cnpg-image` job builds the pinned security rebuild from
 exact infra and platform branch heads, captures its module graph and binary
 hashes, and scans the archive before optional image-only publication. It has
@@ -180,8 +180,9 @@ backup. Future Keycloak backups must target the active JDBC host, not assume
 that the retained Bitnami pod is authoritative. Roll back LiveKit and
 application images through GitOps after draining users. Do not assume that
 merely reverting a PostgreSQL image is a tested database rollback.
-Production promotion requires the owner's later explicit command and its own
-current release, security, backup, schema and lesson-safe gates.
+Production promotion requires the owner's explicit command and its own
+current release, security, backup, schema and lesson-safe gates. The command
+was received on 2026-11-04; the remaining gates are not yet complete.
 The initial preparation is recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
 
 The staged `keycloak-postgres-prod-import` chart does not create any resources
