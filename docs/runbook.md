@@ -199,6 +199,16 @@ backup/restore and write-aware rollback gates pass. Any source write after the
 offline import starts is absent from the imported snapshot.
 
 
+### One-time release25 native build resume
+
+For this exact source4848 candidate, the recorded Jenkins Replay verifies all
+fourteen explicitly named completed native module builds through waitForBuild,
+including SUCCESS and their recorded branch/source, before omitting duplicate
+launches. It retains all fourteen targets and the original full finalizer.
+The reviewed patch, script hash, failed/superseded runs and actual image matrix
+belong to the release25 production evidence. This does not change normal
+retry behavior or waive a test, security, archive, image or promotion gate.
+
 ### Full image finding triage before release readiness
 
 The automatic image severity threshold is not the complete release decision.
