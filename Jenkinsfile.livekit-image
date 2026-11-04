@@ -64,7 +64,7 @@ spec:
   environment {
     INFRA_REPO = 'https://github.com/mednov-ai/playsay-infra.git'
     PLATFORM_REPO = 'https://github.com/mednov-ai/playsay-platform.git'
-    IMAGE_REPOSITORY = 'ghcr.io/mednov-ai/playsay-livekit-server'
+    IMAGE_REPOSITORY = 'ghcr.io/mednov-ai/playsay-cnpg-operator'
     DEPLOY_TO_PROD = 'false'
   }
 
@@ -84,9 +84,8 @@ spec:
               !(infraSha ==~ /^[0-9a-f]{40}$/) || !(platformSha ==~ /^[0-9a-f]{40}$/)) {
             error 'Both approved branches and their exact 40-character HEADs are required.'
           }
-          if (params.PUBLISH_CANDIDATE &&
-              (infraBranch.startsWith('security-check/') || platformBranch.startsWith('security-check/'))) {
-            error 'Security-check branches cannot publish images.'
+          if (params.PUBLISH_CANDIDATE || !infraBranch.startsWith('security-check/')) {
+            error 'This exploratory fixture is scan-only.'
           }
           checkout([$class: 'GitSCM', branches: [[name: "*/${infraBranch}"]],
             userRemoteConfigs: [[url: env.INFRA_REPO]]])
@@ -103,7 +102,7 @@ spec:
           env.GIT_COMMIT = infraSha
           env.PLATFORM_COMMIT = platformSha
           env.PLATFORM_CI_ROOT = "${env.WORKSPACE}/platform-source"
-          env.BUILD_LABEL = "livekit-candidate-${env.BUILD_NUMBER}"
+          env.BUILD_LABEL = "cnpg-fixture-${env.BUILD_NUMBER}"
           env.DEPLOY_TO_DEV = params.PUBLISH_CANDIDATE.toString()
           env.SECURITY_SCAN_ONLY = (!params.PUBLISH_CANDIDATE).toString()
           currentBuild.description = "infra ${infraSha.take(12)}; platform ${platformSha.take(12)}; publish ${params.PUBLISH_CANDIDATE}"
@@ -126,8 +125,8 @@ spec:
               mkdir -p /kaniko/.docker
               auth="$(printf '%s:%s' "$GHCR_USER" "$GHCR_TOKEN" | base64 | tr -d '\\n')"
               printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$auth" > /kaniko/.docker/config.json
-              KANIKO_CONTEXT="$WORKSPACE/images/livekit" \
-                KANIKO_DOCKERFILE="$WORKSPACE/images/livekit/Dockerfile" \
+              KANIKO_CONTEXT="$WORKSPACE/images/cnpg-operator" \
+                KANIKO_DOCKERFILE="$WORKSPACE/images/cnpg-operator/Dockerfile" \
                 /busybox/sh "$PLATFORM_CI_ROOT/scripts/ci/run-kaniko-image-build.sh"
             '''
           }
@@ -138,30 +137,13 @@ spec:
     stage('Scan exact image') {
       steps {
         container('image-security') {
-          sh './images/livekit/scan-livekit-image.sh'
+          sh '"$PLATFORM_CI_ROOT/scripts/ci/scan-image.sh"'
         }
         archiveArtifacts artifacts: 'image-security/**/*', allowEmptyArchive: false
       }
     }
 
-    stage('Publish candidate only') {
-      when { expression { params.PUBLISH_CANDIDATE } }
-      steps {
-        sh '''
-          set -eu
-          infra_head="$(git ls-remote --exit-code --heads "$INFRA_REPO" "refs/heads/$CI_BRANCH" | awk 'NR == 1 { print $1 }')"
-          platform_head="$(git ls-remote --exit-code --heads "$PLATFORM_REPO" "refs/heads/$PLATFORM_CI_BRANCH" | awk 'NR == 1 { print $1 }')"
-          [ "$infra_head" = "$GIT_COMMIT" ] && [ "$platform_head" = "$PLATFORM_COMMIT" ] || {
-            echo 'A source branch moved; refusing to publish a stale candidate.' >&2
-            exit 1
-          }
-        '''
-        container('image-security') {
-          sh '"$PLATFORM_CI_ROOT/scripts/ci/prepare-and-publish-image.sh"'
-        }
-        archiveArtifacts artifacts: 'image-security/**/*,image-digest.txt', allowEmptyArchive: false
-      }
-    }
+
   }
 
   post {
