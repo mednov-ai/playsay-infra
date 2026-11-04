@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-registration-service
-  tag: "registration-codex-hotfix-stack-upgrade-20261103-81"
-  digest: sha256:40dcfc1a2d92316e3f576c95f606f16c37c2e5fff7a2a09aae6a74083f04030c
+  tag: "registration-dev-85"
+  digest: sha256:a977c83ac754d02ef7c6483aa7fdc1424c2b31195398e371e6bc799a94719fde
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: registration-codex-hotfix-stack-upgrade-20261103-81
-  number: "81"
-  branch: codex/hotfix-stack-upgrade-20261103
-  branchLabel: registration-codex-hotfix-stack-upgrade-20261103
-  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
-  commitShort: "b5d4da6d86f4"
+  name: registration-dev-85
+  number: "85"
+  branch: develop
+  branchLabel: registration-dev
+  commit: 74b7de5593705154ccaa04325a9b296cbd164a6a
+  commitShort: "74b7de559370"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
