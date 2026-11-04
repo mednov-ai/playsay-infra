@@ -44,7 +44,10 @@ application clusters explicitly disable superuser access and specify no shared
 preloaded libraries; the full configuration, role access and effective runtime
 settings must still be checked before assessing exploitability. Upstream also
 documents a distinct [operator control-port hardening issue](https://github.com/cloudnative-pg/cloudnative-pg/security/advisories/GHSA-7qwx-x8ff-3px9)
-addressed in 1.30.0; effective network isolation has not yet been established.
+addressed in 1.30.0. The read-only inventory found no Kubernetes NetworkPolicy
+objects in the `playsay-data` namespace in either environment. It does not
+establish effective host/network restrictions, access from another pod, or
+exposure from the internet; those boundaries still require review.
 
 A DEV-only 1.30.1 operator overlay is staged outside all reconciled ArgoCD
 trees. Its upstream source is pinned to `2a35abb4628f209d149825ef3c38011e0701ff2f`
@@ -189,6 +192,12 @@ Media service #51 passed its dependency-security gate, tests, package build
 and final-image scan for platform commit `a8ca83154b9ffea9220a631112657438eed60c58`,
 with zero blocking image matches. Reports, checksums, database metadata and
 the image archive hash are retained as `playsay-media-service-develop-51-*`.
+Publication and DEV stages did not run.
+
+Registration service #80 passed its dependency-security gate, tests, package
+build and final-image scan for the same `a8ca8315` platform commit, with zero
+blocking image matches. Reports, checksums, database metadata and the image
+archive hash are retained as `playsay-registration-service-develop-80-*`.
 Publication and DEV stages did not run.
 
 AI tutor #63 passed the dependency gate, tests, packaging and final-image scan
