@@ -2,7 +2,7 @@
 
 Dev RF classroom routing uses `dev.online.honeyschool.ru` with independent Selectel TURN and dev-only credentials. The dev API enables `rf-two-hop` signaling/collaboration and `rf-turn-relay` media for the RF origin; `dev.online.honey.school` remains the direct baseline. Canonical authentication remains `dev.ops.honey.school/keycloak/realms/playsay`. Roll back the dev routing modes and RF public URL through GitOps; do not change production values or rotate production TURN credentials. Dev-only GeoIP entry is enabled with a validated local IPinfo MMDB; production entry remains disabled. See [2026-09-06 acceptance](../migrations/ax41/evidence/20260906-dev-geoip-acceptance.md). Provision the IPinfo token only in `/etc/honeyschool/secrets/ipinfo-lite-download-token` on AX41 (root, `0600`), never in Git or command arguments. Provider-issued 14-character tokens are valid; do not impose a 16-character minimum. Token provisioning alone must not activate redirects or reload nginx.
 
-### Prepared DEV stack upgrade (not yet deployed)
+### DEV stack upgrade and follow-up (2026-11-04)
 
 **DEV stack upgrade, updated 2026-11-04:** the owner authorized this DEV
 rollout and accepted PostgreSQL and Keycloak findings also present in their
@@ -10,8 +10,11 @@ current images, without custom product rebuilds. This is unresolved risk for
 this hotfix, not a general exception or production authorization. The exact
 baseline comparisons, candidate findings and raw scans are retained in
 [container security evidence](../migrations/ax41/evidence/security/20261103-stack-upgrade/README.md).
-New findings, scan errors, backup/restore, lesson admission and the other
-candidate-specific delivery gates still require resolution. The original
+New findings, scan errors and candidate-specific delivery gates remain
+blocking for subsequent releases. DEV was updated and admission reopened;
+backups, restore and lesson acceptance are recorded in
+[DEV rollout evidence](../migrations/ax41/evidence/20261104-stack-upgrade-dev-rollout.md).
+Production has not been promoted. The original
 upstream LiveKit image's HTTP/2 dependency is not covered by that acceptance;
 use the pinned, scanned LiveKit security rebuild.
 The LiveKit chart accepts an optional `image.digest`; when present it renders
@@ -64,10 +67,10 @@ Before using it, prepare and verify scoped pull credentials for the operator
 and for any database pods that must pull the instance-manager image; do not
 assume the `playsay-dev` namespace secret is available elsewhere.
 
-The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
-application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
-platform Java/Spring, React/Vite and LiveKit client upgrades. Before
-delivery, refresh the live revisions and lesson activity, run the
+The DEV stack hotfix uses PostgreSQL `17.11-system-trixie` for the
+application and Keycloak CNPG clusters and LiveKit `v1.13.11`, together with
+the platform Java/Spring, React/Vite and LiveKit client upgrades. Before any
+future delivery, refresh the live revisions and lesson activity, run the
 candidate-specific CI/security gates, and verify a protected fresh backup of
 the `playsay`, `keyboard`, `worksheet_import` and Keycloak databases,
 including checksum, archive catalog and an isolated restore. A previous
@@ -105,20 +108,15 @@ and marks unfinished output `INCOMPLETE.txt`. Run it as root from a reviewed
 copy on the DEV guest. A successful archive check still requires the separate
 isolated restore; it does not include object storage.
 
-The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
-the application CNPG image pin does not update it. The prepared DEV-only
-`keycloak-postgres-upgrade` ArgoCD application imports that database into a
-new CNPG PostgreSQL 17.11 cluster. Its manifest and the application-database
-image override are staged under `migrations/ax41/staged/stack-upgrade/`,
-outside the automatically reconciled ArgoCD tree. Merging this preparation
-alone must not start either database change. The legacy image has no maintained 17.11
-tag. A disposable operator 1.29.1/Keycloak 26.8.1 fixture verified the
-same-major import, matching 101 tables and aggregate identity/session counts,
-`en_US.UTF-8`, the owner, `pgaudit`, the existing database password, session
-refresh and a new login at the declared DEV memory/CPU limits. That fixture
-does not prove the real DEV cutover or the custom provider.
+The former DEV Keycloak database is a separate Bitnami PostgreSQL 17.4
+workload. The DEV `keycloak-postgres-upgrade` ArgoCD application imported it
+into a new CNPG PostgreSQL 17.11 cluster; DEV Keycloak now uses the new
+cluster. The old workload, PVC and secret are retained as a stale safety
+copy after the new database began receiving writes. The actual import, data
+comparison, session checks and backup evidence are recorded in the DEV rollout
+evidence. The legacy image has no maintained 17.11 tag.
 
-Before a separately reviewed GitOps commit activates the staged application,
+For any future equivalent identity import, before a separately reviewed GitOps commit,
 complete the candidate security and backup/restore gates, close DEV lesson admission, drain
 issued credentials and connections, scale DEV Keycloak to zero through a
 separate GitOps change, confirm no other source database writers, and refresh
@@ -146,8 +144,7 @@ application images through GitOps after draining users. Do not assume that
 merely reverting a PostgreSQL image is a tested database rollback.
 Production promotion requires the owner's later explicit command and its own
 current release, security, backup, schema and lesson-safe gates.
-The initial protected backup/restore evidence and outstanding acceptance are
-recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
+The initial preparation is recorded in [DEV stack-upgrade preparation](../migrations/ax41/evidence/20261103-stack-upgrade-dev.md).
 
 ## Sprint 0 Status
 
