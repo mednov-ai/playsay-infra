@@ -22,7 +22,27 @@ test("a browser uses only the fixture for app HTTP and collaboration WebSocket",
   const api = http.createServer((_req, res) => { res.writeHead(200, { "content-type": "application/json" }); res.end('{"fixture":true}'); });
   const collab = http.createServer();
   let peer;
+  let apiPeer;
+  let apiProtocolVerified = false;
+  api.on("upgrade", (req, connection) => {
+    apiPeer = connection;
+    assert.equal(req.url, "/ws/chat");
+    assert.equal(req.headers.origin, "https://dev.online.honey.school");
+    assert.deepEqual(req.headers["sec-websocket-protocol"].split(",").map(value => value.trim()), ["playsay", "fixture-token"]);
+    apiProtocolVerified = true;
+    const accept = createHash("sha1").update(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64");
+    connection.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\nSec-WebSocket-Protocol: playsay\r\n\r\n`);
+    connection.once("data", frame => {
+      const length = frame[1] & 0x7f;
+      if (length >= 126 || !(frame[1] & 0x80)) { connection.destroy(); return; }
+      const mask = frame.subarray(2, 6);
+      const payload = Buffer.from(frame.subarray(6, 6 + length));
+      for (let i = 0; i < payload.length; i++) payload[i] ^= mask[i % 4];
+      connection.write(Buffer.concat([Buffer.from([0x81, payload.length]), payload]));
+    });
+  });
   collab.on("upgrade", (req, connection) => {
+    assert.equal(req.headers.origin, "https://dev.online.honey.school");
     peer = connection;
     const accept = createHash("sha1").update(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest("base64");
     connection.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
@@ -54,9 +74,18 @@ test("a browser uses only the fixture for app HTTP and collaboration WebSocket",
       socket.onerror = () => reject(new Error("fixture WebSocket failed"));
       socket.onmessage = event => { clearTimeout(timer); socket.close(); resolve(event.data); };
     })), "synthetic");
+    assert.equal(await page.evaluate(() => new Promise((resolve, reject) => {
+      const socket = new WebSocket("wss://dev.online.honey.school/api/ws/chat", ["playsay", "fixture-token"]);
+      const timer = setTimeout(() => reject(new Error("fixture API WebSocket timeout")), 5000);
+      socket.onopen = () => socket.send("synthetic-api");
+      socket.onerror = () => reject(new Error("fixture API WebSocket failed"));
+      socket.onmessage = event => { clearTimeout(timer); socket.close(); resolve(event.data); };
+    })), "synthetic-api");
+    assert.equal(apiProtocolVerified, true);
     await context.close();
   } finally {
     peer?.destroy();
+    apiPeer?.destroy();
     await browser.close();
     for (const server of [web, api, collab]) { server.closeAllConnections(); server.close(); }
   }
