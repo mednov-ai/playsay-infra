@@ -14,7 +14,7 @@ New findings, scan errors and candidate-specific delivery gates remain
 blocking for subsequent releases. DEV was updated and admission reopened;
 backups, restore and lesson acceptance are recorded in
 [DEV rollout evidence](../migrations/ax41/evidence/20261104-stack-upgrade-dev-rollout.md).
-Production has not been promoted. The original
+Production release01.007.25 is now accepted; see the current production record below. The original
 upstream LiveKit image's HTTP/2 dependency is not covered by that acceptance;
 use the pinned, scanned LiveKit security rebuild.
 The LiveKit chart accepts an optional `image.digest`; when present it renders
@@ -243,13 +243,13 @@ remediate the compatible finding and scan the new exact image. A High/Critical
 pass must never be described as a clean full report. Retain superseded image
 provenance and label it ineligible when a known compatible fix remains.
 
-### Authorized production stack release 01.007.25 preparation
+### Authorized production stack release 01.007.25 — accepted; procedure retained
 
 The owner authorized this candidate's production delivery, accepted the exact
 retained PostgreSQL/Keycloak image findings and granted a one-time exception
 for stage acceptance, with acceptance immediately after rollout. See the
 [scoped approval](../migrations/ax41/evidence/20261104-stack-upgrade-production-risk-acceptance.md).
-The numeric platform source is `4848a1f1920ab41d45b061c1bd78f567b05db580`. It includes the scoped production CI exception and the compatible libpcre2 runtime OS patch. Application JAR sources, frontend sources, dependency lockfiles and changelogs remain unchanged from `ac483353beb2abab8c1d076a887044b536d24c1f`; the nine JVM runtime Dockerfiles differ.
+The accepted numeric platform source is `a030e7d54644eb4ce532961f101a5790ecf75c8d`, with native dispatcher125 and ready infra `061e8e6d2e9761482bb706e633c008c022dc1bc1`. It includes the scoped CI exception, compatible libpcre2 patch and managed Jackson3 Kotlin support; earlier source4848 is superseded.
 The release's accepted-dev ancestry anchor is the previously accepted
 `e37bb8aa3107c71dd31edfaea8c3735b2025532d`; this is not a claim that the newer
 DEV stack tree or its game-library migration is included in this production
@@ -279,7 +279,7 @@ selects the primary from the active JDBC host. It must refuse unknown hosts.
 Before reopening normal service, verify the active database, native login,
 pre-existing session refresh, provider behavior, both product origins, group
 collaboration and media. This section describes the authorized procedure;
-it is not evidence of successful promotion or acceptance. CloudNativePG
+the completed result is recorded in [release25 acceptance](../migrations/ax41/evidence/20261104-release-01.007.25-stack-production.md). CloudNativePG
 operator 1.30.1 remains staged pending its separate upgrade/recovery validation.
 
 After the PostgreSQL 17.11 restart or the identity cutover, do not repoint the
@@ -300,7 +300,7 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Active AX41 Dev/Prod Topology
 
-Newest accepted production runtime is `release/01.007.24`, infra `5cdae47d9a0ad6462310d2072e828c54eb49d2ff`, platform source `9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0`. The image-upload hotfix updates api-gateway, worksheet import, Keycloak and web; scoped AX41 and Selectel routes accept the required multipart envelopes. Seven schema checks required no migration, four protected backups passed validation, all 19 applications were Synced/Healthy, and authenticated image and lesson-entry canaries passed on both production origins. Existing browser pages may require a reload. See [source, security, acceptance, cleanup and rollback evidence](../migrations/ax41/evidence/20261103-release-01.007.24-image-upload.md). The previous accepted palette release is documented in [its evidence](../migrations/ax41/evidence/20261027-release-01.007.23-drawing-palette.md); earlier runtime paragraphs below are historical.
+Newest accepted production runtime is `release/01.007.25`, platform `a030e7d54644eb4ce532961f101a5790ecf75c8d`, ready infra `061e8e6d2e9761482bb706e633c008c022dc1bc1`. All20 Argo applications are Synced/Healthy;13 active native digests,8 Java25/Boot4.1.2 runtimes, both PostgreSQL17.11 clusters and both-origin classroom/RF TURN acceptance were verified. Four protected backup/restores and seven zero-pending schema checks passed. Key anonymous local completion passed, but server persistence remains unverified against the pre-existing empty catalog. Operator1.30.1 remains staged. The old identity database is STALE: never roll JDBC back after new writes. See [release25 acceptance and recovery boundaries](../migrations/ax41/evidence/20261104-release-01.007.25-stack-production.md). Release24 evidence below is historical.
 
 RF dev DNS, HTTPS/auth ingress, independent TURN and authenticated central log collection are active. Two-browser synthetic-media verification through RF dev passes camera/audio, collaboration, screen share and reconnect after the scoped dev SNAT and LiveKit uplink fixes. Real RF last-mile without VPN and long-duration acceptance remain open. See [RF dev preparation](rf-dev-preparation.md) for exact refs, evidence, isolation and provider-token requirements. Dev GeoIP and its daily updater are active; production GeoIP was independently enabled after release 01.007.00.
 

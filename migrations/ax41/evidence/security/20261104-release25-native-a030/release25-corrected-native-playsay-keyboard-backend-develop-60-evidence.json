@@ -1,0 +1,68 @@
+{
+  "job": "playsay-keyboard-backend-develop",
+  "build": 60,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "4b5330dc84084e8ee992b571113b048bdb8d1de9f8c7df44a336ba01a201b841",
+      "advisoryUpdatedAt": "2026-11-04T21:23:01+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/backend/coverage.json",
+      "bytes": 1120794,
+      "sha256": "4fe2c04c64effcb2cb08490b5374487de2be872e2a74d5bcf12418f24aa47f8e"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/backend/gate.json",
+      "bytes": 13160,
+      "sha256": "66e01a25c8c28d5b8928cca05b668805bda84030ea3bb5817c0d1eb68a8147a9",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 23,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "fea2aec0870ed8558ba21ba602fa5e9925e64e28aa3f80177aed87d535d2b902"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "ab372a939240b8b5d77a3bd8a3e3f2b22636d67c616806aa20d72ed059b694e7",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.BuLb4sVl/status.txt",
+      "bytes": 236,
+      "sha256": "f01ee3063832df571324e89da410a83e0b55f5fd766b0a7288486c46caed31e2",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-keyboard-service/key-backend-release-01.007.25-60/full.json",
+      "bytes": 812058,
+      "sha256": "5ca648a5afd0cfacf5cbb25600b54078e7df29bc529a2386426a7a32dfd645ac",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-keyboard-service/key-backend-release-01.007.25-60/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "0533c6bde17c6e8b531b60892096491b785d28fc3f1b51669a33f0e3ff465766"
+    },
+    {
+      "path": "image-security/playsay-keyboard-service/key-backend-release-01.007.25-60/published-digest.txt",
+      "bytes": 72,
+      "sha256": "ce850974720139add7e7c2f36cdd9d348822d8ff519c1ea57a1001b23158db18",
+      "publishedDigest": "sha256:1265a69dd47981d45ed869d85e2d5d5b9eddf19b7e111d1cfc3ad95deb78d88f"
+    }
+  ]
+}

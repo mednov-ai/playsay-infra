@@ -1,0 +1,68 @@
+{
+  "job": "playsay-api-gateway-develop",
+  "build": 233,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "0839144a95aaba77b9695ae0205870417d37b4bb867a9946b1126dbcae4350f9",
+      "advisoryUpdatedAt": "2026-11-04T20:09:00+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/backend/coverage.json",
+      "bytes": 2321146,
+      "sha256": "dbab8005299594431a54a507c341fac1d109ea182bcac6286a98e2e8d76583a1"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/backend/gate.json",
+      "bytes": 37576,
+      "sha256": "24f91be8b3cc7c5eda6dd1e5bfbc78c7344943794c1cc41c900064d9491a493a",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 83,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "acc0aa96aa1d1a04870ab7ccb726842a3ecf2bb51c4776fe8f4e517ba9c3ae7b"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "dc28ec14d661d6cf4cd7c509bae3f539acb2e546547d05e668273ecc1aed2622",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.wshHzceC/status.txt",
+      "bytes": 236,
+      "sha256": "9d1d18aa23e151ae339bba0be709c7aa8f0326d6801e61041c2f991cc009e54d",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-api-gateway/api-release-01.007.25-233/full.json",
+      "bytes": 861835,
+      "sha256": "7febfa9e7688173e8927d8e6682c0a8f5cd0ef77f4bc34379ffd09c4f66c9fc5",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-api-gateway/api-release-01.007.25-233/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "0c5d733d6d910e6a5f9e3bb0e1dae87b29ece6a2ab15ebe0c512b49492605b89"
+    },
+    {
+      "path": "image-security/playsay-api-gateway/api-release-01.007.25-233/published-digest.txt",
+      "bytes": 72,
+      "sha256": "e90c75b585154d3fdeb4c1dd6cf075001fc19b9d055c6bb695b1a277496d398c",
+      "publishedDigest": "sha256:43e7f3005fe069d56cc28d2d6a1d4bef76274521df767b5eae56a2ff5c60e4dd"
+    }
+  ]
+}

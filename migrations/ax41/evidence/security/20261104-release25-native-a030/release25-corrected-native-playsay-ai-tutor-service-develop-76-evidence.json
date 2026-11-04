@@ -1,0 +1,68 @@
+{
+  "job": "playsay-ai-tutor-service-develop",
+  "build": 76,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/advisory-update.txt",
+      "bytes": 21,
+      "sha256": "da2acea769e0c1020eea45636d91fcef8c1b8bf8d062dc6ac284e46a2743f1eb",
+      "advisoryUpdatedAt": "2026-11-04T20:08:40+00:00"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/backend/coverage.json",
+      "bytes": 1010981,
+      "sha256": "b3391101b926cc68e4b2b22452608f0f334db65a83553a1e0b7791e1ac0774fa"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/backend/gate.json",
+      "bytes": 9224,
+      "sha256": "1fafa6ccf7ebe1e4addb0b0ba9c2eb30aadc6dd9ff0496d5f1bbc81dd9fa2c05",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 13,
+      "outsideRuntime": 7
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/build-logic/coverage.json",
+      "bytes": 533133,
+      "sha256": "019cbd4bf7015d8f1a3a7ffb1478bc370eddcc22bccf4d5c7fde3bb04846e144"
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/build-logic/gate.json",
+      "bytes": 14770,
+      "sha256": "9c206a096f8f1d4da3da98230a389e89d8b97121ed43979e7a74ee96fd3f0c50",
+      "state": "passed-with-accepted-risks",
+      "blocking": 0,
+      "accepted": 5,
+      "outsideRuntime": 24
+    },
+    {
+      "path": "backend/build/reports/dependency-security/run.YK9vzRiQ/status.txt",
+      "bytes": 236,
+      "sha256": "5bad3fe68b85ea157fe2d6a74a2e8fc1c994136cf0f6e02ff5edbac44dd7a746",
+      "sourceAndExitVerified": true
+    },
+    {
+      "path": "image-security/playsay-ai-tutor-service/ai-tutor-release-01.007.25-76/full.json",
+      "bytes": 812053,
+      "sha256": "e0308f63473f3240026404dc92b87093ea11ef36a14e9a70210adf2c79921ad3",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      }
+    },
+    {
+      "path": "image-security/playsay-ai-tutor-service/ai-tutor-release-01.007.25-76/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "98c4032891ba16977d66993f1e94dba40474df1897972d084b7ed538253f07b1"
+    },
+    {
+      "path": "image-security/playsay-ai-tutor-service/ai-tutor-release-01.007.25-76/published-digest.txt",
+      "bytes": 72,
+      "sha256": "c32f5fcaf5e845db4a55440c98edbc571409b9532105887c84b9548213dc51d7",
+      "publishedDigest": "sha256:c5b34247b7795ea35dffb317c4321470a0642623ef6903b991fecbd1d49afbd5"
+    }
+  ]
+}

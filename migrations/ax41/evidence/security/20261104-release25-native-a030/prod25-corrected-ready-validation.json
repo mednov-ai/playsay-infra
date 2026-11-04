@@ -1,0 +1,195 @@
+{
+  "release": "release/01.007.25",
+  "platform": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "infra": "061e8e6d2e9761482bb706e633c008c022dc1bc1",
+  "nativeImagesVerified": 14,
+  "images": [
+    {
+      "chart": "api-gateway",
+      "job": "playsay-api-gateway-develop",
+      "build": 233,
+      "digest": "sha256:43e7f3005fe069d56cc28d2d6a1d4bef76274521df767b5eae56a2ff5c60e4dd",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "ai-tutor-service",
+      "job": "playsay-ai-tutor-service-develop",
+      "build": 76,
+      "digest": "sha256:c5b34247b7795ea35dffb317c4321470a0642623ef6903b991fecbd1d49afbd5",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "worksheet-import-service",
+      "job": "playsay-worksheet-import-service-develop",
+      "build": 46,
+      "digest": "sha256:a35ed60c3c5d18ba412ae66080614f5cfc2301e9cb285b1c259fbe91e720ce22",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "vocabulary-service",
+      "job": "playsay-vocabulary-service-develop",
+      "build": 86,
+      "digest": "sha256:39ce2a1e9403e084e7eeefb8ccc5dac822e717d19b7aed49d078445f806454a7",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "web-app",
+      "job": "playsay-web-app-develop",
+      "build": 428,
+      "digest": "sha256:9cb121a7479f053793a12135e0cac5dbe12e03ea4c1f9bd79f86fd789c279b74",
+      "fullSeverityCounts": {},
+      "jvmGateStates": [],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "game-adapter-service",
+      "job": "playsay-game-adapter-service-develop",
+      "build": 53,
+      "digest": "sha256:e20f377f5a1ef1a1b270abfee182eefb58934dc1c72e0bfa027cdc158870e172",
+      "fullSeverityCounts": {},
+      "jvmGateStates": [],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "collaboration-service",
+      "job": "playsay-collaboration-service-develop",
+      "build": 74,
+      "digest": "sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a",
+      "fullSeverityCounts": {},
+      "jvmGateStates": [],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "media-service",
+      "job": "playsay-media-service-develop",
+      "build": 57,
+      "digest": "sha256:0df1c8873785ac0db4cccedeecb8b3cdd33aa0ce23ae9906f099870dc1e74a51",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "payment-service",
+      "job": "playsay-payment-service-develop",
+      "build": 44,
+      "digest": "sha256:91ffdf05a2f6c13f9a88502e75edb7a0345c825926d3bbe37b8efb357fbe1c25",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "registration-service",
+      "job": "playsay-registration-service-develop",
+      "build": 84,
+      "digest": "sha256:fc9c6489d360c017993adacf677e754aece5e0e39f23dd458a71874b82b09e55",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "email-service",
+      "job": "playsay-email-service-develop",
+      "build": 59,
+      "digest": "sha256:6b81b8f68cc290bd41f3947de569f859f11fa8819dc0127a8b9701ab6eff55ca",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "keycloak",
+      "job": "playsay-keycloak-develop",
+      "build": 42,
+      "digest": "sha256:b3bd3d4830ce0b63bab13ba0ef3e9d4bf100ef619a349cf7b3f106e9166bf564",
+      "fullSeverityCounts": {
+        "MEDIUM": 38,
+        "LOW": 28,
+        "HIGH": 3
+      },
+      "jvmGateStates": [
+        "passed",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 5
+    },
+    {
+      "chart": "keyboard-service",
+      "job": "playsay-keyboard-backend-develop",
+      "build": 60,
+      "digest": "sha256:1265a69dd47981d45ed869d85e2d5d5b9eddf19b7e111d1cfc3ad95deb78d88f",
+      "fullSeverityCounts": {
+        "MEDIUM": 36,
+        "LOW": 4
+      },
+      "jvmGateStates": [
+        "passed-with-accepted-risks",
+        "passed-with-accepted-risks"
+      ],
+      "recordedFixes": 0
+    },
+    {
+      "chart": "keyboard-app",
+      "job": "playsay-keyboard-frontend-develop",
+      "build": 122,
+      "digest": "sha256:a239f2a5af6b85741dfb8c717d8a6620646f5bc88cbff94fdd93fd6d14b5b324",
+      "fullSeverityCounts": {},
+      "jvmGateStates": [],
+      "recordedFixes": 0
+    }
+  ]
+}

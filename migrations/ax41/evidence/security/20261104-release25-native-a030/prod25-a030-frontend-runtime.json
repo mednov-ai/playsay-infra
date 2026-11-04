@@ -1,0 +1,1 @@
+[{"component": "web-app", "nginx": "1.30.6", "moduleWorkers": []}, {"component": "keyboard-app", "nginx": "1.30.6", "moduleWorkers": []}]

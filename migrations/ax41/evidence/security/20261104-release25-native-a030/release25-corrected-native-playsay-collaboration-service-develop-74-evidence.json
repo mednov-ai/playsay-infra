@@ -1,0 +1,25 @@
+{
+  "job": "playsay-collaboration-service-develop",
+  "build": 74,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "result": "SUCCESS",
+  "reports": [
+    {
+      "path": "image-security/playsay-collaboration-service/collab-release-01.007.25-74/full.json",
+      "bytes": 43333,
+      "sha256": "dd4279f55defdd176a068f3173c7c84beb8dc8ecbfa72631f11174ed09de5b99",
+      "fullSeverityCounts": {}
+    },
+    {
+      "path": "image-security/playsay-collaboration-service/collab-release-01.007.25-74/image-archive.sha256",
+      "bytes": 65,
+      "sha256": "eaabdb0f761516d448415529111dd60578aaa55272706c670caad51ea49f0a35"
+    },
+    {
+      "path": "image-security/playsay-collaboration-service/collab-release-01.007.25-74/published-digest.txt",
+      "bytes": 72,
+      "sha256": "044761611a11377ab0ce52b3c7eaf456ea2d1eeea4df40edfbd02a2693aa7514",
+      "publishedDigest": "sha256:60f457b06919bcca2f22678dd1556c85a3cd6b37bd122e7a05444ddadf55de2a"
+    }
+  ]
+}

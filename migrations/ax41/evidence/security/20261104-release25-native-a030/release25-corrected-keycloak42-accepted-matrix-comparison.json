@@ -1,0 +1,10 @@
+{
+  "job": "playsay-keycloak-develop",
+  "build": 42,
+  "source": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "freshUniqueFindings": 69,
+  "acceptedBaselineUniqueFindings": 69,
+  "newUnacceptedFindings": 0,
+  "retainedFindingsMatch": true,
+  "recordedFixMatrixMatches": true
+}

@@ -1,0 +1,222 @@
+{
+  "acceptedAtUtc": "2026-11-04T22:27:16.678704+00:00",
+  "platformSource": "a030e7d54644eb4ce532961f101a5790ecf75c8d",
+  "readyInfra": "061e8e6d2e9761482bb706e633c008c022dc1bc1",
+  "nativeDispatcher": 125,
+  "nativeModulesPassed": 14,
+  "origins": {
+    "direct": {
+      "origin": "https://online.honey.school",
+      "providerHandoffAndPkcePassed": true,
+      "imageLimitChecks": [
+        {
+          "name": "live-lesson-add-ui-exact-and-stored",
+          "passed": true,
+          "bytes": 20971520,
+          "status": 201
+        },
+        {
+          "name": "live-lesson-over-and-state",
+          "passed": true,
+          "bytes": 20971521,
+          "status": 400
+        }
+      ],
+      "groupChecks": [
+        "keycloak-login-and-profiles",
+        "scroll-image-material-prepared",
+        "temporary-group-lesson-created",
+        "shared-collaboration-document-precreated",
+        "classroom-opened-for-teacher-and-two-students",
+        "livekit-synthetic-camera-and-microphone-rtp-sent-and-received",
+        "synthetic-screen-share-visible-to-both-students",
+        "student-workspace-hides-document-tabs-and-side-editor",
+        "shared-presence-ready-for-teacher-and-two-students",
+        "material-presence-cursors-are-aligned-and-clipped",
+        "annotation-sync-stays-inside-material-after-scroll-and-resize",
+        "shared-exercise-actions-and-answers-sync-live",
+        "student-reconnect-restores-synthetic-audio-and-video-rtp",
+        "reconnect-restores-annotations",
+        "reconnect-restores-shared-exercise-answers",
+        "student-material-submit-creates-submission",
+        "desktop-and-390x844-mobile-layouts-captured-without-page-overflow",
+        "cleanup-completed"
+      ],
+      "screenshotsVisuallyReviewed": true
+    },
+    "rf": {
+      "origin": "https://online.honeyschool.ru",
+      "providerHandoffAndPkcePassed": true,
+      "imageLimitChecks": [
+        {
+          "name": "live-lesson-add-ui-exact-and-stored",
+          "passed": true,
+          "bytes": 20971520,
+          "status": 201
+        },
+        {
+          "name": "live-lesson-over-and-state",
+          "passed": true,
+          "bytes": 20971521,
+          "status": 400
+        }
+      ],
+      "groupChecks": [
+        "keycloak-login-and-profiles",
+        "scroll-image-material-prepared",
+        "temporary-group-lesson-created",
+        "shared-collaboration-document-precreated",
+        "classroom-opened-for-teacher-and-two-students",
+        "livekit-synthetic-camera-and-microphone-rtp-sent-and-received",
+        "all-connected-peers-use-prod-regional-turn",
+        "synthetic-screen-share-visible-to-both-students",
+        "student-workspace-hides-document-tabs-and-side-editor",
+        "shared-presence-ready-for-teacher-and-two-students",
+        "material-presence-cursors-are-aligned-and-clipped",
+        "annotation-sync-stays-inside-material-after-scroll-and-resize",
+        "shared-exercise-actions-and-answers-sync-live",
+        "student-reconnect-restores-synthetic-audio-and-video-rtp",
+        "reconnect-restores-annotations",
+        "reconnect-restores-shared-exercise-answers",
+        "student-material-submit-creates-submission",
+        "desktop-and-390x844-mobile-layouts-captured-without-page-overflow",
+        "cleanup-completed"
+      ],
+      "screenshotsVisuallyReviewed": true
+    }
+  },
+  "keyboard": {
+    "direct": {
+      "origin": "https://key.honey.school",
+      "realProfileResolved": true,
+      "localGuestCompletionRetainedAfterReload": true,
+      "serverTrainingStatus": 401,
+      "serverPersistenceVerified": false,
+      "preexistingEmptyServerCatalog": true,
+      "desktopMobileRendered": true,
+      "pageErrors": 0
+    },
+    "rf": {
+      "origin": "https://key.honeyschool.ru",
+      "realProfileResolved": true,
+      "localGuestCompletionRetainedAfterReload": true,
+      "serverTrainingStatus": 401,
+      "serverPersistenceVerified": false,
+      "preexistingEmptyServerCatalog": true,
+      "desktopMobileRendered": true,
+      "pageErrors": 0
+    }
+  },
+  "gameAdapter": {
+    "image": "ghcr.io/mednov-ai/playsay-game-adapter-service@sha256:e20f377f5a1ef1a1b270abfee182eefb58934dc1c72e0bfa027cdc158870e172",
+    "node": "v26.13.0",
+    "nonRoot": true,
+    "unauthorizedRejected": true,
+    "authenticatedOptimization": true,
+    "syntheticImageReplaced": 1,
+    "chromiumSemanticAction": true,
+    "mechanicsEquivalent": true,
+    "externalAiCalls": 0
+  },
+  "startupLogs": {
+    "exactRuntimeStartupLogsInspected": 13,
+    "rows": [
+      {
+        "component": "api-gateway",
+        "logBytesInspected": 4614,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "ai-tutor-service",
+        "logBytesInspected": 4462,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "worksheet-import-service",
+        "logBytesInspected": 4576,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "vocabulary-service",
+        "logBytesInspected": 4541,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "web-app",
+        "logBytesInspected": 14268,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "game-adapter-service",
+        "logBytesInspected": 176,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "collaboration-service",
+        "logBytesInspected": 219,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "media-service",
+        "logBytesInspected": 2824,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "registration-service",
+        "logBytesInspected": 4592,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "email-service",
+        "logBytesInspected": 4500,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "keycloak",
+        "logBytesInspected": 3192,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "keyboard-service",
+        "logBytesInspected": 4491,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      },
+      {
+        "component": "keyboard-app",
+        "logBytesInspected": 9241,
+        "errorLevelLines": 0,
+        "fatalOrHttpBindingMarkers": {}
+      }
+    ]
+  },
+  "identityCleanup": {
+    "ownedIdentitiesDeleted": 4,
+    "absenceVerified": true
+  },
+  "fixtureProfilesAndAssignmentsCleanupPassed": true,
+  "localPrivateCredentialsRemoved": true,
+  "preexistingKeyboardCatalog": {
+    "currentRows": 0,
+    "beforeRolloutBackup": "/var/backups/playsay/stack-upgrade-prod-20261104T152617Z",
+    "restoredRows": 0,
+    "guestContract": "best-effort server submission with local completion retained",
+    "authenticatedServerPersistence": "not accepted or verified; server catalog uninitialized"
+  },
+  "limits": [
+    "Synthetic browser media; physical cameras and real Russian ISP last mile not verified",
+    "No SMTP or payment-provider delivery exercised",
+    "CloudNativePG operator1.30.1 remains staged; running operator1.29.1 unchanged"
+  ]
+}
