@@ -58,6 +58,11 @@ hashes, and scans the archive before optional image-only publication. It has
 no GitOps or deployment stage; a successful image scan alone does not validate
 an operator upgrade. Its scanned candidate has been published; isolated
 upgrade, recovery and lesson tests remain necessary before activation.
+The published operator image is private. On 2026-11-04 the DEV
+`ghcr-pull-secret` was absent from `cnpg-system` and `playsay-data`.
+Before using it, prepare and verify scoped pull credentials for the operator
+and for any database pods that must pull the instance-manager image; do not
+assume the `playsay-dev` namespace secret is available elsewhere.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
@@ -81,10 +86,10 @@ baseline did not satisfy this pre-publication gate. A replacement has been
 prepared and tested locally: module jobs on `security-check/` branches build
 and scan only, without publication, migration or GitOps updates; deployable
 jobs scan the unpublished archive and verify the published digest before
-continuing. Jenkins has validated the unpublished scan-only path for the
-collaboration image, but the real-registry publication path and remaining
-candidate images still need validation; the existing hold still applies.
-Preserve the game
+continuing. On the exact stack-hotfix branch the application jobs scan and
+publish only: they skip database migration, GitOps updates and deployment.
+Deploy reviewed exact image digests through DEV GitOps only after the full
+candidate and delivery gates pass. Preserve the game
 adapter's non-root identity, read-only
 root filesystem and `/tmp/playsay` writable mount, and exercise its token,
 image optimization and real Chromium validation on DEV. Verify web and
