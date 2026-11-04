@@ -131,9 +131,10 @@ resources:
   limits:
     cpu: "1"
     memory: 1536Mi
+# Temporary DEV stack-upgrade drain; restore admission after acceptance.
 games:
   writesEnabled: true
-  maintenance: false
+  maintenance: true
   migration:
     enabled: false
     dryRun: false
