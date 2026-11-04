@@ -4,7 +4,7 @@ releaseBranch: "release/01.007.25"
 baseRelease: "release/01.007.24"
 basePlatformCommit: "9bee01c9f0ff0ffc7dd5d4feeae8a73a8c8c10f0"
 acceptedDevCommit: "e37bb8aa3107c71dd31edfaea8c3735b2025532d"
-baseInfraCommit: "a3c0a9403d9d9914913e99d28770ce15ad40a59b"
+baseInfraCommit: "e41d2928236e89d0868ba630f23d45a1ccb83e42"
 platformCommit: "4848a1f1920ab41d45b061c1bd78f567b05db580"
 affectedTargets:
   - "api-gateway"
@@ -24,5 +24,5 @@ affectedTargets:
 validationSuites:
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "121"
-updatedAt: "2026-11-04T16:56:57Z"
+  build: "122"
+updatedAt: "2026-11-04T18:09:14Z"
