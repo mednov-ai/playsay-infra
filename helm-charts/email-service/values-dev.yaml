@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-email-service
-  tag: "email-codex-hotfix-stack-upgrade-20261103-55"
-  digest: sha256:17bd1fa6a34209fbf5f17f1212a32d1f8818a6599fda96508388020715c0cc9a
+  tag: "email-dev-60"
+  digest: sha256:54f1fcd81a18a557bc33459bdbfa44fb947f334581ba5cf1e1389da17e9a8693
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: email-codex-hotfix-stack-upgrade-20261103-55
-  number: "55"
-  branch: codex/hotfix-stack-upgrade-20261103
-  branchLabel: email-codex-hotfix-stack-upgrade-20261103
-  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
-  commitShort: "b5d4da6d86f4"
+  name: email-dev-60
+  number: "60"
+  branch: develop
+  branchLabel: email-dev
+  commit: 74b7de5593705154ccaa04325a9b296cbd164a6a
+  commitShort: "74b7de559370"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
