@@ -17,3 +17,7 @@ failed because the SDK had not been built; it was corrected by the normal SDK
 build, without changing candidate source. These are graph checks, not deployed
 browser acceptance or byte-for-byte artifact comparison. Native exact-image
 scans and candidate provenance remain separately required.
+
+The exact installed production-only game-adapter dependency tree has 32 entries
+and contains none of the 17 audited frontend packages. Its final CI image still
+requires its separate full container scan; this tree does not replace that scan.
