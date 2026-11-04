@@ -10,6 +10,16 @@ evidence](security/20261103-stack-upgrade/README.md). DEV lesson admission
 was restored through infra PR #62, and the gateway is Synced/Healthy with the
 maintenance flag off. No database, Keycloak or LiveKit upgrade was deployed.
 
+The application-database image override and identity import Application are
+staged outside the automatically reconciled DEV ArgoCD tree. The active DEV
+values retain their prior PostgreSQL and LiveKit versions until a separate,
+reviewed GitOps activation after the candidate security, admission and backup
+gates. This prevents merging the preparation from starting the import while
+Keycloak can still write to its source database. The staged PostgreSQL values
+pin the previously scanned image digest; the earlier disposable import used
+the corresponding tag, so the digest-pinned operator path still needs
+verification before actual cutover.
+
 The current platform candidate is `ce42081191dd6efbe5070f4143b92932063dfd0a`.
 Non-deploy Jenkins web build 417, keyboard build 114, game-adapter build 45
 and collaboration build 63 passed their test/build stages for its previous

@@ -64,14 +64,18 @@ isolated restore; it does not include object storage.
 The Keycloak database is a separate Bitnami legacy PostgreSQL 17.4 workload;
 the application CNPG image pin does not update it. The prepared DEV-only
 `keycloak-postgres-upgrade` ArgoCD application imports that database into a
-new CNPG PostgreSQL 17.11 cluster. The legacy image has no maintained 17.11
+new CNPG PostgreSQL 17.11 cluster. Its manifest and the application-database
+image override are staged under `migrations/ax41/staged/stack-upgrade/`,
+outside the automatically reconciled ArgoCD tree. Merging this preparation
+alone must not start either database change. The legacy image has no maintained 17.11
 tag. A disposable operator 1.29.1/Keycloak 26.8.1 fixture verified the
 same-major import, matching 101 tables and aggregate identity/session counts,
 `en_US.UTF-8`, the owner, `pgaudit`, the existing database password, session
 refresh and a new login at the declared DEV memory/CPU limits. That fixture
 does not prove the real DEV cutover or the custom provider.
 
-Before creating the import application, close DEV lesson admission, drain
+Before a separately reviewed GitOps commit activates the staged application,
+complete the candidate security and backup/restore gates, close DEV lesson admission, drain
 issued credentials and connections, scale DEV Keycloak to zero through a
 separate GitOps change, confirm no other source database writers, and refresh
 the protected four-database backup and isolated restore. The import reads the

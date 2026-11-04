@@ -23,7 +23,11 @@ class KeycloakPostgresUpgradeChartTest(unittest.TestCase):
         self.assertEqual(cluster["metadata"]["namespace"], "keycloak")
         self.assertEqual(cluster["metadata"]["annotations"]["argocd.argoproj.io/sync-options"], "Prune=false")
         spec = cluster["spec"]
-        self.assertEqual(spec["imageName"], "ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie")
+        self.assertEqual(
+            spec["imageName"],
+            "ghcr.io/cloudnative-pg/postgresql:17.11-system-trixie@sha256:"
+            "03a1c6a62b27e8ad31cae5c085131b5ac706b09403d6fcb6c58d16c8daa257cd",
+        )
         self.assertEqual(spec["instances"], 1)
         init = spec["bootstrap"]["initdb"]
         self.assertEqual((init["database"], init["owner"]), ("bitnami_keycloak", "bn_keycloak"))
@@ -48,12 +52,22 @@ class KeycloakPostgresUpgradeChartTest(unittest.TestCase):
         self.assertNotIn("data", sealed["spec"]["template"])
         self.assertNotIn("stringData", sealed["spec"]["template"])
 
-    def test_only_dev_registers_the_new_application(self):
-        app = yaml.safe_load((ROOT / "argocd-apps/dev/apps/keycloak-postgres-upgrade.yaml").read_text())
+    def test_import_application_is_staged_outside_the_live_gitops_tree(self):
+        app = yaml.safe_load(
+            (ROOT / "migrations/ax41/staged/stack-upgrade/keycloak-postgres-upgrade.application.yaml").read_text(),
+        )
         self.assertEqual(app["spec"]["source"]["targetRevision"], "develop")
         self.assertEqual(app["spec"]["source"]["path"], "helm-charts/keycloak-postgres-upgrade")
         self.assertEqual(app["spec"]["destination"]["namespace"], "keycloak")
+        self.assertFalse((ROOT / "argocd-apps/dev/apps/keycloak-postgres-upgrade.yaml").exists())
         self.assertFalse((ROOT / "argocd-apps/prod/apps/keycloak-postgres-upgrade.yaml").exists())
+
+    def test_application_database_upgrade_is_staged_not_active(self):
+        path = ROOT / "migrations/ax41/staged/stack-upgrade/app-postgres-values-dev.yaml"
+        staged = yaml.safe_load(path.read_text())["cluster"]["imageName"]
+        active = yaml.safe_load((ROOT / "helm-charts/app-postgres/values-dev.yaml").read_text())
+        self.assertEqual(staged, self.resources["Cluster"]["spec"]["imageName"])
+        self.assertNotEqual(active["cluster"]["imageName"], staged)
 
 
 if __name__ == "__main__":
