@@ -8,12 +8,12 @@ storage: {endpoint: 'http://minio.storage.svc.cluster.local:9000'}
 analysis: {provider: openai, reasoningEffort: low, requestTimeout: PT120S}
 runtime: {javaToolOptions: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55 -XX:ActiveProcessorCount=1"}
 image:
-  tag: worksheet-import-codex-hotfix-stack-upgrade-20261103-38
-  digest: sha256:eb0d1a44511058096999f9b5d019f652a34fefc77e9ce6783783c8d226ecad0d
+  tag: worksheet-import-dev-47
+  digest: sha256:1ea04ee68756b4498093c61df53d2cc182cbdd41f9a2e7a3636fb0ab213e6e50
 build:
-  name: worksheet-import-codex-hotfix-stack-upgrade-20261103-38
-  number: "38"
-  branch: codex/hotfix-stack-upgrade-20261103
-  branchLabel: worksheet-import-codex-hotfix-stack-upgrade-20261103
-  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
-  commitShort: b5d4da6d86f4
+  name: worksheet-import-dev-47
+  number: "47"
+  branch: develop
+  branchLabel: worksheet-import-dev
+  commit: 74b7de5593705154ccaa04325a9b296cbd164a6a
+  commitShort: 74b7de559370
