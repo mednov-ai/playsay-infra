@@ -16,6 +16,7 @@ DEFAULT_JOB_NAMES=(
   playsay-vocabulary-service-develop
   playsay-web-app-develop
   playsay-collaboration-service-develop
+  playsay-livekit-image
   playsay-media-service-develop
   playsay-game-adapter-service-develop
   playsay-payment-service-develop
@@ -36,6 +37,7 @@ DEFAULT_JOB_CONFIGS=(
   "$REPO_ROOT/jenkins/jobs/playsay-vocabulary-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-web-app-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-collaboration-service-develop.xml"
+  "$REPO_ROOT/jenkins/jobs/playsay-livekit-image.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-media-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-game-adapter-service-develop.xml"
   "$REPO_ROOT/jenkins/jobs/playsay-payment-service-develop.xml"

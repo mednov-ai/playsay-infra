@@ -17,6 +17,12 @@ The LiveKit chart accepts an optional `image.digest`; when present it renders
 production tag renders are unchanged while that value is empty. Set a digest
 only to the exact CI-built, fully scanned image after its source and delivery
 gates pass; the local unpublished rebuild is not a registry artifact.
+The prepared `playsay-livekit-image` Jenkins job builds from exact infra and
+platform branch heads and scans before its optional image-only publication.
+It cannot update GitOps or deploy. The job is not a substitute for the
+cross-service security, backup, admission, route and acceptance gates. Until
+the dedicated job itself has passed a scan-only run, its configuration is
+prepared rather than validated for use.
 
 The stack hotfix prepares PostgreSQL `17.11-system-trixie` for the
 application CNPG cluster and LiveKit `v1.13.11` in DEV, together with the
@@ -34,11 +40,9 @@ nginx 1.30.6 and the game adapter to Node 26 Alpine with Chromium; the Node
 service runtimes omit unused npm. Alpine security updates are resolved during
 the image build. Before publication or deployment, scan and retain the exact
 CI-built image digests and full reports; the local scans are not a clearance
-for later builds. The current generic Kaniko helper pushes images before any
-final-image vulnerability scan and then updates environment references; it
-does not by itself satisfy this pre-publication gate. Prepare and verify a
-reviewed build/scan/publish sequence that keeps failing images unpublished
-before starting deployable jobs for this candidate. A replacement has been
+for later builds. The original generic Kaniko helper pushed images before any
+final-image vulnerability scan and then updated environment references; that
+baseline did not satisfy this pre-publication gate. A replacement has been
 prepared and tested locally: module jobs on `security-check/` branches build
 and scan only, without publication, migration or GitOps updates; deployable
 jobs scan the unpublished archive and verify the published digest before

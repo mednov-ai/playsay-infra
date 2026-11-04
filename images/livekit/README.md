@@ -22,8 +22,17 @@ the exact previously inspected binary SHA-256 and the unchanged Go advisory.
 It checks the package graph and binary again, retains the raw and classified
 reports, and fails on any other blocking finding or scan error. This is the
 existing outside-server-runtime rule, not a CVE risk acceptance. The script
-expects the platform's `scripts/ci/scan-image.sh` in the CI workspace; a
-reviewed CI job must assemble both sources before calling it.
+expects the platform's `scripts/ci/scan-image.sh` in `PLATFORM_CI_ROOT`, or
+in the workspace if that variable is unset.
+
+`Jenkinsfile.livekit-image` and `jenkins/jobs/playsay-livekit-image.xml`
+prepare a dedicated image-only job. It requires the exact branch heads for
+both infra and platform, builds without pushing, scans and archives evidence,
+and defaults to scan-only. Publication, if explicitly selected for a reviewed
+candidate, is gated by the scan and renewed branch-head checks. The job has no
+DEV kubeconfig or GitOps update step and cannot deploy or prepare production.
+Registration and a complete scan-only run of this dedicated job are still
+required before relying on it; the earlier fixture used a different job.
 
 Replace this temporary build with a verified compatible upstream stable image
 once it contains the HTTP/2 dependency fix and passes the same security and
