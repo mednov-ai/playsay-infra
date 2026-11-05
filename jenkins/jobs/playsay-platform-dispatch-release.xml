@@ -25,7 +25,7 @@
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>ACCEPTED_DEV_COMMIT</name>
-          <description>Exact dev-accepted platform SHA required to be an ancestor of the release HEAD; defaults to current develop.</description>
+          <description>For .00 releases, optional current develop SHA; hotfix releases require this field to be empty.</description>
           <defaultValue></defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>

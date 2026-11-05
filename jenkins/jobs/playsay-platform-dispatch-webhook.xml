@@ -25,7 +25,7 @@
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>ACCEPTED_DEV_COMMIT</name>
-          <description>Optional exact dev-accepted platform SHA forwarded to a numeric release dispatcher.</description>
+          <description>Optional current develop SHA for .00 releases; leave empty for hotfix releases.</description>
           <defaultValue></defaultValue>
           <trim>true</trim>
         </hudson.model.StringParameterDefinition>
