@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-dev-234"
-  digest: sha256:635303d3aa7862a41516fe94f1876e655890cc01d2497fd97561d535b2d3f2bb
+  tag: "api-codex-whiteboard-api-image-only-20261105-236"
+  digest: sha256:4fca30d61fdf3a76fd502402da952f2136708ecbdca598815c63740d5189e549
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-dev-234
-  number: "234"
-  branch: develop
-  branchLabel: api-dev
-  commit: 74b7de5593705154ccaa04325a9b296cbd164a6a
-  commitShort: "74b7de559370"
+  name: api-codex-whiteboard-api-image-only-20261105-236
+  number: "236"
+  branch: codex/whiteboard-api-image-only-20261105
+  branchLabel: api-codex-whiteboard-api-image-only-20261105
+  commit: 65e1eaeb3dbc73116f72253fd4793a6317828b84
+  commitShort: "65e1eaeb3dbc"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -26,6 +26,8 @@ websocket:
 auth:
   issuerUri: https://dev.ops.honey.school/keycloak/realms/playsay
   jwkSetUri: http://keycloak.keycloak.svc.cluster.local/keycloak/realms/playsay/protocol/openid-connect/certs
+whiteboard:
+  enabled: true
 lessonAccess:
   enabled: true
   oidcCallback: https://dev.online.honey.school/auth/callback
