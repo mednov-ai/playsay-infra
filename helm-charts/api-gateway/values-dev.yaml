@@ -135,7 +135,7 @@ resources:
     memory: 1536Mi
 games:
   writesEnabled: true
-  maintenance: false
+  maintenance: true
   migration:
     enabled: false
     dryRun: false
