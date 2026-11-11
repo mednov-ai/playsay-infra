@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-collaboration-service
-  tag: "collab-codex-hotfix-stack-upgrade-20261103-68"
-  digest: sha256:dbf5bd16ead55833e84b5bca5d36debb08a8e68f9bce8a3bb171a4f48e1b6dda
+  tag: "collab-dev-76"
+  digest: sha256:12165572d6f70bd8b45831108bfee7b550bca5615658ca4c233c43a5d523a0b1
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: collab-codex-hotfix-stack-upgrade-20261103-68
-  number: "68"
-  branch: codex/hotfix-stack-upgrade-20261103
-  branchLabel: collab-codex-hotfix-stack-upgrade-20261103
-  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
-  commitShort: "b5d4da6d86f4"
+  name: collab-dev-76
+  number: "76"
+  branch: develop
+  branchLabel: collab-dev
+  commit: 0172a6bc4249a11c7feea8489dc411964a8fdfa4
+  commitShort: "0172a6bc4249"
 service:
   type: NodePort
   nodePort: 32086
