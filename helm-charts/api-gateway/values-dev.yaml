@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-api-gateway
-  tag: "api-codex-whiteboard-api-image-only-20261105-236"
-  digest: sha256:4fca30d61fdf3a76fd502402da952f2136708ecbdca598815c63740d5189e549
+  tag: "api-dev-240"
+  digest: sha256:7b1553bf4a7d40b31708bbab8ead2d1d32dbeb7f92e7fe21d6d8bfa6c0bb574e
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: api-codex-whiteboard-api-image-only-20261105-236
-  number: "236"
-  branch: codex/whiteboard-api-image-only-20261105
-  branchLabel: api-codex-whiteboard-api-image-only-20261105
-  commit: 65e1eaeb3dbc73116f72253fd4793a6317828b84
-  commitShort: "65e1eaeb3dbc"
+  name: api-dev-240
+  number: "240"
+  branch: develop
+  branchLabel: api-dev
+  commit: 0172a6bc4249a11c7feea8489dc411964a8fdfa4
+  commitShort: "0172a6bc4249"
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
