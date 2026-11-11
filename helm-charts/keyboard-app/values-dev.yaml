@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-app
-  tag: "key-frontend-codex-hotfix-stack-upgrade-20261103-118"
-  digest: sha256:2308ffd300aeee07b97bf9d101abafab0418e97900edc2603239ba1681e2c9e0
+  tag: "key-frontend-dev-124"
+  digest: sha256:f5ddfae6965a177869c6a0af6897fe4e8503347529e3cb82336a4823ef8f16c2
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-frontend-codex-hotfix-stack-upgrade-20261103-118
-  number: "118"
-  branch: codex/hotfix-stack-upgrade-20261103
-  branchLabel: key-frontend-codex-hotfix-stack-upgrade-20261103
-  commit: b5d4da6d86f49a3fed18279f43dd7d4fbdca1d6f
-  commitShort: b5d4da6d86f4
+  name: key-frontend-dev-124
+  number: "124"
+  branch: develop
+  branchLabel: key-frontend-dev
+  commit: 0172a6bc4249a11c7feea8489dc411964a8fdfa4
+  commitShort: 0172a6bc4249
 service:
   type: NodePort
   nodePort: 32087
