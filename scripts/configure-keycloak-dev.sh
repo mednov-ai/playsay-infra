@@ -301,6 +301,32 @@ ensure_clients() {
   upsert_client "$token" "$API_CLIENT_ID" "$api_payload"
 }
 
+verify_dev_registration_realm() {
+  kc_curl "$KEYCLOAK_URL/realms/$REALM/.well-known/openid-configuration" \
+    | jq -e '.issuer == "https://dev.ops.honey.school/keycloak/realms/playsay"' >/dev/null
+}
+
+ensure_registration_admin_scope() {
+  local token="$1" realm_url="$KEYCLOAK_URL/admin/realms/$REALM" scope_id client_id mapping_url
+  local auth=(-H "Authorization: Bearer $token")
+
+  client_id=$(kc_curl "${auth[@]}" -G --data-urlencode 'clientId=playsay-registration-service' "$realm_url/clients" \
+    | jq -er 'map(select(.clientId == "playsay-registration-service" and .serviceAccountsEnabled and .publicClient == false))
+              | if length == 1 then .[0].id else error("Expected the confidential DEV registration client") end')
+  scope_id=$(kc_curl "${auth[@]}" "$realm_url/client-scopes" \
+    | jq -er 'map(select(.name == "kc-admin-api" and .protocol == "openid-connect"))
+              | if length == 1 then .[0].id else error("Missing built-in kc-admin-api client scope") end')
+  mapping_url="$realm_url/clients/$client_id/default-client-scopes"
+  local current
+  current=$(kc_curl "${auth[@]}" "$mapping_url")
+  if ! jq -e --arg id "$scope_id" 'any(.[]; .id == $id)' <<< "$current" >/dev/null; then
+    kc_curl "${auth[@]}" -X PUT "$mapping_url/$scope_id" >/dev/null
+  fi
+  kc_curl "${auth[@]}" "$mapping_url" | jq -e --arg id "$scope_id" \
+    'any(.[]; .id == $id and .name == "kc-admin-api")' >/dev/null
+  echo "Verified kc-admin-api for the confidential DEV registration client."
+}
+
 ensure_registration_service_client() {
   local token="$1"
   local registration_payload
@@ -339,6 +365,10 @@ ensure_registration_service_client() {
     fi
   done
 
+  if [[ "$REGISTRATION_CLIENT_ID" == "playsay-registration-service" ]]; then
+    verify_dev_registration_realm
+    ensure_registration_admin_scope "$token"
+  fi
   sync_registration_client_secret "$token" "$registration_uuid"
 }
 
@@ -445,6 +475,17 @@ main() {
   require_tool curl
   require_tool jq
   require_tool kubectl
+  if [[ "$#" -gt 0 ]]; then
+    if [[ "$#" != 1 || "$1" != "--registration-admin-scope-only" ]]; then
+      echo "Usage: $0 [--registration-admin-scope-only]" >&2
+      return 2
+    fi
+    local scope_token
+    verify_dev_registration_realm
+    scope_token=$(admin_token)
+    ensure_registration_admin_scope "$scope_token"
+    return
+  fi
   require_tool openssl
 
   ensure_dev_user_secret

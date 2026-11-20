@@ -1264,6 +1264,16 @@ Run or rerun Keycloak bootstrap after this change:
 
 It creates/updates the confidential Keycloak client `playsay-registration-service`, assigns its service account the required `realm-management` roles for user lookup/update/delete and role reads, enables direct access grants on the public `playsay-web` client for server-side managed-student invite exchange, and writes `keycloak-client-id`, `keycloak-client-secret` plus a stable randomly generated `service-token` into Kubernetes secret `playsay-registration` in namespace `playsay-dev`. Re-running the script preserves an existing service token. Secret values are not printed. The same `service-token` is mounted into `api-gateway`, `registration-service`, `ai-tutor-service`, `vocabulary-service` and `keyboard-service` for internal user-management/data-purge calls only; it must never be exposed to the SPA.
 
+On DEV with Keycloak 26.8.2 the confidential registration client needs the built-in `kc-admin-api` default client scope for its existing realm-management roles. After an identity image upgrade, run the narrow reconciliation from the merged infra revision on the DEV guest and verify public registration, confirmation and password reset. The issuer check ties the operation to the DEV realm. This operation can be repeated without restarting workloads.
+
+```bash
+set -e
+test "$(hostname -s)" = playsay-dev
+kc_ip=$(sudo -n kubectl -n keycloak get service keycloak -o jsonpath='{.spec.clusterIP}')
+sudo -n env KUBECONFIG=/etc/rancher/k3s/k3s.yaml KEYCLOAK_INSECURE_TLS=false \
+  KEYCLOAK_URL="http://$kc_ip/keycloak" ./scripts/configure-keycloak-dev.sh --registration-admin-scope-only
+```
+
 Production keeps the existing client and secret. Before accepting a release that enables public registration, reconcile and verify only its required service-account role mappings from the production guest:
 
 ```bash
