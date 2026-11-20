@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-keyboard-service
-  tag: "key-backend-dev-61"
-  digest: sha256:4e9b48b0b3a95e1737b068e94f54fdf979ca78cea77775165949f0098184f57b
+  tag: "key-backend-dev-63"
+  digest: sha256:7e3fbf92020343fc563dceff7e3861a72c937a84a12da12d2981835d4998cd97
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: key-backend-dev-61
-  number: "61"
+  name: key-backend-dev-63
+  number: "63"
   branch: develop
   branchLabel: key-backend-dev
-  commit: 74b7de5593705154ccaa04325a9b296cbd164a6a
-  commitShort: 74b7de559370
+  commit: 55de930ab05a841655628837e12f26a76b334926
+  commitShort: 55de930ab05a
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
