@@ -300,6 +300,10 @@ Sprint 0 is complete. This runbook now describes the working dev baseline for Sp
 
 ## Active AX41 Dev/Prod Topology
 
+### Production wide-screen classroom hotfix — 2026-11-24
+
+Release `01.007.29` changes the web image for individual lessons with image materials. The source is `fc58b856e37aafd403791c963368a959446122b9` and ready infra is `ff82513d150b758555eb11af7202814c27f53955`. See [release verification and rollback](../migrations/ax41/evidence/20261124-release-01.007.29-wide-classroom-production.md).
+
 ### Production group lesson video hotfix — 2026-11-24
 
 Production runs `release/01.007.28`, platform `34592586d87981bb1c4a40150e0959edac02b56c`, ready infra `a989d40efd609e83967ed3acb3ebe5d525cc27d8`. Only the production web image changed. All 20 production Argo applications reached Synced/Healthy. The installed DEV classroom passed the three-session group media check. Production public route and immutable-image checks, database and activity gates are recorded in the [release evidence](../migrations/ax41/evidence/20261124-release-01.007.28-group-lesson-video-production.md).
