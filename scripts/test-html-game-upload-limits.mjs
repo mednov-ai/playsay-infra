@@ -34,11 +34,11 @@ for (const [name, tasks] of [["AX41", ax41Tasks], ["RF edge", rfTasks]]) {
 }
 assert.match(rfWrapper, /--html-game-upload-only/);
 assert.match(rfWrapper, /--tags html-game-upload-routes/);
-assert.match(
-  ax41Tasks,
-  /split\('server_name online\.honey\.school;'\)\)\[2\][\s\S]*split\('server_name dev\.online\.honey\.school;'\)\[0\]/,
-  "AX41 emergency reconciliation must inspect the production server block instead of accepting the dev route",
-);
+for (const [name, tasks] of [["AX41", ax41Tasks], ["RF edge", rfTasks]]) {
+  assert.match(tasks, /game_tls_server: .*split\(game_host_line\)\[2\]/, name);
+  assert.match(tasks, /when: legacy_game_route in game_tls_server/, name);
+  assert.match(tasks, /when: legacy_game_route not in game_tls_server and library_game_route not in game_tls_server/, name);
+}
 
 console.log("AX41 and RF-edge HTML-game upload limit contracts passed");
 

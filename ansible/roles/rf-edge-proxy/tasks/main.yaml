@@ -209,11 +209,42 @@
 
 - name: Safely reconcile only the RF production HTML-game upload routes
   tags: html-game-upload-routes
+  vars:
+    game_host_line: 'server_name online.honeyschool.ru;'
+    legacy_game_route: 'location ~ ^/api/(?:materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {'
+    library_game_route: 'location ~ ^/api/(?:games(?:/[^/]+/revisions)?|materials/[^/]+/assets/html-games|schedule/lessons/[^/]+/html-game-page)$ {'
+    game_route_file: "{{ active_rf_edge_routes.content | b64decode }}"
+    game_tls_server: "{{ game_route_file.split(game_host_line)[2].split('server {')[0] }}"
   block:
     - name: Read the active RF edge routes
       ansible.builtin.slurp:
         path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
       register: active_rf_edge_routes
+
+    - name: Identify the production HTTPS block and its existing game routes
+      ansible.builtin.assert:
+        that:
+          - "game_route_file.split(game_host_line) | length == 3"
+          - "'listen 443 ssl' in game_route_file.split(game_host_line)[1].rsplit('server {', 1)[-1]"
+          - "game_tls_server.count(legacy_game_route) + game_tls_server.count(library_game_route) <= 1"
+          - "legacy_game_route not in game_tls_server or 'client_max_body_size 21m;' in game_tls_server.split(legacy_game_route)[1].split('}')[0]"
+          - "library_game_route not in game_tls_server or 'client_max_body_size 21m;' in game_tls_server.split(library_game_route)[1].split('}')[0]"
+          - "game_tls_server.count('schedule/lessons/[^/]+/html-game-page') == game_tls_server.count(legacy_game_route) + game_tls_server.count(library_game_route)"
+          - "game_route_file.count('# BEGIN HONEY SCHOOL HTML GAME UPLOAD ROUTES') == game_tls_server.count('# BEGIN HONEY SCHOOL HTML GAME UPLOAD ROUTES')"
+          - "game_route_file.count('# END HONEY SCHOOL HTML GAME UPLOAD ROUTES') == game_tls_server.count('# END HONEY SCHOOL HTML GAME UPLOAD ROUTES')"
+        fail_msg: Unexpected production game upload configuration. Review the active route file.
+
+    - name: Extend the existing production material and lesson upload location to the game library
+      ansible.builtin.replace:
+        path: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
+        after: "(?s:.*{{ game_host_line | regex_escape }})"
+        before: '(?m:^server \{|\Z)'
+        regexp: "{{ legacy_game_route | regex_escape }}"
+        replace: "{{ library_game_route }}"
+        backup: true
+      when: legacy_game_route in game_tls_server
+      register: rf_html_game_upgrade
+      notify: reload nginx
 
     - name: Install the bounded RF HTML-game upload location
       ansible.builtin.blockinfile:
@@ -250,9 +281,14 @@
               sub_filter 'https://online.honey.school' 'https://online.honeyschool.ru';
               sub_filter 'wss://online.honey.school' 'wss://online.honeyschool.ru';
           }
-      when: "'schedule/lessons/[^/]+/html-game-page' not in (active_rf_edge_routes.content | b64decode)"
+      when: legacy_game_route not in game_tls_server and library_game_route not in game_tls_server
       register: rf_html_game_routes
       notify: reload nginx
+
+    - name: Verify that an existing legacy game route was upgraded
+      ansible.builtin.assert:
+        that: rf_html_game_upgrade.changed
+      when: legacy_game_route in game_tls_server
 
     - name: Validate the RF nginx configuration after HTML-game route reconciliation
       ansible.builtin.command:
@@ -261,13 +297,13 @@
   rescue:
     - name: Restore the previous RF route file after failed validation
       ansible.builtin.copy:
-        src: "{{ rf_html_game_routes.backup_file }}"
+        src: "{{ rf_html_game_upgrade.backup_file | default(rf_html_game_routes.backup_file | default('')) }}"
         dest: /etc/nginx/conf.d/playsay-honey-rf-edge.conf
         owner: root
         group: root
         mode: "0644"
         remote_src: true
-      when: rf_html_game_routes.changed | default(false)
+      when: (rf_html_game_upgrade.changed | default(false)) or (rf_html_game_routes.changed | default(false))
 
     - name: Verify the restored RF nginx configuration
       ansible.builtin.command:
