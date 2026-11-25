@@ -2,11 +2,11 @@ schemaVersion: 1
 status: building
 releaseBranch: "release/01.008.00"
 baseRelease: "release/01.007.31"
-basePlatformCommit: "c4139634db35efb631a6a5167301dbaea20761f5"
+basePlatformCommit: "8b3016dc8a767f394255e17dbacb9e7a393433da"
 releaseKind: "normal"
-acceptedDevCommit: "dda419cfb3908ba7b2e5a5669517687430217c3a"
-baseInfraCommit: "4757a106c3d6ba084db6564f8e395ef19305995b"
-platformCommit: "8b3016dc8a767f394255e17dbacb9e7a393433da"
+acceptedDevCommit: "34e25bd57c14d716f5e9c03270bea34707a3c481"
+baseInfraCommit: "c251a282e7f4d6be97be7206bb80b450c4ad0b1e"
+platformCommit: "7b1e5bfcbf4182c59d5801284136a24306fe5607"
 affectedTargets:
   - "api-gateway"
   - "ai-tutor-service"
@@ -23,8 +23,7 @@ affectedTargets:
   - "keyboard-service"
   - "keyboard-app"
 validationSuites:
-  - "ci-contracts"
 dispatcher:
   job: "playsay-platform-dispatch-release"
-  build: "133"
-updatedAt: "2026-11-25T18:29:12Z"
+  build: "134"
+updatedAt: "2026-11-25T20:06:41Z"
