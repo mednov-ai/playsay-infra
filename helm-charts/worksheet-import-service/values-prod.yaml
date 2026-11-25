@@ -10,12 +10,12 @@ storage:
 analysis:
   provider: stub
 image:
-  tag: worksheet-import-release-01.007.25-46
-  digest: sha256:a35ed60c3c5d18ba412ae66080614f5cfc2301e9cb285b1c259fbe91e720ce22
+  tag: worksheet-import-release-01.008.00-51
+  digest: sha256:aa6d331a364e835a982674dfac87f2f53406a1b26fd69892f53f13a276e90ae2
 build:
-  name: worksheet-import-release-01.007.25-46
-  number: '46'
-  branch: release/01.007.25
-  branchLabel: worksheet-import-release-01.007.25
-  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
-  commitShort: a030e7d54644
+  name: worksheet-import-release-01.008.00-51
+  number: '51'
+  branch: release/01.008.00
+  branchLabel: worksheet-import-release-01.008.00
+  commit: 8b3016dc8a767f394255e17dbacb9e7a393433da
+  commitShort: 8b3016dc8a76
