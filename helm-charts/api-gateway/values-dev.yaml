@@ -135,9 +135,9 @@ resources:
     memory: 1536Mi
 games:
   writesEnabled: true
-  maintenance: true
+  maintenance: false
   migration:
-    enabled: true
+    enabled: false
     dryRun: true
     drained: false
     runId: dev-cutover-2511-checksum
