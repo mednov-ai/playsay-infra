@@ -7,6 +7,19 @@ KEYCLOAK_ADMIN_SECRET="${KEYCLOAK_ADMIN_SECRET:-keycloak-admin}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-playsay}"
 REGISTRATION_CLIENT_ID="${KEYCLOAK_REGISTRATION_CLIENT_ID:-playsay-registration-service}"
 
+scope_only=false
+if (( $# )); then
+  if [[ $# != 1 || $1 != --registration-admin-scope-only ]]; then
+    echo "Usage: $0 [--registration-admin-scope-only]" >&2
+    exit 2
+  fi
+  [[ "$(hostname -s)" == playsay-prod && "$KEYCLOAK_NAMESPACE" == keycloak &&
+     "$KEYCLOAK_REALM" == playsay && "$REGISTRATION_CLIENT_ID" == playsay-registration-service &&
+     "$KUBECONFIG_PATH" == /etc/rancher/k3s/k3s.yaml && "$KEYCLOAK_ADMIN_SECRET" == keycloak-admin ]] ||
+    { echo "Expected the production guest, kubeconfig and registration client." >&2; exit 1; }
+  scope_only=true
+fi
+
 require_tool() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing required tool: $1" >&2
@@ -29,6 +42,10 @@ keycloak_ip="$(
     -o jsonpath='{.spec.clusterIP}'
 )"
 keycloak_url="http://${keycloak_ip}/keycloak"
+if [[ "$scope_only" == true ]]; then
+  curl --connect-timeout 5 --max-time 20 -fsS "$keycloak_url/realms/playsay/.well-known/openid-configuration" |
+    jq -e '.issuer == "https://ops.honey.school/keycloak/realms/playsay"' >/dev/null
+fi
 admin_token="$(
   curl --connect-timeout 5 --max-time 20 -fsS -X POST \
     "${keycloak_url}/realms/master/protocol/openid-connect/token" \
@@ -48,6 +65,26 @@ client_uuid() {
     | jq -er --arg client_id "${client_id}" \
       'if length == 1 then .[0].id else error("Expected exactly one client " + $client_id) end'
 }
+
+if [[ "$scope_only" == true ]]; then
+  realm_url="${keycloak_url}/admin/realms/${KEYCLOAK_REALM}"
+  kc=(curl --connect-timeout 5 --max-time 20 -fsS -H "Authorization: Bearer ${admin_token}")
+  registration_uuid="$("${kc[@]}" -G --data-urlencode "clientId=${REGISTRATION_CLIENT_ID}" "${realm_url}/clients" |
+    jq -er 'map(select(.clientId == "playsay-registration-service" and .enabled and .serviceAccountsEnabled and .publicClient == false)) |
+      if length == 1 then .[0].id else error("Expected the confidential registration client") end')"
+  scope_id="$("${kc[@]}" "${realm_url}/client-scopes" |
+    jq -er 'map(select(.name == "kc-admin-api" and .protocol == "openid-connect")) |
+      if length == 1 then .[0].id else error("Expected the built-in kc-admin-api scope") end')"
+  mapping_url="${realm_url}/clients/${registration_uuid}/default-client-scopes"
+  mappings="$("${kc[@]}" "${mapping_url}")"
+  if ! jq -e 'type == "array"' <<<"${mappings}" >/dev/null; then exit 1; fi
+  if ! jq -e --arg id "${scope_id}" 'any(.[]; .id == $id)' <<<"${mappings}" >/dev/null; then
+    "${kc[@]}" -X PUT "${mapping_url}/${scope_id}" >/dev/null
+  fi
+  "${kc[@]}" "${mapping_url}" | jq -e --arg id "${scope_id}" 'any(.[]; .id == $id and .name == "kc-admin-api")' >/dev/null
+  echo "Verified kc-admin-api for the confidential production registration client."
+  exit 0
+fi
 
 registration_uuid="$(client_uuid "${REGISTRATION_CLIENT_ID}")"
 realm_management_uuid="$(client_uuid realm-management)"
