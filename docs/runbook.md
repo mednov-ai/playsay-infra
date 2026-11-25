@@ -1298,6 +1298,16 @@ Production keeps the existing client and secret. Before accepting a release that
 
 The production script is idempotent, does not rotate credentials or create users, and fails unless exactly one existing registration client and `realm-management` client are present. It grants only `view-users`, `manage-users`, and `view-realm`, then reads the mappings back before reporting success.
 
+When promoting the DEV Keycloak 26.8.2 image to production, verify the built-in
+`kc-admin-api` scope after the Keycloak schema and issuer have converged. On
+the production guest, run the reviewed release copy of
+`scripts/configure-keycloak-prod-registration.sh --registration-admin-scope-only`.
+This mode checks the production issuer and the existing confidential registration
+client, attaches the existing scope as a default when missing, and reads the mapping
+back. A missing built-in scope or failed readback blocks registration acceptance.
+Verify the service account can perform a bounded read through Admin REST.
+Exercise registration, confirmation and password reset with disposable DEV identities.
+
 Mailjet uses one primary login with isolated API keys and sending domains:
 
 - production primary API key: sender `Honey School <no-reply@honey.school>` and callback `https://online.honey.school/api/webhooks/mailjet`;

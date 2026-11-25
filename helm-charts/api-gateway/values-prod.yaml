@@ -125,6 +125,13 @@ video:
       retentionDays: '30'
 runtime:
   javaToolOptions: -Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
+games:
+  writesEnabled: false
+  maintenance: false
+  migration:
+    enabled: false
+whiteboard:
+  enabled: false
 resources:
   requests:
     cpu: 500m
