@@ -308,6 +308,10 @@ Release `01.007.29` changes the web image for individual lessons with image mate
 
 Release `01.007.30` changes the web image for group lesson cameras. The source is `871be4c203fca4a78290993b661738bbaf519e27` and ready infra is `8fc9595e7cf78c26a84f6563365bc214a76bb9e8`. See [release verification and rollback](../migrations/ax41/evidence/20261124-release-01.007.30-group-video-production.md).
 
+### Responsive classroom image layout — 2026-11-25
+
+Release `01.007.31` changes the web image for classroom image layout. The source is `37aebdb135e5d5e6e00f0b842bc285e86abf72c4` and ready infra is `a564ae8da476856507266b5059bad425c4f9e985`. See [release verification and rollback](../migrations/ax41/evidence/20261125-release-01.007.31-classroom-image-production.md).
+
 ### Production group lesson video hotfix — 2026-11-24
 
 Production runs `release/01.007.28`, platform `34592586d87981bb1c4a40150e0959edac02b56c`, ready infra `a989d40efd609e83967ed3acb3ebe5d525cc27d8`. Only the production web image changed. All 20 production Argo applications reached Synced/Healthy. The installed DEV classroom passed the three-session group media check. Production public route and immutable-image checks, database and activity gates are recorded in the [release evidence](../migrations/ax41/evidence/20261124-release-01.007.28-group-lesson-video-production.md).
