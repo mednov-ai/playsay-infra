@@ -137,7 +137,7 @@ games:
   writesEnabled: true
   maintenance: true
   migration:
-    enabled: false
-    dryRun: false
-    drained: true
-    runId: dev-cutover-1016-b
+    enabled: true
+    dryRun: true
+    drained: false
+    runId: dev-cutover-2511-checksum
