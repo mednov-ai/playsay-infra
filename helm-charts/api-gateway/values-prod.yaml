@@ -57,7 +57,7 @@ livekit:
     mediaMode: rf-turn-relay
     signalingUrl: wss://online.honeyschool.ru/livekit
 lessonTranslation:
-  enabled: false
+  enabled: true
   provider: openai
   model: gpt-realtime-translate
   baseUrl: https://api.openai.com/v1

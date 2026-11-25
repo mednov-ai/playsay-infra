@@ -1,0 +1,56 @@
+{{- if .Values.vocabularyMediaBucket.provision }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-vocabulary-media-bucket-v1
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  activeDeadlineSeconds: 120
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: provision
+          # The production MinIO image includes the mc client.
+          image: quay.io/minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              mc --config-dir /tmp/mc alias set local "$MINIO_ENDPOINT" "$ACCESS_KEY" "$SECRET_KEY" >/dev/null
+              mc --config-dir /tmp/mc mb --ignore-existing local/playsay-vocabulary-media >/dev/null
+              access="$(mc --config-dir /tmp/mc anonymous get local/playsay-vocabulary-media)"
+              case "$access" in
+                *private*) echo "Private vocabulary media bucket ready" ;;
+                *) echo "Vocabulary media bucket requires a private access policy" >&2; exit 1 ;;
+              esac
+          env:
+            - name: MINIO_ENDPOINT
+              value: "http://{{ include "playsay-minio.fullname" . }}:{{ .Values.service.apiPort }}"
+            - name: ACCESS_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.auth.existingSecret | quote }}, key: {{ .Values.auth.accessKeyKey | quote }} } }
+            - name: SECRET_KEY
+              valueFrom: { secretKeyRef: { name: {{ .Values.auth.existingSecret | quote }}, key: {{ .Values.auth.secretKeyKey | quote }} } }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: scratch, mountPath: /tmp }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 96Mi }
+      volumes:
+        - name: scratch
+          emptyDir: { medium: Memory, sizeLimit: 8Mi }
+{{- end }}

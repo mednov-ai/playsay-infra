@@ -36,6 +36,19 @@ openai:
   reasoningEffort: low
 assignmentIntegration:
   gatewayBaseUrl: http://api-gateway.playsay-prod.svc.cluster.local
+features:
+  composerEnabled: "true"
+  adaptivePolicyEnabled: "true"
+  deliveryPoliciesEnabled: "true"
+  keyNgramsEnabled: "true"
+  generatedMediaEnabled: "true"
+  lexicalBackfillEnabled: "true"
+media:
+  generator: openai
+  storage:
+    provider: s3
+    endpoint: http://minio.storage.svc.cluster.local:9000
+    createBucket: "false"
 runtime:
   javaToolOptions: -Xms128m -Xmx256m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 resources:
