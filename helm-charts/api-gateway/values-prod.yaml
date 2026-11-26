@@ -126,8 +126,8 @@ video:
 runtime:
   javaToolOptions: -Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 games:
-  writesEnabled: false
-  maintenance: true
+  writesEnabled: true
+  maintenance: false
   migration:
     enabled: false
 whiteboard:
