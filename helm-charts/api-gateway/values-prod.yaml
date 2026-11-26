@@ -127,12 +127,9 @@ runtime:
   javaToolOptions: -Xms384m -Xmx768m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 games:
   writesEnabled: false
-  maintenance: false
+  maintenance: true
   migration:
-    enabled: true
-    dryRun: true
-    drained: false
-    runId: prod-0100800-inventory
+    enabled: false
 whiteboard:
   enabled: false
 resources:
