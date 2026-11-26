@@ -131,7 +131,7 @@ games:
   migration:
     enabled: false
 whiteboard:
-  enabled: false
+  enabled: true
 resources:
   requests:
     cpu: 500m
