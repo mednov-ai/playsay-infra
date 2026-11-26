@@ -129,10 +129,7 @@ games:
   writesEnabled: false
   maintenance: true
   migration:
-    enabled: true
-    dryRun: false
-    drained: true
-    runId: prod-0100800-apply
+    enabled: false
 whiteboard:
   enabled: false
 resources:
