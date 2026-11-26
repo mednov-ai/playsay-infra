@@ -1,16 +1,16 @@
 image:
   repository: ghcr.io/mednov-ai/playsay-vocabulary-service
-  tag: vocabulary-release-01.007.25-86
-  digest: sha256:39ce2a1e9403e084e7eeefb8ccc5dac822e717d19b7aed49d078445f806454a7
+  tag: vocabulary-release-01.008.00-97
+  digest: sha256:0d87931b506846e9a2dcac566d231228a82df5087bcd24a088e844333e5564f5
 imagePullSecrets:
   - name: ghcr-pull-secret
 build:
-  name: vocabulary-release-01.007.25-86
-  number: '86'
-  branch: release/01.007.25
-  branchLabel: vocabulary-release-01.007.25
-  commit: a030e7d54644eb4ce532961f101a5790ecf75c8d
-  commitShort: a030e7d54644
+  name: vocabulary-release-01.008.00-97
+  number: '97'
+  branch: release/01.008.00
+  branchLabel: vocabulary-release-01.008.00
+  commit: 7b1e5bfcbf4182c59d5801284136a24306fe5607
+  commitShort: 7b1e5bfcbf41
 service:
   type: ClusterIP
 updateStrategy:
@@ -36,6 +36,19 @@ openai:
   reasoningEffort: low
 assignmentIntegration:
   gatewayBaseUrl: http://api-gateway.playsay-prod.svc.cluster.local
+features:
+  composerEnabled: "true"
+  adaptivePolicyEnabled: "true"
+  deliveryPoliciesEnabled: "true"
+  keyNgramsEnabled: "true"
+  generatedMediaEnabled: "true"
+  lexicalBackfillEnabled: "true"
+media:
+  generator: openai
+  storage:
+    provider: s3
+    endpoint: http://minio.storage.svc.cluster.local:9000
+    createBucket: "false"
 runtime:
   javaToolOptions: -Xms128m -Xmx256m -XX:+UseStringDeduplication -Djava.security.egd=file:/dev/urandom
 resources:
